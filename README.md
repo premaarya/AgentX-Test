@@ -146,7 +146,7 @@ Use AgentX as a template when creating a new repository:
 
 ---
 
-## �🚀 Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 

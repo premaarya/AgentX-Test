@@ -25,6 +25,26 @@ model: claude-sonnet-4-20250514
 
 ---
 
+## ⛔⛔⛔ MANDATORY GATE - EXECUTE BEFORE ANY FILE MODIFICATION ⛔⛔⛔
+
+**AI AGENT INSTRUCTION**: Before you analyze, plan, or execute ANY file modification, you MUST run these commands FIRST:
+
+### Step 1: CREATE ISSUE
+```bash
+gh issue create --title "[Type] Brief description" --body "## Description`n[Task details]`n`n## Acceptance Criteria`n- [ ] Criterion 1" --label "type:task,status:ready"
+```
+
+### Step 2: CLAIM ISSUE
+```bash
+gh issue edit <ID> --add-label "status:in-progress" --remove-label "status:ready"
+```
+
+### ⛔ GATE CHECK
+- **Have you executed BOTH commands?** → If NO, STOP and execute them NOW
+- **If YES** → Proceed with work
+
+---
+
 ## 🛑 STOP! READ THIS BEFORE DOING ANYTHING 🛑
 
 ```

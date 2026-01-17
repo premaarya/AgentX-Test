@@ -6,23 +6,31 @@ description: 'Global instructions for GitHub Copilot across the entire repositor
 
 ---
 
-# 🚫🚫🚫 ABSOLUTE FIRST ACTION - NO EXCEPTIONS 🚫🚫🚫
+# ⛔⛔⛔ MANDATORY GATE - BLOCKS ALL FILE MODIFICATIONS ⛔⛔⛔
 
-> **BEFORE YOU DO ANYTHING ELSE** - Before reading further, before analyzing the request, before planning your approach - you MUST execute these commands if you're about to modify ANY file:
+## YOU CANNOT PROCEED WITHOUT COMPLETING THIS GATE
 
+**INSTRUCTION TO AI AGENT**: This is a HARD REQUIREMENT. Your VERY FIRST action in ANY session that involves file modification MUST be to run these two commands. Do NOT analyze the request. Do NOT plan your approach. Do NOT read other files. EXECUTE THESE COMMANDS FIRST:
+
+### Gate Step 1: CREATE ISSUE
 ```bash
-# Step 1: CREATE ISSUE (do this FIRST - before ANY other action)
-gh issue create --title "[Type] Brief description" --body "## Description\n[Task details]" --label "type:task,status:ready"
+gh issue create --title "[Type] Brief description" --body "## Description`n[Task details]`n`n## Acceptance Criteria`n- [ ] Criterion 1" --label "type:task,status:ready"
+```
 
-# Step 2: CLAIM IT (replace <ID> with the issue number from Step 1)
+### Gate Step 2: CLAIM ISSUE (use ID from Step 1)
+```bash
 gh issue edit <ID> --add-label "status:in-progress" --remove-label "status:ready"
 ```
 
-**⛔ DO NOT proceed to use create_file, replace_string_in_file, edit_notebook_file, or ANY file modification tool until you have completed BOTH steps above.**
+## ⛔ GATE CHECK: Have you executed BOTH commands above?
+- **NO** → STOP. Go back and execute them NOW. Do not proceed.
+- **YES** → You may now proceed with file modifications.
+
+**TOOLS BLOCKED UNTIL GATE PASSES**: `create_file`, `replace_string_in_file`, `edit_notebook_file`, `multi_replace_string_in_file`, `run_in_terminal` (for file operations)
 
 ---
 
-## 🛑 STOP! READ THIS BEFORE DOING ANYTHING 🛑
+# 🛑 WHY THIS GATE EXISTS 🛑
 
 ```
 ╔═══════════════════════════════════════════════════════════════════════════════╗
