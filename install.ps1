@@ -69,7 +69,8 @@ $coreFiles = @(
     @{ Src = "AGENTS.md"; Dest = "AGENTS.md" },
     @{ Src = "Skills.md"; Dest = "Skills.md" },
     @{ Src = "templates/.github/copilot-instructions.md"; Dest = ".github/copilot-instructions.md" },
-    @{ Src = "templates/.github/autonomous-mode.yml"; Dest = ".github/autonomous-mode.yml" }
+    @{ Src = "templates/.github/autonomous-mode.yml"; Dest = ".github/autonomous-mode.yml" },
+    @{ Src = "templates/.vscode/settings.json"; Dest = ".vscode/settings.json" }
 )
 
 # Skills files
