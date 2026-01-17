@@ -4,6 +4,45 @@ description: 'Global instructions for GitHub Copilot across the entire repositor
 
 # Global Copilot Instructions
 
+## ⚠️ MANDATORY: Issue-First Workflow (Read Before ANY Work)
+
+> **CRITICAL**: You MUST follow this workflow for EVERY task that modifies code, documentation, or configuration. NO EXCEPTIONS.
+
+### Before ANY File Changes, STOP and:
+
+1. **CREATE** a GitHub Issue FIRST:
+   ```bash
+   gh issue create --title "[Type] Description" --body "## Description\n[What needs to be done]\n\n## Acceptance Criteria\n- [ ] Criterion 1" --label "type:task,status:ready"
+   ```
+
+2. **CLAIM** the issue:
+   ```bash
+   gh issue edit <ID> --add-label "status:in-progress" --remove-label "status:ready"
+   ```
+
+3. **THEN** proceed with implementation
+
+4. **COMMIT** with issue reference:
+   ```bash
+   git commit -m "type: description (#ID)"
+   ```
+
+5. **CLOSE** the issue when complete:
+   ```bash
+   gh issue edit <ID> --add-label "status:done" --remove-label "status:in-progress"
+   gh issue close <ID> --comment "Completed in commit <SHA>"
+   ```
+
+### ❌ VIOLATIONS (Never Do These)
+- Starting work without a GitHub Issue
+- Creating issues retroactively after work is done
+- Committing without issue reference in message
+- Closing issues without updating status label to `status:done`
+
+> **Full Workflow Details**: See [Agents.md](../Agents.md) - Section "Issue-First Workflow (Mandatory)"
+
+---
+
 ## Repository Overview
 
 This repository uses AgentX - AI Agent Guidelines for Production Code.
@@ -16,11 +55,25 @@ This repository uses AgentX - AI Agent Guidelines for Production Code.
 
 ## When Working in This Repository
 
-1. **Read Agents.md first** for behavior guidelines and execution modes
-2. **Check Skills.md** to find relevant skill documentation
-3. **Follow the 4-layer security model** defined in Agents.md
-4. **Use GitHub Issues** for task tracking per Agents.md guidelines
-5. **Manage session state** using the Memory & State Management guidelines
+1. **Follow Issue-First Workflow** (see MANDATORY section above)
+2. **Read Agents.md** for complete behavior guidelines, execution modes, and security architecture
+3. **Check Skills.md** to find relevant skill documentation
+4. **Follow the 4-layer security model** defined in Agents.md
+5. **Manage session state** using the Memory & State Management guidelines in Agents.md
+
+## Agent Behavior Reference
+
+> **IMPORTANT**: All agent behavior, workflows, security protocols, and task management guidelines are defined in [Agents.md](../Agents.md). This includes:
+> - Execution Modes (Standard & YOLO)
+> - 4-Layer Security Architecture
+> - Memory & State Management
+> - GitHub Issues Task Management
+> - Multi-Agent Orchestration
+> - Agent Handoff Protocol
+> - Development Workflow
+> - Quality Standards
+
+**Always consult [Agents.md](../Agents.md) for the authoritative guidelines.**
 
 ## Session State Management
 

@@ -102,24 +102,9 @@ AgentX/
 
 ---
 
-## � Installation
+## 📦 Installation
 
-### Option 1: NPX (Recommended)
-
-The easiest way to add AgentX to your project:
-
-```bash
-# Navigate to your project
-cd your-project
-
-# Initialize AgentX (core files only)
-npx agentx-copilot init
-
-# Or initialize with all optional files (agents, instructions, prompts)
-npx agentx-copilot init --full
-```
-
-### Option 2: One-Line Install Scripts
+### Option 1: One-Line Install Scripts (Recommended)
 
 **PowerShell (Windows):**
 ```powershell
@@ -140,7 +125,7 @@ irm https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.ps1 | iex -
 curl -fsSL https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.sh | bash -s -- --full
 ```
 
-### Option 3: Manual Installation
+### Option 2: Manual Installation
 
 1. Clone the repository:
    ```bash
@@ -153,20 +138,12 @@ curl -fsSL https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.sh |
    cp -r AgentX/templates/.github your-project/
    ```
 
-### Option 4: GitHub Template
+### Option 3: GitHub Template
 
 Use AgentX as a template when creating a new repository:
 1. Go to [github.com/jnPiyush/AgentX](https://github.com/jnPiyush/AgentX)
 2. Click "Use this template"
 3. Create your new repository
-
-### Post-Installation
-
-After installation, run the doctor command to verify your setup:
-
-```bash
-npx agentx-copilot doctor
-```
 
 ---
 
@@ -245,10 +222,11 @@ Create Issue → Claim Issue → Do Work → Commit (#ID) → Close Issue
 **Quick Start (Recommended):**
 ```bash
 cd your-project
-npx agentx-copilot init --full
+# Use one-line install script
+curl -fsSL https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.sh | bash -s -- --full
 ```
 
-**Manual Steps (if not using npm):**
+**Setup Steps:**
 1. **Install** using one of the methods above
 2. **Customize** `.github/autonomous-mode.yml` for your security needs
 3. **Update** instruction files for your tech stack
