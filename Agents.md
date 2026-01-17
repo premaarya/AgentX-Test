@@ -265,11 +265,30 @@ When approaching context limits:
 3. **Summarize** - Create issue comment with state summary
 4. **Handoff** - If session must end, create proper handoff issue
 
+### Repository Detection
+
+Always detect the repository dynamically instead of hardcoding:
+
+```bash
+# Get repo from git remote (recommended)
+REPO=$(git remote get-url origin | sed 's/.*github.com[:/]\(.*\)\.git/\1/')
+
+# Or via GitHub CLI
+REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
+
+# Use in commands
+gh issue list --repo $REPO --state open
+```
+
 ### State Persistence Protocol
 
 ```bash
+# 0. Detect repository (run once per session)
+REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || git remote get-url origin | sed 's/.*github.com[:/]\(.*\)\.git/\1/')
+echo "Working on: $REPO"
+
 # 1. Start of session - Load state
-gh issue list --label "status:in-progress" --assignee @me
+gh issue list --repo $REPO --label "status:in-progress" --assignee @me
 git status
 git log --oneline -5
 
@@ -448,15 +467,19 @@ gh pr create --title "feat: Add validation" --body "Closes #123" --label "type:f
 
 #### Session Start
 ```bash
+# 0. Detect repository dynamically
+REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || git remote get-url origin | sed 's/.*github.com[:/]\(.*\)\.git/\1/')
+echo "Repository: $REPO"
+
 # 1. Sync with remote
 git pull --rebase
 
 # 2. Check current state
-gh issue list --label "status:in-progress" --assignee @me
+gh issue list --repo $REPO --label "status:in-progress" --assignee @me
 
 # 3. If no in-progress work, find ready work
-gh issue list --label "status:ready" --label "priority:p0" --state open
-gh issue list --label "status:ready" --label "priority:p1" --state open
+gh issue list --repo $REPO --label "status:ready" --label "priority:p0" --state open
+gh issue list --repo $REPO --label "status:ready" --label "priority:p1" --state open
 
 # 4. Claim work
 gh issue edit <ID> --add-label "status:in-progress" --remove-label "status:ready"
@@ -918,8 +941,12 @@ handoff:escalation      → Escalation to senior/architect
 > **⚠️ CRITICAL**: Before ANY work begins, create a GitHub Issue. No exceptions.
 
 ```bash
+# 0. Detect repository dynamically (run once per session)
+REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || git remote get-url origin | sed 's/.*github.com[:/]\(.*\)\.git/\1/')
+echo "Repository: $REPO"
+
 # ALWAYS START HERE - Create issue BEFORE doing anything else
-gh issue create --repo <owner>/<repo> \
+gh issue create --repo $REPO \
   --title "[Type] Brief description" \
   --body "## Description\n[What needs to be done]\n\n## Acceptance Criteria\n- [ ] Criterion 1" \
   --label "type:task,status:ready"
