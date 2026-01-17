@@ -6,6 +6,22 @@ description: 'Global instructions for GitHub Copilot across the entire repositor
 
 ---
 
+# 🚫🚫🚫 ABSOLUTE FIRST ACTION - NO EXCEPTIONS 🚫🚫🚫
+
+> **BEFORE YOU DO ANYTHING ELSE** - Before reading further, before analyzing the request, before planning your approach - you MUST execute these commands if you're about to modify ANY file:
+
+```bash
+# Step 1: CREATE ISSUE (do this FIRST - before ANY other action)
+gh issue create --title "[Type] Brief description" --body "## Description\n[Task details]" --label "type:task,status:ready"
+
+# Step 2: CLAIM IT (replace <ID> with the issue number from Step 1)
+gh issue edit <ID> --add-label "status:in-progress" --remove-label "status:ready"
+```
+
+**⛔ DO NOT proceed to use create_file, replace_string_in_file, edit_notebook_file, or ANY file modification tool until you have completed BOTH steps above.**
+
+---
+
 ## 🛑 STOP! READ THIS BEFORE DOING ANYTHING 🛑
 
 ```

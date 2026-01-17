@@ -64,6 +64,8 @@ AgentX/
 ├── README.md                      # This file
 ├── AGENTS.md                      # Agent behavior, workflows, security
 ├── Skills.md                      # Technical standards index
+├── install.ps1                    # PowerShell install script (Windows)
+├── install.sh                     # Bash install script (macOS/Linux)
 │
 ├── skills/                        # Detailed skill documentation
 │   ├── 01-core-principles.md
@@ -73,6 +75,10 @@ AgentX/
 │
 ├── docs/
 │   └── technical-specification.md # Complete system specification
+│
+├── templates/                     # Template files for new projects
+│   ├── .github/                   # GitHub configuration templates
+│   └── .vscode/                   # VS Code configuration templates
 │
 └── .github/
     ├── copilot-instructions.md    # Global Copilot configuration
@@ -115,14 +121,7 @@ irm https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.ps1 | iex
 curl -fsSL https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.sh | bash
 ```
 
-**With all optional files:**
-```bash
-# PowerShell
-irm https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.ps1 | iex -Full
-
-# Bash
-curl -fsSL https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.sh | bash -s -- --full
-```
+> **Note**: The install scripts copy essential files (`AGENTS.md`, `Skills.md`, `skills/`, and `.github/` templates) to your current project directory.
 
 ### Option 2: Manual Installation
 
@@ -135,6 +134,7 @@ curl -fsSL https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.sh |
    ```bash
    cp -r AgentX/AGENTS.md AgentX/Skills.md AgentX/skills your-project/
    cp -r AgentX/templates/.github your-project/
+   cp -r AgentX/templates/.vscode your-project/  # Optional: VS Code settings
    ```
 
 ### Option 3: GitHub Template
@@ -222,7 +222,7 @@ Create Issue → Claim Issue → Do Work → Commit (#ID) → Close Issue
 ```bash
 cd your-project
 # Use one-line install script
-curl -fsSL https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.sh | bash -s -- --full
+curl -fsSL https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.sh | bash
 ```
 
 **Setup Steps:**
