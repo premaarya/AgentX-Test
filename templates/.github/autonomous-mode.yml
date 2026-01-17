@@ -1,6 +1,6 @@
 # Autonomous Mode Configuration
 # Controls agent behavior in YOLO mode
-# Reference: Agents.md → Security Architecture (4-Layer Model)
+# Reference: AGENTS.md → Security Architecture (4-Layer Model)
 
 autonomous:
   # Kill switch - set to false to pause all autonomous operations
@@ -170,3 +170,4 @@ audit:
   
   # Log all commands executed
   log_commands: true
+

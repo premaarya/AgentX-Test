@@ -92,7 +92,7 @@ fi
 
 # Core files
 info "Downloading core files..."
-download_file "Agents.md" "Agents.md"
+download_file "AGENTS.md" "AGENTS.md"
 download_file "Skills.md" "Skills.md"
 download_file "templates/.github/copilot-instructions.md" ".github/copilot-instructions.md"
 download_file "templates/.github/autonomous-mode.yml" ".github/autonomous-mode.yml"
@@ -160,8 +160,9 @@ echo -e "${YELLOW}   gh label create \"status:in-progress\" --description \"Curr
 echo -e "${YELLOW}   gh label create \"status:done\" --description \"Completed\" --color \"0E8A16\"${NC}"
 echo -e "${YELLOW}   gh label create \"priority:p1\" --description \"High - do next\" --color \"D93F0B\"${NC}"
 echo ""
-echo "4. Read Agents.md for workflow guidelines"
+echo "4. Read AGENTS.md for workflow guidelines"
 echo "5. Check Skills.md for production standards"
 echo ""
 success "AgentX installed successfully! 🚀"
 echo ""
+

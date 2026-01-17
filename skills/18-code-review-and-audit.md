@@ -92,7 +92,7 @@ Write-Host "`n✅ All automated checks passed!" -ForegroundColor Green
 
 ## Code Review Checklist
 
-### Architecture & Design (Agents.md Alignment)
+### Architecture & Design (AGENTS.md Alignment)
 
 - [ ] **Research → Design → Implement** workflow followed
 - [ ] Architecture documented (ADRs for significant decisions)
@@ -271,7 +271,7 @@ foreach ($pattern in $patterns.GetEnumerator()) {
 - [ ] **A09: Logging Failures** - Security events logged, alerting configured
 - [ ] **A10: SSRF** - Validate/sanitize URLs, whitelist allowed domains
 
-### Production Readiness (Agents.md Checklist)
+### Production Readiness (AGENTS.md Checklist)
 
 **Development**
 - [ ] Functionality verified with edge cases
@@ -470,6 +470,7 @@ reportgenerator -reports:"**/coverage.cobertura.xml" -targetdir:"coverage"
 
 ---
 
-**See Also**: [Agents.md](../Agents.md) • [02-testing.md](02-testing.md) • [04-security.md](04-security.md) • [16-remote-git-operations.md](16-remote-git-operations.md)
+**See Also**: [AGENTS.md](../AGENTS.md) • [02-testing.md](02-testing.md) • [04-security.md](04-security.md) • [16-remote-git-operations.md](16-remote-git-operations.md)
 
 **Last Updated**: January 13, 2026
+

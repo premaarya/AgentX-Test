@@ -339,6 +339,7 @@ dotnet watch test
 
 ---
 
-**See Also**: [Agents.md](../Agents.md) • [03-error-handling.md](03-error-handling.md)
+**See Also**: [AGENTS.md](../AGENTS.md) • [03-error-handling.md](03-error-handling.md)
 
 **Last Updated**: January 13, 2026
+

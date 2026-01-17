@@ -115,3 +115,4 @@ async def test_get_user_returns_user_when_found():
     assert result.name == "Test"
     mock_repo.get.assert_called_once_with("123")
 ```
+

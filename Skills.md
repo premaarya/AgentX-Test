@@ -171,8 +171,9 @@ builder.Host.ConfigureHostOptions(opts => opts.ShutdownTimeout = TimeSpan.FromSe
 
 ---
 
-**See Also**: [Agents.md](Agents.md) • [github/awesome-copilot](https://github.com/github/awesome-copilot)
+**See Also**: [AGENTS.md](AGENTS.md) • [github/awesome-copilot](https://github.com/github/awesome-copilot)
 
 **Skills Specification**: [agentskills.io/specification](https://agentskills.io/specification)
 
 **Last Updated**: January 17, 2026
+

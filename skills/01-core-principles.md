@@ -277,3 +277,4 @@ public class DiscountPricing : IPricingStrategy
 **See Also**: [08-code-organization.md](08-code-organization.md) • [02-testing.md](02-testing.md)
 
 **Last Updated**: January 13, 2026
+

@@ -127,3 +127,4 @@ test('submits form with user data', async () => {
 - Use semantic HTML elements
 - Ensure keyboard navigation works
 - Test with screen readers
+

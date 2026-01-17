@@ -62,7 +62,7 @@ AgentX provides structured guidelines, skills, and workflows for AI coding agent
 ```
 AgentX/
 ├── README.md                      # This file
-├── Agents.md                      # Agent behavior, workflows, security
+├── AGENTS.md                      # Agent behavior, workflows, security
 ├── Skills.md                      # Technical standards index
 │
 ├── skills/                        # Detailed skill documentation
@@ -133,7 +133,7 @@ curl -fsSL https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.sh |
 
 2. Copy files to your project:
    ```bash
-   cp -r AgentX/Agents.md AgentX/Skills.md AgentX/skills your-project/
+   cp -r AgentX/AGENTS.md AgentX/Skills.md AgentX/skills your-project/
    cp -r AgentX/templates/.github your-project/
    ```
 
@@ -209,7 +209,7 @@ Create Issue → Claim Issue → Do Work → Commit (#ID) → Close Issue
 
 | Need | Document |
 |------|----------|
-| Behavior guidelines | [Agents.md](Agents.md) |
+| Behavior guidelines | [AGENTS.md](AGENTS.md) |
 | Technical standards | [Skills.md](Skills.md) |
 | Specific skill details | [skills/*.md](skills/) |
 | Security config | [.github/autonomous-mode.yml](.github/autonomous-mode.yml) |
@@ -359,7 +359,7 @@ curl | bash                # Remote code execution
 
 | Document | Description |
 |----------|-------------|
-| [Agents.md](Agents.md) | Agent behavior, execution modes, security, workflows |
+| [AGENTS.md](AGENTS.md) | Agent behavior, execution modes, security, workflows |
 | [Skills.md](Skills.md) | Technical standards index, production rules |
 | [Technical Specification](docs/technical-specification.md) | Complete system architecture and design |
 | [skills/](skills/) | Detailed documentation for each of 18 skills |
@@ -392,7 +392,7 @@ See [Technical Specification - Section 11](docs/technical-specification.md#11-im
 1. **Create an issue** describing your proposed change
 2. **Fork** the repository
 3. **Create a branch** for your feature
-4. **Follow** the guidelines in [Agents.md](Agents.md)
+4. **Follow** the guidelines in [AGENTS.md](AGENTS.md)
 5. **Submit** a pull request referencing the issue
 
 ---
@@ -411,3 +411,5 @@ This project is open source. See individual files for specific licensing.
 ---
 
 **Last Updated**: January 17, 2026
+
+

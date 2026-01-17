@@ -229,7 +229,7 @@ This specification defines a comprehensive framework for AI coding agents to pro
     ┌─────────┐     ┌─────────────────────────────────────────┐    ┌─────────┐
     │         │     │                                         │    │         │
     │ "Add    │     │  1. Load Context                        │    │ Code    │
-    │  email  │────►│     ├─► Agents.md (behavior)            │───►│ Changes │
+    │  email  │────►│     ├─► AGENTS.md (behavior)            │───►│ Changes │
     │  valid- │     │     ├─► Skills.md (standards)           │    │         │
     │  ation" │     │     └─► .instructions.md (language)     │    │ Tests   │
     │         │     │                                         │    │         │
@@ -510,13 +510,13 @@ This specification defines a comprehensive framework for AI coding agents to pro
 │    CONTENT TYPE           OWNER FILE              REFERENCERS              │
 │    ────────────           ──────────              ───────────              │
 │                                                                              │
-│    Agent Behavior         Agents.md               • .github/agents/*.md    │
+│    Agent Behavior         AGENTS.md               • .github/agents/*.md    │
 │    YOLO Mode                                      • copilot-instructions   │
 │    Security Architecture                                                    │
 │    GitHub Issues Protocol                                                   │
 │    Development Workflow                                                     │
 │                                                                              │
-│    Technical Standards    Skills.md               • Agents.md              │
+│    Technical Standards    Skills.md               • AGENTS.md              │
 │    Production Rules       (index)                 • .github/prompts/*.md   │
 │    Deployment Checklist                                                     │
 │                                                                              │
@@ -524,7 +524,7 @@ This specification defines a comprehensive framework for AI coding agents to pro
 │    Code Examples          (18 files)              • .github/prompts/*.md   │
 │    Patterns & Anti-patterns                       • .github/agents/*.md    │
 │                                                                              │
-│    Security Config        autonomous-mode.yml     • Agents.md (reference)  │
+│    Security Config        autonomous-mode.yml     • AGENTS.md (reference)  │
 │    Kill Switch                                                              │
 │    Protected Paths                                                          │
 │    Command Whitelist                                                        │
@@ -740,7 +740,7 @@ This specification defines a comprehensive framework for AI coding agents to pro
 │                                                                              │
 │  Repository Root/                                                            │
 │  │                                                                           │
-│  ├── Agents.md                 ◄── Agent behavior guidelines                │
+│  ├── AGENTS.md                 ◄── Agent behavior guidelines                │
 │  │                                 (execution modes, security, workflow)    │
 │  │                                                                           │
 │  ├── Skills.md                 ◄── Technical standards index                │
@@ -819,7 +819,7 @@ This specification defines a comprehensive framework for AI coding agents to pro
 │  │   1. copilot-instructions.md        (global behavior)                │  │
 │  │            │                                                          │  │
 │  │            ▼                                                          │  │
-│  │   2. Agents.md                      (execution mode, workflow)       │  │
+│  │   2. AGENTS.md                      (execution mode, workflow)       │  │
 │  │            │                                                          │  │
 │  │            ▼                                                          │  │
 │  │   3. <agent>.agent.md               (role-specific instructions)     │  │
@@ -1246,7 +1246,7 @@ This specification defines a comprehensive framework for AI coding agents to pro
 
 | File | Purpose | When to Read |
 |------|---------|--------------|
-| `Agents.md` | Agent behavior, modes, security, workflow | Always |
+| `AGENTS.md` | Agent behavior, modes, security, workflow | Always |
 | `Skills.md` | Technical standards index | When checking standards |
 | `skills/*.md` | Detailed technical content | When implementing specific areas |
 | `.github/autonomous-mode.yml` | Security configuration | When configuring autonomy |
@@ -1337,7 +1337,7 @@ All workflow management systems have been verified against the live GitHub repos
 
 ```
 AgentX/
-├── Agents.md                          ✅ Agent behavior guidelines
+├── AGENTS.md                          ✅ Agent behavior guidelines
 ├── Skills.md                          ✅ Technical standards index
 ├── docs/
 │   └── technical-specification.md     ✅ This document
@@ -1445,3 +1445,4 @@ ALL TESTS PASSED ✅
 **Last Updated**: January 17, 2026  
 **Maintainer**: AI Agent Guidelines System  
 **Verification Status**: ✅ E2E Tests Passed
+

@@ -38,5 +38,6 @@ Implement features, fix bugs, write tests, refactor code, document APIs.
 
 ## References
 
-> **Behavior & Workflow**: [Agents.md](../../Agents.md)  
+> **Behavior & Workflow**: [AGENTS.md](../../AGENTS.md)  
 > **Technical Standards**: [Skills.md](../../Skills.md)
+

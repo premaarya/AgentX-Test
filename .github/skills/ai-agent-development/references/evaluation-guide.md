@@ -228,3 +228,4 @@ Output JSON only: {"result": <int 1-5>, "reason": "<brief explanation>"}
 | Evaluator not found | Wrong name | Use exact `builtin.*` names |
 | Low scores | Misaligned expectations | Review and refine agent instructions |
 | Timeout | Large dataset | Split into smaller batches |
+

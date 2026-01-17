@@ -353,3 +353,4 @@ telemetry.TrackDependency("Database", "Query", startTime, duration, success);
 **See Also**: [06-database.md](06-database.md) • [07-scalability.md](07-scalability.md) • [15-logging-monitoring.md](15-logging-monitoring.md)
 
 **Last Updated**: January 13, 2026
+

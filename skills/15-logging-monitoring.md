@@ -483,3 +483,4 @@ dotnet add package Microsoft.ApplicationInsights.AspNetCore
 - [Error Handling](03-error-handling.md)
 - [Performance](05-performance.md)
 - [Scalability](07-scalability.md)
+

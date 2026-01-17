@@ -77,7 +77,7 @@ description: 'Global instructions for GitHub Copilot across the entire repositor
 2. "Is my issue marked in-progress?" → If NO, claim it NOW
 3. "Will my commit message include (#ID)?" → If NO, fix it NOW
 
-> **Full Workflow Details**: See [Agents.md](../Agents.md) - Section "Issue-First Workflow (Mandatory)"
+> **Full Workflow Details**: See [AGENTS.md](../AGENTS.md) - Section "Issue-First Workflow (Mandatory)"
 
 ---
 
@@ -87,21 +87,21 @@ This repository uses AgentX - AI Agent Guidelines for Production Code.
 
 ## Key Files
 
-- **Agents.md**: Agent behavior, workflows, YOLO mode, security architecture, memory management, GitHub Issues task management
+- **AGENTS.md**: Agent behavior, workflows, YOLO mode, security architecture, memory management, GitHub Issues task management
 - **Skills.md**: Index of 18 production skills covering testing, security, architecture, and operations
 - **skills/**: Detailed skill documentation
 
 ## When Working in This Repository
 
 1. **Follow Issue-First Workflow** (see MANDATORY section above)
-2. **Read Agents.md** for complete behavior guidelines, execution modes, and security architecture
+2. **Read AGENTS.md** for complete behavior guidelines, execution modes, and security architecture
 3. **Check Skills.md** to find relevant skill documentation
-4. **Follow the 4-layer security model** defined in Agents.md
-5. **Manage session state** using the Memory & State Management guidelines in Agents.md
+4. **Follow the 4-layer security model** defined in AGENTS.md
+5. **Manage session state** using the Memory & State Management guidelines in AGENTS.md
 
 ## Agent Behavior Reference
 
-> **IMPORTANT**: All agent behavior, workflows, security protocols, and task management guidelines are defined in [Agents.md](../Agents.md). This includes:
+> **IMPORTANT**: All agent behavior, workflows, security protocols, and task management guidelines are defined in [AGENTS.md](../AGENTS.md). This includes:
 > - Execution Modes (Standard & YOLO)
 > - 4-Layer Security Architecture
 > - Memory & State Management
@@ -111,7 +111,7 @@ This repository uses AgentX - AI Agent Guidelines for Production Code.
 > - Development Workflow
 > - Quality Standards
 
-**Always consult [Agents.md](../Agents.md) for the authoritative guidelines.**
+**Always consult [AGENTS.md](../AGENTS.md) for the authoritative guidelines.**
 
 ## Session State Management
 
@@ -127,4 +127,6 @@ Use the following tools for state management during sessions:
 
 ## Reference
 
-See [Agents.md](../Agents.md) and [Skills.md](../Skills.md) for detailed guidelines.
+See [AGENTS.md](../AGENTS.md) and [Skills.md](../Skills.md) for detailed guidelines.
+
+

@@ -31,7 +31,7 @@ Conduct user research, create wireframes, design user flows, ensure WCAG 2.1 AA 
 
 ## References
 
-> **Behavior & Workflow**: [Agents.md](../../Agents.md)  
+> **Behavior & Workflow**: [AGENTS.md](../../AGENTS.md)  
 > **Technical Standards**: [Skills.md](../../Skills.md)
 
 ## Output Templates
@@ -52,3 +52,4 @@ Conduct user research, create wireframes, design user flows, ensure WCAG 2.1 AA 
 ## Components: [Table of component/type/behavior]
 ## Interactions: [User action → Result]
 ```
+

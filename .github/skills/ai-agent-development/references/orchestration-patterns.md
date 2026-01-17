@@ -334,3 +334,4 @@ configure_otel_providers(
 ```
 
 Open trace viewer: `Ctrl+Shift+P` → `AI Toolkit: Open Trace Viewer`
+

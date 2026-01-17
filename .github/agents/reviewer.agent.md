@@ -33,7 +33,7 @@ Review PRs, conduct security audits, verify test coverage, ensure quality.
 
 ## References
 
-> **Behavior & Workflow**: [Agents.md](../../Agents.md)  
+> **Behavior & Workflow**: [AGENTS.md](../../AGENTS.md)  
 > **Technical Standards**: [Skills.md](../../Skills.md)  
 > **Review Checklist**: [18-code-review-and-audit.md](../../skills/18-code-review-and-audit.md)
 
@@ -52,3 +52,4 @@ Review PRs, conduct security audits, verify test coverage, ensure quality.
 ## Positives ✅
 [Good practices]
 ```
+

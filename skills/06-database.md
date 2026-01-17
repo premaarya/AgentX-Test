@@ -271,3 +271,4 @@ public class Repository<T> : IRepository<T> where T : class
 **See Also**: [05-performance.md](05-performance.md) • [07-scalability.md](07-scalability.md)
 
 **Last Updated**: January 13, 2026
+

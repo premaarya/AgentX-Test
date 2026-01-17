@@ -3,5 +3,7 @@
         "ForEach-Object": true,
         "Copy-Item": true,
         "Set-Content": true
-    }
+    },
+    "chat.useAgentsMdFile": true,
+    "github.copilot.chat.codeGeneration.useInstructionFiles": true
 }

@@ -66,7 +66,7 @@ Write-Host ""
 
 # Core files to download
 $coreFiles = @(
-    @{ Src = "Agents.md"; Dest = "Agents.md" },
+    @{ Src = "AGENTS.md"; Dest = "AGENTS.md" },
     @{ Src = "Skills.md"; Dest = "Skills.md" },
     @{ Src = "templates/.github/copilot-instructions.md"; Dest = ".github/copilot-instructions.md" },
     @{ Src = "templates/.github/autonomous-mode.yml"; Dest = ".github/autonomous-mode.yml" }
@@ -174,7 +174,7 @@ Write-Host '   gh label create "status:done" --description "Completed" --color "
 Write-Host '   gh label create "priority:p1" --description "High - do next" --color "D93F0B"' -ForegroundColor Yellow
 Write-Host ""
 Write-Host "4. Read " -NoNewline
-Write-Host "Agents.md" -ForegroundColor Cyan -NoNewline
+Write-Host "AGENTS.md" -ForegroundColor Cyan -NoNewline
 Write-Host " for workflow guidelines"
 Write-Host "5. Check " -NoNewline
 Write-Host "Skills.md" -ForegroundColor Cyan -NoNewline
@@ -182,3 +182,4 @@ Write-Host " for production standards"
 Write-Host ""
 Write-Success "AgentX installed successfully! 🚀"
 Write-Host ""
+

@@ -33,7 +33,7 @@ Design systems, create ADRs, define APIs, plan schemas, evaluate technology choi
 
 ## References
 
-> **Behavior & Workflow**: [Agents.md](../../Agents.md)  
+> **Behavior & Workflow**: [AGENTS.md](../../AGENTS.md)  
 > **Technical Standards**: [Skills.md](../../Skills.md)
 
 ## Output Template: ADR
@@ -51,3 +51,4 @@ Design systems, create ADRs, define APIs, plan schemas, evaluate technology choi
 ## Diagrams (as needed)
 
 High-level architecture, Component, Sequence, Data flow, Class diagram
+

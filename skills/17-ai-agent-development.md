@@ -369,6 +369,7 @@ Output JSON: {"result": <int>, "reason": "<text>"}
 
 ---
 
-**Related**: [Agents.md](../Agents.md) for agent behavior guidelines • [Skills.md](../Skills.md) for general production practices
+**Related**: [AGENTS.md](../AGENTS.md) for agent behavior guidelines • [Skills.md](../Skills.md) for general production practices
 
 **Last Updated**: January 17, 2026
+

@@ -80,3 +80,4 @@ public async Task<User?> GetUserAsync(Guid userId)
 - Use Moq or NSubstitute for mocking
 - Follow Arrange-Act-Assert pattern
 - Name tests: `MethodName_Scenario_ExpectedResult`
+

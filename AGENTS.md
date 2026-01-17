@@ -1148,7 +1148,7 @@ Safety > Speed • Clarity > Cleverness • Quality > Quantity
 
 | Location | Purpose |
 |----------|----------|
-| `Agents.md` | Behavior, workflow, security |
+| `AGENTS.md` | Behavior, workflow, security |
 | `Skills.md` | Technical standards index |
 | `.github/agents/*.agent.md` | Agent role definitions |
 | `.github/instructions/*.md` | Language-specific rules |
@@ -1178,4 +1178,5 @@ Safety > Speed • Clarity > Cleverness • Quality > Quantity
 ---
 
 **Last Updated**: January 17, 2026
+
 
