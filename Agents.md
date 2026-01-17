@@ -174,6 +174,40 @@ Research and deduce solutions when encountering uncertainty. Minimize unnecessar
 ### 5. Incremental Progress
 Make incremental changes while maintaining focus on overall goals. Avoid attempting too many changes at once.
 
+### 6. Issue-First Workflow (Mandatory)
+**NEVER start work without an associated GitHub Issue.** This is non-negotiable.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                 MANDATORY WORKFLOW SEQUENCE                      │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│   1. CREATE ISSUE FIRST     gh issue create --title "..."       │
+│          │                  --label "type:task,status:ready"    │
+│          ▼                                                       │
+│   2. CLAIM THE ISSUE        gh issue edit <ID>                  │
+│          │                  --add-label "status:in-progress"    │
+│          ▼                                                       │
+│   3. DO THE WORK            Code, test, document                │
+│          │                                                       │
+│          ▼                                                       │
+│   4. COMMIT WITH REF        git commit -m "type: desc (#ID)"    │
+│          │                                                       │
+│          ▼                                                       │
+│   5. CLOSE THE ISSUE        gh issue close <ID>                 │
+│                                                                  │
+│   ⚠️  VIOLATION: Working without an issue = broken audit trail  │
+│   ⚠️  VIOLATION: Retroactive issues = workflow failure          │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Why This Matters**:
+- Audit trail is only meaningful if created BEFORE work begins
+- Retroactive issues indicate workflow failure, not compliance
+- Other agents cannot coordinate without visible task tracking
+- Session handoffs require issue context to be established first
+
 ---
 
 ## Memory & State Management
@@ -874,6 +908,27 @@ handoff:escalation      → Escalation to senior/architect
 
 ## Development Workflow
 
+### Step 0: Create GitHub Issue (MANDATORY)
+
+> **⚠️ CRITICAL**: Before ANY work begins, create a GitHub Issue. No exceptions.
+
+```bash
+# ALWAYS START HERE - Create issue BEFORE doing anything else
+gh issue create --repo <owner>/<repo> \
+  --title "[Type] Brief description" \
+  --body "## Description\n[What needs to be done]\n\n## Acceptance Criteria\n- [ ] Criterion 1" \
+  --label "type:task,status:ready"
+
+# Then claim it
+gh issue edit <ID> --add-label "status:in-progress" --remove-label "status:ready"
+```
+
+**Issue Creation Checklist**:
+- [ ] Title clearly describes the work
+- [ ] Body includes description and acceptance criteria
+- [ ] Appropriate labels applied (type, priority, status)
+- [ ] Issue number noted for commit references
+
 ### Planning Phase
 1. **Research**: Analyze requirements, existing code, and patterns
 2. **Design**: Plan architecture, data models, interfaces, data flows, design diagrams (High-level architecture, Class diagram, Sequence diagram, Data flow diagram, Component diagram, Low-level design) as needed
@@ -883,7 +938,7 @@ handoff:escalation      → Escalation to senior/architect
 6. **GitHub Issues**: Create issues for all backlog items with proper labels, descriptions, and dependencies
 
 ### Implementation Phase
-7. **Claim Work**: Mark issue `status:in-progress`, assign to self
+7. **Claim Work**: Mark issue `status:in-progress`, assign to self (issue MUST already exist)
 8. **Code**: Implement one backlog item at a time, following production standards
 9. **Progress Updates**: Comment on issue with progress at milestones
 10. **Self-Review**: Verify quality, correctness, pattern adherence
@@ -911,7 +966,20 @@ handoff:escalation      → Escalation to senior/architect
 26. **Production**: Deploy using proper strategy (rolling, blue-green, canary)
 27. **Verify**: Confirm success, monitor metrics and logs
 
-**Critical Don'ts**: Skip planning • Work without structure • Leave incomplete issues • Skip testing • Commit untested code • Deploy without staging • Make architectural decisions without ADRs • Deploy without monitoring • Forget to update issue status
+**Critical Don'ts**: 
+- ❌ **START WORK WITHOUT A GITHUB ISSUE** (most critical violation)
+- ❌ Create issues retroactively (defeats audit trail purpose)
+- ❌ Skip planning 
+- ❌ Work without structure 
+- ❌ Leave incomplete issues 
+- ❌ Skip testing 
+- ❌ Commit untested code 
+- ❌ Commit without issue reference in message
+- ❌ Deploy without staging 
+- ❌ Make architectural decisions without ADRs 
+- ❌ Deploy without monitoring 
+- ❌ Forget to update issue status
+- ❌ Close issues without completion comment
 
 ---
 
@@ -923,19 +991,26 @@ handoff:escalation      → Escalation to senior/architect
 
 ## Task Execution
 
-### Simple Tasks
-1. Implement directly
-2. Verify changes
-3. Report completion
+> **Rule**: ALL tasks that modify code, documentation, or configuration require a GitHub Issue.
+> Only pure research/reading tasks with no artifacts are exempt.
 
-### Complex Tasks
-1. Create todo list (break into actionable items)
-2. Create GitHub Issues for tracking
-3. Mark issue in-progress before starting
+### Simple Tasks (Quick Changes)
+1. **Create GitHub Issue** (even for simple tasks)
+2. Implement directly
+3. Commit with issue reference (`#ID`)
+4. Close issue immediately
+5. Report completion
+
+### Complex Tasks (Multi-Step Work)
+1. **Create GitHub Issue FIRST** (mandatory)
+2. Create todo list (break into actionable items)
+3. Mark issue `status:in-progress`
 4. Implement incrementally
-5. Test and validate
-6. Close issue immediately after finishing
-7. Iterate to next item
+5. Update issue with progress comments
+6. Test and validate
+7. Commit with issue reference (`Closes #ID`)
+8. Close issue immediately after finishing
+9. Iterate to next item
 
 ```mermaid
 graph TD
