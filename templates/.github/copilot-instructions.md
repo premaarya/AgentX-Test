@@ -6,7 +6,31 @@ description: 'Global instructions for GitHub Copilot across the entire repositor
 
 ---
 
-## 🛑 STOP! READ THIS BEFORE DOING ANYTHING 🛑
+# ⛔⛔⛔ MANDATORY GATE - BLOCKS ALL FILE MODIFICATIONS ⛔⛔⛔
+
+## YOU CANNOT PROCEED WITHOUT COMPLETING THIS GATE
+
+**INSTRUCTION TO AI AGENT**: This is a HARD REQUIREMENT. Your VERY FIRST action in ANY session that involves file modification MUST be to run these two commands. Do NOT analyze the request. Do NOT plan your approach. Do NOT read other files. EXECUTE THESE COMMANDS FIRST:
+
+### Gate Step 1: CREATE ISSUE
+```bash
+gh issue create --title "[Type] Brief description" --body "## Description`n[Task details]`n`n## Acceptance Criteria`n- [ ] Criterion 1" --label "type:task,status:ready"
+```
+
+### Gate Step 2: CLAIM ISSUE (use ID from Step 1)
+```bash
+gh issue edit <ID> --add-label "status:in-progress" --remove-label "status:ready"
+```
+
+## ⛔ GATE CHECK: Have you executed BOTH commands above?
+- **NO** → STOP. Go back and execute them NOW. Do not proceed.
+- **YES** → You may now proceed with file modifications.
+
+**TOOLS BLOCKED UNTIL GATE PASSES**: `create_file`, `replace_string_in_file`, `edit_notebook_file`, `multi_replace_string_in_file`, `run_in_terminal` (for file operations)
+
+---
+
+# 🛑 WHY THIS GATE EXISTS 🛑
 
 ```
 ╔═══════════════════════════════════════════════════════════════════════════════╗
