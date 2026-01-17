@@ -1,0 +1,47 @@
+{
+  "name": "agentx-copilot",
+  "version": "1.0.0",
+  "description": "AI Agent Guidelines for Production Code - A comprehensive framework for AI coding agents to produce production-ready code with consistent quality, security, and operational standards.",
+  "main": "bin/agentx.js",
+  "bin": {
+    "agentx": "./bin/agentx.js"
+  },
+  "scripts": {
+    "postinstall": "node bin/postinstall.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jnPiyush/AgentX.git"
+  },
+  "keywords": [
+    "ai",
+    "agent",
+    "copilot",
+    "github-copilot",
+    "coding-guidelines",
+    "production-code",
+    "code-quality",
+    "security",
+    "automation",
+    "yolo-mode",
+    "multi-agent"
+  ],
+  "author": "Piyush Jain",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jnPiyush/AgentX/issues"
+  },
+  "homepage": "https://github.com/jnPiyush/AgentX#readme",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "files": [
+    "bin/",
+    "templates/",
+    "Agents.md",
+    "Skills.md",
+    "skills/",
+    "README.md",
+    "LICENSE"
+  ]
+}
