@@ -25,6 +25,32 @@ model: claude-sonnet-4-20250514
 
 ---
 
+## Prerequisites
+
+Before using these agent guidelines, ensure you have:
+
+### Required
+- **Git** - Version control ([git-scm.com](https://git-scm.com))
+- **VS Code** - Editor with GitHub Copilot extension
+
+### Recommended (for full workflow)
+- **GitHub CLI** - For GitHub Issues task management ([cli.github.com](https://cli.github.com))
+
+```bash
+# Install GitHub CLI (Windows)
+winget install GitHub.cli
+
+# Authenticate
+gh auth login
+
+# Verify installation
+gh --version
+```
+
+> **Note**: Without GitHub CLI, Layer 3 memory (GitHub Issues) won't function. Use `manage_todo_list` for session-scoped task tracking as an alternative.
+
+---
+
 ## Execution Modes
 
 ### Standard Mode (Default)
