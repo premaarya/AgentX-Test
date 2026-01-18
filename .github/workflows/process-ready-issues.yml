@@ -224,21 +224,53 @@ jobs:
                       // Label might not exist
                     }
                     
-                    // Trigger the workflow
+                    // Trigger the workflow with error handling
                     console.log(`   🚀 Triggering ${workflowToTrigger}`);
-                    await github.rest.actions.createWorkflowDispatch({
-                      owner: context.repo.owner,
-                      repo: context.repo.repo,
-                      workflow_id: workflowToTrigger,
-                      ref: 'master',
-                      inputs: inputs
-                    });
-                    
-                    processed.push({ 
-                      number: issue.number, 
-                      workflow: workflowToTrigger,
-                      rule: rule.name 
-                    });
+                    try {
+                      await github.rest.actions.createWorkflowDispatch({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        workflow_id: workflowToTrigger,
+                        ref: 'master',
+                        inputs: inputs
+                      });
+                      
+                      processed.push({ 
+                        number: issue.number, 
+                        workflow: workflowToTrigger,
+                        rule: rule.name 
+                      });
+                    } catch (dispatchError) {
+                      console.log(`   ⚠️ Failed to trigger workflow: ${dispatchError.message}`);
+                      
+                      // Revert labels on failure
+                      await github.rest.issues.addLabels({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: issue.number,
+                        labels: ['status:ready']
+                      });
+                      
+                      try {
+                        await github.rest.issues.removeLabel({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          issue_number: issue.number,
+                          name: 'orchestration:active'
+                        });
+                        await github.rest.issues.removeLabel({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          issue_number: issue.number,
+                          name: 'status:in-progress'
+                        });
+                      } catch (e) { /* ignore */ }
+                      
+                      skipped.push({ 
+                        number: issue.number, 
+                        reason: `Workflow trigger failed: ${dispatchError.message.substring(0, 50)}` 
+                      });
+                    }
                   }
                   
                   matched = true;
