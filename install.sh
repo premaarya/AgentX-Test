@@ -96,6 +96,7 @@ download_file "AGENTS.md" "AGENTS.md"
 download_file "Skills.md" "Skills.md"
 download_file "templates/.github/copilot-instructions.md" ".github/copilot-instructions.md"
 download_file "templates/.github/autonomous-mode.yml" ".github/autonomous-mode.yml"
+download_file "templates/.github/workflows/enforce-issue-workflow.yml" ".github/workflows/enforce-issue-workflow.yml"
 download_file "templates/.vscode/settings.json" ".vscode/settings.json"
 
 # Skills files
