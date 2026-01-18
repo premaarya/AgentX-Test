@@ -7,6 +7,7 @@ tools:
   - file_search
   - create_file
   - list_dir
+  - manage_todo_list
 model: claude-sonnet-4-20250514
 ---
 

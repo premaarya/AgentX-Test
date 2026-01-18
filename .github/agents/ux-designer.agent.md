@@ -7,7 +7,8 @@ tools:
   - file_search
   - create_file
   - list_dir
-model: GPT-5.2 (copilot)
+  - manage_todo_list
+model: Gemini 3 Pro (Preview) (copilot)
 ---
 
 # UX Designer Agent

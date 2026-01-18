@@ -9,6 +9,7 @@ tools:
   - create_file
   - run_in_terminal
   - get_errors
+  - manage_todo_list
 model: claude-sonnet-4-20250514
 ---
 
