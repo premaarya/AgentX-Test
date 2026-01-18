@@ -10,7 +10,7 @@ on:
       issue_number:
         description: 'Issue number to process'
         required: true
-        type: number
+        type: string
       issue_title:
         description: 'Issue title'
         required: true
@@ -26,7 +26,7 @@ on:
       issue_number:
         description: 'Issue number to process'
         required: true
-        type: number
+        type: string
       issue_title:
         description: 'Issue title'
         required: true
