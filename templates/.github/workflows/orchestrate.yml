@@ -111,7 +111,16 @@ jobs:
             }
             
             // Routing rules based on labels
+            // Check for needs:ux modifier first
+            const needsUx = labels.includes('needs:ux');
+            
             const routingRules = [
+              // Epic - triggers Product Manager for PRD and backlog creation
+              { labels: ['type:epic'], workflow: 'epic', stages: ['product-manager'] },
+              // Feature with UX requirement - prepend ux-designer
+              { labels: ['type:feature'], needsUx: true, workflow: 'feature-ux', stages: ['ux-designer', 'architect', 'engineer', 'reviewer'] },
+              { labels: ['type:story'], needsUx: true, workflow: 'feature-ux', stages: ['ux-designer', 'architect', 'engineer', 'reviewer'] },
+              // Standard feature workflow
               { labels: ['type:feature'], workflow: 'feature', stages: ['architect', 'engineer', 'reviewer'] },
               { labels: ['type:story'], workflow: 'feature', stages: ['architect', 'engineer', 'reviewer'] },
               { labels: ['type:bug'], workflow: 'bug', stages: ['engineer', 'reviewer'] },
@@ -122,9 +131,11 @@ jobs:
               { labels: ['type:security'], workflow: 'security', stages: ['reviewer', 'engineer', 'reviewer'] },
             ];
             
-            // Find matching rule
+            // Find matching rule (needs:ux rules are first, so they match before standard rules)
             let matchedRule = null;
             for (const rule of routingRules) {
+              // Check if rule requires needs:ux and if label is present
+              if (rule.needsUx && !needsUx) continue;
               if (rule.labels.some(l => labels.includes(l))) {
                 matchedRule = rule;
                 break;
@@ -286,6 +297,24 @@ jobs:
             });
             console.log('Triggered UX designer workflow');
 
+      - name: Trigger Product Manager workflow
+        if: needs.route.outputs.agent == 'product-manager'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'run-product-manager.yml',
+              ref: 'main',
+              inputs: {
+                issue_number: String(context.payload.issue.number),
+                issue_title: context.payload.issue.title,
+                issue_body: context.payload.issue.body || ''
+              }
+            });
+            console.log('Triggered Product Manager workflow');
+
       - name: Post dispatch comment
         uses: actions/github-script@v7
         with:
@@ -295,6 +324,7 @@ jobs:
             const workflow = '${{ needs.route.outputs.workflow }}';
             
             const agentEmoji = {
+              'product-manager': '🎯',
               'architect': '🏗️',
               'engineer': '💻',
               'reviewer': '🔍',

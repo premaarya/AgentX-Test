@@ -115,6 +115,8 @@ jobs:
             const needsUx = labels.includes('needs:ux');
             
             const routingRules = [
+              // Epic - triggers Product Manager for PRD and backlog creation
+              { labels: ['type:epic'], workflow: 'epic', stages: ['product-manager'] },
               // Feature with UX requirement - prepend ux-designer
               { labels: ['type:feature'], needsUx: true, workflow: 'feature-ux', stages: ['ux-designer', 'architect', 'engineer', 'reviewer'] },
               { labels: ['type:story'], needsUx: true, workflow: 'feature-ux', stages: ['ux-designer', 'architect', 'engineer', 'reviewer'] },
@@ -295,6 +297,24 @@ jobs:
             });
             console.log('Triggered UX designer workflow');
 
+      - name: Trigger Product Manager workflow
+        if: needs.route.outputs.agent == 'product-manager'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'run-product-manager.yml',
+              ref: 'main',
+              inputs: {
+                issue_number: String(context.payload.issue.number),
+                issue_title: context.payload.issue.title,
+                issue_body: context.payload.issue.body || ''
+              }
+            });
+            console.log('Triggered Product Manager workflow');
+
       - name: Post dispatch comment
         uses: actions/github-script@v7
         with:
@@ -304,6 +324,7 @@ jobs:
             const workflow = '${{ needs.route.outputs.workflow }}';
             
             const agentEmoji = {
+              'product-manager': '🎯',
               'architect': '🏗️',
               'engineer': '💻',
               'reviewer': '🔍',

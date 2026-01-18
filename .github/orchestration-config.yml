@@ -7,84 +7,101 @@ version: "1.0"
 # =============================================================================
 # ROUTING RULES
 # Maps issue labels to workflows
-# Note: Rules are evaluated in order. needs:ux modifier rules should come first.
+# Note: Rules are evaluated in order. Epic and needs:ux modifier rules come first.
 # =============================================================================
 routing:
+  # Epic: Product Manager creates PRD and backlog
+  - trigger:
+      labels: ["type:epic"]
+      event: "opened"
+    workflow: "epic-workflow"
+    priority: 0
+
   # Feature with UX requirement: UX Designer first (triggered by needs:ux label)
   - trigger:
       labels: ["type:feature", "needs:ux"]
       event: "opened"
     workflow: "feature-ux-workflow"
-    priority: 0
+    priority: 1
 
   # Story with UX requirement
   - trigger:
       labels: ["type:story", "needs:ux"]
       event: "opened"
     workflow: "feature-ux-workflow"
-    priority: 0
+    priority: 1
 
   # Feature development: Full workflow
   - trigger:
       labels: ["type:feature"]
       event: "opened"
     workflow: "feature-workflow"
-    priority: 1
+    priority: 2
 
   # User stories: Full workflow
   - trigger:
       labels: ["type:story"]
       event: "opened"
     workflow: "feature-workflow"
-    priority: 1
+    priority: 2
 
   # Bug fixes: Skip architect
   - trigger:
       labels: ["type:bug"]
       event: "opened"
     workflow: "bug-workflow"
-    priority: 2
+    priority: 3
 
   # Spikes/Research: Architect only
   - trigger:
       labels: ["type:spike"]
       event: "opened"
     workflow: "spike-workflow"
-    priority: 3
+    priority: 4
 
   # UX work: UX Designer first
   - trigger:
       labels: ["type:ux"]
       event: "opened"
     workflow: "ux-workflow"
-    priority: 2
+    priority: 3
 
   # Documentation: Engineer only
   - trigger:
       labels: ["type:docs"]
       event: "opened"
     workflow: "docs-workflow"
-    priority: 4
+    priority: 5
 
   # Refactoring: Full workflow
   - trigger:
       labels: ["type:refactor"]
       event: "opened"
     workflow: "feature-workflow"
-    priority: 2
+    priority: 3
 
   # Security issues: Reviewer first
   - trigger:
       labels: ["type:security"]
       event: "opened"
     workflow: "security-workflow"
-    priority: 1
+    priority: 2
 
 # =============================================================================
 # WORKFLOW DEFINITIONS
 # Defines the sequence of agents for each workflow type
 # =============================================================================
 workflows:
+  epic-workflow:
+    name: "Epic Planning"
+    description: "Product Manager creates PRD and breaks down into backlog"
+    stages:
+      - agent: "product-manager"
+        name: "PRD & Backlog"
+        gate:
+          required_outputs: ["prd", "epic_issue", "feature_issues", "story_issues"]
+          validation: "issues_created"
+
   feature-workflow:
     name: "Feature Development"
     description: "Full workflow for new features: design → implement → review"
@@ -279,12 +296,35 @@ agents:
       - create_file
       - semantic_search
       - list_dir
+      - run_in_terminal
+      - get_changed_files
     output_types:
       - wireframes
       - flows
       - research
     max_iterations: 8
     token_budget: 30000
+
+  product-manager:
+    name: "Product Manager"
+    description: "Creates PRD, breaks down epics into features and stories"
+    agent_file: ".github/agents/product-manager.agent.md"
+    allowed_tools:
+      - read_file
+      - create_file
+      - semantic_search
+      - grep_search
+      - file_search
+      - list_dir
+      - run_in_terminal
+      - get_changed_files
+    output_types:
+      - prd
+      - epic_issue
+      - feature_issues
+      - story_issues
+    max_iterations: 10
+    token_budget: 50000
 
 # =============================================================================
 # STATE LABELS
@@ -294,6 +334,7 @@ state_labels:
   # Workflow stages
   stage_prefix: "stage:"
   stages:
+    - "stage:product-manager"
     - "stage:architect"
     - "stage:engineer"
     - "stage:reviewer"
