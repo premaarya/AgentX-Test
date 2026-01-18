@@ -9,6 +9,7 @@ tools:
   - create_file
   - run_in_terminal
   - get_errors
+  - get_changed_files
   - manage_todo_list
 model: Claude Sonnet 4.5 (copilot)
 ---

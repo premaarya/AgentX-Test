@@ -6,8 +6,11 @@ tools:
   - semantic_search
   - file_search
   - list_dir
+  - run_in_terminal
   - get_errors
   - get_changed_files
+  - get_terminal_output
+  - test_failure
   - manage_todo_list
 model: GPT-5.2-Codex (copilot)
 ---

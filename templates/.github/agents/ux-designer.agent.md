@@ -7,6 +7,8 @@ tools:
   - file_search
   - create_file
   - list_dir
+  - run_in_terminal
+  - get_changed_files
   - manage_todo_list
 model: claude-sonnet-4-20250514
 ---
