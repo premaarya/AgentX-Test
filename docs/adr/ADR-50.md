@@ -1,4 +1,4 @@
-# ADR-50: Architecture Decision for Core Functionality - E2E Test
+# ADR-50: Architecture Decision for Core Functionality
 
 **Issue**: #50  
 **Status**: Accepted  
@@ -9,7 +9,7 @@
 
 ## Context
 
-Feature #50 requires core functionality implementation for the E2E test validation of the multi-agent orchestration system.
+Feature #50 requires core functionality implementation for the multi-agent orchestration system.
 
 ## Decision
 

@@ -1,4 +1,4 @@
-# Technical Specification: Core Functionality - E2E Test
+# Technical Specification: Core Functionality
 
 **Issue**: #50  
 **Status**: Draft  
@@ -10,7 +10,7 @@
 
 ## 1. Overview
 
-Technical specification for implementing the core functionality feature as part of the E2E multi-agent orchestration test.
+Technical specification for implementing the core functionality feature.
 
 ## 2. API Design
 
