@@ -1,7 +1,8 @@
 # Run Architect Agent (Solution Architect)
 # Triggered by orchestrator to perform requirements analysis and design tasks
-# Produces PRD (Product Requirements), ADR (Architecture Decision), and Tech Spec (Technical Specification)
+# Produces ADR (Architecture Decision) and Tech Spec (Technical Specification)
 # Part of AgentX Phase 1 MVP
+# Last updated: 2026-01-18
 
 name: Run Architect Agent
 
