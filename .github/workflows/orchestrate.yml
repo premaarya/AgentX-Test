@@ -234,7 +234,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: 'run-architect.yml',
-              ref: 'main',
+              ref: context.payload.repository.default_branch,
               inputs: {
                 issue_number: String(context.payload.issue.number),
                 workflow_type: '${{ needs.route.outputs.workflow }}',
@@ -252,7 +252,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: 'run-engineer.yml',
-              ref: 'main',
+              ref: context.payload.repository.default_branch,
               inputs: {
                 issue_number: String(context.payload.issue.number),
                 workflow_type: '${{ needs.route.outputs.workflow }}',
@@ -270,7 +270,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: 'run-reviewer.yml',
-              ref: 'main',
+              ref: context.payload.repository.default_branch,
               inputs: {
                 issue_number: String(context.payload.issue.number),
                 workflow_type: '${{ needs.route.outputs.workflow }}',
@@ -288,7 +288,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: 'run-ux-designer.yml',
-              ref: 'main',
+              ref: context.payload.repository.default_branch,
               inputs: {
                 issue_number: String(context.payload.issue.number),
                 workflow_type: '${{ needs.route.outputs.workflow }}',
@@ -306,7 +306,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: 'run-product-manager.yml',
-              ref: 'main',
+              ref: context.payload.repository.default_branch,
               inputs: {
                 issue_number: String(context.payload.issue.number),
                 issue_title: context.payload.issue.title,
