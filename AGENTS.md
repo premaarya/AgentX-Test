@@ -1,5 +1,5 @@
 ---
-description: 'Comprehensive guidelines for AI agents writing production-ready code. Covers execution modes (Standard, YOLO), 4-layer security architecture, multi-agent orchestration, GitHub Issues task management, quality standards, and delivery practices.'
+description: 'AI agent guidelines for production-ready code. Covers workflows, security, task management, and quality standards.'
 tools:
   - run_in_terminal
   - read_file
@@ -17,1239 +17,280 @@ tools:
 model: claude-sonnet-4-20250514
 ---
 
-# AI Agent Guidelines for Production Code
+# AI Agent Guidelines
 
-> **Purpose**: Defines how AI agents should behave when writing production-ready code.  
-> **Scope**: Behavior principles, workflow, quality standards, and delivery practices.  
-> **Standard**: Follows [github/awesome-copilot](https://github.com/github/awesome-copilot) recommended patterns.
+## ⛔ MANDATORY: Issue-First Workflow
 
----
+**Before ANY file modification, execute these commands:**
 
-## ⛔⛔⛔ MANDATORY GATE - EXECUTE BEFORE ANY FILE MODIFICATION ⛔⛔⛔
-
-**AI AGENT INSTRUCTION**: Before you analyze, plan, or execute ANY file modification, you MUST run these commands FIRST:
-
-### Step 1: CREATE ISSUE
 ```bash
-gh issue create --title "[Type] Brief description" --body "## Description`n[Task details]`n`n## Acceptance Criteria`n- [ ] Criterion 1" --label "type:task,status:ready"
-```
+# Step 1: CREATE ISSUE
+gh issue create --title "[Type] Description" --body "## Description`n[Details]`n`n## Acceptance Criteria`n- [ ] Criterion" --label "type:task,status:ready"
 
-### Step 2: CLAIM ISSUE
-```bash
+# Step 2: CLAIM ISSUE
 gh issue edit <ID> --add-label "status:in-progress" --remove-label "status:ready"
 ```
 
-### ⛔ GATE CHECK
-- **Have you executed BOTH commands?** → If NO, STOP and execute them NOW
-- **If YES** → Proceed with work
-
----
-
-## 🛑 STOP! READ THIS BEFORE DOING ANYTHING 🛑
-
-```
-╔═══════════════════════════════════════════════════════════════════════════════╗
-║                                                                               ║
-║   🚨 MANDATORY PRE-FLIGHT CHECKLIST - EXECUTE BEFORE ANY WORK 🚨             ║
-║                                                                               ║
-║   Before writing ANY code, creating ANY file, or making ANY modification:     ║
-║                                                                               ║
-║   □ Step 1: Does a GitHub Issue exist for this task?                          ║
-║             → NO:  STOP! Create one first with: gh issue create ...           ║
-║             → YES: Proceed to Step 2                                          ║
-║                                                                               ║
-║   □ Step 2: Is the issue marked "status:in-progress" and assigned to you?     ║
-║             → NO:  STOP! Claim it first with: gh issue edit <ID> ...          ║
-║             → YES: Proceed with implementation                                ║
-║                                                                               ║
-║   ⚠️  VIOLATION = Working without completing BOTH steps above                 ║
-║   ⚠️  RETROACTIVE ISSUES = Workflow failure (defeats audit trail purpose)     ║
-║                                                                               ║
-╚═══════════════════════════════════════════════════════════════════════════════╝
-```
-
-### Why This Matters
-- **Audit Trail**: Only meaningful if created BEFORE work begins
-- **Coordination**: Other agents cannot coordinate without visible task tracking  
-- **Session Handoffs**: Require issue context to be established first
-- **Accountability**: Every change must be traceable to a decision
-
----
-
-## Prerequisites
-
-Before using these agent guidelines, ensure you have:
-
-### Required
-- **Git** - Version control ([git-scm.com](https://git-scm.com))
-- **VS Code** - Editor with GitHub Copilot extension
-
-### Recommended (for full workflow)
-- **GitHub CLI** - For GitHub Issues task management ([cli.github.com](https://cli.github.com))
-
-```bash
-# Install GitHub CLI (Windows)
-winget install GitHub.cli
-
-# Authenticate
-gh auth login
-
-# Verify installation
-gh --version
-```
-
-> **Note**: Without GitHub CLI, Layer 3 memory (GitHub Issues) won't function. Use `manage_todo_list` for session-scoped task tracking as an alternative.
+**Gate Check**: Did you execute BOTH? If NO → STOP and do it NOW.
 
 ---
 
 ## Execution Modes
 
 ### Standard Mode (Default)
-Agent pauses for confirmation at critical decision points (architecture changes, deployments, breaking changes).
+Pause for confirmation at critical decisions (architecture, deployments, breaking changes).
 
-### YOLO Mode 🚀
-**Fully autonomous execution** - Agent completes entire development workflow without stopping.
+### YOLO Mode
+Activate with: "YOLO", "go YOLO", "YOLO mode"
 
-**Activation**: User says "YOLO", "go YOLO", "YOLO mode", or "execute without stopping"
+**Rules**:
+- Execute full workflow without pausing
+- Create issues for all decisions (audit trail)
+- Commit frequently
+- Only stop for: auth failures, critical errors, explicit blockers
+- Production deployment still requires approval
 
-**YOLO Mode Rules**:
-- Execute entire workflow from requirement to deployment without pausing
-- Make all reasonable decisions autonomously
-- Only stop for: authentication failures, critical errors, or explicit blockers
-- Create GitHub Issues for all decisions made (audit trail)
-- Commit and push frequently (every logical unit of work)
-- Run all quality gates automatically
-- Deploy to staging automatically (production requires explicit approval even in YOLO)
-
-**YOLO Workflow**:
-```
-Requirement → Research → Design → Create Issues → Implement → Test → 
-Quality Gates → Commit → Push → Deploy Staging → Report Summary
-```
-
-**Exit YOLO**: User says "stop", "pause", "exit YOLO", or critical error occurs
+**Exit**: "stop", "pause", "exit YOLO", or critical error
 
 ---
 
-## Security Architecture (4-Layer Model)
+## Security
 
-> **Philosophy**: Full autonomy doesn't mean zero safety. Security by architecture, not by interruption.
-> **Reference**: → [04-security.md](skills/04-security.md)
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│              4-Layer Security Architecture                       │
-├─────────────────────────────────────────────────────────────────┤
-│  Layer 1: Actor Allowlist                                        │
-│  ├── ✅ @copilot → Authorized for auto-merge                     │
-│  ├── ✅ @your-username → Authorized for auto-merge               │
-│  └── ❌ Unknown actors → Requires manual review                  │
-├─────────────────────────────────────────────────────────────────┤
-│  Layer 2: Protected Paths                                        │
-│  ├── 🔒 .github/workflows/** → Human review required             │
-│  ├── 🔒 **/secrets.*, *.env → Human review required              │
-│  ├── 🔒 package.json, *.lock → Human review required             │
-│  └── ✅ src/**/*.* → Auto-merge allowed                          │
-├─────────────────────────────────────────────────────────────────┤
-│  Layer 3: Kill Switch                                            │
-│  ├── enabled: false → Disable all autonomous ops instantly       │
-│  └── enabled: true  → Resume autonomous operations               │
-├─────────────────────────────────────────────────────────────────┤
-│  Layer 4: Audit Trail                                            │
-│  ├── GitHub Issues for all decisions                             │
-│  ├── PR comments documenting security check results              │
-│  └── Full logs for every autonomous action                       │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### Command Safety (Whitelist/Blocklist)
-
-**Auto-Approved Commands** ✅:
+### Blocked Commands ❌
 ```bash
-git add, git commit, git push, git pull, git fetch, git checkout, git branch
-npm test, npm run build, npm run lint, npm install
-dotnet build, dotnet test, dotnet run
-python -m pytest, pip install
-```
-
-**Blocked Commands** ❌ (Always require human approval):
-```bash
-rm -rf, rm -r, del /s /q          # Destructive file operations
-git reset --hard, git clean -fd   # Destructive git operations
-kill, pkill, taskkill             # Process termination
-chmod 777, icacls /grant Everyone # Dangerous permissions
-drop database, truncate table     # Database destruction
+rm -rf, rm -r, del /s /q          # Destructive file ops
+git reset --hard, git clean -fd   # Destructive git ops
+drop database, truncate table     # DB destruction
 curl | bash, Invoke-Expression    # Remote code execution
 ```
 
 ### Iteration Limits
+| Context | Max | Action |
+|---------|-----|--------|
+| Single task | 15 | Stop, create issue |
+| Bug fix loop | 5 | Escalate |
+| Test retry | 3 | Report failure |
 
-| Context | Max Iterations | Action on Limit |
-|---------|----------------|------------------|
-| Single task | 15 | Stop, create issue for human review |
-| Bug fix loop | 5 | Stop, escalate with diagnostics |
-| Test retry | 3 | Stop, report failure details |
-| Deployment retry | 2 | Stop, require manual intervention |
-
-### Kill Switch Configuration
-
-> **Configuration File**: `.github/autonomous-mode.yml`
-> 
-> See the file for complete configuration including:
-> - `autonomous.enabled` - Kill switch (true/false)
-> - `protected_paths` - Files requiring human review
-> - `allowed_actors` - Authorized users for auto-merge
-> - `iteration_limits` - Loop prevention settings
-> - `commands.allowed/blocked` - Command safety lists
-> - `quality_gates` - Required checks before deployment
+### Configuration
+See `.github/autonomous-mode.yml` for kill switch, protected paths, allowed actors.
 
 ---
 
 ## Core Principles
 
-### 1. Implementation Over Suggestion
-Implement changes directly using available tools. Users expect working solutions, not recommendations. Also Promptify yourself to ensure completeness.
-
-### 2. Research → Design → Implement
-- **Research**: Gather requirements, understand context, analyze existing code
-- **Design**: Plan architecture, data models, interfaces before coding
-- **Implement**: Write code incrementally with continuous verification
-
-### 3. Complete Task Execution
-Continue until fully resolved. Never stop midway or hand back prematurely without exhausting all available tools.
-
-### 4. Proactive Problem Solving
-Research and deduce solutions when encountering uncertainty. Minimize unnecessary questions when information can be discovered.
-
-### 5. Incremental Progress
-Make incremental changes while maintaining focus on overall goals. Avoid attempting too many changes at once.
-
-### 6. Issue-First Workflow (Mandatory)
-**NEVER start work without an associated GitHub Issue.** This is non-negotiable.
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                 MANDATORY WORKFLOW SEQUENCE                      │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│   1. CREATE ISSUE FIRST     gh issue create --title "..."       │
-│          │                  --label "type:task,status:ready"    │
-│          ▼                                                       │
-│   2. CLAIM THE ISSUE        gh issue edit <ID>                  │
-│          │                  --add-label "status:in-progress"    │
-│          ▼                                                       │
-│   3. DO THE WORK            Code, test, document                │
-│          │                                                       │
-│          ▼                                                       │
-│   4. COMMIT WITH REF        git commit -m "type: desc (#ID)"    │
-│          │                                                       │
-│          ▼                                                       │
-│   5. CLOSE THE ISSUE        gh issue close <ID>                 │
-│                                                                  │
-│   ⚠️  VIOLATION: Working without an issue = broken audit trail  │
-│   ⚠️  VIOLATION: Retroactive issues = workflow failure          │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-**Why This Matters**:
-- Audit trail is only meaningful if created BEFORE work begins
-- Retroactive issues indicate workflow failure, not compliance
-- Other agents cannot coordinate without visible task tracking
-- Session handoffs require issue context to be established first
+1. **Implement Over Suggest** - Use tools to make changes, not recommendations
+2. **Research → Design → Implement** - Understand before coding
+3. **Complete Execution** - Don't stop midway; exhaust all tools
+4. **Proactive Problem Solving** - Research before asking
+5. **Incremental Progress** - Small changes, continuous verification
+6. **Issue-First** - Never work without a GitHub Issue
 
 ---
 
-## Research-First Workflow
+## Request Classification
 
-> **CRITICAL**: Every user request requires research BEFORE taking any action.
+| Request Type | Label | Action |
+|--------------|-------|--------|
+| Large/vague, multi-feature | `type:epic` | Create PRD + backlog |
+| Single capability | `type:feature` | Design + implement |
+| Small behavior | `type:story` | Implement directly |
+| Something broken | `type:bug` | Fix directly |
+| Research needed | `type:spike` | Research + document |
+| Docs only | `type:docs` | Write docs |
+| Has UI | Add `needs:ux` | UX design first |
 
-### Research Steps (Mandatory)
-
-1. **UNDERSTAND** - What is the user actually asking for?
-2. **RESEARCH** - Search codebase, check patterns, understand architecture
-3. **CLASSIFY** - Determine issue type (Epic/Feature/Story/Bug/Spike/Docs)
-4. **CREATE ISSUE** - With correct type label
-5. **PROCEED** - Based on issue type
-
-### Request Classification
-
-| User Request Type | Labels | Triggers Agent | Example |
-|-------------------|--------|----------------|---------|
-| Large/vague, multi-feature | `type:epic` | Product Manager | "Build me a platform" |
-| Single capability | `type:feature` | Architect | "Add OAuth login" |
-| Small, specific behavior | `type:story` | Architect/Engineer | "Add logout button" |
-| Something broken | `type:bug` | Engineer | "Login returns 500" |
-| Research/evaluation | `type:spike` | Architect | "Compare databases" |
-| Documentation only | `type:docs` | Engineer | "Update README" |
-
-**Add `needs:ux` label** if request has UI/UX components → triggers UX Designer first.
-
-### Classification Decision Flow
-
+**Classification Flow**:
 ```
-Is something broken?           → type:bug
-Is it research/evaluation?     → type:spike
-Is it documentation only?      → type:docs
-Is it large/vague/multi-feat?  → type:epic (→ Product Manager)
-Is it a clear capability?      → type:feature (→ Architect)
-Otherwise                      → type:story (→ Engineer)
-Has UI components?             → add needs:ux label
+Broken? → type:bug
+Research? → type:spike
+Docs only? → type:docs
+Large/vague? → type:epic
+Clear capability? → type:feature
+Otherwise → type:story
+Has UI? → add needs:ux
 ```
 
 ---
 
-## Memory & State Management
+## Labels
 
-> **Challenge**: Agents have limited context windows and sessions end. Persistent memory is critical for complex tasks.
+**Type**: `type:epic`, `type:feature`, `type:story`, `type:task`, `type:bug`, `type:spike`, `type:docs`
 
-### Memory Hierarchy
+**Priority**: `priority:p0` (critical), `priority:p1` (high), `priority:p2` (medium), `priority:p3` (low)
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                          Agent Memory Architecture                           │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│  ┌─────────────────────────────────────────────────────────────────────┐    │
-│  │  LAYER 1: Working Memory (Session-Scoped)                          │    │
-│  │  ├── manage_todo_list → Track current session tasks                 │    │
-│  │  ├── Terminal state → Active processes, environment vars            │    │
-│  │  └── Open files → Current context from workspace                    │    │
-│  └─────────────────────────────────────────────────────────────────────┘    │
-│                                                                              │
-│  ┌─────────────────────────────────────────────────────────────────────┐    │
-│  │  LAYER 2: Short-Term Persistence (Repository-Scoped)               │    │
-│  │  ├── Git commits → Checkpoint progress                              │    │
-│  │  ├── Branch state → Isolate parallel work                           │    │
-│  │  └── Local files → WIP documentation, scratch notes                 │    │
-│  └─────────────────────────────────────────────────────────────────────┘    │
-│                                                                              │
-│  ┌─────────────────────────────────────────────────────────────────────┐    │
-│  │  LAYER 3: Long-Term Memory (Cloud-Native)                          │    │
-│  │  ├── GitHub Issues → Persistent task state, decisions, context      │    │
-│  │  ├── Pull Requests → Review feedback, implementation details        │    │
-│  │  ├── ADRs (docs/adr/) → Architecture decisions                      │    │
-│  │  └── Wiki/Docs → Project knowledge base                             │    │
-│  └─────────────────────────────────────────────────────────────────────┘    │
-│                                                                              │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+**Status**: `status:ready`, `status:in-progress`, `status:blocked`, `status:done`
 
-### Session State Tools
-
-| Tool | Purpose | When to Use |
-|------|---------|-------------|
-| `manage_todo_list` | Track tasks within session | Complex multi-step work |
-| `get_terminal_output` | Check async process state | After background commands |
-| `get_changed_files` | Review uncommitted changes | Before commits, handoffs |
-| `get_errors` | Check compilation/lint state | After code changes |
-| `test_failure` | Get test failure details | After test runs |
-
-### Context Window Management
-
-When approaching context limits:
-
-1. **Prioritize** - Focus on current task, defer unrelated context
-2. **Checkpoint** - Commit current progress to Git
-3. **Summarize** - Create issue comment with state summary
-4. **Handoff** - If session must end, create proper handoff issue
-
-### Repository Detection
-
-Always detect the repository dynamically instead of hardcoding:
-
-```bash
-# Get repo from git remote (recommended)
-REPO=$(git remote get-url origin | sed 's/.*github.com[:/]\(.*\)\.git/\1/')
-
-# Or via GitHub CLI
-REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
-
-# Use in commands
-gh issue list --repo $REPO --state open
-```
-
-### State Persistence Protocol
-
-```bash
-# 0. Detect repository (run once per session)
-REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || git remote get-url origin | sed 's/.*github.com[:/]\(.*\)\.git/\1/')
-echo "Working on: $REPO"
-
-# 1. Start of session - Load state
-gh issue list --repo $REPO --label "status:in-progress" --assignee @me
-git status
-git log --oneline -5
-
-# 2. During session - Update state regularly
-# Use manage_todo_list for tracking
-# Commit frequently (every 15-30 min of work)
-git add -A && git commit -m "wip: Progress on #123 - [description]"
-
-# 3. End of session - Persist state
-gh issue comment <ID> --body "Session state: [summary]"
-git push
-```
+**Orchestration**: `orch:pm-done`, `orch:architect-done`, `orch:ux-done`, `orch:engineer-done`, `needs:ux`
 
 ---
 
-## Task Management with GitHub Issues
-
-> **Memory & Context**: GitHub Issues serve as persistent, distributed memory for the agent across sessions. Cloud-native and collaborative.
-
-### Why GitHub Issues
-- **Persistent Memory**: Survives session boundaries, context windows, and agent restarts
-- **Distributed**: Multiple agents can coordinate on the same repository
-- **Auditable**: Full history of decisions, progress, and context
-- **Integrated**: Links to commits, PRs, code, and discussions
-- **Searchable**: Find past decisions and patterns across projects
-
-### Issue Hierarchy (Labels)
-```
-type:epic        → Large initiative (multiple features)
-type:feature     → User-facing capability
-type:story       → User story within a feature
-type:task        → Atomic unit of work
-type:subtask     → Breakdown of a task
-type:bug         → Defect to fix
-type:spike       → Research/investigation
-type:adr         → Architecture Decision Record
-```
-
-### Priority Labels
-```
-priority:p0      → Critical/Blocker - Do immediately
-priority:p1      → High - Do next
-priority:p2      → Medium - Do soon
-priority:p3      → Low - Backlog
-```
-
-### Status Labels
-```
-status:ready     → No blockers, can start
-status:blocked   → Waiting on dependency
-status:in-progress → Currently working
-status:review    → Needs review
-status:done      → Completed
-```
-
-> **⚠️ CRITICAL**: Always update status label to `status:done` BEFORE closing an issue. `gh issue close` does NOT automatically update labels. Closed issues with `status:in-progress` indicate workflow violation.
-
-### GitHub CLI Commands (Essential)
+## GitHub CLI Commands
 
 ```bash
-# === ISSUE MANAGEMENT ===
-
-# Create issue with full context
+# Create issue
 gh issue create --title "Title" --body "Description" --label "type:task,priority:p1,status:ready"
 
-# Create issue from file (for complex descriptions)
-gh issue create --title "Title" --body-file issue-body.md --label "type:feature"
-
-# List ready tasks (no blockers)
+# List ready work
 gh issue list --label "status:ready" --state open
 
-# List my in-progress work
-gh issue list --label "status:in-progress" --assignee @me
-
-# View issue details
-gh issue view 123
-
-# Update issue status
-gh issue edit 123 --add-label "status:in-progress" --remove-label "status:ready"
-
-# Close issue with comment (MUST update status label first)
-gh issue edit 123 --add-label "status:done" --remove-label "status:in-progress"
-gh issue close 123 --comment "Completed in PR #456"
-
-# Add comment (progress update)
-gh issue comment 123 --body "Progress: Implemented validation logic, tests pending"
-
-# Link issues (parent-child via comment)
-gh issue comment 123 --body "Parent of #124, #125, #126"
-
-# Search issues
-gh issue list --search "auth in:title,body"
-
-# === DEPENDENCY TRACKING ===
-# Use issue body or comments to track dependencies:
-# "Blocked by: #101, #102"
-# "Blocks: #201"
-
-# === SESSION WORKFLOW ===
-
-# Start session - find ready work
-gh issue list --label "status:ready,priority:p0" --limit 5
-gh issue list --label "status:ready,priority:p1" --limit 10
-
 # Claim work
-gh issue edit 123 --add-label "status:in-progress" --remove-label "status:ready" --add-assignee @me
+gh issue edit <ID> --add-label "status:in-progress" --remove-label "status:ready"
 
-# Progress update
-gh issue comment 123 --body "$(cat <<EOF
-## Progress Update
-- [x] Research complete
-- [x] Design documented
-- [ ] Implementation
-- [ ] Tests
-- [ ] Documentation
-EOF
-)"
+# Update progress
+gh issue comment <ID> --body "Progress: [description]"
 
-# Complete work (ALWAYS update status label before closing)
-gh issue edit 123 --add-label "status:done" --remove-label "status:in-progress"
-gh issue close 123 --comment "Completed. PR #456 merged."
-
-# === PR INTEGRATION ===
+# Complete (update label BEFORE closing)
+gh issue edit <ID> --add-label "status:done" --remove-label "status:in-progress"
+gh issue close <ID> --comment "Completed in commit <SHA>"
 
 # Create PR linked to issue
-gh pr create --title "feat: Add validation" --body "Closes #123" --label "type:feature"
-
-# Link PR to issue (auto-close on merge)
-# In PR body: "Fixes #123" or "Closes #123"
+gh pr create --title "feat: Description" --body "Closes #<ID>"
 ```
 
-### Issue Templates
+---
 
-#### Task Issue Body
-```markdown
-## Description
-[What needs to be done]
+## Session Protocol
 
-## Acceptance Criteria
-- [ ] Criterion 1
-- [ ] Criterion 2
-
-## Technical Notes
-[Implementation details, constraints]
-
-## Dependencies
-- Blocked by: #xxx (if any)
-- Blocks: #xxx (if any)
-
-## Context
-[Links to related issues, PRs, docs]
-```
-
-#### Epic Issue Body
-```markdown
-## Overview
-[High-level description of the initiative]
-
-## Goals
-- Goal 1
-- Goal 2
-
-## Features
-- [ ] #xxx - Feature 1
-- [ ] #xxx - Feature 2
-- [ ] #xxx - Feature 3
-
-## Success Metrics
-[How we measure success]
-
-## Timeline
-[Target dates if applicable]
-```
-
-### Agent Session Protocol
-
-#### Session Start
+### Start
 ```bash
-# 0. Detect repository dynamically
-REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || git remote get-url origin | sed 's/.*github.com[:/]\(.*\)\.git/\1/')
-echo "Repository: $REPO"
-
-# 1. Sync with remote
 git pull --rebase
-
-# 2. Check current state
-gh issue list --repo $REPO --label "status:in-progress" --assignee @me
-
-# 3. If no in-progress work, find ready work
-gh issue list --repo $REPO --label "status:ready" --label "priority:p0" --state open
-gh issue list --repo $REPO --label "status:ready" --label "priority:p1" --state open
-
-# 4. Claim work
-gh issue edit <ID> --add-label "status:in-progress" --remove-label "status:ready"
+gh issue list --label "status:in-progress" --assignee @me
+# If none, find ready work:
+gh issue list --label "status:ready" --state open
 ```
 
-#### During Session
+### During
 ```bash
-# Regular progress updates (every significant milestone)
+# Commit frequently with issue reference
+git commit -m "feat: Description (#ID)"
+
+# Update progress
 gh issue comment <ID> --body "Progress: [what was done]"
-
-# If blocked, update status
-gh issue edit <ID> --add-label "status:blocked" --remove-label "status:in-progress"
-gh issue comment <ID> --body "Blocked by: [reason or issue link]"
-
-# Commit with issue reference
-git commit -m "feat: Add validation logic (#123)"
 ```
 
-#### Session End ("Land the Plane")
+### End
 ```bash
-# 1. Update all touched issues
-gh issue comment <ID> --body "Session end: [summary of progress]"
-
-# 2. If complete, update status label AND close
+# If complete:
 gh issue edit <ID> --add-label "status:done" --remove-label "status:in-progress"
-gh issue close <ID> --comment "Completed in commit abc123 / PR #456"
+gh issue close <ID> --comment "Completed in commit <SHA>"
 
-# 3. If incomplete, ensure status is accurate
+# If incomplete:
 gh issue edit <ID> --add-label "status:ready" --remove-label "status:in-progress"
+gh issue comment <ID> --body "Session end: [state summary]"
 
-# 4. Commit and push everything
-git add -A
-git commit -m "wip: Session checkpoint (#123)"
+# Always push
 git push
-
-# 5. Verify clean state
-git status  # Should be clean
-gh issue list --label "status:in-progress" --assignee @me  # Should match reality
 ```
-
-### Context Preservation
-
-When creating issues, include enough context for future sessions:
-- **What**: Clear description of the task
-- **Why**: Business/technical reason
-- **How**: Implementation approach (if known)
-- **Where**: Files, modules, or areas affected
-- **Links**: Related issues, PRs, documentation
-
-### Multi-Agent Coordination
-
-When multiple agents work on same repo:
-1. **Claim before work**: Always mark `status:in-progress` before starting
-2. **Check for conflicts**: Review in-progress issues before claiming
-3. **Frequent pushes**: Push after each logical unit to avoid merge conflicts
-4. **Clear handoffs**: Document state clearly when stopping mid-task
 
 ---
 
 ## Multi-Agent Orchestration
 
-> **Scalability**: Designed for multiple agents working on different tasks in parallel.
-> **Reference**: → [17-ai-agent-development.md](skills/17-ai-agent-development.md)
+### 5 Agents
+| Agent | Trigger | Output |
+|-------|---------|--------|
+| Product Manager | `type:epic` + `status:ready` | PRD + backlog |
+| Architect | `type:feature/spike` + `status:ready` | ADR + spec |
+| UX Designer | `needs:ux` + `status:ready` | Wireframes |
+| Engineer | `type:story/bug` + `status:ready` | Code + tests |
+| Reviewer | `orch:engineer-done` | Review |
 
-### Orchestration Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│              GitHub Actions Orchestration System                     │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│  ┌─────────────────────────────────────────────────────────────┐    │
-│  │    process-ready-issues.yml (POLLING ORCHESTRATOR)          │    │
-│  │    ├── Runs every 5 minutes via cron schedule               │    │
-│  │    ├── Scans for issues with status:ready label             │    │
-│  │    └── Dispatches to appropriate agent workflow             │    │
-│  └────────────────────────────┬────────────────────────────────┘    │
-│                               │ workflow_dispatch                    │
-│         ┌─────────┬───────────┼───────────┬─────────┐               │
-│         ▼         ▼           ▼           ▼         ▼               │
-│  ┌──────────┐┌──────────┐┌──────────┐┌──────────┐┌──────────┐      │
-│  │ Product  ││ Solution ││   UX     ││ Engineer ││ Reviewer │      │
-│  │ Manager  ││ Architect││ Designer ││          ││          │      │
-│  └──────────┘└──────────┘└──────────┘└──────────┘└──────────┘      │
-│                                                                      │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
-### 5 Agent Types
-
-| Agent | Workflow File | Trigger Labels | Output |
-|-------|---------------|----------------|--------|
-| 📋 **Product Manager** | `run-product-manager.yml` | `type:epic` + `status:ready` | PRD + backlog hierarchy |
-| 🏗️ **Solution Architect** | `architect.yml` | `type:feature/spike` + `status:ready` | ADR + Tech Spec |
-| 🎨 **UX Designer** | `ux-designer.yml` | `needs:ux` + `status:ready` | Wireframes + flows |
-| 💻 **Engineer** | `engineer.yml` | `type:story/bug` + `status:ready` | Implementation + tests |
-| 🔍 **Reviewer** | `reviewer.yml` | `orch:engineer-done` | Code review + approval |
-
-### Orchestration Labels
-
-| Label | Purpose |
-|-------|---------|
-| `orch:pm-done` | Product Manager work complete |
-| `orch:architect-done` | Architect work complete |
-| `orch:ux-done` | UX Designer work complete |
-| `orch:engineer-done` | Engineer work complete |
-| `needs:ux` | Issue requires UX design work |
-
-### Agent Assignment Rules
-
-| Agent Type | Assigned Tasks | Parallelization |
-|------------|----------------|------------------|
-| 📋 Product Manager | PRD creation, backlog planning | Sequential (one epic at a time) |
-| 🎨 UX Designer | User research, wireframes, flows | Sequential per feature |
-| 🏗️ Solution Architect | Architecture, specs, ADRs | Sequential (single source of truth) |
-| 💻 Engineer | Implementation, tests, fixes | **Parallel** (different features/files) |
-| 🔍 Reviewer | Code review, security audit | Parallel (different PRs) |
-
-### Parallel Execution Protocol
-
+### Parallel Work
 ```bash
-# === BEFORE STARTING WORK ===
+# Check for conflicts before claiming
+gh issue list --label "status:in-progress" --json title,body
 
-# 1. Check for conflicts - don't work on files another agent is modifying
-gh issue list --label "status:in-progress" --json title,assignee,body
+# Claim with file lock hint
+gh issue edit <ID> --add-label "status:in-progress" --add-label "files:src/auth/**"
 
-# 2. Claim task with file lock hints
-gh issue edit 123 --add-label "status:in-progress" --add-label "files:src/auth/**"
-
-# 3. Create working branch
-git checkout -b agent/<agent-id>/<issue-id>-<short-description>
-
-# === DURING PARALLEL WORK ===
-
-# 4. Frequent commits and pushes (every 15-30 min)
-git add -A && git commit -m "wip: Progress on #123" && git push
-
-# 5. Sync main frequently to catch conflicts early
-git fetch origin main && git rebase origin/main
-
-# === COORDINATION ===
-
-# 6. If conflict detected, coordinate via issue comment
-gh issue comment 123 --body "⚠️ Conflict detected with #456. @agent-2 please sync."
-
-# 7. Complete and create PR
-gh pr create --title "feat: Implement auth (#123)" --body "Closes #123"
-```
-
-### File Locking Convention
-
-Use labels to indicate file ownership during parallel work:
-
-```
-files:src/auth/**      → Agent working on auth module
-files:src/api/**       → Agent working on API layer  
-files:tests/**         → Agent working on tests
-files:docs/**          → Agent working on documentation
-```
-
-**Conflict Resolution Priority**:
-1. P0 tasks take precedence
-2. Earlier `status:in-progress` timestamp wins
-3. Architect decisions override Engineer conflicts
-4. When in doubt, create coordination issue
-
-### Session State Persistence
-
-Each agent maintains state in GitHub Issues:
-
-```markdown
-## Agent Session State
-
-**Agent ID**: engineer-01  
-**Session Started**: 2026-01-16T10:30:00Z  
-**Current Task**: #123 - Implement email validation  
-**Files Modified**: 
-- src/validators/email.ts
-- tests/validators/email.test.ts
-
-**Progress**:
-- [x] Research existing patterns
-- [x] Implement validator
-- [ ] Add unit tests
-- [ ] Update documentation
-
-**Blockers**: None  
-**Next Action**: Complete unit tests
+# Frequent commits
+git add -A && git commit -m "wip: Progress on #ID" && git push
 ```
 
 ---
 
-## Agent Handoff Protocol
+## Handoff Protocol
 
-> **Purpose**: Seamless transition between agents without conflicts or lost context.
+When stopping mid-task:
 
-### Handoff Flow
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         Agent Handoff Workflow                               │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│   AGENT A (Source)                           AGENT B (Target)               │
-│   ────────────────                           ───────────────                 │
-│                                                                              │
-│   ┌─────────────┐                                                           │
-│   │ 1. PREPARE  │  Complete current unit of work                            │
-│   │    HANDOFF  │  Commit & push all changes                                │
-│   └──────┬──────┘  Run tests to verify state                                │
-│          │                                                                   │
-│          ▼                                                                   │
-│   ┌─────────────┐                                                           │
-│   │ 2. CREATE   │  Create handoff issue with:                               │
-│   │    PACKAGE  │  • Current state summary                                  │
-│   └──────┬──────┘  • Files modified                                         │
-│          │         • Decisions made                                         │
-│          │         • Next steps                                             │
-│          ▼         • Blockers/risks                                         │
-│   ┌─────────────┐                                                           │
-│   │ 3. RELEASE  │  Remove file lock labels                                  │
-│   │    LOCKS    │  Update issue: status:handoff                             │
-│   └──────┬──────┘  Unassign self                                            │
-│          │                                                                   │
-│          │         ┌─────────────────────────────────────┐                  │
-│          └────────►│      HANDOFF ISSUE CREATED          │                  │
-│                    │   (Persistent State Transfer)       │                  │
-│                    └──────────────────┬──────────────────┘                  │
-│                                       │                                      │
-│                                       ▼                                      │
-│                              ┌─────────────┐                                │
-│                              │ 4. CLAIM    │  Assign to self                │
-│                              │    HANDOFF  │  Add status:in-progress        │
-│                              └──────┬──────┘  Pull latest changes           │
-│                                     │                                        │
-│                                     ▼                                        │
-│                              ┌─────────────┐                                │
-│                              │ 5. VERIFY   │  Review handoff package        │
-│                              │    STATE    │  Run tests locally             │
-│                              └──────┬──────┘  Confirm understanding         │
-│                                     │                                        │
-│                                     ▼                                        │
-│                              ┌─────────────┐                                │
-│                              │ 6. ACK &    │  Comment: "Handoff accepted"   │
-│                              │    CONTINUE │  Add file lock labels          │
-│                              └─────────────┘  Resume work                   │
-│                                                                              │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
-### Handoff Types
-
-| Type | Trigger | From → To | Protocol |
-|------|---------|-----------|----------|
-| **Design → Implement** | ADR approved | Architect → Engineer | Design handoff |
-| **Implement → Review** | PR created | Engineer → Reviewer | Review handoff |
-| **Review → Fix** | Changes requested | Reviewer → Engineer | Feedback handoff |
-| **UX → Implement** | Wireframes approved | UX Designer → Engineer | Spec handoff |
-| **Session End** | Time/context limit | Any Agent → Any Agent | State handoff |
-| **Escalation** | Blocker hit | Any Agent → Architect | Escalation handoff |
-
-### Handoff Issue Template
-
-```markdown
-## 🔄 Handoff: [Task Description]
-
-**From**: @agent-source (Role)  
-**To**: @agent-target (Role)  
-**Parent Issue**: #123  
-**Handoff Type**: [Design→Implement | Implement→Review | Session End | etc.]
-
----
-
-### Current State
-
-**Status**: [Percentage complete or phase]  
-**Branch**: `feature/issue-123-description`  
-**Last Commit**: `abc1234` - "feat: Add validation logic"
-
-### Files Modified
-- `src/validators/email.ts` - New email validator (complete)
-- `src/validators/email.test.ts` - Tests (partial - 3/5 done)
-- `docs/api/validation.md` - Not started
-
-### Decisions Made
-1. Used regex pattern from RFC 5322 for email validation
-2. Added rate limiting (10 req/min) per ADR-005
-3. Chose async validation for external domain checks
-
-### Work Remaining
-- [ ] Complete unit tests (edge cases: unicode, long domains)
-- [ ] Add integration test with user service
-- [ ] Update API documentation
-- [ ] Add logging for failed validations
-
-### Context & Notes
-- Related PR: #456 (dependency on user service changes)
-- Performance: Current implementation ~2ms per validation
-- Risk: External domain check may timeout - consider circuit breaker
-
-### Blockers
-- [ ] Waiting on #789 for user service API changes
-
-### How to Continue
-1. `git checkout feature/issue-123-email-validation`
-2. `git pull origin feature/issue-123-email-validation`
-3. Run `npm test -- --grep "email"` to see current state
-4. Continue from `email.test.ts` line 45
-```
-
-### Handoff Commands
-
-```bash
-# === AGENT A: INITIATING HANDOFF ===
-
-# 1. Ensure clean state
-git add -A
-git commit -m "wip: Checkpoint before handoff (#123)"
-git push
-
-# 2. Run verification
-npm test  # or: dotnet test, pytest
-
-# 3. Create handoff issue
-gh issue create \
-  --title "🔄 Handoff: Email validation (#123)" \
-  --body-file handoff-template.md \
-  --label "type:handoff,priority:p1,status:handoff" \
-  --assignee @target-agent
-
-# 4. Update original issue
-gh issue edit 123 --add-label "status:handoff" --remove-label "status:in-progress"
-gh issue comment 123 --body "Handoff created: #456. State preserved, ready for pickup."
-
-# 5. Release file locks
-gh issue edit 123 --remove-label "files:src/validators/**"
-
-# === AGENT B: ACCEPTING HANDOFF ===
-
-# 1. Claim handoff
-gh issue edit 456 --add-label "status:in-progress" --remove-label "status:handoff"
-gh issue edit 456 --add-assignee @me
-
-# 2. Sync and verify
-git fetch origin
-git checkout feature/issue-123-email-validation
-git pull
-npm test
-
-# 3. Acknowledge
-gh issue comment 456 --body "✅ Handoff accepted. State verified. Continuing from unit tests."
-
-# 4. Re-establish file locks
-gh issue edit 123 --add-label "files:src/validators/**"
-
-# 5. Continue work...
-```
-
-### Design → Implementation Handoff
-
-When Architect hands off to Engineer:
-
-```markdown
-## 🔄 Design Handoff: [Feature Name]
-
-**ADR**: docs/adr/ADR-007-feature-name.md  
-**Specs**: docs/specs/feature-name-spec.md
-
-### Architecture Summary
-[High-level description of the design]
-
-### Key Design Decisions
-| Decision | Rationale | Constraints |
-|----------|-----------|-------------|
-| Use PostgreSQL | ACID compliance needed | Must support 10K TPS |
-| Event-driven | Decoupling requirement | Max 100ms latency |
-
-### Implementation Guidance
-1. Start with data models in `src/models/`
-2. Implement repository pattern for data access
-3. Add API endpoints after core logic tested
-4. Follow existing patterns in `src/services/auth/`
-
-### Interfaces to Implement
-```typescript
-interface IFeatureService {
-  create(input: CreateInput): Promise<Feature>;
-  validate(id: string): Promise<ValidationResult>;
-}
-```
-
-### Success Criteria
-- [ ] All acceptance criteria from spec met
-- [ ] 80%+ test coverage
-- [ ] Performance: <100ms p99 latency
-- [ ] Security review passed
-```
-
-### Review → Fix Handoff
-
-When Reviewer hands back to Engineer:
-
-```markdown
-## 🔄 Review Feedback: PR #456
-
-**PR**: #456  
-**Review Status**: Changes Requested
-
-### Required Changes (Must Fix)
-1. **Security**: Line 45 - SQL injection vulnerability
-   ```diff
-   - query = f"SELECT * FROM users WHERE id = {user_id}"
-   + query = "SELECT * FROM users WHERE id = %s"
-   ```
-
-2. **Bug**: Line 89 - Null reference not handled
-   - Add null check before accessing `user.email`
-
-### Suggested Improvements (Should Fix)
-1. Extract validation logic to separate method (lines 30-55)
-2. Add logging for failed authentication attempts
-
-### Positive Feedback
-- Good test coverage for happy path
-- Clean separation of concerns in service layer
-
-### Next Steps
-1. Address required changes
-2. Re-request review when ready
-3. No need to address suggestions in this PR (can be follow-up)
-```
-
-### Conflict-Free Handoff Rules
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    Handoff Safety Rules                          │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  ✅ DO                           ❌ DON'T                        │
-│  ─────                           ────────                        │
-│  Commit before handoff           Leave uncommitted changes       │
-│  Push all branches               Keep local-only branches        │
-│  Document decisions              Assume context is obvious       │
-│  Release file locks              Hold locks during handoff       │
-│  Wait for ACK before leaving     Abandon without confirmation    │
-│  Include "how to continue"       Just list what was done         │
-│  Link related issues/PRs         Reference by memory only        │
-│  Run tests before handoff        Hand off broken state           │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### Handoff Labels
-
-```
-status:handoff          → Ready for another agent to pick up
-type:handoff            → Issue is a handoff package
-handoff:design          → Design → Implementation transition
-handoff:review          → Implementation → Review transition  
-handoff:feedback        → Review → Fix transition
-handoff:session         → Session end state transfer
-handoff:escalation      → Escalation to senior/architect
-```
+1. **Commit & push** all changes
+2. **Run tests** to verify state
+3. **Update issue** with state summary:
+   - Files modified
+   - Decisions made
+   - Work remaining
+   - How to continue
+4. **Release locks**: remove `files:*` labels
+5. **Update status**: `status:ready` or `status:handoff`
 
 ---
 
 ## Development Workflow
 
-### Step 0: Create GitHub Issue (MANDATORY)
+### Planning
+1. Research requirements and existing code
+2. Design architecture (ADRs for significant decisions)
+3. Create backlog (Epic → Features → Stories → Tasks)
+4. Create GitHub Issues with proper labels
 
-> **⚠️ CRITICAL**: Before ANY work begins, create a GitHub Issue. No exceptions.
+### Implementation
+1. Claim issue (`status:in-progress`)
+2. Code incrementally
+3. Write tests (80%+ coverage)
+4. Run quality checks (lint, format, test)
+5. Commit with issue reference
 
-```bash
-# 0. Detect repository dynamically (run once per session)
-REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || git remote get-url origin | sed 's/.*github.com[:/]\(.*\)\.git/\1/')
-echo "Repository: $REPO"
-
-# ALWAYS START HERE - Create issue BEFORE doing anything else
-gh issue create --repo $REPO \
-  --title "[Type] Brief description" \
-  --body "## Description\n[What needs to be done]\n\n## Acceptance Criteria\n- [ ] Criterion 1" \
-  --label "type:task,status:ready"
-
-# Then claim it
-gh issue edit <ID> --add-label "status:in-progress" --remove-label "status:ready"
-```
-
-**Issue Creation Checklist**:
-- [ ] Title clearly describes the work
-- [ ] Body includes description and acceptance criteria
-- [ ] Appropriate labels applied (type, priority, status)
-- [ ] Issue number noted for commit references
-
-### Planning Phase
-1. **Research**: Analyze requirements, existing code, and patterns
-2. **Design**: Plan architecture, data models, interfaces, data flows, design diagrams (High-level architecture, Class diagram, Sequence diagram, Data flow diagram, Component diagram, Low-level design) as needed
-3. **ADRs**: Document significant decisions in `docs/adr/` (context, decision, consequences, alternatives)
-4. **Specification**: Create detailed functional and technical specs including acceptance criteria
-5. **Backlog**: Break down into Epic → Features → User Stories → Tasks with good descriptions and acceptance criteria. Make sure you create sepearate file for each EPIC and its associated features, user stories and tasks. Create tasks for every work (research, design, implementation, testing, documentation, deployment, etc.)
-6. **GitHub Issues**: Create issues for all backlog items with proper labels, descriptions, and dependencies
-
-### Implementation Phase
-7. **Claim Work**: Mark issue `status:in-progress`, assign to self (issue MUST already exist)
-8. **Code**: Implement one backlog item at a time, following production standards
-9. **Progress Updates**: Comment on issue with progress at milestones
-10. **Self-Review**: Verify quality, correctness, pattern adherence
-11. **Quality Checks**: Run linters, static analysis, formatters
-12. **Tests**: Write unit, integration, e2e tests with clear coverage goals
-13. **Execute Tests**: Run all tests and verify passing
-14. **Documentation**: Update README, API docs, inline comments, examples
-
-### Security & Delivery Phase
-15. **Security Review**: Check vulnerabilities, validate input handling
-16. **Commit**: Create atomic commits with clear messages and issue references
-17. **Push**: Push to remote and create pull requests (link to issues with "Closes #xxx")
-18. **Close Issues**: Mark issues complete immediately after PR merge
-
-### Quality Assurance Phase
-19. **Bug Tracking**: Create GitHub issues for bugs discovered during testing
-20. **Fix & Iterate**: Resolve bugs, re-test, close bug issues
-21. **Refactor**: Improve code structure if needed
-
-### Operations Phase
-22. **Deployment Prep**: configs, scripts, infrastructure as code
-23. **CI/CD**: Configure automated pipelines
-24. **Operationalize**: Add health checks, monitoring, alerts
-25. **Staging**: Deploy and test in staging environment
-26. **Production**: Deploy using proper strategy (rolling, blue-green, canary)
-27. **Verify**: Confirm success, monitor metrics and logs
-
-**Critical Don'ts**: 
-- ❌ **START WORK WITHOUT A GITHUB ISSUE** (most critical violation)
-- ❌ Create issues retroactively (defeats audit trail purpose)
-- ❌ Skip planning 
-- ❌ Work without structure 
-- ❌ Leave incomplete issues 
-- ❌ Skip testing 
-- ❌ Commit untested code 
-- ❌ Commit without issue reference in message
-- ❌ Deploy without staging 
-- ❌ Make architectural decisions without ADRs 
-- ❌ Deploy without monitoring 
-- ❌ Forget to update issue status
-- ❌ Close issues without completion comment
+### Delivery
+1. Create PR (link to issue with "Closes #ID")
+2. Close issues after merge
+3. Deploy: staging first, then production
 
 ---
 
-## Quality Standards
+## Quality Checklist
 
-> See [Skills.md](Skills.md) for complete technical guidelines and production rules.
-
----
-
-## Task Execution
-
-> **Rule**: ALL tasks that modify code, documentation, or configuration require a GitHub Issue.
-> Only pure research/reading tasks with no artifacts are exempt.
-
-### Simple Tasks (Quick Changes)
-1. **Create GitHub Issue** (even for simple tasks)
-2. Implement directly
-3. Commit with issue reference (`#ID`)
-4. Close issue immediately
-5. Report completion
-
-### Complex Tasks (Multi-Step Work)
-1. **Create GitHub Issue FIRST** (mandatory)
-2. Create todo list (break into actionable items)
-3. Mark issue `status:in-progress`
-4. Implement incrementally
-5. Update issue with progress comments
-6. Test and validate
-7. Commit with issue reference (`Closes #ID`)
-8. Close issue immediately after finishing
-9. Iterate to next item
-
-```mermaid
-graph TD
-    A[Task] --> B{Complexity?}
-    B -->|Simple| C[Implement & Verify]
-    B -->|Complex| D[Create GitHub Issues]
-    D --> E[Claim Issue]
-    E --> F[Implement Incrementally]
-    F --> G[Test]
-    G --> H{Complete?}
-    H -->|No| F
-    H -->|Yes| I[Close Issue]
-    I --> J[Next Issue]
-    C --> K[Report]
-    J --> K
-```
-
----
-
-## Production Checklist
-
-> **Full Checklist**: See [Skills.md → Pre-Deployment Checklist](Skills.md#pre-deployment-checklist)
-
-**Quick Reference**:
 - ✅ Tests passing (80%+ coverage)
 - ✅ No linter/compiler errors
 - ✅ Security scan passed
-- ✅ Health checks working
-- ✅ Rollback strategy defined
-
----
-
-## Communication
-
-Be concise, informative, professional. Explain non-trivial decisions.
+- ✅ Commits reference issues
 
 ---
 
 ## Error Recovery
 
-1. **Analyze**: Read error messages and stack traces
-2. **Research**: Search codebase for patterns
-3. **Fix & Verify**: Implement and test solution
-4. **Document**: Add comments if non-obvious
+1. Read error messages and stack traces
+2. Search codebase for patterns
+3. Implement fix and test
+4. Document if non-obvious
 
 Never give up without exhausting available tools.
 
-
 ---
 
-## Version Control
+## Session State Tools
 
-- **Check Status**: Review changes before proceeding
-- **Atomic Commits**: Single logical change per commit
-- **Clear Messages**: Descriptive commits with issue references → [12-version-control.md](skills/12-version-control.md)
-- **Remote Ops**: Push changes and PRs → [16-remote-git-operations.md](skills/16-remote-git-operations.md)
-- **Issue Links**: Reference issues in commits (`feat: Add validation (#123)`)
-
----
-
-## Guiding Principles
-
-**When in doubt, favor**:  
-Safety > Speed • Clarity > Cleverness • Quality > Quantity
-
-**For detailed technical practices**: See [Skills.md](Skills.md)
-
----
-
-## Document Hierarchy
-
-> Follows [github/awesome-copilot](https://github.com/github/awesome-copilot) patterns.
-
-| Location | Purpose |
-|----------|----------|
-| `AGENTS.md` | Behavior, workflow, security |
-| `Skills.md` | Technical standards index |
-| `.github/agents/*.agent.md` | Agent role definitions |
-| `.github/instructions/*.md` | Language-specific rules |
-| `.github/prompts/*.md` | Reusable templates |
-| `.github/skills/*/SKILL.md` | Agent Skills (bundled resources) |
-| `.github/autonomous-mode.yml` | Security configuration |
-| `skills/*.md` | Detailed technical docs |
+| Tool | Use |
+|------|-----|
+| `manage_todo_list` | Track tasks in session |
+| `get_changed_files` | Review uncommitted work |
+| `get_errors` | Check compilation state |
+| `test_failure` | Get test failure details |
 
 ---
 
 ## Quick Reference
 
-| Need To... | Reference |
-|------------|----------|
-| Enable/disable YOLO | `.github/autonomous-mode.yml` → `enabled: true/false` |
-| Add protected paths | `.github/autonomous-mode.yml` → `protected_paths` |
-| Create new agent | `.github/agents/<agent-name>.agent.md` (with frontmatter) |
-| Add instruction file | `.github/instructions/<context>.instructions.md` (with `applyTo`) |
-| Add Agent Skill | `.github/skills/<skill-name>/SKILL.md` (with `name`, `description`) |
-| Add reusable prompt | `.github/prompts/<name>.prompt.md` (with `description`) |
-| Check blocked commands | Security Architecture section above |
-| Coordinate parallel work | Multi-Agent Orchestration section above |
-| Configure orchestration | `.github/orchestration-config.yml` |
-| Test orchestration | [docs/orchestration-testing-guide.md](docs/orchestration-testing-guide.md) |
-| Manage tasks | Task Management with GitHub Issues section above |
-| Track session state | Memory & State Management section above |
-| awesome-copilot patterns | [github/awesome-copilot](https://github.com/github/awesome-copilot) |
+| Need | Location |
+|------|----------|
+| Security config | `.github/autonomous-mode.yml` |
+| Technical standards | `Skills.md` |
+| Agent definitions | `.github/agents/*.agent.md` |
+| Language rules | `.github/instructions/*.md` |
+| Orchestration config | `.github/orchestration-config.yml` |
 
 ---
+
+**Principles**: Safety > Speed • Clarity > Cleverness • Quality > Quantity
 
 **Last Updated**: January 18, 2026
 
