@@ -635,40 +635,53 @@ When multiple agents work on same repo:
 
 ### Orchestration Architecture
 
-```mermaid
-graph TB
-    subgraph Orchestrator
-        O[🎯 Task Orchestrator]
-    end
-    
-    subgraph TaskQueue["GitHub Issues Queue"]
-        Q1[P0: Critical]
-        Q2[P1: High]
-        Q3[P2: Medium]
-    end
-    
-    subgraph Agents["Parallel Agents"]
-        A1[Agent 1: Feature A]
-        A2[Agent 2: Feature B]
-        A3[Agent 3: Bug Fix]
-    end
-    
-    subgraph Coordination["Coordination Layer"]
-        L1[🔒 Lock Manager]
-        L2[📋 State Sync]
-        L3[🔀 Conflict Resolution]
-    end
-    
-    O --> TaskQueue
-    TaskQueue --> Agents
-    Agents --> Coordination
-    Coordination --> O
 ```
+┌─────────────────────────────────────────────────────────────────────┐
+│              GitHub Actions Orchestration System                     │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │    process-ready-issues.yml (POLLING ORCHESTRATOR)          │    │
+│  │    ├── Runs every 5 minutes via cron schedule               │    │
+│  │    ├── Scans for issues with status:ready label             │    │
+│  │    └── Dispatches to appropriate agent workflow             │    │
+│  └────────────────────────────┬────────────────────────────────┘    │
+│                               │ workflow_dispatch                    │
+│         ┌─────────┬───────────┼───────────┬─────────┐               │
+│         ▼         ▼           ▼           ▼         ▼               │
+│  ┌──────────┐┌──────────┐┌──────────┐┌──────────┐┌──────────┐      │
+│  │ Product  ││ Solution ││   UX     ││ Engineer ││ Reviewer │      │
+│  │ Manager  ││ Architect││ Designer ││          ││          │      │
+│  └──────────┘└──────────┘└──────────┘└──────────┘└──────────┘      │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### 5 Agent Types
+
+| Agent | Workflow File | Trigger Labels | Output |
+|-------|---------------|----------------|--------|
+| 📋 **Product Manager** | `run-product-manager.yml` | `type:epic` + `status:ready` | PRD + backlog hierarchy |
+| 🏗️ **Solution Architect** | `architect.yml` | `type:feature/spike` + `status:ready` | ADR + Tech Spec |
+| 🎨 **UX Designer** | `ux-designer.yml` | `needs:ux` + `status:ready` | Wireframes + flows |
+| 💻 **Engineer** | `engineer.yml` | `type:story/bug` + `status:ready` | Implementation + tests |
+| 🔍 **Reviewer** | `reviewer.yml` | `orch:engineer-done` | Code review + approval |
+
+### Orchestration Labels
+
+| Label | Purpose |
+|-------|---------|
+| `orch:pm-done` | Product Manager work complete |
+| `orch:architect-done` | Architect work complete |
+| `orch:ux-done` | UX Designer work complete |
+| `orch:engineer-done` | Engineer work complete |
+| `needs:ux` | Issue requires UX design work |
 
 ### Agent Assignment Rules
 
 | Agent Type | Assigned Tasks | Parallelization |
 |------------|----------------|------------------|
+| 📋 Product Manager | PRD creation, backlog planning | Sequential (one epic at a time) |
 | 🎨 UX Designer | User research, wireframes, flows | Sequential per feature |
 | 🏗️ Solution Architect | Architecture, specs, ADRs | Sequential (single source of truth) |
 | 💻 Engineer | Implementation, tests, fixes | **Parallel** (different features/files) |
@@ -1230,12 +1243,14 @@ Safety > Speed • Clarity > Cleverness • Quality > Quantity
 | Add reusable prompt | `.github/prompts/<name>.prompt.md` (with `description`) |
 | Check blocked commands | Security Architecture section above |
 | Coordinate parallel work | Multi-Agent Orchestration section above |
+| Configure orchestration | `.github/orchestration-config.yml` |
+| Test orchestration | [docs/orchestration-testing-guide.md](docs/orchestration-testing-guide.md) |
 | Manage tasks | Task Management with GitHub Issues section above |
 | Track session state | Memory & State Management section above |
 | awesome-copilot patterns | [github/awesome-copilot](https://github.com/github/awesome-copilot) |
 
 ---
 
-**Last Updated**: January 17, 2026
+**Last Updated**: January 18, 2026
 
 

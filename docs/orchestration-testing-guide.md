@@ -2,21 +2,41 @@
 
 ## Current Status (2026-01-18)
 
-### ✅ Working Components
+### ✅ System Components
 
 | Component | Status | Notes |
 |-----------|--------|-------|
 | **Product Manager Workflow** | ✅ Working | Creates PRD + backlog hierarchy |
-| **Polling-Based Orchestrator** | ✅ Working | Runs every 5 mins, has error handling |
+| **Architect Workflow** | ✅ Ready | ADR & Tech Spec creation |
+| **UX Designer Workflow** | ✅ Ready | Wireframes & user flows |
+| **Engineer Workflow** | ✅ Ready | Implementation |
+| **Reviewer Workflow** | ✅ Ready | Code review |
+| **Polling-Based Orchestrator** | ✅ Working | Runs every 5 mins via cron |
 | **Label System** | ✅ Complete | All orchestration labels created |
-| **Issue #33 Test Epic** | ✅ Processed | Full PRD + backlog created |
 
-### ⚠️ Known GitHub Issues
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│         process-ready-issues.yml (POLLING HUB)              │
+│         ├── Runs every 5 minutes via cron                   │
+│         └── Dispatches to individual agent workflows        │
+└────────────────────────┬────────────────────────────────────┘
+                         │ workflow_dispatch
+         ┌───────┬───────┼───────┬───────┐
+         ▼       ▼       ▼       ▼       ▼
+   ┌──────────┐┌──────────┐┌──────────┐┌──────────┐┌──────────┐
+   │ PM       ││ Architect││ UX       ││ Engineer ││ Reviewer │
+   │ workflow ││ workflow ││ Designer ││ workflow ││ workflow │
+   └──────────┘└──────────┘└──────────┘└──────────┘└──────────┘
+```
+
+### ⚠️ Known GitHub Limitations
 
 | Issue | Description | Workaround |
 |-------|-------------|------------|
-| **Workflow Dispatch Caching** | GitHub caches workflow triggers and may not recognize `workflow_dispatch` for hours after creation | Use direct workflow_dispatch via CLI when needed |
-| **Issues Event Trigger** | `on: issues:` event may not fire reliably for new workflows | Use polling-based orchestrator (`process-ready-issues.yml`) |
+| **Workflow Dispatch Caching** | GitHub caches workflow definitions and may not recognize `workflow_dispatch` immediately after creation | Use polling orchestrator or wait for cache refresh |
+| **Issues Event Trigger** | `on: issues:` event may not fire reliably for new workflows | Polling orchestrator handles this automatically |
 
 ## How to Test Agent Workflows
 
@@ -92,15 +112,15 @@ The orchestrator runs automatically every 5 minutes via cron schedule.
 
 ## Workflow Files
 
-| File | Purpose | Status |
-|------|---------|--------|
-| `run-product-manager.yml` | PRD & backlog creation | ✅ Working |
-| `architect.yml` | ADR & Tech Spec creation | ⏳ Pending cache |
-| `ux-designer.yml` | UX wireframes & flows | ⏳ Pending cache |
-| `engineer.yml` | Implementation | ⏳ Pending cache |
-| `reviewer.yml` | Code review | ⏳ Pending cache |
-| `process-ready-issues.yml` | Polling orchestrator | ✅ Working |
-| `orchestrate.yml` | Event-based orchestrator | ⚠️ Issues trigger unreliable |
+| File | Purpose | Trigger |
+|------|---------|---------|
+| `process-ready-issues.yml` | Polling orchestrator | Cron (every 5 min) + manual |
+| `run-product-manager.yml` | PRD & backlog creation | `type:epic` + `status:ready` |
+| `architect.yml` | ADR & Tech Spec creation | `type:feature/spike` + `status:ready` |
+| `ux-designer.yml` | UX wireframes & flows | `needs:ux` + `status:ready` |
+| `engineer.yml` | Implementation | `type:story/bug` + `status:ready` |
+| `reviewer.yml` | Code review | `orch:engineer-done` |
+| `orchestrate.yml` | Event-based orchestrator | Issues events (backup) |
 
 ## Troubleshooting
 
@@ -126,7 +146,7 @@ gh label create "label-name" --description "Description" --color "color-hex"
 
 ## Next Steps
 
-1. Wait for GitHub to refresh workflow caches
-2. Test Architect, UX Designer, Engineer, and Reviewer workflows
-3. Verify full end-to-end flow: Epic → PM → Architect → Engineer → Reviewer
-4. Consider GitHub App approach for more reliable event handling
+1. Create issues with appropriate labels to test full workflow
+2. Verify full end-to-end flow: Epic → PM → Architect → Engineer → Reviewer
+3. Monitor polling orchestrator logs for any issues
+4. Consider GitHub App approach for more reliable event handling (future enhancement)

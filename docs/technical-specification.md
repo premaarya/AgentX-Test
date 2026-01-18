@@ -1,10 +1,10 @@
 # Technical Specification: AI Agent Guidelines System
 
-> **Version**: 1.1  
-> **Date**: January 17, 2026  
+> **Version**: 1.2  
+> **Date**: January 18, 2026  
 > **Status**: Implemented & Verified  
 > **Standard**: [github/awesome-copilot](https://github.com/github/awesome-copilot) • [agentskills.io](https://agentskills.io/specification)  
-> **E2E Tests**: ✅ All Passed (January 17, 2026)
+> **E2E Tests**: ✅ All Passed (January 18, 2026)
 
 ---
 
@@ -203,14 +203,17 @@ This specification defines a comprehensive framework for AI coding agents to pro
 │  ┌──────────────────────────────────────────────────────────────────────┐  │
 │  │                      Multi-Agent Orchestration                        │  │
 │  ├──────────────────────────────────────────────────────────────────────┤  │
-│  │   Agent 1 ────┐                                                       │  │
-│  │   (Feature A) │    ┌─────────────┐    ┌─────────────┐                │  │
-│  │               ├───►│ Coordination │───►│   Merge     │                │  │
-│  │   Agent 2 ────┤    │   Layer      │    │  Resolution │                │  │
-│  │   (Feature B) │    └─────────────┘    └─────────────┘                │  │
-│  │               │                                                       │  │
-│  │   Agent 3 ────┘                                                       │  │
-│  │   (Bug Fix)                                                           │  │
+│  │                                                                       │  │
+│  │   ┌─────────────────────────────────────────────────────────────┐    │  │
+│  │   │  process-ready-issues.yml (Polling Orchestrator - 5 min)    │    │  │
+│  │   └────────────────────────────┬────────────────────────────────┘    │  │
+│  │                                │ workflow_dispatch                    │  │
+│  │        ┌───────┬───────┬───────┼───────┬───────┐                     │  │
+│  │        ▼       ▼       ▼       ▼       ▼       ▼                     │  │
+│  │   ┌────────┐┌────────┐┌────────┐┌────────┐┌────────┐                │  │
+│  │   │  PM    ││Architect││  UX    ││Engineer││Reviewer│                │  │
+│  │   └────────┘└────────┘└────────┘└────────┘└────────┘                │  │
+│  │                                                                       │  │
 │  └──────────────────────────────────────────────────────────────────────┘  │
 │                                                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -755,11 +758,23 @@ This specification defines a comprehensive framework for AI coding agents to pro
 │  │   ├── autonomous-mode.yml      ◄── Security configuration               │
 │  │   │                                (kill switch, protected paths)        │
 │  │   │                                                                       │
-│  │   ├── agents/                  ◄── Agent role definitions                │
-│  │   │   ├── engineer.agent.md        (implementation focus)               │
-│  │   │   ├── architect.agent.md       (design focus)                       │
-│  │   │   ├── ux-designer.agent.md     (user experience focus)              │
-│  │   │   └── reviewer.agent.md        (quality assurance focus)            │
+│  │   ├── orchestration-config.yml ◄── Multi-agent orchestration config     │
+│  │   │                                                                       │
+│  │   ├── agents/                  ◄── Agent role definitions (5 agents)    │
+│  │   │   ├── product-manager.agent.md (PRD & backlog creation)             │
+│  │   │   ├── architect.agent.md       (ADR & tech specs)                   │
+│  │   │   ├── ux-designer.agent.md     (wireframes & user flows)            │
+│  │   │   ├── engineer.agent.md        (implementation & tests)             │
+│  │   │   └── reviewer.agent.md        (code review & security)             │
+│  │   │                                                                       │
+│  │   ├── workflows/               ◄── GitHub Actions orchestration         │
+│  │   │   ├── process-ready-issues.yml (polling orchestrator - 5 min)       │
+│  │   │   ├── orchestrate.yml          (event-based orchestrator)           │
+│  │   │   ├── run-product-manager.yml  (PM workflow)                        │
+│  │   │   ├── architect.yml            (Architect workflow)                 │
+│  │   │   ├── ux-designer.yml          (UX Designer workflow)               │
+│  │   │   ├── engineer.yml             (Engineer workflow)                  │
+│  │   │   └── reviewer.yml             (Reviewer workflow)                  │
 │  │   │                                                                       │
 │  │   ├── instructions/            ◄── Language/context-specific rules      │
 │  │   │   ├── csharp.instructions.md   (applyTo: '**.cs')                   │
@@ -1340,7 +1355,8 @@ AgentX/
 ├── AGENTS.md                          ✅ Agent behavior guidelines
 ├── Skills.md                          ✅ Technical standards index
 ├── docs/
-│   └── technical-specification.md     ✅ This document
+│   ├── technical-specification.md     ✅ This document
+│   └── orchestration-testing-guide.md ✅ Orchestration testing guide
 ├── skills/                            ✅ 18 skill files
 │   ├── 01-core-principles.md
 │   ├── 02-testing.md
@@ -1349,11 +1365,22 @@ AgentX/
 └── .github/
     ├── copilot-instructions.md        ✅ Global Copilot config
     ├── autonomous-mode.yml            ✅ Security configuration
-    ├── agents/                        ✅ 4 agent definitions
-    │   ├── architect.agent.md
-    │   ├── engineer.agent.md
-    │   ├── reviewer.agent.md
-    │   └── ux-designer.agent.md
+    ├── orchestration-config.yml       ✅ Multi-agent orchestration config
+    ├── agents/                        ✅ 5 agent definitions
+    │   ├── product-manager.agent.md   ✅ PRD & backlog creation
+    │   ├── architect.agent.md         ✅ ADR & tech specs
+    │   ├── ux-designer.agent.md       ✅ Wireframes & flows
+    │   ├── engineer.agent.md          ✅ Implementation & tests
+    │   └── reviewer.agent.md          ✅ Code review
+    ├── workflows/                     ✅ 8 workflow files
+    │   ├── process-ready-issues.yml   ✅ Polling orchestrator (5 min)
+    │   ├── orchestrate.yml            ✅ Event-based orchestrator
+    │   ├── run-product-manager.yml    ✅ PM workflow
+    │   ├── architect.yml              ✅ Architect workflow
+    │   ├── ux-designer.yml            ✅ UX Designer workflow
+    │   ├── engineer.yml               ✅ Engineer workflow
+    │   ├── reviewer.yml               ✅ Reviewer workflow
+    │   └── enforce-issue-workflow.yml ✅ Issue workflow enforcer
     ├── instructions/                  ✅ 4 instruction files
     │   ├── api.instructions.md
     │   ├── csharp.instructions.md
@@ -1371,16 +1398,27 @@ AgentX/
 
 The following labels have been created in the repository:
 
+**Core Labels:**
 | Label | Color | Description | Status |
 |-------|-------|-------------|--------|
 | `type:task` | #0E8A16 | Atomic unit of work | ✅ Verified |
 | `type:feature` | #A2EEEF | User-facing capability | ✅ Verified |
+| `type:epic` | #5319E7 | Large initiative (multiple features) | ✅ Verified |
 | `status:ready` | #C2E0C6 | No blockers, can start | ✅ Verified |
 | `status:in-progress` | #FBCA04 | Currently working | ✅ Verified |
 | `status:done` | #0E8A16 | Completed | ✅ Verified |
 | `priority:p1` | #D93F0B | High priority - Do next | ✅ Verified |
 | `files:docs/**` | #1D76DB | Agent working on documentation | ✅ Verified |
 | `files:skills/**` | #5319E7 | Agent working on skills | ✅ Verified |
+
+**Orchestration Labels:**
+| Label | Color | Description | Status |
+|-------|-------|-------------|--------|
+| `needs:ux` | #C5DEF5 | Requires UX design work | ✅ Verified |
+| `orch:pm-done` | #BFD4F2 | Product Manager work complete | ✅ Verified |
+| `orch:architect-done` | #BFD4F2 | Architect work complete | ✅ Verified |
+| `orch:ux-done` | #BFD4F2 | UX Designer work complete | ✅ Verified |
+| `orch:engineer-done` | #BFD4F2 | Engineer work complete | ✅ Verified |
 
 ### 11.4 Verified GitHub Issues
 

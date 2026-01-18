@@ -31,6 +31,18 @@ AgentX provides structured guidelines, skills, and workflows for AI coding agent
 - **Standard Mode**: Pauses for confirmation at critical decision points
 - **YOLO Mode**: Fully autonomous execution with architectural guardrails
 
+### 🤖 5-Agent Orchestration System
+
+| Agent | Role | Trigger |
+|-------|------|---------|
+| **Product Manager** | PRD & backlog creation | `type:epic` issues |
+| **Solution Architect** | ADR & tech specs | `type:feature`, `type:spike` |
+| **UX Designer** | Wireframes & user flows | `needs:ux` label |
+| **Engineer** | Implementation & tests | `type:story`, `type:bug` |
+| **Reviewer** | Code review & security | PR created |
+
+Orchestrated via GitHub Actions with polling-based coordination (every 5 minutes).
+
 ### 🔒 4-Layer Security Architecture
 
 1. **Actor Allowlist** - Who can perform autonomous operations
@@ -83,12 +95,23 @@ AgentX/
 └── .github/
     ├── copilot-instructions.md    # Global Copilot configuration
     ├── autonomous-mode.yml        # Security configuration
+    ├── orchestration-config.yml   # Multi-agent orchestration config
     │
-    ├── agents/                    # Agent role definitions
-    │   ├── architect.agent.md
-    │   ├── engineer.agent.md
-    │   ├── reviewer.agent.md
-    │   └── ux-designer.agent.md
+    ├── agents/                    # Agent role definitions (5 agents)
+    │   ├── product-manager.agent.md   # PRD & backlog creation
+    │   ├── architect.agent.md         # ADR & tech specs
+    │   ├── ux-designer.agent.md       # Wireframes & user flows
+    │   ├── engineer.agent.md          # Implementation
+    │   └── reviewer.agent.md          # Code review
+    │
+    ├── workflows/                 # GitHub Actions orchestration
+    │   ├── process-ready-issues.yml   # Polling orchestrator (5 min)
+    │   ├── orchestrate.yml            # Event-based orchestrator
+    │   ├── run-product-manager.yml    # PM workflow
+    │   ├── architect.yml              # Architect workflow
+    │   ├── ux-designer.yml            # UX Designer workflow
+    │   ├── engineer.yml               # Engineer workflow
+    │   └── reviewer.yml               # Reviewer workflow
     │
     ├── instructions/              # Language-specific rules
     │   ├── csharp.instructions.md
@@ -306,6 +329,7 @@ gh issue close <ID> --comment "Completed in commit <SHA>"
 
 ### Label Hierarchy
 
+**Issue Type & Status Labels:**
 | Label | Purpose |
 |-------|---------|
 | `type:epic` | Large initiative (multiple features) |
@@ -318,6 +342,16 @@ gh issue close <ID> --comment "Completed in commit <SHA>"
 | `status:ready` | Can start now |
 | `status:in-progress` | Currently working |
 | `status:done` | Completed |
+
+**Orchestration Labels (Multi-Agent Workflow):**
+| Label | Purpose |
+|-------|---------||
+| `type:epic` | Large initiative - triggers Product Manager |
+| `needs:ux` | Requires UX design - triggers UX Designer first |
+| `orch:pm-done` | Product Manager work complete |
+| `orch:architect-done` | Architect work complete |
+| `orch:ux-done` | UX Designer work complete |
+| `orch:engineer-done` | Engineer work complete |
 
 ### YOLO Mode Activation
 
@@ -410,6 +444,6 @@ This project is open source. See individual files for specific licensing.
 
 ---
 
-**Last Updated**: January 17, 2026
+**Last Updated**: January 18, 2026
 
 

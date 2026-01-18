@@ -175,5 +175,5 @@ builder.Host.ConfigureHostOptions(opts => opts.ShutdownTimeout = TimeSpan.FromSe
 
 **Skills Specification**: [agentskills.io/specification](https://agentskills.io/specification)
 
-**Last Updated**: January 17, 2026
+**Last Updated**: January 18, 2026
 
