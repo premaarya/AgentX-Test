@@ -12,13 +12,15 @@ description: 'Production-ready guidelines for AI agents to build secure, scalabl
 
 ## Technology Stack
 
-| Component | Technology |
-|-----------|------------|
-| **Language** | C# / .NET 8, Python 3.11+ |
-| **Backend** | ASP.NET Core |
-| **Database** | PostgreSQL + Npgsql |
-| **Frontend** | React |
-| **AI** | Microsoft Agent Framework + Foundry |
+| Component | Technology | Version |
+|-----------|------------|---------|
+| **Language** | C# / .NET | 8.0+ |
+| **Language** | Python | 3.11+ |
+| **Backend** | ASP.NET Core | 8.0+ |
+| **Database** | PostgreSQL + Npgsql | 16+ |
+| **Frontend** | React | 18+ |
+| **AI** | Microsoft Agent Framework | Latest |
+| **AI** | Microsoft Foundry | Latest |
 
 ---
 
