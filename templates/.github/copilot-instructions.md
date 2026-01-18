@@ -107,7 +107,7 @@ gh issue edit <ID> --add-label "status:in-progress" --remove-label "status:ready
 
 ## Repository Overview
 
-This repository uses AgentX - AI Agent Guidelines for Production Code.
+This repository contains AI agent guidelines and production code skills for building high-quality software.
 
 ## Key Files
 
@@ -122,6 +122,197 @@ This repository uses AgentX - AI Agent Guidelines for Production Code.
 3. **Check Skills.md** to find relevant skill documentation
 4. **Follow the 4-layer security model** defined in AGENTS.md
 5. **Manage session state** using the Memory & State Management guidelines in AGENTS.md
+
+---
+
+## 🔬 RESEARCH-FIRST: Before ANY Action
+
+> **CRITICAL**: Every user request requires research BEFORE taking action.
+
+```
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                                                                               ║
+║   🔬 RESEARCH-FIRST WORKFLOW - MANDATORY FOR ALL REQUESTS 🔬                 ║
+║                                                                               ║
+║   STEP 1: UNDERSTAND                                                          ║
+║   ├── What is the user actually asking for?                                   ║
+║   ├── What problem are they trying to solve?                                  ║
+║   └── What is the expected outcome?                                           ║
+║                                                                               ║
+║   STEP 2: RESEARCH                                                            ║
+║   ├── Search codebase for existing patterns                                   ║
+║   ├── Check for related code, tests, documentation                            ║
+║   ├── Understand current architecture and conventions                         ║
+║   └── Identify dependencies and potential impacts                             ║
+║                                                                               ║
+║   STEP 3: CLASSIFY (see classification matrix below)                          ║
+║   ├── Determine request type: Epic/Feature/Story/Bug/Spike/Docs               ║
+║   ├── Assess scope: Large/Medium/Small                                        ║
+║   └── Identify if UX work needed (→ needs:ux label)                           ║
+║                                                                               ║
+║   STEP 4: CREATE APPROPRIATE ISSUE                                            ║
+║   └── Create issue with correct type label, then proceed                      ║
+║                                                                               ║
+║   ⚠️  NEVER skip research - it prevents rework and mistakes                   ║
+║                                                                               ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+```
+
+### Research Actions (Use These Tools)
+- `semantic_search` - Find relevant code by concept
+- `grep_search` - Find exact patterns/strings
+- `file_search` - Find files by name
+- `read_file` - Understand existing implementations
+- `list_dir` - Explore project structure
+
+---
+
+## 📋 REQUEST CLASSIFICATION MATRIX
+
+Before creating an issue, classify the user's request:
+
+### Classification Criteria
+
+| Type | Scope | Clarity | Needs PRD? | Needs Breakdown? | Keywords |
+|------|-------|---------|------------|------------------|----------|
+| `type:epic` | Multi-feature | Vague/broad | ✅ Yes | ✅ Yes | "platform", "system", "application", "build me a..." |
+| `type:feature` | Single capability | Medium | Maybe | Maybe | "add X feature", "implement Y", "create Z capability" |
+| `type:story` | Single behavior | Well-defined | No | No | "button", "field", "validation", "when user clicks..." |
+| `type:bug` | Fix | Clear problem | No | No | "broken", "fix", "error", "doesn't work", "fails" |
+| `type:spike` | Research | Open-ended | No | No | "research", "evaluate", "compare", "investigate", "should we use..." |
+| `type:docs` | Documentation | Clear | No | No | "document", "readme", "update docs", "add comments" |
+
+### Classification Decision Tree
+
+```
+User Request
+    │
+    ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Q1: Is something broken or not working?                     │
+│     → YES: type:bug                                         │
+│     → NO: Continue...                                       │
+└─────────────────────────────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Q2: Is it research/evaluation/comparison?                   │
+│     → YES: type:spike                                       │
+│     → NO: Continue...                                       │
+└─────────────────────────────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Q3: Is it documentation only?                               │
+│     → YES: type:docs                                        │
+│     → NO: Continue...                                       │
+└─────────────────────────────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Q4: Is it large/vague with multiple implied features?       │
+│     (e.g., "build a platform", "create an app")             │
+│     → YES: type:epic (triggers Product Manager)             │
+│     → NO: Continue...                                       │
+└─────────────────────────────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Q5: Is it a clear, single capability?                       │
+│     (e.g., "add OAuth login", "implement search")           │
+│     → YES: type:feature (triggers Architect)                │
+│     → NO: type:story (smaller scope)                        │
+└─────────────────────────────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Q6: Does it have UI/UX components?                          │
+│     → YES: Add needs:ux label (triggers UX Designer first)  │
+│     → NO: Proceed without needs:ux                          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Examples
+
+| User Request | Classification | Labels | Why |
+|-------------|----------------|--------|-----|
+| "Build me an e-commerce platform" | Epic | `type:epic` | Large, vague, multi-feature |
+| "Add user authentication with OAuth" | Feature | `type:feature,needs:ux` | Single capability, has UI |
+| "Add a logout button to the header" | Story | `type:story,needs:ux` | Small, specific, has UI |
+| "Create an API endpoint for user data" | Story | `type:story` | Small, specific, no UI |
+| "The login page returns 500 error" | Bug | `type:bug` | Something broken |
+| "Should we use PostgreSQL or MongoDB?" | Spike | `type:spike` | Research/evaluation |
+| "Update the README with setup instructions" | Docs | `type:docs` | Documentation only |
+
+---
+
+## 🚀 HANDLING DIRECT CHAT REQUESTS
+
+When a user asks for something directly in chat (not via GitHub Issue):
+
+### Flow
+
+```
+User asks in chat: "Build me a login feature"
+    │
+    ▼
+1. RESEARCH (mandatory)
+    ├── Search codebase for existing auth patterns
+    ├── Check for existing user models
+    └── Understand current tech stack
+    │
+    ▼
+2. CLASSIFY the request
+    └── Login feature = type:feature with needs:ux
+    │
+    ▼
+3. CREATE the appropriate issue
+    gh issue create --title "[Feature] User authentication with login" \
+      --body "## Description\n[Details from user + research]" \
+      --label "type:feature,needs:ux,priority:p1,status:ready"
+    │
+    ▼
+4. CLAIM the issue
+    gh issue edit <ID> --add-label "status:in-progress" --remove-label "status:ready"
+    │
+    ▼
+5. PROCEED based on issue type
+    ├── type:epic    → Act as Product Manager (create PRD + backlog)
+    ├── type:feature → Act as Architect (create ADR + spec)
+    ├── type:story   → Act as Engineer (implement directly)
+    ├── type:bug     → Act as Engineer (fix directly)
+    ├── type:spike   → Act as Architect (research + document)
+    └── type:docs    → Act as Engineer (write docs)
+```
+
+### When Acting as Product Manager (for Epics)
+
+If classified as `type:epic`:
+1. Create PRD document at `docs/prd/PRD-{issue}.md`
+2. Break down into Features and Stories
+3. Create child issues with proper hierarchy:
+   - Epic → Features (type:feature)
+   - Features → Stories (type:story)
+4. Link issues via "Parent: #X" in body
+5. Commit PRD and post summary
+
+### When Acting as Architect (for Features/Spikes)
+
+If classified as `type:feature` or `type:spike`:
+1. Check for existing PRD (if part of epic)
+2. Create ADR at `docs/adr/ADR-{issue}.md`
+3. Create Tech Spec at `docs/specs/SPEC-{issue}.md`
+4. Commit documents and hand off to Engineer
+
+### When Acting as Engineer (for Stories/Bugs/Docs)
+
+If classified as `type:story`, `type:bug`, or `type:docs`:
+1. Implement the change directly
+2. Write tests
+3. Commit with issue reference
+4. Close issue
+
+---
 
 ## Agent Behavior Reference
 

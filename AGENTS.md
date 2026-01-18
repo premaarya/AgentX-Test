@@ -260,6 +260,45 @@ Make incremental changes while maintaining focus on overall goals. Avoid attempt
 
 ---
 
+## Research-First Workflow
+
+> **CRITICAL**: Every user request requires research BEFORE taking any action.
+
+### Research Steps (Mandatory)
+
+1. **UNDERSTAND** - What is the user actually asking for?
+2. **RESEARCH** - Search codebase, check patterns, understand architecture
+3. **CLASSIFY** - Determine issue type (Epic/Feature/Story/Bug/Spike/Docs)
+4. **CREATE ISSUE** - With correct type label
+5. **PROCEED** - Based on issue type
+
+### Request Classification
+
+| User Request Type | Labels | Triggers Agent | Example |
+|-------------------|--------|----------------|---------|
+| Large/vague, multi-feature | `type:epic` | Product Manager | "Build me a platform" |
+| Single capability | `type:feature` | Architect | "Add OAuth login" |
+| Small, specific behavior | `type:story` | Architect/Engineer | "Add logout button" |
+| Something broken | `type:bug` | Engineer | "Login returns 500" |
+| Research/evaluation | `type:spike` | Architect | "Compare databases" |
+| Documentation only | `type:docs` | Engineer | "Update README" |
+
+**Add `needs:ux` label** if request has UI/UX components → triggers UX Designer first.
+
+### Classification Decision Flow
+
+```
+Is something broken?           → type:bug
+Is it research/evaluation?     → type:spike
+Is it documentation only?      → type:docs
+Is it large/vague/multi-feat?  → type:epic (→ Product Manager)
+Is it a clear capability?      → type:feature (→ Architect)
+Otherwise                      → type:story (→ Engineer)
+Has UI components?             → add needs:ux label
+```
+
+---
+
 ## Memory & State Management
 
 > **Challenge**: Agents have limited context windows and sessions end. Persistent memory is critical for complex tasks.
