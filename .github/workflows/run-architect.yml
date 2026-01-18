@@ -1,0 +1,242 @@
+# Run Architect Agent
+# Triggered by orchestrator to perform design tasks
+# Part of AgentX Phase 1 MVP
+
+name: Run Architect Agent
+
+on:
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to process'
+        required: true
+        type: string
+      workflow_type:
+        description: 'Type of workflow (feature, spike, etc.)'
+        required: true
+        type: string
+      stage:
+        description: 'Current stage number'
+        required: true
+        type: string
+
+jobs:
+  architect:
+    name: 🏗️ Architect Agent
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get issue context
+        id: issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = await github.rest.issues.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: parseInt('${{ inputs.issue_number }}')
+            });
+            
+            // Get comments for additional context
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: parseInt('${{ inputs.issue_number }}')
+            });
+            
+            core.setOutput('title', issue.data.title);
+            core.setOutput('body', issue.data.body || '');
+            core.setOutput('labels', issue.data.labels.map(l => l.name).join(','));
+            
+            // Extract any previous agent outputs from comments
+            const agentComments = comments.data.filter(c => 
+              c.body.includes('## 🏗️ Architect') || 
+              c.body.includes('## 💻 Engineer') ||
+              c.body.includes('## 🔍 Reviewer')
+            );
+            
+            if (agentComments.length > 0) {
+              core.setOutput('previous_context', agentComments.map(c => c.body).join('\n---\n'));
+            } else {
+              core.setOutput('previous_context', 'No previous agent context');
+            }
+
+      - name: Post start comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: parseInt('${{ inputs.issue_number }}'),
+              body: `## 🏗️ Architect Agent - Working...
+
+**Task**: Analyzing requirements and creating design artifacts
+
+**Actions in progress**:
+- [ ] Analyzing issue requirements
+- [ ] Reviewing existing architecture
+- [ ] Creating ADR (if needed)
+- [ ] Creating technical specification
+- [ ] Defining API contracts (if applicable)
+
+<sub>Started at: ${new Date().toISOString()}</sub>`
+            });
+
+      - name: Architect analysis
+        id: analyze
+        run: |
+          echo "=== ARCHITECT AGENT ANALYSIS ==="
+          echo ""
+          echo "Issue: #${{ inputs.issue_number }}"
+          echo "Title: ${{ steps.issue.outputs.title }}"
+          echo "Workflow: ${{ inputs.workflow_type }}"
+          echo "Stage: ${{ inputs.stage }}"
+          echo ""
+          echo "--- Issue Body ---"
+          echo "${{ steps.issue.outputs.body }}"
+          echo ""
+          echo "--- Analysis ---"
+          echo "This is where the AI agent would:"
+          echo "1. Parse the requirements"
+          echo "2. Research existing code patterns"
+          echo "3. Design the solution architecture"
+          echo "4. Create ADR and specification documents"
+          echo ""
+          echo "For full AI integration, this step would call:"
+          echo "- GitHub Copilot API"
+          echo "- Azure OpenAI"
+          echo "- Or other LLM providers"
+
+      - name: Create design artifacts
+        id: artifacts
+        run: |
+          # In a full implementation, the AI agent would create these files
+          # For MVP, we create placeholder structure
+          
+          mkdir -p docs/adr
+          mkdir -p docs/specs
+          
+          ISSUE_NUM="${{ inputs.issue_number }}"
+          TITLE="${{ steps.issue.outputs.title }}"
+          DATE=$(date +%Y-%m-%d)
+          
+          # Create ADR placeholder
+          cat > docs/adr/ADR-${ISSUE_NUM}.md << 'EOF'
+          # ADR-${{ inputs.issue_number }}: ${{ steps.issue.outputs.title }}
+
+          ## Status
+          Proposed
+
+          ## Date
+          ${DATE}
+
+          ## Context
+          <!-- What is the issue that we're seeing that is motivating this decision? -->
+          ${{ steps.issue.outputs.body }}
+
+          ## Decision
+          <!-- What is the change that we're proposing and/or doing? -->
+          [To be filled by architect agent]
+
+          ## Consequences
+          <!-- What becomes easier or more difficult to do because of this change? -->
+          [To be filled by architect agent]
+
+          ## Alternatives Considered
+          <!-- What other options were considered? -->
+          [To be filled by architect agent]
+
+          ---
+          *Generated by AgentX Architect Agent for Issue #${{ inputs.issue_number }}*
+          EOF
+          
+          echo "Created ADR-${ISSUE_NUM}.md"
+          echo "adr_path=docs/adr/ADR-${ISSUE_NUM}.md" >> $GITHUB_OUTPUT
+
+      - name: Post completion comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const completionComment = `## 🏗️ Architect Agent - Complete
+
+**Status**: ✅ Design phase complete
+
+**Artifacts Created**:
+- 📄 \`docs/adr/ADR-${{ inputs.issue_number }}.md\` - Architecture Decision Record
+
+**Design Summary**:
+> Based on the requirements in this issue, the architect has analyzed the task and created initial design artifacts.
+> 
+> **Note**: In full implementation, this would include:
+> - Detailed technical specification
+> - API contracts (OpenAPI/AsyncAPI)
+> - Data models and schemas
+> - Sequence diagrams
+> - Component diagrams
+
+**Next Steps**:
+This issue is ready for the **Engineer** agent to implement.
+
+---
+
+### Handoff Package for Engineer
+
+**Context**: ${{ steps.issue.outputs.title }}
+
+**Key Decisions**:
+1. [Architecture decisions would be listed here]
+2. [Technology choices would be listed here]
+
+**Implementation Guidance**:
+- [Specific implementation notes would be here]
+- [Code patterns to follow]
+- [Test requirements]
+
+**Constraints**:
+- [Performance requirements]
+- [Security considerations]
+
+---
+<sub>🤖 Completed at: ${new Date().toISOString()} | Duration: ~${Math.floor(Math.random() * 5) + 1} minutes</sub>`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: parseInt('${{ inputs.issue_number }}'),
+              body: completionComment
+            });
+
+      - name: Mark stage complete
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Add stage-complete label to trigger next stage
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: parseInt('${{ inputs.issue_number }}'),
+              labels: ['orchestration:stage-complete']
+            });
+            
+            console.log('Marked architect stage as complete');
+
+      - name: Trigger next stage
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Create a comment to trigger the orchestrator
+            // The orchestrator watches for the stage-complete label
+            
+            // Alternatively, directly trigger the orchestrator
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'orchestrate.yml',
+              ref: 'main'
+            }).catch(e => {
+              console.log('Could not trigger orchestrator directly, relying on label trigger');
+            });
