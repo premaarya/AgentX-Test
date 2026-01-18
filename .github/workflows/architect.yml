@@ -2,8 +2,7 @@
 # Triggered by orchestrator to perform requirements analysis and design tasks
 # Produces ADR (Architecture Decision) and Tech Spec (Technical Specification)
 # Part of AgentX Phase 1 MVP
-# Updated: 2026-01-18 - Force refresh
-# Last updated: 2026-01-18
+# Cache refresh: 2026-01-18T21:55:00Z
 
 name: Run Architect Agent
 
