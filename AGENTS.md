@@ -204,18 +204,222 @@ gh workflow run <file>        # When MCP unavailable
 
 ---
 
-## Multi-Agent Orchestration
+## 🔄 Multi-Agent Orchestration (Mandatory Workflow)
 
-| Agent | Trigger | Output | Handoff |
-|-------|---------|--------|---------|
-| Product Manager | `type:epic` | PRD + backlog | Immediate → Architect (<30s) |
-| Architect | `type:feature` | ADR + spec | Immediate → Engineer (<30s) |
-| Engineer | `type:story/bug` | Code + tests | Immediate → Reviewer (<30s) |
-| Reviewer | `orch:engineer-done` | Code review | Close issue |
+> **CRITICAL**: This section defines HOW agents hand off work to each other. Follow this workflow for all multi-step tasks.
 
-**Architecture**: Event-driven triggers via `gh workflow run` + polling fallback (5 min)  
-**Testing**: E2E test suite (5 suites, >85% coverage, runs daily)  
-**Error Handling**: Graceful 404 handling for non-existent issues
+### Agent Roles & Responsibilities
+
+| Agent Role | Triggered By | Primary Responsibility | Deliverables | Next Agent |
+|-----------|--------------|------------------------|--------------|------------|
+| **Product Manager** | `type:epic` | Break down large initiatives | PRD + Feature backlog | Architect |
+| **Architect** | `type:feature` or `type:spike` | Design & technical planning | ADR + Tech Spec | Engineer |
+| **Engineer** | `type:story`, `type:bug`, `type:docs` | Implementation | Code + Tests + Docs | Reviewer |
+| **Reviewer** | `orch:engineer-done` | Quality assurance | Code review + approval | Close |
+
+---
+
+### 📋 Complete Orchestration Flow
+
+```
+Epic Issue Created (#48)
+    │
+    ▼
+┌─────────────────────────────────────────────────────────────┐
+│ PRODUCT MANAGER AGENT                                        │
+│ Trigger: type:epic label detected                           │
+│                                                              │
+│ Tasks:                                                       │
+│ 1. Read issue description and understand scope              │
+│ 2. Research existing architecture and constraints           │
+│ 3. Create PRD at docs/prd/PRD-48.md                        │
+│ 4. Break down into Feature issues (type:feature)            │
+│ 5. Create child issues with "Parent: #48" in body           │
+│ 6. Add orch:pm-done label to original epic                  │
+│ 7. Comment with summary + links to child issues             │
+│                                                              │
+│ Handoff: Triggers Architect for EACH Feature                │
+└─────────────────────────────────────────────────────────────┘
+    │
+    ▼ (for each Feature #50, #51, #52...)
+┌─────────────────────────────────────────────────────────────┐
+│ ARCHITECT AGENT                                              │
+│ Trigger: type:feature or type:spike label detected          │
+│                                                              │
+│ Tasks:                                                       │
+│ 1. Read feature description (and parent PRD if exists)      │
+│ 2. Research codebase for integration points                 │
+│ 3. Create ADR at docs/adr/ADR-50.md (architecture decision) │
+│ 4. Create Tech Spec at docs/specs/SPEC-50.md               │
+│ 5. If type:spike, document research findings + recommendation│
+│ 6. Break down into Story issues (type:story)                │
+│ 7. Add orch:architect-done label                            │
+│ 8. Comment with summary + links to child stories            │
+│                                                              │
+│ Handoff: Triggers Engineer for EACH Story                   │
+└─────────────────────────────────────────────────────────────┘
+    │
+    ▼ (for each Story #60, #61, #62...)
+┌─────────────────────────────────────────────────────────────┐
+│ ENGINEER AGENT                                               │
+│ Trigger: type:story, type:bug, or type:docs detected        │
+│                                                              │
+│ Tasks:                                                       │
+│ 1. Read story/bug description (and specs if exist)          │
+│ 2. Research codebase for implementation location            │
+│ 3. Implement the change following Skills.md standards       │
+│ 4. Write unit tests (70%), integration tests (20%)          │
+│ 5. Update/create documentation (XML docs, README, etc.)     │
+│ 6. Run tests and verify ≥80% coverage                       │
+│ 7. Commit with message: "type: description (#60)"           │
+│ 8. Add orch:engineer-done label                             │
+│ 9. Comment with summary + commit SHA                        │
+│                                                              │
+│ Handoff: Triggers Reviewer                                  │
+└─────────────────────────────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────────────────────────────┐
+│ REVIEWER AGENT                                               │
+│ Trigger: orch:engineer-done label detected                  │
+│                                                              │
+│ Tasks:                                                       │
+│ 1. Read commit diff and code changes                        │
+│ 2. Verify tests exist and pass                              │
+│ 3. Check code quality (Skills.md standards)                 │
+│ 4. Verify security (no secrets, SQL injection prevention)   │
+│ 5. Create review document at docs/reviews/REVIEW-60.md     │
+│ 6. If approved:                                              │
+│    - Close issue with status:done label                     │
+│    - Comment "✅ Approved - meets quality standards"        │
+│ 7. If changes needed:                                        │
+│    - Add needs:changes label                                │
+│    - Comment with specific feedback                         │
+│    - Remove orch:engineer-done, reassign to Engineer        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 🎯 Handoff Protocol (Mandatory Steps)
+
+#### When Completing Your Role:
+
+1. **Document Your Work**
+   - Create appropriate artifacts (PRD, ADR, Spec, Code, Review)
+   - Commit with proper message format: `type: description (#issue)`
+   - Reference parent issues in commit body if hierarchical
+
+2. **Update Issue State**
+   ```json
+   // Add orchestration label
+   { "tool": "update_issue", "args": { "owner": "jnPiyush", "repo": "AgentX", "issue_number": <ID>, "labels": ["orch:role-done"] } }
+   ```
+
+3. **Post Summary Comment**
+   ```json
+   { "tool": "add_issue_comment", "args": { "owner": "jnPiyush", "repo": "AgentX", "issue_number": <ID>, "body": "## Completed: [Role]\n\n**Deliverables:**\n- [List artifacts created]\n\n**Next Steps:**\n- [What needs to happen next]\n\n**Links:**\n- Commits: [SHA]\n- Child Issues: #X, #Y, #Z" } }
+   ```
+
+4. **Trigger Next Agent** (if applicable)
+   ```json
+   // For child issues (Feature from Epic, Story from Feature)
+   { "tool": "issue_write", "args": { "method": "create", "title": "[Type] Description", "body": "Parent: #<ID>\n\n## Description\n[Details]", "labels": ["type:story", "status:ready"] } }
+   
+   // OR trigger workflow for next agent via MCP
+   { "tool": "run_workflow", "args": { "owner": "jnPiyush", "repo": "AgentX", "workflow_id": "run-engineer.yml", "ref": "master", "inputs": { "issue_number": "60" } } }
+   ```
+
+---
+
+### 🔍 Determining When to Hand Off
+
+#### Product Manager → Architect
+**Trigger:** All features identified and documented in PRD  
+**Signal:** `orch:pm-done` label added  
+**Action:** Create child Feature issues, comment on Epic with summary
+
+#### Architect → Engineer
+**Trigger:** Technical design complete (ADR + Spec written)  
+**Signal:** `orch:architect-done` label added  
+**Action:** Create child Story issues, comment on Feature with summary
+
+#### Engineer → Reviewer
+**Trigger:** Implementation complete, tests passing, code committed  
+**Signal:** `orch:engineer-done` label added  
+**Action:** Commit code, comment on Story with commit SHA
+
+#### Reviewer → Close
+**Trigger:** Code review passed quality gates  
+**Signal:** Review approved in docs/reviews/REVIEW-{issue}.md  
+**Action:** Close issue with `status:done` label
+
+---
+
+### ⚡ Implementation Methods
+
+#### Method 1: GitHub Actions (Automated)
+```bash
+# PM completes work, triggers Architect workflow
+gh workflow run run-architect.yml -f issue_number=50
+
+# Architect completes, triggers Engineer workflow
+gh workflow run run-engineer.yml -f issue_number=60
+
+# Engineer completes, triggers Reviewer workflow
+gh workflow run run-reviewer.yml -f issue_number=60
+```
+
+#### Method 2: MCP Server (Direct)
+```json
+// Trigger next agent directly via MCP
+{ "tool": "run_workflow", "args": { "owner": "jnPiyush", "repo": "AgentX", "workflow_id": "run-engineer.yml", "ref": "master", "inputs": { "issue_number": "60" } } }
+```
+
+#### Method 3: Polling (Fallback)
+```yaml
+# Scheduled workflow checks for orch:*-done labels every 5 minutes
+# Automatically triggers next agent in chain
+# See: .github/workflows/orchestration-polling.yml
+```
+
+---
+
+### 🚨 Error Handling in Orchestration
+
+| Error Scenario | Detection | Resolution |
+|----------------|-----------|------------|
+| **Agent fails to complete** | Timeout (15 min) | Add `needs:help` label, notify user |
+| **Child issue not created** | No child issues after `orch:*-done` | Re-run agent workflow |
+| **Circular dependency** | Issue references itself as parent | Human intervention required |
+| **Missing artifacts** | No PRD/ADR/Spec/Code committed | Remove `orch:*-done`, restart agent |
+| **Test failures** | CI/CD pipeline fails | Add `needs:fixes` label, reassign to Engineer |
+
+---
+
+### 📊 Orchestration Metrics
+
+**Target SLAs:**
+- PM → Architect handoff: <30 seconds
+- Architect → Engineer handoff: <30 seconds  
+- Engineer → Reviewer handoff: <30 seconds
+- Reviewer approval: <5 minutes
+
+**Quality Gates:**
+- All artifacts created per role requirements
+- All tests passing (≥80% coverage)
+- No security violations detected
+- All child issues properly linked
+
+---
+
+### 🧪 Testing Orchestration
+
+See [docs/orchestration-testing-guide.md](docs/orchestration-testing-guide.md) for:
+- E2E test scenarios (5 complete flows)
+- Validation scripts for each handoff
+- Cleanup scripts for test data
+- >85% test coverage maintained
 
 ---
 
