@@ -2,24 +2,23 @@
   "$schema": "https://json.schemastore.org/mcp.json",
   "servers": {
     "github": {
-      // Native binary (recommended) - install: go install github.com/github/github-mcp-server@latest
-      "command": "github-mcp-server",
-      "args": ["stdio"],
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "${input:github_token}",
-        "GITHUB_TOOLSETS": "actions,issues,pull_requests,repos,users,context"
-      }
-      // Docker alternative (uncomment below, comment above):
-      // "command": "docker",
-      // "args": ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "-e", "GITHUB_TOOLSETS=actions,issues,pull_requests,repos,users,context", "ghcr.io/github/github-mcp-server"],
-      // "env": { "GITHUB_PERSONAL_ACCESS_TOKEN": "${input:github_token}" }
+      // Remote GitHub MCP Server (hosted by GitHub) - recommended
+      // Requires: VS Code 1.101+, GitHub Copilot subscription
+      // OAuth authentication - no PAT needed!
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/"
+
+      // Alternative: Use PAT instead of OAuth
+      // "type": "http",
+      // "url": "https://api.githubcopilot.com/mcp/",
+      // "headers": { "Authorization": "Bearer ${input:github_token}" }
     }
   },
   "inputs": [
     {
       "type": "promptString",
       "id": "github_token",
-      "description": "GitHub Personal Access Token (requires repo, workflow scopes)",
+      "description": "GitHub Personal Access Token (only needed if using PAT auth)",
       "password": true
     }
   ]

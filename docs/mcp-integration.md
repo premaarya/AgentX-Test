@@ -29,7 +29,43 @@ Plus:
 
 Configuration file: `.vscode/mcp.json`
 
-#### Option 1: Native Binary (Recommended)
+#### Option 1: Remote Server (Recommended)
+
+**No installation required!** GitHub hosts the MCP Server for you.
+
+**Requirements:**
+- VS Code 1.101+
+- GitHub Copilot subscription
+
+```json
+{
+  "servers": {
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/"
+    }
+  }
+}
+```
+
+With OAuth, VS Code handles authentication automatically. No PAT needed!
+
+**Alternative with PAT:**
+```json
+{
+  "servers": {
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": {
+        "Authorization": "Bearer ${input:github_token}"
+      }
+    }
+  }
+}
+```
+
+#### Option 2: Native Binary (Local)
 
 ```bash
 # Install the MCP server
@@ -51,7 +87,7 @@ go install github.com/github/github-mcp-server@latest
 }
 ```
 
-#### Option 2: Docker
+#### Option 3: Docker (Local)
 
 ```json
 {
@@ -74,12 +110,13 @@ go install github.com/github/github-mcp-server@latest
 
 ### Which to Choose?
 
-| Aspect | Native Binary | Docker |
-|--------|---------------|--------|
-| **Setup** | `go install` once | Docker must be running |
-| **Startup** | Instant | Container startup delay |
-| **Dependencies** | Go toolchain | Docker Desktop |
-| **Isolation** | Runs locally | Containerized |
+| Aspect | Remote (GitHub-hosted) | Native Binary | Docker |
+|--------|------------------------|---------------|--------|
+| **Setup** | None! | `go install` once | Docker must be running |
+| **Dependencies** | VS Code 1.101+, Copilot | Go toolchain | Docker Desktop |
+| **Authentication** | OAuth (automatic) | PAT required | PAT required |
+| **Startup** | Instant | Instant | Container delay |
+| **Maintenance** | GitHub maintains it | You update it | You update it |
 
 ## Available Toolsets
 
