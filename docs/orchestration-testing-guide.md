@@ -1,6 +1,16 @@
 # AgentX Orchestration System - Testing & Operations Guide
 
-## Current Status (2026-01-19)
+> **⚠️ DEPRECATION NOTICE**: This document was written before major workflow simplifications (January 19, 2026). Many implementation details are outdated. **For current implementation, see:**
+> - **[AGENTS.md](../AGENTS.md)** - Authoritative source for all workflows
+> - **[.github/workflows/agent-orchestrator.yml](../.github/workflows/agent-orchestrator.yml)** - Unified workflow file
+> 
+> **Key Changes Since This Was Written:**
+> - ❌ Custom `status:*` labels → ✅ Use GitHub Projects **Status field** (Backlog, In Progress, In Review, Done)
+> - ❌ 10 separate workflow files → ✅ **1 unified workflow** (agent-orchestrator.yml)
+> - ❌ Polling orchestrator (`process-ready-issues.yml`) → ✅ **Event-driven** via `orch:*` labels
+> - ❌ Multiple stage labels → ✅ **Simple orch:* labels** (orch:pm-done, orch:architect-done, orch:ux-done, orch:engineer-done)
+
+## Current Status (2026-01-19) [LEGACY]
 
 ### ✅ System Components
 

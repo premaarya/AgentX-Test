@@ -47,7 +47,7 @@ Before writing ANY code, creating ANY file, or making ANY modification:
 ║                                                           ║
 ║   □ Step 1: Read AGENTS.md (if not already read)         ║
 ║   □ Step 2: Create GitHub Issue (if none exists)         ║
-║   □ Step 3: Claim Issue (mark status:in-progress)        ║
+║   □ Step 3: Claim Issue (move to In Progress in Projects)║
 ║   □ Step 4: NOW you can proceed with work                ║
 ║                                                           ║
 ║   ⚠️  NO RETROACTIVE ISSUES - defeats audit trail        ║
@@ -67,23 +67,24 @@ Before writing ANY code, creating ANY file, or making ANY modification:
 
 ### Create Issue (MCP - Primary)
 ```json
-{ "tool": "issue_write", "args": { "owner": "jnPiyush", "repo": "AgentX", "method": "create", "title": "[Type] Description", "body": "## Description\n[Details]", "labels": ["type:task", "status:ready"] } }
+{ "tool": "issue_write", "args": { "owner": "jnPiyush", "repo": "AgentX", "method": "create", "title": "[Type] Description", "body": "## Description\n[Details]", "labels": ["type:task"] } }
 ```
 
 ### Claim Issue (MCP - Primary)
 ```json
-{ "tool": "update_issue", "args": { "owner": "jnPiyush", "repo": "AgentX", "issue_number": <ID>, "labels": ["type:task", "status:in-progress"] } }
+// Claim by moving to 'In Progress' in Projects board
+// No label changes needed - use Projects board UI or GraphQL
 ```
 
 ### Close Issue (MCP - Primary)
 ```json
-{ "tool": "update_issue", "args": { "owner": "jnPiyush", "repo": "AgentX", "issue_number": <ID>, "state": "closed", "labels": ["type:task", "status:done"] } }
+{ "tool": "update_issue", "args": { "owner": "jnPiyush", "repo": "AgentX", "issue_number": <ID>, "state": "closed" } }
 ```
 
 ### CLI Fallback (if MCP unavailable)
 ```bash
-gh issue create --title "[Type] Description" --label "type:task,status:ready"
-gh issue edit <ID> --add-label "status:in-progress"
+gh issue create --title "[Type] Description" --label "type:task"
+# Claim by moving to 'In Progress' in Projects board
 git commit -m "type: description (#ID)"
 gh issue close <ID>
 ```
@@ -122,7 +123,7 @@ gh issue close <ID>
 
 - Creating issues retroactively after work is done
 - Committing without issue reference in message
-- Closing issues without updating status label to `status:done`
+- Closing issues without moving to 'Done' in Projects board
 - Skipping research phase
 - Guessing at classification instead of researching
 
