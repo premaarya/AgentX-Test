@@ -2,44 +2,29 @@
 # Triggered by orchestrator to perform requirements analysis and design tasks
 # Produces ADR (Architecture Decision) and Tech Spec (Technical Specification)
 # Part of AgentX Phase 1 MVP
+# Note: Workflow runs only via workflow_dispatch. GitHub may show phantom 'failure' on push - ignore these.
 
 name: Run Architect Agent
 
 on:
-  # Allow push to prevent "workflow file issue" phantom failures
-  push:
-    paths:
-      - '.github/workflows/architect.yml'
   workflow_dispatch:
     inputs:
       issue_number:
         description: 'Issue number to process'
-        required: false
-        default: ''
+        required: true
         type: string
       workflow_type:
         description: 'Type of workflow (feature, spike, etc.)'
-        required: false
-        default: ''
+        required: true
         type: string
       stage:
         description: 'Current stage number'
-        required: false
-        default: '1'
+        required: true
         type: string
 
 jobs:
-  # Skip job that runs on push to satisfy GitHub's workflow validation
-  skip-on-push:
-    name: ⏭️ Skip (Push Event)
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "Workflow file updated. This job exists to prevent phantom failures."
-
   architect:
     name: 🏗️ Solution Architect Agent
-    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     
     steps:

@@ -1,14 +1,11 @@
 # Multi-Agent Orchestrator
 # Main trigger workflow that routes issues to appropriate agent workflows
 # Part of AgentX Phase 1 MVP
+# Note: GitHub may show phantom 'failure' on push for this workflow - ignore these.
 
 name: Multi-Agent Orchestrator
 
 on:
-  # Allow push to prevent "workflow file issue" phantom failures
-  push:
-    paths:
-      - '.github/workflows/orchestrate.yml'
   issues:
     types: [opened, labeled]
   issue_comment:
@@ -27,20 +24,11 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Skip job that runs on push to satisfy GitHub's workflow validation
-  skip-on-push:
-    name: ⏭️ Skip (Push Event)
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "Workflow file updated. This job exists to prevent phantom failures."
-
   # ==========================================================================
   # ROUTER: Determine which workflow to trigger
   # ==========================================================================
   route:
     name: Route to Agent
-    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     outputs:
       workflow: ${{ steps.route.outputs.workflow }}
