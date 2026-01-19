@@ -152,6 +152,28 @@ download_file "templates/.github/prompts/code-review.prompt.md" ".github/prompts
 download_file "templates/.github/prompts/refactor.prompt.md" ".github/prompts/refactor.prompt.md"
 download_file "templates/.github/prompts/test-gen.prompt.md" ".github/prompts/test-gen.prompt.md"
 
+# Install git hooks
+info "Installing git hooks..."
+if [ -d ".git" ]; then
+    HOOKS_DIR=".git/hooks"
+    SOURCE_HOOKS_DIR=".github/hooks"
+    
+    if [ -d "$SOURCE_HOOKS_DIR" ]; then
+        for hook in pre-commit commit-msg; do
+            if [ -f "$SOURCE_HOOKS_DIR/$hook" ]; then
+                cp "$SOURCE_HOOKS_DIR/$hook" "$HOOKS_DIR/$hook"
+                chmod +x "$HOOKS_DIR/$hook"
+                success "Installed $hook hook"
+            fi
+        done
+        success "Git hooks installed successfully"
+    else
+        warn "Hooks directory not found. Skipping hooks installation."
+    fi
+else
+    warn "Not a git repository. Skipping hooks installation."
+fi
+
 echo ""
 echo -e "${CYAN}${BOLD}Next Steps${NC}"
 echo ""

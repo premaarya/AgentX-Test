@@ -1,0 +1,63 @@
+name: 🔬 Spike
+description: Research, investigation, or proof-of-concept
+title: "[Spike] "
+labels: ["type:spike", "status:ready", "priority:p3"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ⚠️ Spike Guidelines
+        Spikes are time-boxed research tasks that produce:
+        - Findings document
+        - Recommendation
+        - Follow-up tasks (if needed)
+  
+  - type: textarea
+    id: question
+    attributes:
+      label: Research Question
+      description: What do we need to investigate?
+      placeholder: "Should we use PostgreSQL or MongoDB for this feature?"
+    validations:
+      required: true
+  
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Why is this research needed?
+      placeholder: "We need to decide on a database before implementing user profiles"
+    validations:
+      required: true
+  
+  - type: textarea
+    id: success-criteria
+    attributes:
+      label: Success Criteria
+      description: What makes this spike complete?
+      placeholder: |
+        - [ ] Evaluated PostgreSQL vs MongoDB for our use case
+        - [ ] Documented pros/cons
+        - [ ] Made recommendation
+        - [ ] Identified follow-up tasks
+    validations:
+      required: true
+  
+  - type: input
+    id: timebox
+    attributes:
+      label: Time Box
+      description: Maximum time to spend (e.g., "4 hours", "1 day")
+      placeholder: "1 day"
+    validations:
+      required: true
+  
+  - type: textarea
+    id: deliverables
+    attributes:
+      label: Expected Deliverables
+      description: What artifacts will be produced?
+      placeholder: |
+        - Comparison document
+        - Proof-of-concept code (if applicable)
+        - Recommendation with justification

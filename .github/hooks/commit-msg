@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# Pre-commit hook: Enforces Issue-First workflow
+# Validates commit messages reference GitHub Issues
+
+COMMIT_MSG_FILE=$1
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# Skip for merge commits, reverts, and initial commits
+if echo "$COMMIT_MSG" | grep -qE '^(Merge|Revert|Initial commit)'; then
+  exit 0
+fi
+
+# Skip if [skip-issue] in commit message (emergency only)
+if echo "$COMMIT_MSG" | grep -qE '\[skip-issue\]'; then
+  echo "⚠️  WARNING: Skipping issue validation (emergency mode)"
+  exit 0
+fi
+
+# Check for issue reference: #123 or closes #123, fixes #123, refs #123
+if ! echo "$COMMIT_MSG" | grep -qE '#[0-9]+|((closes|fixes|resolves|refs?)\s+#[0-9]+)'; then
+  echo "❌ COMMIT REJECTED: No GitHub Issue reference found"
+  echo ""
+  echo "Your commit message must reference a GitHub Issue."
+  echo ""
+  echo "Valid formats:"
+  echo "  - feat: add login button (#123)"
+  echo "  - fix: resolve crash on startup (fixes #456)"
+  echo "  - docs: update README (refs #789)"
+  echo ""
+  echo "To create an issue:"
+  echo "  gh issue create --web"
+  echo ""
+  echo "Emergency bypass (NOT RECOMMENDED):"
+  echo "  Add [skip-issue] to your commit message"
+  echo ""
+  exit 1
+fi
+
+# Check commit message format (type: description)
+if ! echo "$COMMIT_MSG" | grep -qE '^(feat|fix|docs|test|refactor|perf|chore|style):'; then
+  echo "⚠️  WARNING: Commit message should follow format: 'type: description (#issue)'"
+  echo ""
+  echo "Valid types: feat, fix, docs, test, refactor, perf, chore, style"
+  echo ""
+  # Warning only, don't fail
+fi
+
+echo "✅ Commit message validated"
+exit 0

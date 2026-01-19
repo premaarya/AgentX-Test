@@ -1,0 +1,61 @@
+name: ✨ Feature
+description: New capability or significant enhancement (requires ADR + Tech Spec)
+title: "[Feature] "
+labels: ["type:feature", "status:ready", "priority:p2"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ⚠️ Feature Guidelines
+        Features require:
+        - Architecture Decision Record (ADR)
+        - Technical Specification
+        - Architect review
+        
+        The Architect Agent will create these documents.
+  
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What capability are you requesting?
+      placeholder: "Add OAuth 2.0 authentication to the API"
+    validations:
+      required: true
+  
+  - type: textarea
+    id: user-story
+    attributes:
+      label: User Story
+      description: Frame this as a user story
+      placeholder: "As a user, I want to log in using my Google account so that I don't need another password"
+    validations:
+      required: true
+  
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: How will we know this is complete?
+      placeholder: |
+        - [ ] Users can click "Sign in with Google"
+        - [ ] OAuth flow completes successfully
+        - [ ] User session is created
+        - [ ] Tests cover happy path and error cases
+    validations:
+      required: true
+  
+  - type: checkboxes
+    id: has-ui
+    attributes:
+      label: User Interface
+      description: Does this feature have UI components?
+      options:
+        - label: This feature includes UI/UX work (will add needs:ux label)
+  
+  - type: textarea
+    id: technical-notes
+    attributes:
+      label: Technical Notes
+      description: Any technical constraints or considerations?
+      placeholder: "Must integrate with existing PostgreSQL user table"

@@ -45,6 +45,38 @@ function Write-Err($msg) { Write-Host "✗ " -ForegroundColor Red -NoNewline; Wr
 $REPO_URL = "https://raw.githubusercontent.com/jnPiyush/AgentX/master"
 $TARGET_DIR = Get-Location
 
+# Install git hooks
+function Install-GitHooks {
+    Write-Info "Installing git hooks..."
+    
+    if (-not (Test-Path ".git")) {
+        Write-Warn "Not a git repository. Skipping hooks installation."
+        return
+    }
+    
+    $hooksDir = ".git/hooks"
+    $sourceHooksDir = ".github/hooks"
+    
+    if (-not (Test-Path $sourceHooksDir)) {
+        Write-Warn "Hooks directory not found. Skipping hooks installation."
+        return
+    }
+    
+    # Copy hooks
+    $hooks = @("pre-commit", "commit-msg")
+    foreach ($hook in $hooks) {
+        $source = Join-Path $sourceHooksDir $hook
+        $dest = Join-Path $hooksDir $hook
+        
+        if (Test-Path $source) {
+            Copy-Item $source $dest -Force
+            Write-Success "Installed $hook hook"
+        }
+    }
+    
+    Write-Success "Git hooks installed successfully"
+}
+
 # Banner
 Write-Host ""
 Write-Host "╔═══════════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
@@ -164,6 +196,9 @@ Write-Info "Downloading agents, instructions, and prompts..."
 foreach ($file in $optionalFiles) {
     Download-File $file.Src $file.Dest
 }
+
+# Install git hooks
+Install-GitHooks
 
 Write-Host ""
 Write-Host "Next Steps" -ForegroundColor Cyan

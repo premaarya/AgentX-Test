@@ -1,0 +1,81 @@
+name: 🐛 Bug Report
+description: Something isn't working correctly
+title: "[Bug] "
+labels: ["type:bug", "status:ready", "priority:p1"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ⚠️ Bug Report Guidelines
+        Provide enough detail for engineers to reproduce and fix the issue.
+  
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: Clear description of the bug
+      placeholder: "Login page returns 500 error when clicking submit"
+    validations:
+      required: true
+  
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce this bug?
+      placeholder: |
+        1. Go to /login
+        2. Enter valid credentials
+        3. Click 'Submit'
+        4. See error
+    validations:
+      required: true
+  
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: What should happen?
+      placeholder: "Should redirect to dashboard"
+    validations:
+      required: true
+  
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual Behavior
+      description: What actually happens?
+      placeholder: "500 Internal Server Error"
+    validations:
+      required: true
+  
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Where did this occur?
+      placeholder: |
+        - OS: Windows 11
+        - Browser: Chrome 120
+        - Environment: Production
+        - Version/Commit: abc123
+  
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs/Stack Trace
+      description: Relevant error messages or logs
+      placeholder: "Paste logs here"
+      render: shell
+  
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - Critical - System down
+        - High - Major functionality broken
+        - Medium - Partial functionality affected
+        - Low - Minor issue
+    validations:
+      required: true

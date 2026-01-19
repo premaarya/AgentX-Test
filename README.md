@@ -12,6 +12,8 @@
 
 AgentX provides structured guidelines, skills, and workflows for AI coding agents (like GitHub Copilot, Claude, etc.) to write high-quality, secure, and maintainable code. It enables both supervised and fully autonomous (YOLO) execution modes while maintaining safety through architectural controls.
 
+**Works with or without GitHub Copilot** - Enforcement via issue templates, PR templates, pre-commit hooks, and GitHub Actions.
+
 ### Key Problems Solved
 
 | Challenge | Solution |
@@ -21,6 +23,7 @@ AgentX provides structured guidelines, skills, and workflows for AI coding agent
 | **Context loss between sessions** | GitHub Issues as persistent memory |
 | **No coordination for parallel work** | Multi-agent orchestration protocol |
 | **Manual oversight overhead** | YOLO mode for autonomous execution |
+| **Workflow not enforced** | Templates, hooks, Actions (no Copilot required) |
 
 ---
 
@@ -171,7 +174,15 @@ irm https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.ps1 | iex
 curl -fsSL https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.sh | bash
 ```
 
-> **Note**: The install scripts copy essential files (`AGENTS.md`, `Skills.md`, `skills/`, and `.github/` templates) to your current project directory.
+**What It Installs:**
+- Core docs (`AGENTS.md`, `Skills.md`, `CONTRIBUTING.md`)
+- Issue templates (Epic, Feature, Story, Bug, Spike, Docs)
+- PR template with checklist
+- Pre-commit hooks (validate issues, check security)
+- Git hooks for commit message validation
+- GitHub Actions workflows (issue enforcement, orchestration)
+
+> **No GitHub Copilot Required!** Works standalone via templates and hooks.
 
 ### Option 2: Manual Installation
 
@@ -200,71 +211,134 @@ Use AgentX as a template when creating a new repository:
 
 ### Prerequisites
 
-| Tool | Purpose | Installation |
-|------|---------|--------------|
-| **Git** | Version control | [git-scm.com](https://git-scm.com) |
-| **VS Code** | Editor | [code.visualstudio.com](https://code.visualstudio.com) |
-| **GitHub Copilot** | AI coding assistant | [VS Code Extension](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot) |
-| **GitHub CLI** | Task management (recommended) | `winget install GitHub.cli` |
+| Tool | Purpose | Required? | Installation |
+|------|---------|-----------|--------------|
+| **Git** | Version control | ✅ Yes | [git-scm.com](https://git-scm.com) |
+| **GitHub CLI** | Issue/PR management | ✅ Yes | `winget install GitHub.cli` |
+| **VS Code** | Editor | Recommended | [code.visualstudio.com](https://code.visualstudio.com) |
+| **GitHub Copilot** | AI coding assistant | Optional | [VS Code Extension](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot) |
 
-### Setup
+### Quick Setup
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/jnPiyush/AgentX.git
-   cd AgentX
-   ```
+```bash
+# 1. Clone your project (or create new one)
+git clone https://github.com/your-username/your-project.git
+cd your-project
 
-2. **Authenticate GitHub CLI** (for task management)
-   ```bash
-   gh auth login
-   ```
+# 2. Install AgentX
+curl -fsSL https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.sh | bash
 
-3. **Open in VS Code**
-   ```bash
-   code .
-   ```
+# 3. Authenticate GitHub CLI
+gh auth login
 
-4. **Copilot will automatically load**:
-   - `.github/copilot-instructions.md` (global config)
-   - Relevant `.instructions.md` files based on file type
+# 4. Validate setup
+./validate.sh  # or validate.ps1 on Windows
+```
+
+**That's it!** The workflow is now enforced via templates, hooks, and GitHub Actions.
 
 ---
 
 ## 📖 Usage Guide
 
-### For AI Agents
+### Without GitHub Copilot (Manual Workflow)
 
-When working in this repository, follow these steps:
+**Follow this guide**: [CONTRIBUTING.md](CONTRIBUTING.md)
 
-#### 1. Always Create an Issue First
+**Quick workflow:**
+```bash
+# 1. Create issue (choose template)
+gh issue create --web
+
+# 2. Claim issue
+gh issue edit 123 --add-label "status:in-progress"
+
+# 3. Work on code
+# (Pre-commit hooks validate security/format)
+
+# 4. Commit with issue reference
+git commit -m "feat: add feature (#123)"
+
+# 5. Create PR (template enforces checklist)
+gh pr create --fill
+
+# 6. After merge, close issue
+gh issue close 123
+```
+
+### With GitHub Copilot (AI-Assisted)
+
+When working in this repository, Copilot will automatically:
+- Guide you through the Issue-First workflow
+- Enforce security best practices
+- Generate tests with ≥80% coverage
+- Apply coding standards from Skills.md
+- Create documentation
+
+**Just ask Copilot**: "Create a feature for X" and it handles the workflow.
+
+---
+
+## 🛡️ Enforcement Without Copilot
+
+AgentX enforces workflows at **multiple levels**:
+
+### 1. GitHub Issue Templates
+Structured forms for creating issues (Epic, Feature, Story, Bug, Spike, Docs). Forces proper categorization and context.
+
+### 2. PR Template
+Checklist ensures:
+- Issue reference (not retroactive)
+- Tests written (≥80% coverage)
+- Security checks passed
+- Documentation updated
+
+### 3. Pre-Commit Hooks
+**Installed automatically** during setup. Validates:
+- Commit messages reference issues
+- No secrets in code
+- Code formatting
+- SQL injection patterns
 
 ```bash
-# Before ANY work, create a GitHub Issue
-gh issue create --title "[Type] Description" \
-  --body "## Description\n[What needs to be done]" \
-  --label "type:task,status:ready"
-
-# Claim the issue
-gh issue edit <ID> --add-label "status:in-progress" --remove-label "status:ready"
+# Manually install hooks
+cp .github/hooks/* .git/hooks/
+chmod +x .git/hooks/pre-commit .git/hooks/commit-msg
 ```
 
-#### 2. Follow the Workflow
+### 4. GitHub Actions
+Runs on every push/PR:
+- [enforce-issue-workflow.yml](.github/workflows/enforce-issue-workflow.yml) - Validates commit messages
+- [orchestrate.yml](.github/workflows/orchestrate.yml) - Multi-agent coordination
 
+### 5. Validation Script
+Check compliance at any time:
+```bash
+./validate.sh      # Linux/Mac
+.\validate.ps1     # Windows
 ```
-Create Issue → Claim Issue → Do Work → Commit (#ID) → Close Issue
-```
 
-#### 3. Reference Key Documents
+Checks:
+- Git hooks installed
+- Required files present
+- GitHub labels configured
+- Recent commits follow format
+- CI/CD workflows active
 
-| Need | Document |
-|------|----------|
-| Behavior guidelines | [AGENTS.md](AGENTS.md) |
-| Technical standards | [Skills.md](Skills.md) |
-| Specific skill details | [skills/*.md](skills/) |
-| Security config | [.github/autonomous-mode.yml](.github/autonomous-mode.yml) |
+---
 
-### For Development Teams
+## 📖 Key Documents
+
+| Document | Purpose | Read When |
+|----------|---------|-----------|
+| [CONTRIBUTING.md](CONTRIBUTING.md) | **Start here** for manual workflow | Setting up without Copilot |
+| [AGENTS.md](AGENTS.md) | Agent behavior & workflows | Using with Copilot |
+| [Skills.md](Skills.md) | Technical standards index | Before coding |
+| [docs/mcp-integration.md](docs/mcp-integration.md) | GitHub MCP Server setup | Advanced automation |
+
+---
+
+## 🤖 Multi-Agent Orchestration
 
 #### Adopting AgentX in Your Project
 

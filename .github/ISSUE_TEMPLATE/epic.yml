@@ -1,0 +1,60 @@
+name: 🎯 Epic
+description: Large initiative spanning multiple features (requires PRD creation)
+title: "[Epic] "
+labels: ["type:epic", "status:ready", "priority:p1"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ⚠️ Epic Guidelines
+        Epics are large initiatives that require:
+        - Product Requirements Document (PRD)
+        - Breakdown into Features/Stories
+        - Product Manager review
+        
+        The PM Agent will automatically create a PRD and backlog.
+  
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: High-level description of the initiative
+      placeholder: "We need to build a platform that..."
+    validations:
+      required: true
+  
+  - type: textarea
+    id: business-value
+    attributes:
+      label: Business Value
+      description: Why is this epic important?
+      placeholder: "This will enable users to..."
+    validations:
+      required: true
+  
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What's in scope and out of scope?
+      placeholder: |
+        In scope:
+        - Feature A
+        - Feature B
+        
+        Out of scope:
+        - Feature C
+    validations:
+      required: true
+  
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - P0 - Critical
+        - P1 - High
+        - P2 - Medium
+        - P3 - Low
+    validations:
+      required: true

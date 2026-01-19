@@ -1,0 +1,59 @@
+name: 📚 Documentation
+description: Documentation updates or additions
+title: "[Docs] "
+labels: ["type:docs", "status:ready", "priority:p3"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ⚠️ Documentation Guidelines
+        Use this for:
+        - README updates
+        - API documentation
+        - Code comments
+        - User guides
+        - Architecture diagrams
+  
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What documentation needs to be created or updated?
+      placeholder: "Update README with new installation instructions"
+    validations:
+      required: true
+  
+  - type: dropdown
+    id: doc-type
+    attributes:
+      label: Documentation Type
+      options:
+        - README
+        - API Documentation
+        - User Guide
+        - Developer Guide
+        - Architecture Docs
+        - Code Comments
+        - Other
+    validations:
+      required: true
+  
+  - type: textarea
+    id: rationale
+    attributes:
+      label: Rationale
+      description: Why is this documentation needed?
+      placeholder: "Installation process changed after adding Docker support"
+    validations:
+      required: true
+  
+  - type: textarea
+    id: content-outline
+    attributes:
+      label: Content Outline
+      description: What should be covered?
+      placeholder: |
+        - Prerequisites
+        - Installation steps
+        - Configuration
+        - Troubleshooting

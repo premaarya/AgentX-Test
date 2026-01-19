@@ -1,0 +1,53 @@
+name: 📝 Story
+description: Small, well-defined task ready for implementation
+title: "[Story] "
+labels: ["type:story", "status:ready", "priority:p2"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ⚠️ Story Guidelines
+        Stories are small, specific tasks that:
+        - Can be completed in < 1 day
+        - Have clear acceptance criteria
+        - Don't require architecture decisions
+        
+        Engineer Agent will implement directly.
+  
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What needs to be done?
+      placeholder: "Add a logout button to the navigation header"
+    validations:
+      required: true
+  
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: Specific, testable criteria
+      placeholder: |
+        - [ ] Button appears in header for authenticated users
+        - [ ] Clicking button logs user out
+        - [ ] Redirects to login page after logout
+        - [ ] Session is cleared
+        - [ ] Unit tests added
+    validations:
+      required: true
+  
+  - type: checkboxes
+    id: has-ui
+    attributes:
+      label: User Interface
+      description: Does this story have UI components?
+      options:
+        - label: This story includes UI/UX work (will add needs:ux label)
+  
+  - type: input
+    id: parent-issue
+    attributes:
+      label: Parent Issue
+      description: If this is part of a larger Feature/Epic, link it
+      placeholder: "#123"
