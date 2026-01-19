@@ -226,48 +226,6 @@ AgentX is a **multi-agent orchestration system** that coordinates AI agents (Pro
 
 ---
 
-## 3. Agent Roles & Responsibilities
-
-### 3.1 Agent Matrix
-
-| Agent | Trigger | Input | Output | Handoff |
-|-------|---------|-------|--------|---------|
-| **📋 Product Manager** | `type:epic` | User requirements | PRD + Feature/Story backlog | `orch:pm-done` |
-| **🏗️ Architect** | `orch:pm-done` | PRD, technical requirements | ADR + Tech Specs | `orch:architect-done` |
-| **🎨 UX Designer** | `orch:pm-done` (parallel) | PRD, user flows | Wireframes + Prototypes | `orch:ux-done` |
-| **🔧 Engineer** | Both architect + UX done | Tech Spec + UX design | Code + Tests + Docs | `orch:engineer-done` |
-| **✅ Reviewer** | `orch:engineer-done` | Code changes | Review doc + Approval | Close issue |
-
-### 3.2 Agent Execution Pattern
-
-```yaml
-# Each agent follows this pattern in agent-orchestrator.yml
-
-product-manager-agent:
-  if: github.event.label.name == 'type:epic' && !contains(github.event.issue.labels.*.name, 'orch:pm-done')
-  steps:
-    - name: Comment on issue
-      run: gh issue comment ${{ github.event.issue.number }} --body "🚀 Product Manager starting..."
-    
-    - name: Execute agent role
-      run: |
-        # Research, create PRD, break into Features + Stories
-        
-    - name: Add completion label
-      run: gh issue edit ${{ github.event.issue.number }} --add-label "orch:pm-done"
-```
-
-### 3.3 Parallel Execution (Architect + UX)
-
-When PM completes an Epic, **both Architect and UX Designer** are triggered simultaneously:
-
-- **Architect** reviews entire backlog → creates ADR + Tech Specs
-- **UX Designer** reviews entire backlog → creates wireframes + prototypes
-
-Both add their completion labels to the Epic. Engineer only starts when **BOTH** labels are present.
-
----
-
 ## 4. Core Concepts
 
 ### 4.1 Issue-First Workflow
@@ -422,7 +380,20 @@ PM completes → Adds label: orch:pm-done
         Close Issue (Done)              │
 ```
 
-### 4.2 Orchestration Labels
+### 5.3 Parallel Execution
+
+When PM completes an Epic, **both Architect and UX Designer** are triggered simultaneously:
+
+- **Architect** reviews entire backlog → creates ADR + Tech Specs
+- **UX Designer** reviews entire backlog → creates wireframes + prototypes
+
+Both add their completion labels to the Epic. Engineer only starts when **BOTH** labels are present.
+
+---
+
+## 6. Orchestration Model
+
+### 6.1 Orchestration Labels
 
 | Label | Purpose | Added By | Triggers |
 |-------|---------|----------|----------|
@@ -431,7 +402,7 @@ PM completes → Adds label: orch:pm-done
 | `orch:ux-done` | UX design complete | UX Designer | (waits for Architect) |
 | `orch:engineer-done` | Implementation complete | Engineer | Reviewer |
 
-### 4.3 Handoff SLAs
+### 6.2 Handoff SLAs
 
 | Handoff | Target Latency |
 |---------|----------------|
@@ -442,9 +413,9 @@ PM completes → Adds label: orch:pm-done
 
 ---
 
-## 5. Issue Classification & Routing
+## 7. Issue Classification & Routing
 
-### 5.1 Classification Decision Tree
+### 7.1 Classification Decision Tree
 
 ```
 User Request
@@ -468,7 +439,7 @@ Q5: Single capability? → YES: type:feature (Architect)
 Default: type:story (Engineer)
 ```
 
-### 5.2 Issue Type Matrix
+### 7.2 Issue Type Matrix
 
 | Type | Keywords | Agent | Deliverable |
 |------|----------|-------|-------------|
@@ -479,7 +450,7 @@ Default: type:story (Engineer)
 | `type:spike` | "research", "evaluate", "compare" | Architect | Research Doc |
 | `type:docs` | "document", "readme", "update docs" | Engineer | Documentation |
 
-### 5.3 Additional Labels
+### 7.3 Additional Labels
 
 | Category | Labels | Purpose |
 |----------|--------|---------|
@@ -488,9 +459,9 @@ Default: type:story (Engineer)
 
 ---
 
-## 6. GitHub Projects Integration
+## 8. GitHub Projects Integration
 
-### 6.1 Status Field Values
+### 8.1 Status Field Values
 
 AgentX uses the **native GitHub Projects Status field** instead of custom labels:
 
@@ -504,7 +475,7 @@ AgentX uses the **native GitHub Projects Status field** instead of custom labels
 **Optional (for visibility):**
 | **Ready** | Design complete, awaiting Engineer | Architect + UX Designer |
 
-### 6.2 Why GitHub Projects?
+### 8.2 Why GitHub Projects?
 
 ✅ **Native UI** - Clean visual board  
 ✅ **Mutually Exclusive** - Only one status at a time  
@@ -512,7 +483,7 @@ AgentX uses the **native GitHub Projects Status field** instead of custom labels
 ✅ **Easy Queries** - Standard GitHub API  
 ✅ **Single Source of Truth** - One field to manage
 
-### 6.3 Setup
+### 8.3 Setup
 
 See [docs/project-setup.md](project-setup.md) for complete instructions.
 
@@ -529,9 +500,9 @@ gh project link <PROJECT_ID> --repo jnPiyush/AgentX
 
 ---
 
-## 7. MCP Server Integration
+## 9. MCP Server Integration
 
-### 7.1 Configuration
+### 9.1 Configuration
 
 **File:** `.vscode/mcp.json`
 
@@ -551,7 +522,7 @@ gh project link <PROJECT_ID> --repo jnPiyush/AgentX
 - GitHub Copilot subscription
 - OAuth authentication (automatic)
 
-### 7.2 Available Tools
+### 9.2 Available Tools
 
 | Tool | Purpose | Example |
 |------|---------|---------|
@@ -561,7 +532,7 @@ gh project link <PROJECT_ID> --repo jnPiyush/AgentX
 | `run_workflow` | Trigger workflows | Trigger next agent |
 | `list_issues` | Query issues | Find ready tasks |
 
-### 7.3 Example: Agent Handoff
+### 9.3 Example: Agent Handoff
 
 ```json
 // PM Agent completes work
@@ -591,9 +562,9 @@ See [docs/mcp-integration.md](mcp-integration.md) for complete tool reference.
 
 ---
 
-## 8. Security Architecture
+## 10. Security Architecture
 
-### 8.1 Four-Layer Security Model
+### 10.1 Four-Layer Security Model
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -626,7 +597,7 @@ See [docs/mcp-integration.md](mcp-integration.md) for complete tool reference.
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 8.2 Blocked Commands
+### 10.2 Blocked Commands
 
 Agents **never execute**:
 - `rm -rf /` - Destructive file operations
@@ -634,7 +605,7 @@ Agents **never execute**:
 - `drop database` - Destructive database operations
 - `curl <url> | bash` - Arbitrary code execution
 
-### 8.3 Iteration Limits
+### 10.3 Iteration Limits
 
 | Operation | Max Attempts |
 |-----------|--------------|
@@ -645,9 +616,9 @@ Agents **never execute**:
 
 ---
 
-## 9. File Structure
+## 11. File Structure
 
-### 9.1 Repository Layout
+### 11.1 Repository Layout
 
 ```
 AgentX/
@@ -676,7 +647,7 @@ AgentX/
 └── install.ps1 / install.sh          # Setup scripts
 ```
 
-### 9.2 Artifact Locations
+### 11.2 Artifact Locations
 
 | Artifact | Pattern | Example |
 |----------|---------|---------|
@@ -686,7 +657,7 @@ AgentX/
 | UX Design | `docs/ux/UX-{issue}.md` | `docs/ux/UX-51.md` |
 | Review | `docs/reviews/REVIEW-{issue}.md` | `docs/reviews/REVIEW-52.md` |
 
-### 9.3 Commit Message Format
+### 11.3 Commit Message Format
 
 ```
 type: description (#issue)
@@ -703,9 +674,9 @@ git commit -m "feat: add OAuth login support (#123)"
 
 ---
 
-## 10. Quality Standards
+## 12. Quality Standards
 
-### 10.1 Skills Framework
+### 12.1 Skills Framework
 
 AgentX defines **18 production skills** in [Skills.md](../Skills.md):
 
@@ -717,7 +688,7 @@ AgentX defines **18 production skills** in [Skills.md](../Skills.md):
 | **Operations** | Remote Git Operations, Code Review & Audit |
 | **AI Systems** | AI Agent Development |
 
-### 10.2 Quality Gates (All Must Pass)
+### 12.2 Quality Gates (All Must Pass)
 
 ✅ All tests passing with ≥80% code coverage  
 ✅ No compiler warnings or linter errors  
@@ -725,13 +696,13 @@ AgentX defines **18 production skills** in [Skills.md](../Skills.md):
 ✅ All child issues properly linked  
 ✅ Commit messages reference issue numbers  
 
-### 10.3 Test Pyramid
+### 12.3 Test Pyramid
 
 - **70% Unit Tests** - Fast, isolated component tests
 - **20% Integration Tests** - Components working together
 - **10% E2E Tests** - Full user flows
 
-### 10.4 Documentation Requirements
+### 12.4 Documentation Requirements
 
 - XML docs for all public APIs (C#)
 - Docstrings for all functions (Python)
