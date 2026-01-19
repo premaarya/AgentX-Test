@@ -1,11 +1,14 @@
 # Run Engineer Agent
 # Triggered by orchestrator to perform implementation tasks
 # Part of AgentX Phase 1 MVP
-# Note: Workflow runs only via workflow_dispatch. GitHub may show phantom 'failure' on push - ignore these.
 
 name: Run Engineer Agent
 
 on:
+  # Allow push to prevent "workflow file issue" phantom failures
+  push:
+    paths:
+      - '.github/workflows/engineer.yml'
   workflow_dispatch:
     inputs:
       issue_number:
@@ -22,6 +25,14 @@ on:
         type: string
 
 jobs:
+  # Skip job that runs on push to satisfy GitHub's workflow validation
+  skip-on-push:
+    name: ⏭️ Skip (Push Event)
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Workflow file updated. This job exists to prevent phantom failures."
+
   engineer:
     name: 💻 Engineer Agent
     runs-on: ubuntu-latest
