@@ -219,6 +219,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add docs/adr docs/specs
           git commit -m "docs: add ADR + Spec for issue #${{ needs.route.outputs.issue_number }}"
+          git pull --rebase origin master
           git push
 
       - name: Complete Phase
@@ -273,6 +274,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add docs/ux
           git commit -m "docs: add UX design for issue #${{ needs.route.outputs.issue_number }}"
+          git pull --rebase origin master
           git push
 
       - name: Complete Phase
@@ -323,6 +325,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add src tests
           git commit -m "feat: implement issue #${{ needs.route.outputs.issue_number }}" || echo "No changes"
+          git pull --rebase origin master || echo "No remote changes"
           git push || echo "No changes to push"
 
       - name: Complete Phase
