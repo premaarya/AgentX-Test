@@ -43,7 +43,22 @@ AgentX provides structured guidelines, skills, and workflows for AI coding agent
 
 Orchestrated via GitHub Actions with polling-based coordination (every 5 minutes).
 
-### 🔒 4-Layer Security Architecture
+### � GitHub MCP Server Integration
+
+Direct GitHub API access for agent workflows, bypassing `workflow_dispatch` caching issues:
+
+| Tool | Purpose |
+|------|---------|
+| `run_workflow` | Trigger workflow_dispatch events |
+| `list_workflow_runs` | Check workflow status |
+| `create_issue` | Create GitHub issues |
+| `update_issue` | Update issue labels/state |
+
+**Benefits**: No caching delays, structured JSON responses, agent-native design.
+
+See [MCP Integration Guide](docs/mcp-integration.md) for setup details.
+
+### �🔒 4-Layer Security Architecture
 
 1. **Actor Allowlist** - Who can perform autonomous operations
 2. **Protected Paths** - Files requiring human review
@@ -86,11 +101,14 @@ AgentX/
 │   └── 18-code-review-and-audit.md
 │
 ├── docs/
-│   └── technical-specification.md # Complete system specification
+│   ├── technical-specification.md # Complete system specification
+│   └── mcp-integration.md         # GitHub MCP Server documentation
 │
 ├── templates/                     # Template files for new projects
 │   ├── .github/                   # GitHub configuration templates
 │   └── .vscode/                   # VS Code configuration templates
+│       ├── settings.json          # Copilot settings
+│       └── mcp.json               # GitHub MCP Server config
 │
 └── .github/
     ├── copilot-instructions.md    # Global Copilot configuration
@@ -179,6 +197,7 @@ Use AgentX as a template when creating a new repository:
 | **VS Code** | Editor | [code.visualstudio.com](https://code.visualstudio.com) |
 | **GitHub Copilot** | AI coding assistant | [VS Code Extension](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot) |
 | **GitHub CLI** | Task management (recommended) | `winget install GitHub.cli` |
+| **Docker** | MCP Server (optional) | [docker.com](https://docker.com) |
 
 ### Setup
 
@@ -396,6 +415,7 @@ curl | bash                # Remote code execution
 | [AGENTS.md](AGENTS.md) | Agent behavior, execution modes, security, workflows |
 | [Skills.md](Skills.md) | Technical standards index, production rules |
 | [Technical Specification](docs/technical-specification.md) | Complete system architecture and design |
+| [MCP Integration](docs/mcp-integration.md) | GitHub MCP Server setup and usage |
 | [skills/](skills/) | Detailed documentation for each of 18 skills |
 
 ### Standards

@@ -76,7 +76,8 @@ $coreFiles = @(
     @{ Src = "templates/.github/workflows/engineer.yml"; Dest = ".github/workflows/engineer.yml" },
     @{ Src = "templates/.github/workflows/reviewer.yml"; Dest = ".github/workflows/reviewer.yml" },
     @{ Src = "templates/.github/workflows/ux-designer.yml"; Dest = ".github/workflows/ux-designer.yml" },
-    @{ Src = "templates/.vscode/settings.json"; Dest = ".vscode/settings.json" }
+    @{ Src = "templates/.vscode/settings.json"; Dest = ".vscode/settings.json" },
+    @{ Src = "templates/.vscode/mcp.json"; Dest = ".vscode/mcp.json" }
 )
 
 # Skills files
@@ -273,6 +274,9 @@ Write-Host " for production standards"
 Write-Host "6. Review " -NoNewline
 Write-Host ".github/orchestration-config.yml" -ForegroundColor Cyan -NoNewline
 Write-Host " for multi-agent orchestration settings"
+Write-Host "7. Configure " -NoNewline
+Write-Host ".vscode/mcp.json" -ForegroundColor Cyan -NoNewline
+Write-Host " with your GitHub PAT for MCP Server (requires Docker)"
 Write-Host ""
 Write-Success "AgentX installed successfully! 🚀"
 Write-Host ""

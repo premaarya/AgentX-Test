@@ -102,6 +102,7 @@ download_file "templates/.github/workflows/engineer.yml" ".github/workflows/engi
 download_file "templates/.github/workflows/reviewer.yml" ".github/workflows/reviewer.yml"
 download_file "templates/.github/workflows/ux-designer.yml" ".github/workflows/ux-designer.yml"
 download_file "templates/.vscode/settings.json" ".vscode/settings.json"
+download_file "templates/.vscode/mcp.json" ".vscode/mcp.json"
 
 # Skills files
 info "Downloading skills documentation..."
@@ -234,6 +235,7 @@ echo ""
 echo "4. Read AGENTS.md for workflow guidelines"
 echo "5. Check Skills.md for production standards"
 echo "6. Review .github/orchestration-config.yml for multi-agent orchestration settings"
+echo "7. Configure .vscode/mcp.json with your GitHub PAT for MCP Server (requires Docker)"
 echo ""
 success "AgentX installed successfully! 🚀"
 echo ""
