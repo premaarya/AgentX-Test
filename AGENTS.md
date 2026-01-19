@@ -315,10 +315,10 @@ User asks: "Build me a feature"
 
 | Agent Role | Triggered By | Primary Responsibility | Deliverables | Next Agent |
 |-----------|--------------|------------------------|--------------|------------|
-| **Product Manager** | `type:epic` | Create ENTIRE backlog (Epic→Features→Stories), identify UX needs | PRD + Complete backlog with UX labels | UX Designer + Architect (parallel) |
-| **UX Designer** | `needs:ux` label | Design user experience for flagged items | UX specs at docs/ux/UX-{issue}.md | Updates parent issue, unblocks Engineer |
-| **Architect** | `type:feature` or `type:story` | Technical design, create architecture tasks | ADR + Tech Spec + Implementation tasks | Updates parent issue, unblocks Engineer |
-| **Engineer** | `orch:ux-done` AND `orch:architect-done` | Implement when BOTH UX + Architect complete | Code + Tests + Docs | Reviewer |
+| **Product Manager** | User input (chat or Epic issue) | Research requirements, create ENTIRE backlog (Epic→Features→Stories) | PRD + Complete backlog | Architect + UX Designer (parallel) |
+| **Architect** | `orch:pm-done` label | Review entire backlog, research codebase/solutions, develop Tech Specs | ADR + Tech Spec for all items | Updates Epic, unblocks Engineer |
+| **UX Designer** | `orch:pm-done` label | Review entire backlog, create wireframes + HTML prototypes | UX designs at docs/ux/ | Updates Epic, unblocks Engineer |
+| **Engineer** | `orch:ux-done` AND `orch:architect-done` | Implement when BOTH complete | Code + Tests + Docs | Reviewer |
 | **Reviewer** | `orch:engineer-done` | Quality assurance & approval | Code review + approval/feedback | Close issue |
 
 ---
@@ -339,7 +339,7 @@ Epic Issue Created (#48 - "Build User Authentication System")
 │ 3. Research existing systems and technical constraints      │
 │ 4. Create PRD at docs/prd/PRD-48.md                        │
 │                                                              │
-│ Phase 2: Create COMPLETE Backlog                            │
+│ Phase 2: Create Complete Backlog                            │
 │ 5. Break Epic into Features (create ALL Feature issues):    │
 │    - #50: OAuth Integration                                  │
 │    - #51: User Profile Management                            │
@@ -350,14 +350,8 @@ Epic Issue Created (#48 - "Build User Authentication System")
 │    Feature #51 → Stories #63, #64, #65                      │
 │    Feature #52 → Stories #66, #67, #68                      │
 │                                                              │
-│ Phase 3: Identify UX Needs                                  │
-│ 7. Review each Story/Feature, add needs:ux label if:        │
-│    - Has user-facing UI components                           │
-│    - Requires interaction design                             │
-│    - Needs visual design or branding                         │
-│                                                              │
-│ 8. Add orch:pm-done label to Epic #48                       │
-│ 9. Comment with backlog summary + links                     │
+│ 7. Add orch:pm-done label to Epic #48                       │
+│ 8. Comment with backlog summary + links                     │
 │                                                              │
 │ Handoff: Triggers BOTH UX Designer + Architect (parallel)   │
 └─────────────────────────────────────────────────────────────┘
@@ -368,8 +362,9 @@ Epic Issue Created (#48 - "Build User Authentication System")
 ┌─────────────────┐  ┌──────────────────────┐ │
 │ 2️⃣ UX DESIGNER   │  │ 3️⃣ ARCHITECT AGENT    │ │
 │                 │  │                      │ │
-│ For items with  │  │ For ALL Features/    │ │
-│ needs:ux label  │  │ Stories              │ │
+│ Reviews entire  │  │ Reviews entire       │ │
+│ backlog for UX  │  │ backlog for tech     │ │
+│ needs           │  │ design               │ │
 └─────────────────┘  └──────────────────────┘ │
     │                    │                     │
     └────────────────────┴─────────────────────┘
@@ -379,39 +374,43 @@ Epic Issue Created (#48 - "Build User Authentication System")
 
 ┌─────────────────────────────────────────────────────────────┐
 │ 2️⃣ UX DESIGNER AGENT (Parallel Track)                       │
-│ Trigger: needs:ux label on Feature/Story                    │
+│ Trigger: orch:pm-done label on Epic                         │
 │                                                              │
 │ Execution Steps:                                             │
-│ 1. Pick Story with needs:ux label (e.g., #60)               │
-│ 2. Read Story description and parent Feature context        │
+│ 1. Read entire backlog (all Features & Stories)             │
+│ 2. Identify items needing UX (user-facing features)         │
 │ 3. Research existing UI patterns, brand guidelines          │
-│ 4. Create UX design at docs/ux/UX-60.md with:              │
+│ 4. Create wireframes + HTML prototypes for each item:       │
+│    - docs/ux/UX-50.md (Feature level)                       │
+│    - docs/ux/UX-60.md, UX-61.md (Story level)               │
 │    - Wireframes/mockups                                      │
 │    - User flow diagrams                                      │
-│    - Accessibility requirements                              │
-│    - Design system components to use                         │
-│ 5. Commit UX design document                                 │
-│ 6. Add orch:ux-done label to Story #60                      │
-│ 7. Comment on Story with UX specs link                      │
+│    - HTML prototypes                                         │
+│ 5. Commit all UX design documents                            │
+│ 6. Add orch:ux-done label to Epic #48                       │
+│ 7. Comment on Epic with UX deliverables summary             │
 │                                                              │
-│ Note: Works independently, updates parent Story             │
+│ Note: Reviews full backlog, creates designs for all UX needs│
 └─────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────┐
 │ 3️⃣ ARCHITECT AGENT (Parallel Track)                         │
-│ Trigger: type:feature OR type:story label detected          │
+│ Trigger: orch:pm-done label on Epic                         │
 │                                                              │
 │ Execution Steps:                                             │
-│ 1. Read feature description (and parent PRD if exists)      │
-│ 2. Research codebase for integration points                 │
-│ 3. Create ADR at docs/adr/ADR-50.md (architecture decision) │
-│ 4. Create Tech Spec at docs/specs/SPEC-50.md               │
-│ 5. If type:spike, document research findings + recommendation│
-│ 6. Break down into Story issues (type:story)                │
-│ 7. Add orch:architect-done label                            │
-│ 8. Comment with summary + links to child stories            │
+│ 1. Read entire backlog (Epic, all Features & Stories)       │
+│ 2. Read PRD at docs/prd/PRD-48.md                          │
+│ 3. Research codebase for implementation approaches          │
+│ 4. Create architecture decisions & tech specs for all:      │
+│    - docs/adr/ADR-48.md (overall architecture)              │
+│    - docs/specs/SPEC-50.md (OAuth integration)              │
+│    - docs/specs/SPEC-51.md (user profiles)                  │
+│    - docs/specs/SPEC-52.md (password reset)                 │
+│ 5. Commit all technical documents                            │
+│ 6. Add orch:architect-done label to Epic #48                │
+│ 7. Comment on Epic with technical deliverables summary      │
 │                                                              │
-│ Handoff: Triggers Engineer for EACH Story (<30s SLA)        │
+│ Note: Reviews full backlog, creates tech specs for all items│
 └─────────────────────────────────────────────────────────────┘
     │
     ▼ (for each Story #60, #61, #62...)
@@ -420,11 +419,11 @@ Epic Issue Created (#48 - "Build User Authentication System")
 │ Trigger: type:story, type:bug, or type:docs detected        │
 │                                                              │
 │ Execution Steps:                                             │
-│ 1. Check prerequisites (BOTH must be true):                 │
-│    ✅ orch:architect-done label exists                       │
-│    ✅ orch:ux-done label exists (if needs:ux label present) │
+│ 1. Check prerequisites on parent Epic (BOTH must exist):    │
+│    ✅ orch:architect-done label                              │
+│    ✅ orch:ux-done label                                     │
 │                                                              │
-│ 2. Read story/bug description (and specs if exist)          │
+│ 2. Read story/bug description, Tech Spec, UX design         │
 │ 3. Research codebase for implementation location            │
 │ 4. Implement the change following Skills.md standards       │
 │ 5. Write unit tests (70%), integration tests (20%)          │
@@ -498,12 +497,12 @@ Epic Issue Created (#48 - "Build User Authentication System")
 
 | From → To | Trigger Condition | Signal (Label) | Action Required |
 |-----------|------------------|----------------|-----------------|
-| **Product Manager → UX + Architect** | Complete backlog created (Epic→Features→Stories), UX needs identified | `orch:pm-done` | Create ALL child issues, add `needs:ux` labels, trigger BOTH UX Designer and Architect workflows |
-| **UX Designer → (Updates Story)** | UX design complete for item with `needs:ux` label | `orch:ux-done` | Commit UX specs, add label to Story, comment with design doc link |
-| **Architect → (Updates Story)** | Technical design complete (ADR + Spec written) | `orch:architect-done` | Commit ADR + Spec, add label to Story/Feature, comment with docs link |
-| **UX + Architect → Engineer** | BOTH UX (if `needs:ux`) and Architect complete | `orch:ux-done` + `orch:architect-done` | Engineer checks prerequisites before starting implementation |
-| **Engineer → Reviewer** | Implementation complete, tests passing, code committed | `orch:engineer-done` | Commit code, comment on Story with commit SHA |
-| **Reviewer → Close** | Code review passed quality gates | Review approved in `docs/reviews/REVIEW-{issue}.md` | Close issue with `status:done` label |
+| **Product Manager → UX + Architect** | Complete backlog created (Epic→Features→Stories) | `orch:pm-done` on Epic | Create ALL child issues, trigger BOTH UX Designer and Architect workflows |
+| **UX Designer → (Updates Epic)** | All UX designs complete (wireframes + prototypes) | `orch:ux-done` on Epic | Commit all UX docs, add label to Epic, comment with deliverables |
+| **Architect → (Updates Epic)** | All Tech Specs complete (ADR + Specs for all items) | `orch:architect-done` on Epic | Commit all technical docs, add label to Epic, comment with deliverables |
+| **UX + Architect → Engineer** | BOTH complete (all designs + specs ready) | `orch:ux-done` + `orch:architect-done` on Epic | Engineer checks Epic labels before starting any Story |
+| **Engineer → Reviewer** | Implementation complete, tests passing, code committed | `orch:engineer-done` on Story | Commit code, comment on Story with commit SHA |
+| **Reviewer → Close** | Code review passed quality gates | Review approved in `docs/reviews/REVIEW-{issue}.md` | Close Story with `status:done` label |
 
 ---
 
@@ -556,8 +555,9 @@ gh workflow run run-reviewer.yml -f issue_number=60
 | **Missing artifacts** | No PRD/ADR/Spec/Code files committed | Remove `orch:*-done` label, restart agent | User/System |
 | **Test failures** | CI/CD pipeline fails after commit | Add `needs:fixes` label, reassign to Engineer | System |
 | **Review rejected** | Reviewer adds `needs:changes` label | Remove `orch:engineer-done`, Engineer fixes issues | Reviewer |
-| **UX design missing** | Engineer starts but no UX specs exist for `needs:ux` item | Block Engineer, notify UX Designer, add `needs:help` label | System |
-| **UX/Architect conflict** | Both complete but requirements conflict | Add `needs:resolution` label, escalate to PM | System |
+| **UX design missing** | Engineer starts but Epic lacks `orch:ux-done` label | Block Engineer, notify UX Designer, add `needs:help` label to Epic | System |
+| **Architect spec missing** | Engineer starts but Epic lacks `orch:architect-done` label | Block Engineer, notify Architect, add `needs:help` label to Epic | System |
+| **UX/Architect conflict** | Both complete but requirements conflict | Add `needs:resolution` label to Epic, escalate to PM | System |
 
 ---
 
@@ -567,10 +567,10 @@ gh workflow run run-reviewer.yml -f issue_number=60
 
 | Handoff | Target Time | Measured By |
 |---------|-------------|-------------|
-| PM → UX + Architect | <30 seconds | Time between `orch:pm-done` and both UX Designer AND Architect workflow starts |
-| UX Designer → (Updates Story) | N/A (parallel) | UX Designer adds `orch:ux-done` when complete |
-| Architect → (Updates Story) | N/A (parallel) | Architect adds `orch:architect-done` when complete |
-| UX + Architect → Engineer | <30 seconds | Time between BOTH `orch:ux-done` + `orch:architect-done` and Engineer workflow start |
+| PM → UX + Architect | <30 seconds | Time between `orch:pm-done` on Epic and both UX + Architect workflow starts |
+| UX Designer → (Updates Epic) | N/A (parallel) | UX Designer adds `orch:ux-done` to Epic when all designs complete |
+| Architect → (Updates Epic) | N/A (parallel) | Architect adds `orch:architect-done` to Epic when all specs complete |
+| UX + Architect → Engineer | <30 seconds | Time between BOTH labels on Epic and Engineer starting any Story |
 | Engineer → Reviewer | <30 seconds | Time between `orch:engineer-done` and Reviewer workflow start |
 | Reviewer → Close | <5 minutes | Time from review document creation to issue closure |
 
