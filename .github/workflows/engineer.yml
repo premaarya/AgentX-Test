@@ -89,19 +89,19 @@ jobs:
               issue_number: parseInt('${{ inputs.issue_number }}'),
               body: `## 💻 Engineer Agent - Working...
 
-**Task**: Implementing solution based on design
+            **Task**: Implementing solution based on design
 
-**Design Available**: ${{ steps.issue.outputs.has_design == 'true' && '✅ Yes' || '⚠️ No - using issue description' }}
+            **Design Available**: ${{ steps.issue.outputs.has_design == 'true' && '✅ Yes' || '⚠️ No - using issue description' }}
 
-**Actions in progress**:
-- [ ] Reviewing architect design
-- [ ] Setting up development branch
-- [ ] Implementing code changes
-- [ ] Writing unit tests
-- [ ] Running linters and formatters
-- [ ] Creating pull request
+            **Actions in progress**:
+            - [ ] Reviewing architect design
+            - [ ] Setting up development branch
+            - [ ] Implementing code changes
+            - [ ] Writing unit tests
+            - [ ] Running linters and formatters
+            - [ ] Creating pull request
 
-<sub>Started at: ${new Date().toISOString()}</sub>`
+            <sub>Started at: ${new Date().toISOString()}</sub>`
             });
 
       - name: Create feature branch
@@ -278,48 +278,48 @@ jobs:
             
             const completionComment = `## 💻 Engineer Agent - Complete
 
-**Status**: ✅ Implementation phase complete
+            **Status**: ✅ Implementation phase complete
 
-**Artifacts Created**:
-- 🌿 Branch: \`${{ steps.branch.outputs.branch_name }}\`
-${prInfo}
-- 📄 Implementation files created
+            **Artifacts Created**:
+            - 🌿 Branch: \`${{ steps.branch.outputs.branch_name }}\`
+            ${prInfo}
+            - 📄 Implementation files created
 
-**Implementation Summary**:
-> Based on the architect's design, the engineer has implemented the required changes.
->
-> **Note**: In full implementation, this would include:
-> - Production-quality source code
-> - Comprehensive unit tests (80%+ coverage)
-> - Integration tests
-> - Updated documentation
+            **Implementation Summary**:
+            > Based on the architect's design, the engineer has implemented the required changes.
+            >
+            > **Note**: In full implementation, this would include:
+            > - Production-quality source code
+            > - Comprehensive unit tests (80%+ coverage)
+            > - Integration tests
+            > - Updated documentation
 
-**Next Steps**:
-This implementation is ready for the **Reviewer** agent to review.
+            **Next Steps**:
+            This implementation is ready for the **Reviewer** agent to review.
 
----
+            ---
 
-### Handoff Package for Reviewer
+            ### Handoff Package for Reviewer
 
-**PR to Review**: ${{ steps.pr.outputs.pr_number !== 'none' ? '#' + '${{ steps.pr.outputs.pr_number }}' : 'See branch' }}
-**Branch**: \`${{ steps.branch.outputs.branch_name }}\`
+            **PR to Review**: ${{ steps.pr.outputs.pr_number != 'none' && format('#{0}', steps.pr.outputs.pr_number) || 'See branch' }}
+            **Branch**: \`${{ steps.branch.outputs.branch_name }}\`
 
-**Changes Made**:
-1. [List of changes would be here]
-2. [Test files added]
+            **Changes Made**:
+            1. [List of changes would be here]
+            2. [Test files added]
 
-**Review Focus Areas**:
-- [ ] Code quality and patterns
-- [ ] Test coverage adequacy
-- [ ] Security considerations
-- [ ] Performance implications
-- [ ] Documentation completeness
+            **Review Focus Areas**:
+            - [ ] Code quality and patterns
+            - [ ] Test coverage adequacy
+            - [ ] Security considerations
+            - [ ] Performance implications
+            - [ ] Documentation completeness
 
-**Known Issues/Risks**:
-- [Any known limitations]
+            **Known Issues/Risks**:
+            - [Any known limitations]
 
----
-<sub>🤖 Completed at: ${new Date().toISOString()} | Duration: ~${Math.floor(Math.random() * 10) + 5} minutes</sub>`;
+            ---
+            <sub>🤖 Completed at: ${new Date().toISOString()} | Duration: ~${Math.floor(Math.random() * 10) + 5} minutes</sub>`;
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,

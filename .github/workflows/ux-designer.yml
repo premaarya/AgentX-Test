@@ -77,24 +77,24 @@ jobs:
               issue_number: parseInt('${{ inputs.issue_number }}'),
               body: `## 🎨 UX Designer Agent - Working...
 
-**Task**: Creating user experience design artifacts
+            **Task**: Creating user experience design artifacts
 
-**Phase 1 - User Research**:
-- [ ] Analyzing user needs from issue description
-- [ ] Identifying user personas
-- [ ] Defining user goals and pain points
+            **Phase 1 - User Research**:
+            - [ ] Analyzing user needs from issue description
+            - [ ] Identifying user personas
+            - [ ] Defining user goals and pain points
 
-**Phase 2 - User Flows**:
-- [ ] Mapping primary user journey
-- [ ] Identifying decision points
-- [ ] Documenting happy path and edge cases
+            **Phase 2 - User Flows**:
+            - [ ] Mapping primary user journey
+            - [ ] Identifying decision points
+            - [ ] Documenting happy path and edge cases
 
-**Phase 3 - Wireframes**:
-- [ ] Creating low-fidelity wireframes
-- [ ] Defining component layout
-- [ ] Annotating interactions
+            **Phase 3 - Wireframes**:
+            - [ ] Creating low-fidelity wireframes
+            - [ ] Defining component layout
+            - [ ] Annotating interactions
 
-<sub>Started at: ${new Date().toISOString()}</sub>`
+            <sub>Started at: ${new Date().toISOString()}</sub>`
             });
 
       - name: UX analysis
@@ -349,80 +349,80 @@ jobs:
           script: |
             const completionComment = `## 🎨 UX Designer Agent - Complete
 
-**Status**: ✅ UX Design phase complete
+            **Status**: ✅ UX Design phase complete
 
----
+            ---
 
-## 📋 Artifacts Created
+            ## 📋 Artifacts Created
 
-| Document | Path | Purpose |
-|----------|------|---------|
-| **UX Design** | \`docs/ux/UX-${{ inputs.issue_number }}.md\` | User experience design |
+            | Document | Path | Purpose |
+            |----------|------|---------|
+            | **UX Design** | \`docs/ux/UX-${{ inputs.issue_number }}.md\` | User experience design |
 
----
+            ---
 
-## 👤 User Research Summary
+            ## 👤 User Research Summary
 
-### Target Users
-- **Primary**: [User persona description]
-- **Secondary**: [User persona description]
+            ### Target Users
+            - **Primary**: [User persona description]
+            - **Secondary**: [User persona description]
 
-### Key User Needs
-- Must have: [Critical features]
-- Should have: [Important features]
+            ### Key User Needs
+            - Must have: [Critical features]
+            - Should have: [Important features]
 
----
+            ---
 
-## 🔄 User Flow Summary
+            ## 🔄 User Flow Summary
 
-\`\`\`
-User → Login → Main Screen → Action → Success/Error → End
-\`\`\`
+            \`\`\`
+            User → Login → Main Screen → Action → Success/Error → End
+            \`\`\`
 
-### Key Decision Points
-1. Authentication check
-2. Action validation
-3. Error handling
+            ### Key Decision Points
+            1. Authentication check
+            2. Action validation
+            3. Error handling
 
----
+            ---
 
-## 📐 Wireframes Summary
+            ## 📐 Wireframes Summary
 
-| Screen | Purpose | Key Components |
-|--------|---------|----------------|
-| Main Screen | Entry point | Header, Content, Cards |
-| Form Screen | Data input | Form fields, Submit |
+            | Screen | Purpose | Key Components |
+            |--------|---------|----------------|
+            | Main Screen | Entry point | Header, Content, Cards |
+            | Form Screen | Data input | Form fields, Submit |
 
----
+            ---
 
-## 🔄 Handoff Package for Architect
+            ## 🔄 Handoff Package for Architect
 
-### Context
-**Feature**: ${{ steps.issue.outputs.title }}
+            ### Context
+            **Feature**: ${{ steps.issue.outputs.title }}
 
-### Documents to Review
-1. **UX Design**: \`docs/ux/UX-${{ inputs.issue_number }}.md\` - User flows and wireframes
+            ### Documents to Review
+            1. **UX Design**: \`docs/ux/UX-${{ inputs.issue_number }}.md\` - User flows and wireframes
 
-### Key UX Requirements for Technical Design
-1. Page load < 2 seconds
-2. Interaction response < 100ms
-3. Accessibility: WCAG AA compliance
-4. Mobile-responsive design
+            ### Key UX Requirements for Technical Design
+            1. Page load < 2 seconds
+            2. Interaction response < 100ms
+            3. Accessibility: WCAG AA compliance
+            4. Mobile-responsive design
 
-### Data Requirements
-- User authentication state
-- Form validation rules
-- Error message content
+            ### Data Requirements
+            - User authentication state
+            - Form validation rules
+            - Error message content
 
-### Next Steps
-The **Architect** should incorporate these UX requirements into:
-- PRD (user stories from flows)
-- ADR (technical decisions supporting UX)
-- Tech Spec (API design for data needs)
+            ### Next Steps
+            The **Architect** should incorporate these UX requirements into:
+            - PRD (user stories from flows)
+            - ADR (technical decisions supporting UX)
+            - Tech Spec (API design for data needs)
 
----
+            ---
 
-<sub>🤖 Completed at: ${new Date().toISOString()} | Duration: ~${Math.floor(Math.random() * 5) + 2} minutes</sub>`;
+            <sub>🤖 Completed at: ${new Date().toISOString()} | Duration: ~${Math.floor(Math.random() * 5) + 2} minutes</sub>`;
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,

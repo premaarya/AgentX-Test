@@ -364,13 +364,13 @@ jobs:
             
             const comment = `## ${agentEmoji[agent] || '🤖'} Agent Dispatched: ${agent.charAt(0).toUpperCase() + agent.slice(1)}
 
-**Workflow**: ${workflow}  
-**Stage**: ${stage}
+            **Workflow**: ${workflow}  
+            **Stage**: ${stage}
 
-The ${agent} agent has been triggered and will process this issue.
+            The ${agent} agent has been triggered and will process this issue.
 
----
-<sub>🤖 Orchestrated by AgentX | [Pause](/pause) | [Skip](/skip ${agent})</sub>`;
+            ---
+            <sub>🤖 Orchestrated by AgentX | [Pause](/pause) | [Skip](/skip ${agent})</sub>`;
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,

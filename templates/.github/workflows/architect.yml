@@ -77,26 +77,26 @@ jobs:
               issue_number: parseInt('${{ inputs.issue_number }}'),
               body: `## 🏗️ Solution Architect Agent - Working...
 
-**Task**: Analyzing requirements and creating PRD + ADR + Tech Spec
+            **Task**: Analyzing requirements and creating PRD + ADR + Tech Spec
 
-**Phase 1 - Product Requirements (PRD)**:
-- [ ] Analyzing user input and problem statement
-- [ ] Defining user stories with acceptance criteria
-- [ ] Establishing scope (in/out of scope)
-- [ ] Defining success metrics
+            **Phase 1 - Product Requirements (PRD)**:
+            - [ ] Analyzing user input and problem statement
+            - [ ] Defining user stories with acceptance criteria
+            - [ ] Establishing scope (in/out of scope)
+            - [ ] Defining success metrics
 
-**Phase 2 - Architecture Decision (ADR)**:
-- [ ] Reviewing existing architecture
-- [ ] Making technical decisions
-- [ ] Documenting alternatives considered
+            **Phase 2 - Architecture Decision (ADR)**:
+            - [ ] Reviewing existing architecture
+            - [ ] Making technical decisions
+            - [ ] Documenting alternatives considered
 
-**Phase 3 - Technical Specification (Tech Spec)**:
-- [ ] Defining API endpoints with examples
-- [ ] Creating database schemas
-- [ ] Drawing sequence diagrams
-- [ ] Specifying error handling
+            **Phase 3 - Technical Specification (Tech Spec)**:
+            - [ ] Defining API endpoints with examples
+            - [ ] Creating database schemas
+            - [ ] Drawing sequence diagrams
+            - [ ] Specifying error handling
 
-<sub>Started at: ${new Date().toISOString()}</sub>`
+            <sub>Started at: ${new Date().toISOString()}</sub>`
             });
 
       - name: Architect analysis
@@ -632,91 +632,91 @@ jobs:
           script: |
             const completionComment = `## 🏗️ Solution Architect Agent - Complete
 
-**Status**: ✅ Requirements, Architecture & Technical Design complete
+            **Status**: ✅ Requirements, Architecture & Technical Design complete
 
----
+            ---
 
-## 📋 Artifacts Created
+            ## 📋 Artifacts Created
 
-| Document | Path | Purpose |
-|----------|------|---------|
-| **PRD** | \`docs/prd/PRD-${{ inputs.issue_number }}.md\` | WHAT to build (requirements) |
-| **ADR** | \`docs/adr/ADR-${{ inputs.issue_number }}.md\` | WHY decisions were made |
-| **Tech Spec** | \`docs/specs/SPEC-${{ inputs.issue_number }}.md\` | HOW to build (detailed spec) |
+            | Document | Path | Purpose |
+            |----------|------|---------|
+            | **PRD** | \`docs/prd/PRD-${{ inputs.issue_number }}.md\` | WHAT to build (requirements) |
+            | **ADR** | \`docs/adr/ADR-${{ inputs.issue_number }}.md\` | WHY decisions were made |
+            | **Tech Spec** | \`docs/specs/SPEC-${{ inputs.issue_number }}.md\` | HOW to build (detailed spec) |
 
----
+            ---
 
-## 📄 PRD Summary (WHAT)
+            ## 📄 PRD Summary (WHAT)
 
-### Problem Statement
-> ${{ steps.issue.outputs.body }}
+            ### Problem Statement
+            > ${{ steps.issue.outputs.body }}
 
-### User Stories
-- **Story 1**: [User story derived from input]
-- **Story 2**: [Additional user story]
+            ### User Stories
+            - **Story 1**: [User story derived from input]
+            - **Story 2**: [Additional user story]
 
-### Scope
-- ✅ **In Scope**: Core functionality as described
-- ❌ **Out of Scope**: Edge cases, advanced features (Phase 2)
+            ### Scope
+            - ✅ **In Scope**: Core functionality as described
+            - ❌ **Out of Scope**: Edge cases, advanced features (Phase 2)
 
----
+            ---
 
-## 🏛️ ADR Summary (WHY)
+            ## 🏛️ ADR Summary (WHY)
 
-### Architecture Decision
-> [High-level architecture approach]
+            ### Architecture Decision
+            > [High-level architecture approach]
 
-### Key Technical Choices
-| Component | Choice | Rationale |
-|-----------|--------|-----------|
-| [Component] | [Technology] | [Why] |
+            ### Key Technical Choices
+            | Component | Choice | Rationale |
+            |-----------|--------|-----------|
+            | [Component] | [Technology] | [Why] |
 
----
+            ---
 
-## 📐 Tech Spec Summary (HOW)
+            ## 📐 Tech Spec Summary (HOW)
 
-### API Endpoints
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | \`/api/v1/[resource]\` | Create resource |
-| GET | \`/api/v1/[resource]/{id}\` | Get resource |
+            ### API Endpoints
+            | Method | Endpoint | Description |
+            |--------|----------|-------------|
+            | POST | \`/api/v1/[resource]\` | Create resource |
+            | GET | \`/api/v1/[resource]/{id}\` | Get resource |
 
-### Database Tables
-- \`[table_name]\` - Main entity table
+            ### Database Tables
+            - \`[table_name]\` - Main entity table
 
-### Key Flows
-- Main flow: User → API → Service → Database
-- Error handling with standard error codes
+            ### Key Flows
+            - Main flow: User → API → Service → Database
+            - Error handling with standard error codes
 
----
+            ---
 
-## 🔄 Handoff Package for Engineer
+            ## 🔄 Handoff Package for Engineer
 
-### Context
-**Feature**: ${{ steps.issue.outputs.title }}
+            ### Context
+            **Feature**: ${{ steps.issue.outputs.title }}
 
-### Documents to Review (in order)
-1. **PRD**: \`docs/prd/PRD-${{ inputs.issue_number }}.md\` - Understand WHAT to build
-2. **ADR**: \`docs/adr/ADR-${{ inputs.issue_number }}.md\` - Understand WHY decisions
-3. **Tech Spec**: \`docs/specs/SPEC-${{ inputs.issue_number }}.md\` - Understand HOW to build
+            ### Documents to Review (in order)
+            1. **PRD**: \`docs/prd/PRD-${{ inputs.issue_number }}.md\` - Understand WHAT to build
+            2. **ADR**: \`docs/adr/ADR-${{ inputs.issue_number }}.md\` - Understand WHY decisions
+            3. **Tech Spec**: \`docs/specs/SPEC-${{ inputs.issue_number }}.md\` - Understand HOW to build
 
-### Implementation Checklist
-- [ ] Review PRD acceptance criteria
-- [ ] Follow ADR technical decisions
-- [ ] Implement API endpoints per Tech Spec
-- [ ] Create database tables per Tech Spec
-- [ ] Handle all error codes per Tech Spec
-- [ ] Write tests per Tech Spec requirements
-- [ ] Meet performance requirements
+            ### Implementation Checklist
+            - [ ] Review PRD acceptance criteria
+            - [ ] Follow ADR technical decisions
+            - [ ] Implement API endpoints per Tech Spec
+            - [ ] Create database tables per Tech Spec
+            - [ ] Handle all error codes per Tech Spec
+            - [ ] Write tests per Tech Spec requirements
+            - [ ] Meet performance requirements
 
-### Key Constraints
-- **Performance**: p99 < 200ms, > 1000 RPS
-- **Security**: Bearer token auth, role-based access
-- **Testing**: 80%+ coverage required
+            ### Key Constraints
+            - **Performance**: p99 < 200ms, > 1000 RPS
+            - **Security**: Bearer token auth, role-based access
+            - **Testing**: 80%+ coverage required
 
----
+            ---
 
-<sub>🤖 Completed at: ${new Date().toISOString()} | Duration: ~${Math.floor(Math.random() * 5) + 3} minutes</sub>`;
+            <sub>🤖 Completed at: ${new Date().toISOString()} | Duration: ~${Math.floor(Math.random() * 5) + 3} minutes</sub>`;
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,

@@ -120,19 +120,19 @@ jobs:
               issue_number: parseInt('${{ inputs.issue_number }}'),
               body: `## 🔍 Reviewer Agent - Working...
 
-**Task**: Reviewing implementation for quality and correctness
+            **Task**: Reviewing implementation for quality and correctness
 
-**Reviewing**: ${prInfo}
+            **Reviewing**: ${prInfo}
 
-**Checks in progress**:
-- [ ] Code style and formatting
-- [ ] Design pattern adherence
-- [ ] Test coverage analysis
-- [ ] Security vulnerability scan
-- [ ] Performance considerations
-- [ ] Documentation completeness
+            **Checks in progress**:
+            - [ ] Code style and formatting
+            - [ ] Design pattern adherence
+            - [ ] Test coverage analysis
+            - [ ] Security vulnerability scan
+            - [ ] Performance considerations
+            - [ ] Documentation completeness
 
-<sub>Started at: ${new Date().toISOString()}</sub>`
+            <sub>Started at: ${new Date().toISOString()}</sub>`
             });
 
       - name: Get PR details
@@ -227,55 +227,55 @@ jobs:
           script: |
             const reviewBody = `## 🔍 Automated Code Review
 
-### Summary
-This PR implements #${{ inputs.issue_number }}: **${{ steps.issue.outputs.title }}**
+            ### Summary
+            This PR implements #${{ inputs.issue_number }}: **${{ steps.issue.outputs.title }}**
 
-### Changes Reviewed
-${{ steps.pr_details.outputs.file_list }}
+            ### Changes Reviewed
+            ${{ steps.pr_details.outputs.file_list }}
 
-**Stats**: ${{ steps.pr_details.outputs.files_changed }} files, +${{ steps.pr_details.outputs.additions }}/-${{ steps.pr_details.outputs.deletions }} lines
+            **Stats**: ${{ steps.pr_details.outputs.files_changed }} files, +${{ steps.pr_details.outputs.additions }}/-${{ steps.pr_details.outputs.deletions }} lines
 
----
+            ---
 
-### Review Checklist
+            ### Review Checklist
 
-#### ✅ Code Quality
-- [x] Code follows project style guidelines
-- [x] No obvious code smells detected
-- [x] Appropriate error handling present
+            #### ✅ Code Quality
+            - [x] Code follows project style guidelines
+            - [x] No obvious code smells detected
+            - [x] Appropriate error handling present
 
-#### ✅ Testing
-- [x] Unit tests present
-- [ ] Integration tests present (if applicable)
-- [ ] Test coverage meets 80% threshold
+            #### ✅ Testing
+            - [x] Unit tests present
+            - [ ] Integration tests present (if applicable)
+            - [ ] Test coverage meets 80% threshold
 
-#### ✅ Security
-- [x] No hardcoded secrets
-- [x] Input validation present
-- [x] SQL injection prevention checked
+            #### ✅ Security
+            - [x] No hardcoded secrets
+            - [x] Input validation present
+            - [x] SQL injection prevention checked
 
-#### ✅ Documentation
-- [x] Code comments present
-- [ ] README updated (if needed)
-- [ ] API documentation updated (if needed)
+            #### ✅ Documentation
+            - [x] Code comments present
+            - [ ] README updated (if needed)
+            - [ ] API documentation updated (if needed)
 
----
+            ---
 
-### Feedback
+            ### Feedback
 
-> **Note**: This is an automated review from the AgentX Reviewer Agent.
-> In full implementation, this would include:
-> - Line-by-line code suggestions
-> - Security vulnerability reports
-> - Performance optimization recommendations
-> - Test coverage analysis
+            > **Note**: This is an automated review from the AgentX Reviewer Agent.
+            > In full implementation, this would include:
+            > - Line-by-line code suggestions
+            > - Security vulnerability reports
+            > - Performance optimization recommendations
+            > - Test coverage analysis
 
-**Overall Assessment**: ✅ **Approved**
+            **Overall Assessment**: ✅ **Approved**
 
-The implementation follows the architect's design and meets quality standards.
+            The implementation follows the architect's design and meets quality standards.
 
----
-<sub>🤖 Reviewed by AgentX Reviewer Agent</sub>`;
+            ---
+            <sub>🤖 Reviewed by AgentX Reviewer Agent</sub>`;
 
             // Submit the review
             await github.rest.pulls.createReview({
@@ -298,35 +298,34 @@ The implementation follows the architect's design and meets quality standards.
             
             const completionComment = `## 🔍 Reviewer Agent - Complete
 
-**Status**: ✅ Review phase complete
+            **Status**: ✅ Review phase complete
 
-**Review Summary**:
-- 🔗 PR Reviewed: ${prInfo}
-- ✅ Code Quality: Passed
-- ✅ Security Check: Passed  
-- ✅ Test Coverage: Meets threshold
-- ✅ Documentation: Complete
+            **Review Summary**:
+            - 🔗 PR Reviewed: ${prInfo}
+            - ✅ Code Quality: Passed
+            - ✅ Security Check: Passed  
+            - ✅ Test Coverage: Meets threshold
+            - ✅ Documentation: Complete
 
-**Review Decision**: **APPROVED** ✅
+            **Review Decision**: **APPROVED** ✅
 
----
+            ---
 
-### Workflow Complete 🎉
+            ### Workflow Complete 🎉
 
-This issue has completed the full AgentX orchestration workflow:
+            This issue has completed the full AgentX orchestration workflow:
 
-| Stage | Agent | Status |
-|-------|-------|--------|
-| 1. Design | 🏗️ Architect | ✅ Complete |
-| 2. Implement | 💻 Engineer | ✅ Complete |
-| 3. Review | 🔍 Reviewer | ✅ Complete |
+            | Stage | Agent | Status |
+            |-------|-------|--------|            | 1. Design | 🏗️ Architect | ✅ Complete |
+            | 2. Implement | 💻 Engineer | ✅ Complete |
+            | 3. Review | 🔍 Reviewer | ✅ Complete |
 
-**Next Steps**:
-- PR ${prInfo} is approved and ready for merge
-- After merge, this issue will be automatically closed
+            **Next Steps**:
+            - PR ${prInfo} is approved and ready for merge
+            - After merge, this issue will be automatically closed
 
----
-<sub>🤖 Completed at: ${new Date().toISOString()} | Total workflow duration: ~${Math.floor(Math.random() * 20) + 10} minutes</sub>`;
+            ---
+            <sub>🤖 Completed at: ${new Date().toISOString()} | Total workflow duration: ~${Math.floor(Math.random() * 20) + 10} minutes</sub>`;
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
