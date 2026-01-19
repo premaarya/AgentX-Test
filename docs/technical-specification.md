@@ -10,15 +10,19 @@
 ## Table of Contents
 
 1. [Executive Summary](#1-executive-summary)
-2. [Architecture Overview](#2-architecture-overview)
-3. [Agent Roles & Responsibilities](#3-agent-roles--responsibilities)
-4. [Orchestration Model](#4-orchestration-model)
-5. [Issue Classification & Routing](#5-issue-classification--routing)
-6. [GitHub Projects Integration](#6-github-projects-integration)
-7. [MCP Server Integration](#7-mcp-server-integration)
-8. [Security Architecture](#8-security-architecture)
-9. [File Structure](#9-file-structure)
-10. [Quality Standards](#10-quality-standards)
+2. [Problem Statement](#2-problem-statement)
+3. [Solution Architecture](#3-solution-architecture)
+4. [Core Concepts](#4-core-concepts)
+5. [Agent Roles & Responsibilities](#5-agent-roles--responsibilities)
+6. [Orchestration Model](#6-orchestration-model)
+7. [Issue Classification & Routing](#7-issue-classification--routing)
+8. [GitHub Projects Integration](#8-github-projects-integration)
+9. [MCP Server Integration](#9-mcp-server-integration)
+10. [Security Architecture](#10-security-architecture)
+11. [Implementation Patterns](#11-implementation-patterns)
+12. [Design Decisions & Justifications](#12-design-decisions--justifications)
+13. [File Structure](#13-file-structure)
+14. [Quality Standards](#14-quality-standards)
 
 ---
 
@@ -28,6 +32,12 @@
 
 AgentX is a **multi-agent orchestration system** that coordinates AI agents (Product Manager, Architect, UX Designer, Engineer, Reviewer) to collaboratively deliver production-ready software using GitHub Issues, GitHub Projects, and GitHub Actions.
 
+**Core Value Proposition:**
+- **Consistent Quality**: 18 production skills ensure enterprise-grade code
+- **Autonomous Coordination**: Agents hand off work automatically via labels
+- **GitHub Native**: Leverages existing GitHub infrastructure (Issues, Projects, Actions)
+- **Transparent & Auditable**: Every action logged in issue comments and commits
+
 ### 1.2 Key Principles
 
 - **Issue-First**: All work starts with a GitHub Issue created BEFORE coding
@@ -36,7 +46,37 @@ AgentX is a **multi-agent orchestration system** that coordinates AI agents (Pro
 - **Event-Driven**: Agents trigger next agent via orchestration labels
 - **Role-Based**: Request type determines agent role automatically
 
-### 1.3 Current State
+### 1.3 Key Capabilities
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        AgentX Multi-Agent System                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐    │
+│  │   Execution  │  │   Security   │  │    Task      │  │   Quality    │    │
+│  │    Modes     │  │ Architecture │  │  Management  │  │  Standards   │    │
+│  ├──────────────┤  ├──────────────┤  ├──────────────┤  ├──────────────┤    │
+│  │ • Standard   │  │ • 4-Layer    │  │ • GitHub     │  │ • 18 Skills  │    │
+│  │ • YOLO       │  │   Model      │  │   Issues     │  │ • 80%+ Tests │    │
+│  │              │  │ • Kill Switch│  │ • Projects   │  │ • Automation │    │
+│  │              │  │ • Audit Trail│  │ • MCP API    │  │              │    │
+│  └──────────────┘  └──────────────┘  └──────────────┘  └──────────────┘    │
+│                                                                              │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐    │
+│  │ Multi-Agent  │  │  Contextual  │  │  Reusable    │  │  Technology  │    │
+│  │Orchestration │  │ Instructions │  │   Prompts    │  │    Stack     │    │
+│  ├──────────────┤  ├──────────────┤  ├──────────────┤  ├──────────────┤    │
+│  │ • 5 Agents   │  │ • C#/.NET    │  │ • Code Review│  │ • .NET 8     │    │
+│  │ • Parallel   │  │ • Python     │  │ • Refactoring│  │ • Python 3.11│    │
+│  │ • <30s SLA   │  │ • React/TS   │  │ • Test Gen   │  │ • PostgreSQL │    │
+│  │ • Event-Driven│ │ • API Design │  │              │  │ • React 18   │    │
+│  └──────────────┘  └──────────────┘  └──────────────┘  └──────────────┘    │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 1.4 Current State
 
 | Component | Status |
 |-----------|--------|
@@ -46,9 +86,72 @@ AgentX is a **multi-agent orchestration system** that coordinates AI agents (Pro
 | Orchestration Labels | ✅ `orch:pm-done`, `orch:architect-done`, `orch:ux-done`, `orch:engineer-done` |
 | Documentation | ✅ [AGENTS.md](../AGENTS.md), [Skills.md](../Skills.md), [CONTRIBUTING.md](../CONTRIBUTING.md) |
 
+### 1.5 Target Audience
+
+- **AI Coding Agents**: GitHub Copilot, Claude, GPT-4, custom agents
+- **Development Teams**: Teams using AI-assisted development workflows
+- **DevOps Engineers**: Configuring autonomous CI/CD pipelines
+- **Security Teams**: Reviewing AI agent permissions and audit trails
+
 ---
 
-## 2. Architecture Overview
+## 2. Problem Statement
+
+### 2.1 Challenges with AI-Assisted Development
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           Current Challenges                                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐         │
+│  │  Inconsistency  │    │  Security Risks │    │  Context Loss   │         │
+│  ├─────────────────┤    ├─────────────────┤    ├─────────────────┤         │
+│  │ • Varying code  │    │ • Unchecked     │    │ • Session       │         │
+│  │   quality       │    │   commands      │    │   boundaries    │         │
+│  │ • Different     │    │ • No audit      │    │ • No persistent │         │
+│  │   patterns      │    │   trail         │    │   memory        │         │
+│  │ • No standards  │    │ • Dangerous     │    │ • Lost progress │         │
+│  │   enforcement   │    │   operations    │    │   tracking      │         │
+│  └─────────────────┘    └─────────────────┘    └─────────────────┘         │
+│                                                                              │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐         │
+│  │ No Coordination │    │ Manual Overhead │    │ Quality Drift   │         │
+│  ├─────────────────┤    ├─────────────────┤    ├─────────────────┤         │
+│  │ • Parallel      │    │ • Constant      │    │ • Missing tests │         │
+│  │   conflicts     │    │   supervision   │    │ • No docs       │         │
+│  │ • Duplicate     │    │ • Repetitive    │    │ • Security      │         │
+│  │   work          │    │   approvals     │    │   gaps          │         │
+│  └─────────────────┘    └─────────────────┘    └─────────────────┘         │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 2.2 Specific Pain Points
+
+| Problem | Impact | Example |
+|---------|--------|---------|
+| **No Standardization** | Code quality varies wildly | One agent writes tests, another doesn't |
+| **Context Fragmentation** | Work lost between sessions | "What was I working on?" |
+| **Manual Coordination** | Bottlenecks and delays | Waiting for human to assign next task |
+| **Security Blind Spots** | Vulnerable to malicious code | Agent executes `rm -rf /` |
+| **No Audit Trail** | Can't trace decisions | "Why was this implemented this way?" |
+| **Duplicate Efforts** | Multiple agents do same work | 3 agents all create the same component |
+
+### 2.3 Requirements
+
+| Requirement | Priority | AgentX Solution |
+|-------------|----------|-----------------|
+| Consistent code quality across all agents | P0 | 18 Skills framework + quality gates |
+| Security without blocking autonomous work | P0 | 4-layer security model + iteration limits |
+| Persistent task tracking across sessions | P0 | GitHub Issues + Projects integration |
+| Autonomous agent coordination | P1 | Label-based orchestration + MCP API |
+| Transparent audit trail | P1 | Issue comments + commit references |
+| Parallel work without conflicts | P2 | Status field + orchestration labels |
+
+---
+
+## 3. Solution Architecture
 
 ### 2.1 System Architecture
 

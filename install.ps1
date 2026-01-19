@@ -203,20 +203,30 @@ Write-Host ".github/autonomous-mode.yml" -ForegroundColor Cyan
 Write-Host "2. Add your GitHub username to the allowed_actors list"
 Write-Host "3. Create GitHub labels by running:"
 Write-Host ""
-Write-Host '   gh label create "type:task" --description "Atomic unit of work" --color "0E8A16"' -ForegroundColor Yellow
-Write-Host '   gh label create "type:feature" --description "User-facing capability" --color "A2EEEF"' -ForegroundColor Yellow
-Write-Host '   gh label create "status:ready" --description "No blockers, can start" --color "C2E0C6"' -ForegroundColor Yellow
-Write-Host '   gh label create "status:in-progress" --description "Currently working" --color "FBCA04"' -ForegroundColor Yellow
-Write-Host '   gh label create "status:done" --description "Completed" --color "0E8A16"' -ForegroundColor Yellow
-Write-Host '   gh label create "priority:p1" --description "High - do next" --color "D93F0B"' -ForegroundColor Yellow
-Write-Host ""
-Write-Host "   # Orchestration labels (required for multi-agent workflows):"
+Write-Host '   # Type labels (required - determines agent role)' -ForegroundColor Yellow
 Write-Host '   gh label create "type:epic" --description "Large initiative (multiple features)" --color "5319E7"' -ForegroundColor Yellow
-Write-Host '   gh label create "needs:ux" --description "Requires UX design work" --color "C5DEF5"' -ForegroundColor Yellow
+Write-Host '   gh label create "type:feature" --description "User-facing capability" --color "A2EEEF"' -ForegroundColor Yellow
+Write-Host '   gh label create "type:story" --description "Implementation task" --color "0E8A16"' -ForegroundColor Yellow
+Write-Host '   gh label create "type:bug" --description "Something broken" --color "D73A4A"' -ForegroundColor Yellow
+Write-Host '   gh label create "type:spike" --description "Research/investigation" --color "EDEDED"' -ForegroundColor Yellow
+Write-Host '   gh label create "type:docs" --description "Documentation only" --color "0075CA"' -ForegroundColor Yellow
+Write-Host ""
+Write-Host '   # Orchestration labels (agent coordination)' -ForegroundColor Yellow
 Write-Host '   gh label create "orch:pm-done" --description "Product Manager work complete" --color "BFD4F2"' -ForegroundColor Yellow
 Write-Host '   gh label create "orch:architect-done" --description "Architect work complete" --color "BFD4F2"' -ForegroundColor Yellow
 Write-Host '   gh label create "orch:ux-done" --description "UX Designer work complete" --color "BFD4F2"' -ForegroundColor Yellow
 Write-Host '   gh label create "orch:engineer-done" --description "Engineer work complete" --color "BFD4F2"' -ForegroundColor Yellow
+Write-Host ""
+Write-Host '   # Priority labels' -ForegroundColor Yellow
+Write-Host '   gh label create "priority:p0" --description "Critical" --color "D93F0B"' -ForegroundColor Yellow
+Write-Host '   gh label create "priority:p1" --description "High - do next" --color "FBCA04"' -ForegroundColor Yellow
+Write-Host ""
+Write-Host '   # Workflow labels' -ForegroundColor Yellow
+Write-Host '   gh label create "needs:ux" --description "Requires UX design work" --color "C5DEF5"' -ForegroundColor Yellow
+Write-Host '   gh label create "needs:help" --description "Blocked or needs assistance" --color "D93F0B"' -ForegroundColor Yellow
+Write-Host ""
+Write-Host "4. Set up GitHub Project v2 with Status field (see docs/project-setup.md)"
+Write-Host "   Status values: Backlog, In Progress, In Review, Done"
 Write-Host ""
 Write-Host "4. Read " -NoNewline
 Write-Host "AGENTS.md" -ForegroundColor Cyan -NoNewline
