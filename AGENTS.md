@@ -5,7 +5,9 @@ applyTo: '**'
 
 # AI Agent Guidelines
 
-> **AUTHORITATIVE SOURCE**: This document is the single source of truth for all agent behavior, workflows, and guidelines. The Copilot instructions file is just a gate that enforces reading this document first.
+> **AUTHORITATIVE SOURCE**: This document is the single source of truth for all agent behavior, workflows, and guidelines.
+
+> **WORKFLOW ENFORCEMENT**: Primary enforcement is through this AGENTS.md file. The Copilot instructions file ([.github/copilot-instructions.md](.github/copilot-instructions.md)) is just a gate that enforces reading this document first. All agents MUST follow the workflows defined here.
 
 ---
 
@@ -42,25 +44,30 @@ applyTo: '**'
 ┌──────────────────────────────────────────────────────────────┐
 │ STEP 2: ROLE-SPECIFIC RESEARCH                               │
 │                                                              │
-│ IF type:epic → YOU ARE PRODUCT MANAGER                      │
+│ IF YOU ARE PRODUCT MANAGER                      │
 │    ├─ Research: Business requirements, user needs           │
 │    ├─ Research: Existing systems and constraints            │
 │    ├─ Research: Market/competitive landscape (if applicable)│
 │    └─ Deliverable: PRD breaking down into features          │
 │                                                              │
-│ IF type:feature OR type:spike → YOU ARE ARCHITECT           │
+│ IF YOU ARE ARCHITECT           │
 │    ├─ Research: Technical feasibility and architecture      │
 │    ├─ Research: Integration points in codebase              │
 │    ├─ Research: Performance/scalability implications        │
 │    ├─ Research: Technology options (for spikes)             │
 │    └─ Deliverable: ADR + Tech Spec (or research findings)   │
 │                                                              │
-│ IF type:story/bug/docs → YOU ARE ENGINEER                   │
+│ IF YOU ARE ENGINEER                                          │
 │    ├─ Research: Implementation location in codebase         │
 │    ├─ Research: Existing patterns and conventions           │
 │    ├─ Research: Test coverage and requirements              │
 │    ├─ Research: Related code and dependencies               │
 │    └─ Deliverable: Working code + tests + documentation     │
+│                                                              │
+│ IF YOU ARE UX DESIGNER                                       │
+│    ├─ Research: User needs and pain points                  │
+│    ├─ Research: Existing UI patterns and brand guidelines   │
+│    └─ Deliverable: UX designs (wireframes, prototypes)      │
 └──────────────────────────────────────────────────────────────┘
                           ↓
 ┌──────────────────────────────────────────────────────────────┐
@@ -197,6 +204,8 @@ gh issue close <ID> --comment "✅ Completed in commit <SHA>"
 
 ### Classification Decision Tree
 
+> **Usage**: Answer each question in order to determine the correct issue type.
+
 ```
 User Request
     │
@@ -204,7 +213,7 @@ User Request
 ┌─────────────────────────────────────────────────────────────┐
 │ Q1: Is something broken or not working?                     │
 │     → YES: type:bug (go to Engineer)                        │
-│     → NO: Continue...                                       │
+│     → NO: Continue to Q2...                                 │
 └─────────────────────────────────────────────────────────────┘
     │
     ▼
@@ -247,6 +256,8 @@ User Request
 
 ### Classification Examples
 
+> **Note**: These examples show how to map user requests to the correct issue type and agent role.
+
 | User Request | Classification | Labels | Agent Role | Why |
 |-------------|----------------|--------|------------|-----|
 | "Build me an e-commerce platform" | Epic | `type:epic` | Product Manager | Large, vague, multi-feature |
@@ -270,8 +281,8 @@ User asks: "Build me a feature"
     │
     ▼
 1. UNDERSTAND & CLASSIFY (determine YOUR ROLE)
-   ├─ Is it Epic? → You're now PRODUCT MANAGER
-   ├─ Is it Feature/Spike? → You're now ARCHITECT
+   ├─ Is it Epic/Feature? → You're now PRODUCT MANAGER
+   ├─ Is it Spike? → You're now ARCHITECT
    └─ Is it Story/Bug/Docs? → You're now ENGINEER
     │
     ▼
@@ -290,9 +301,10 @@ User asks: "Build me a feature"
     │
     ▼
 5. EXECUTE AS THAT ROLE
-   ├─ Product Manager → Create PRD, break into Features
-   ├─ Architect → Create ADR + Spec, break into Stories
-   └─ Engineer → Write code + tests + docs
+   ├─ Product Manager → Create PRD, break into Epic, Features, User Stories
+   ├─ Architect → Create ADR + Tech Spec, break into Spikes
+   ├─ UX Designer → Create wireframes + HTML prototypes, break into UX tasks
+   └─ Engineer → Write code + tests + docs, break User Stories into tasks
 ```
 
 ### Role Transition Examples
