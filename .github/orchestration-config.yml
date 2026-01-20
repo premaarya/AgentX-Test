@@ -390,7 +390,7 @@ settings:
   # Create handoff comments between stages
   create_handoff_comments: true
   
-  # Require human approval between stages
+  # Require human approval between stages (global default)
   require_human_approval: false
   
   # Maximum time per stage (minutes)
@@ -401,3 +401,82 @@ settings:
     - main
     - master
     - develop
+
+# =============================================================================
+# APPROVAL GATES (IDEO-style Human-in-Loop)
+# Optional human approval checkpoints between workflow stages
+# =============================================================================
+approval_gates:
+  # Epic workflow: Review after PM creates backlog
+  - workflow: "epic-workflow"
+    stage: "product-manager"
+    stage_after: "PRD & Backlog"
+    require_approval: false  # Set to true to require human review
+    approval_label: "needs:approval"
+    reason: "Review Epic scope and resource allocation before design phase"
+    approvers:
+      - "stakeholders"
+      - "tech-leads"
+  
+  # Feature workflow: Review after design phase
+  - workflow: "feature-workflow"
+    stage: "architect"
+    stage_after: "Technical Design"
+    require_approval: false
+    approval_label: "needs:approval"
+    reason: "Architectural decisions need stakeholder review"
+    approvers:
+      - "architects"
+      - "security-team"
+  
+  # UX workflow: Review designs before implementation
+  - workflow: "feature-ux-workflow"
+    stage: "ux-designer"
+    stage_after: "UX Design"
+    require_approval: false
+    approval_label: "needs:approval"
+    reason: "Design review with product/stakeholders"
+    approvers:
+      - "design-leads"
+      - "product-managers"
+
+  # High-priority features: Require approval before implementation
+  - workflow: "feature-workflow"
+    stage: "engineer"
+    stage_after: "Implement"
+    require_approval: false
+    priority_override: "priority:p0"  # Only for P0 issues
+    approval_label: "needs:approval"
+    reason: "Critical feature - verify scope before engineering effort"
+    approvers:
+      - "engineering-leads"
+
+  # Security workflow: Require security team approval
+  - workflow: "security-workflow"
+    stage: "reviewer"
+    stage_after: "Security Audit"
+    require_approval: true  # Always require for security issues
+    approval_label: "needs:security-approval"
+    reason: "Security changes must be reviewed by security team"
+    approvers:
+      - "security-team"
+      - "compliance-team"
+
+# Approval gate behavior:
+# - When require_approval: true, Orchestrator pauses workflow
+# - Adds approval_label to issue
+# - Posts comment tagging approvers
+# - Waits for manual "/approve" command or label removal
+# - Then continues to next stage
+#
+# Example approval comment:
+# 🛑 **Approval Required**
+# 
+# This workflow requires approval before proceeding.
+# 
+# **Stage**: Technical Design → Implementation
+# **Reason**: Architectural decisions need stakeholder review
+# **Approvers**: @architects @security-team
+# 
+# To approve: Comment `/approve` or remove `needs:approval` label
+# To reject: Comment `/reject [reason]` and update design

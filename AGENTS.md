@@ -649,6 +649,85 @@ The Orchestrator tracks workflow health:
 - **Handoff Latency**: Time between `orch:*-done` and next agent start (SLA: <30s)
 - **Stage Duration**: How long each agent takes to complete
 - **Workflow Throughput**: Issues completed per day
+- **Blocking Frequency**: How often issues are blocked
+- **SLA Compliance**: % of handoffs meeting <30s target
+
+### Design Thinking Integration (IDEO Methodology)
+
+The Orchestrator aligns AgentX workflow with **IDEO's human-centered design methodology**:
+
+| IDEO Phase | AgentX Agent | Deliverables | Gate |
+|------------|--------------|--------------|------|
+| **1. Empathize** | Future: Researcher | User research, interviews, personas | → Define |
+| **2. Define** | Product Manager | PRD, problem statement, user stories | → Ideate |
+| **3. Ideate** | Architect + UX Designer | ADR, specs, wireframes, prototypes | → Prototype |
+| **4. Prototype** | Engineer | Working code, interactive demos, tests | → Test |
+| **5. Test** | Reviewer + Tester | Quality verification, user feedback | → Iterate/Ship |
+
+**Key Principle**: The Orchestrator **enforces "design before build"** by blocking Engineer until both Architect (`orch:architect-done`) and UX Designer (`orch:ux-done`) complete their ideation work.
+
+**Example Flow**:
+```
+User Need: "Search is too slow"
+    ↓ EMPATHIZE
+Research findings: 78% abandon after 2 attempts
+    ↓ DEFINE (Product Manager)
+PRD: Epic #100 - Intelligent Search System
+    ↓ IDEATE (Architect + UX in parallel)
+Architect: Elasticsearch architecture
+UX: Search UI redesign + filters
+    ↓ PROTOTYPE (Engineer - BLOCKED until both done)
+Stories #101-103: Implementation
+    ↓ TEST (Reviewer)
+Security + performance verification
+    ↓ SHIP or ITERATE
+```
+
+### Autonomous Subagents
+
+The Orchestrator can delegate focused tasks without triggering full workflows:
+
+```javascript
+// Quick research
+await runSubagent({
+  prompt: "Research top 3 OAuth providers for .NET. Compare pricing and features.",
+  description: "Auth provider research"
+});
+
+// Feasibility check before routing
+await runSubagent({
+  prompt: "Assess technical feasibility of real-time collaboration. Include effort estimate.",
+  description: "Feasibility check"
+});
+
+// Quality audit
+await runSubagent({
+  prompt: "Audit React components for WCAG 2.1 AA violations.",
+  description: "Accessibility audit"
+});
+```
+
+**When to Use**:
+- Quick investigations without creating issues
+- Feasibility checks before committing to full workflow  
+- Parallel quality audits
+- Research synthesis
+
+### Approval Gates (Optional)
+
+Configure human approval checkpoints in [orchestration-config.yml](.github/orchestration-config.yml):
+
+```yaml
+approval_gates:
+  - workflow: "feature-workflow"
+    stage: "architect"
+    require_approval: false  # Set true to enable
+    reason: "Architectural decisions need review"
+    approvers: ["architects", "security-team"]
+```
+
+When enabled, Orchestrator pauses and waits for `/approve` command before proceeding.
+- **Workflow Throughput**: Issues completed per day
 - **Blocking Frequency**: How often issues get blocked
 - **SLA Compliance**: % of handoffs meeting <30s target
 
