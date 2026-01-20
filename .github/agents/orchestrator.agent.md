@@ -9,9 +9,19 @@ tools:
   - add_issue_comment
   - run_workflow
   - list_workflow_runs
+  -read_file
+  - semantic_search
+  - grep_search
+  - file_search
+  - list_dir
+  - create_file
+  - run_in_terminal
+  - get_errors
+  - get_changed_files
+  - manage_todo_list
   - runSubagent
 handoffs:
-  - label: Product Strategy
+  - label: Product Roadmap
     agent: product-manager
     prompt: "Define product vision, create PRD, and break Epic into Features and Stories"
     send: false
@@ -127,15 +137,6 @@ await runSubagent({
 | **Blocked >30 min** | Prerequisites unmet | `needs:resolution` + escalate |
 | **Test failure** | CI fails | `needs:fixes`, reassign Engineer |
 
-## Manual Commands
-
-| Command | Purpose | Example |
-|---------|---------|---------|
-| `/orchestrate` | Start workflow | `gh workflow run run-orchestrator.yml -f issue_number=X` |
-| `/pause` | Hold for review | Adds `orchestration:paused` |
-| `/resume` | Continue | Re-evaluates, triggers next |
-| `/skip <agent>` | Skip stage ⚠️ | Breaks gate enforcement |
-| `/retry` | Re-run stage | Same agent, same inputs |
 
 ## Conversational Feedback
 
@@ -178,4 +179,4 @@ When analyzing new requests:
 
 **Version**: 2.0 (Hybrid)  
 **Last Updated**: January 20, 2026  
-**See Also**: [AGENTS.md](../../AGENTS.md) • [orchestration-config.yml](../orchestration-config.yml) • [docs/orchestration-testing-guide.md](../../docs/orchestration-testing-guide.md)
+**See Also**: [AGENTS.md](../../AGENTS.md) • [orchestration-config.yml](../orchestration-config.yml)

@@ -6,9 +6,8 @@ This directory contains the **unified agent orchestrator** that manages all 5 ag
 
 | Workflow | Trigger | Purpose |
 |----------|---------|---------|
-| **agent-orchestrator.yml** | Issue labeled, workflow_dispatch | Routes to appropriate agent(s) based on `type:*` and `orch:*` labels |
+| **agent-orchestrator.yml** | Issue labeled (automatic), workflow_dispatch (manual) | Routes to appropriate agent(s) based on `type:*` and `orch:*` labels |
 | **test-e2e.yml** | workflow_dispatch | End-to-end workflow testing |
-| ~~sync-status-to-labels.yml~~ | ~~Deprecated~~ | ~~No longer needed - Status managed in Projects UI directly~~ |
 
 ## Orchestration Flow
 
@@ -89,7 +88,7 @@ Agent Orchestrator
 - `needs:help` - Blocked
 - `needs:changes` - Review requested changes
 
-## Testing
+## Manual Triggering
 
 ```bash
 # Manually trigger orchestrator for an issue

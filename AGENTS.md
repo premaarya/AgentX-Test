@@ -459,37 +459,31 @@ Epic Issue Created (#<EPIC_ID> - "Build User Authentication System")
 
 ## ⚡ Orchestration Implementation Methods
 
-### Method 1: Unified Orchestrator (Automated) ⭐ Recommended
+### Automated Orchestration
 
-**Single workflow handles all agents**: `.github/workflows/agent-orchestrator.yml`
+**Workflow**: `.github/workflows/agent-orchestrator.yml`
 
+**Triggers automatically on label changes:**
+- `type:epic` (no orch:pm-done) → Product Manager
+- `orch:pm-done` → Architect + UX Designer (parallel)
+- `orch:architect-done` + `orch:ux-done` → Engineer
+- `orch:engineer-done` → Reviewer
+
+**How it works:**
+1. Agent completes work → adds `orch:*-done` label
+2. Orchestrator detects label change
+3. Routes to next agent automatically
+4. Next agent executes
+
+**Manual trigger** (if needed):
 ```bash
-# Workflow triggers automatically on label changes:
-# - type:epic (no orch:pm-done) → Product Manager
-# - orch:pm-done → Architect + UX Designer (parallel)
-# - orch:architect-done + orch:ux-done → Engineer
-# - orch:engineer-done → Reviewer
-
-# Manual trigger if needed:
 gh workflow run agent-orchestrator.yml -f issue_number=50
 ```
 
-**How it works:**
-1. Agent completes work
-2. Adds orchestration label (e.g., `orch:pm-done`)
-3. Orchestrator detects label change
-4. Routes to next agent automatically
-5. Next agent executes
-
-### Method 2: MCP Server (Direct API)
-
+**MCP trigger** (via tools):
 ```json
-// Direct workflow trigger via MCP tools
 { "tool": "run_workflow", "args": { 
-  "owner": "<OWNER>", 
-  "repo": "<REPO>", 
   "workflow_id": "agent-orchestrator.yml", 
-  "ref": "master", 
   "inputs": { "issue_number": "50" } 
 } }
 ```
@@ -562,36 +556,16 @@ The Orchestrator is a **meta-agent** that doesn't write code or create artifacts
 - **Recovers** from errors (timeouts, missing artifacts, circular dependencies)
 - **Tracks** metrics (handoff latency, stage duration, SLA compliance)
 
-### When to Invoke
+### Invocation
 
-The Orchestrator runs in two modes:
+**Automatic Mode** (Recommended) - Via `.github/workflows/agent-orchestrator.yml`:
+- Triggers automatically when issues are labeled
+- Detects `type:*` labels (new issue classification)
+- Detects `orch:*-done` labels (agent handoff signals)
 
-#### 1. Automatic Mode (Recommended)
-Via `.github/workflows/agent-orchestrator.yml` triggered by `issues: labeled` events:
+**Manual Trigger** (if needed):
 ```bash
-# Happens automatically when:
-# - Issue gets type:* label (new issue)
-# - Agent adds orch:*-done label (handoff signal)
-# - User adds orchestration:* label (manual control)
-```
-
-#### 2. Manual Mode (Debugging/Override)
-Via `.github/workflows/run-orchestrator.yml` for explicit control:
-```bash
-# Route to next agent
-gh workflow run run-orchestrator.yml -f issue_number=71 -f command=route
-
-# Pause workflow
-gh workflow run run-orchestrator.yml -f issue_number=71 -f command=pause
-
-# Resume workflow
-gh workflow run run-orchestrator.yml -f issue_number=71 -f command=resume
-
-# Skip an agent stage
-gh workflow run run-orchestrator.yml -f issue_number=71 -f command=skip -f target_agent=architect
-
-# Retry current stage
-gh workflow run run-orchestrator.yml -f issue_number=71 -f command=retry
+gh workflow run agent-orchestrator.yml -f issue_number=71
 ```
 
 ### Orchestrator State Machine
@@ -616,19 +590,6 @@ Spike (type:spike)
   ├─ No orch:architect-done → Route to Architect
   └─ orch:architect-done → Close with findings
 ```
-
-### Workflow Commands (Manual Control)
-
-Users can control orchestration via slash commands in issue comments:
-
-| Command | Purpose | Example |
-|---------|---------|---------|
-| `/orchestrate` | Start orchestration for this issue | `gh workflow run run-orchestrator.yml -f issue_number=71` |
-| `/pause` | Pause workflow (adds `orchestration:paused`) | Manual intervention needed |
-| `/resume` | Resume paused workflow | Re-evaluates state, triggers next agent |
-| `/skip <agent>` | Skip an agent stage | `/skip architect` (not recommended) |
-| `/retry` | Retry current stage | Re-runs same agent with same inputs |
-| `/route <agent>` | Manually route to specific agent | Override automatic routing |
 
 ### Error Handling
 
@@ -734,10 +695,8 @@ When enabled, Orchestrator pauses and waits for `/approve` command before procee
 ### Integration Points
 
 - **Agent Definition**: [.github/agents/orchestrator.agent.md](.github/agents/orchestrator.agent.md)
-- **Automatic Workflow**: [.github/workflows/agent-orchestrator.yml](.github/workflows/agent-orchestrator.yml)
-- **Manual Workflow**: [.github/workflows/run-orchestrator.yml](.github/workflows/run-orchestrator.yml)
+- **Workflow**: [.github/workflows/agent-orchestrator.yml](.github/workflows/agent-orchestrator.yml)
 - **Configuration**: [.github/orchestration-config.yml](.github/orchestration-config.yml)
-- **Testing Guide**: [docs/orchestration-testing-guide.md](docs/orchestration-testing-guide.md)
 
 ---
 
