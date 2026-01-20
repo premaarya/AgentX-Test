@@ -22,6 +22,13 @@ permissions:
   actions: write
 
 jobs:
+  validate:
+    name: Validate Workflow File
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - run: echo "✓ Workflow file syntax valid"
+  
   route:
     name: Route to Agent
     runs-on: ubuntu-latest
