@@ -1,7 +1,7 @@
 name: 🔬 Spike
 description: Research, investigation, or proof-of-concept
 title: "[Spike] "
-labels: ["type:spike", "status:ready", "priority:p3"]
+labels: ["type:spike", "priority:p3"]
 body:
   - type: markdown
     attributes:

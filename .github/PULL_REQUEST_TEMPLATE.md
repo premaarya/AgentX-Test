@@ -3,7 +3,7 @@
 ### Issue Reference
 - [ ] This PR closes #_____ (must reference a GitHub Issue)
 - [ ] Issue was created **BEFORE** work began (not retroactively)
-- [ ] Issue was marked `status:in-progress` when claimed
+- [ ] Issue Status was updated in GitHub Projects when claimed
 
 ### Code Quality
 - [ ] All tests pass locally

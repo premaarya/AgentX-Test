@@ -1,7 +1,7 @@
 name: 🐛 Bug Report
 description: Something isn't working correctly
 title: "[Bug] "
-labels: ["type:bug", "status:ready", "priority:p1"]
+labels: ["type:bug", "priority:p1"]
 body:
   - type: markdown
     attributes:

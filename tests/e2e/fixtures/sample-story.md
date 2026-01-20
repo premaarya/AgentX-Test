@@ -2,7 +2,7 @@
 
 **Title**: [E2E Test] User can log in with Google OAuth
 
-**Labels**: `type:story`, `priority:p1`, `status:ready`, `e2e-test`
+**Labels**: `type:story`, `priority:p1`, `e2e-test`
 
 ## User Story
 

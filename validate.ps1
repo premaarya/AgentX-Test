@@ -135,8 +135,8 @@ if (Get-Command gh -ErrorAction SilentlyContinue) {
     if ($labels) {
         $requiredLabels = @(
             "type:epic", "type:feature", "type:story", "type:bug", "type:spike", "type:docs",
-            "status:ready", "status:in-progress", "status:done",
-            "priority:p0", "priority:p1", "priority:p2", "priority:p3"
+            "priority:p0", "priority:p1", "priority:p2", "priority:p3",
+            "orch:pm-done", "orch:architect-done", "orch:ux-done", "orch:engineer-done"
         )
         $missingLabels = @()
         foreach ($label in $requiredLabels) {

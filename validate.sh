@@ -117,8 +117,8 @@ if command -v gh &> /dev/null; then
         LABELS=$(gh label list --json name --jq '.[].name' 2>/dev/null)
         REQUIRED_LABELS=(
             "type:epic" "type:feature" "type:story" "type:bug" "type:spike" "type:docs"
-            "status:ready" "status:in-progress" "status:done"
             "priority:p0" "priority:p1" "priority:p2" "priority:p3"
+            "orch:pm-done" "orch:architect-done" "orch:ux-done" "orch:engineer-done"
         )
         MISSING_LABELS=()
         for label in "${REQUIRED_LABELS[@]}"; do

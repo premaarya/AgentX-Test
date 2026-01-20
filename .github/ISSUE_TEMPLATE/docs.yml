@@ -1,7 +1,7 @@
 name: 📚 Documentation
 description: Documentation updates or additions
 title: "[Docs] "
-labels: ["type:docs", "status:ready", "priority:p3"]
+labels: ["type:docs", "priority:p3"]
 body:
   - type: markdown
     attributes:

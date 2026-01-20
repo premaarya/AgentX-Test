@@ -2,7 +2,7 @@
 
 **Title**: [E2E Test] Build User Authentication System
 
-**Labels**: `type:epic`, `priority:p1`, `status:ready`, `e2e-test`
+**Labels**: `type:epic`, `priority:p1`, `e2e-test`
 
 ## Description
 

@@ -2,7 +2,7 @@
 
 **Title**: [E2E Test] OAuth 2.0 Integration
 
-**Labels**: `type:feature`, `priority:p1`, `status:ready`, `e2e-test`
+**Labels**: `type:feature`, `priority:p1`, `e2e-test`
 
 ## Description
 

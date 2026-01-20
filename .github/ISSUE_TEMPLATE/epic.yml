@@ -1,7 +1,7 @@
 name: 🎯 Epic
 description: Large initiative spanning multiple features (requires PRD creation)
 title: "[Epic] "
-labels: ["type:epic", "status:ready", "priority:p1"]
+labels: ["type:epic", "priority:p1"]
 body:
   - type: markdown
     attributes:

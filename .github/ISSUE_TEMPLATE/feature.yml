@@ -1,7 +1,7 @@
 name: ✨ Feature
 description: New capability or significant enhancement (requires ADR + Tech Spec)
 title: "[Feature] "
-labels: ["type:feature", "status:ready", "priority:p2"]
+labels: ["type:feature", "priority:p2"]
 body:
   - type: markdown
     attributes:

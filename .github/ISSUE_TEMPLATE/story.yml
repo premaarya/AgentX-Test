@@ -1,7 +1,7 @@
 name: 📝 Story
 description: Small, well-defined task ready for implementation
 title: "[Story] "
-labels: ["type:story", "status:ready", "priority:p2"]
+labels: ["type:story", "priority:p2"]
 body:
   - type: markdown
     attributes:
