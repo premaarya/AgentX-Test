@@ -1,9 +1,26 @@
-# Code Owners - Protected Paths Requiring Human Review
+# Code Owners - Actor Allowlist & Protected Paths
+# Layer 1 Security: Only listed actors can have PRs auto-merged
 # Reference: .github/autonomous-mode.yml (Layer 2: Protected Paths)
-# Any PR modifying these paths MUST be reviewed by designated owners
+# Reference: .github/agentx-security.yml (4-Layer Security Model)
 
 # =============================================================================
-# CI/CD & WORKFLOW FILES - CRITICAL INFRASTRUCTURE
+# DEFAULT - Repository Owner
+# =============================================================================
+* @jnPiyush
+
+# =============================================================================
+# AGENT-GENERATED CONTENT - AUTO-MERGE ALLOWED
+# =============================================================================
+docs/prd/**             @jnPiyush @github-actions[bot]
+docs/adr/**             @jnPiyush @github-actions[bot]
+docs/specs/**           @jnPiyush @github-actions[bot]
+docs/reviews/**         @jnPiyush @github-actions[bot]
+docs/ux/**              @jnPiyush @github-actions[bot]
+samples/**              @jnPiyush @github-actions[bot]
+tests/e2e/fixtures/**   @jnPiyush @github-actions[bot]
+
+# =============================================================================
+# CI/CD & WORKFLOW FILES - HUMAN REVIEW REQUIRED (NO AUTO-MERGE)
 # =============================================================================
 /.github/workflows/**                @jnPiyush
 /.github/actions/**                  @jnPiyush

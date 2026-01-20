@@ -63,10 +63,34 @@ See [MCP Integration Guide](docs/mcp-integration.md) for setup details.
 
 ### 🔒 4-Layer Security Architecture
 
-1. **Actor Allowlist** - Who can perform autonomous operations
-2. **Protected Paths** - Files requiring human review
-3. **Kill Switch** - Emergency stop for all autonomous operations
-4. **Audit Trail** - Full logging via GitHub Issues
+Inspired by MayorWest's "Policy over Approval" philosophy - configure once, trust the guardrails.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│         AgentX: 4-Layer Security Architecture                   │
+├─────────────────────────────────────────────────────────────────┤
+│  Layer 1: Actor Allowlist (CODEOWNERS)                          │
+│  ├── ✅ @github-actions[bot] → Authorized for auto-merge        │
+│  ├── ✅ @jnPiyush → Authorized for auto-merge                   │
+│  └── ❌ Unknown actors → Requires manual review                 │
+├─────────────────────────────────────────────────────────────────┤
+│  Layer 2: Protected Paths (agentx-security.yml)                 │
+│  ├── 🔒 .github/workflows/** → Human review required            │
+│  ├── 🔒 package.json, *.csproj → Human review required          │
+│  └── ✅ docs/**, samples/** → Auto-merge allowed                │
+├─────────────────────────────────────────────────────────────────┤
+│  Layer 3: Kill Switch (agentx-security.yml)                     │
+│  ├── enabled: false → Disable all auto-merge instantly          │
+│  └── enabled: true  → Resume autonomous operations              │
+├─────────────────────────────────────────────────────────────────┤
+│  Layer 4: Audit Trail                                           │
+│  ├── PR comments documenting security check results             │
+│  ├── GitHub Actions logs for every decision                     │
+│  └── Issue comments tracking agent handoffs                     │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+Plus client-side protection: VS Code YOLO settings auto-approve safe commands (`git commit`, `npm test`) while blocking destructive ones (`rm -rf`, `git reset --hard`).
 
 ### 📋 Task Management
 

@@ -1,10 +1,24 @@
 {
+    "chat.tools.autoApprove": true,
     "chat.tools.terminal.autoApprove": {
-        "ForEach-Object": true,
-        "Copy-Item": true,
-        "Set-Content": true
+        "/^git\\s+(commit|push|pull|fetch|status|diff|log|checkout|branch)\\b/": true,
+        "/^(npm|pnpm|yarn)\\s+(test|lint|build|install)\\b/": true,
+        "/^(dotnet|python|pytest)\\s+(test|build|run)\\b/": true,
+        "/^gh\\s+(issue|pr|repo|workflow|run)\\s+/": true,
+        "/^(ForEach-Object|Copy-Item|Set-Content|New-Item|Get-Content)\\b/": true,
+        "rm": false,
+        "kill": false,
+        "git reset --hard": false,
+        "rm -rf": false,
+        "drop database": false
     },
+    "chat.agent.iterationLimit": 15,
+    "chat.agent.maxTokensPerIteration": 4000,
+    "chat.agent.slowMode": false,
     "chat.useAgentsMdFile": true,
     "chat.useAgentSkills": true,
-    "github.copilot.chat.codeGeneration.useInstructionFiles": true
+    "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+    "github.copilot.enable": {
+        "*": true
+    }
 }

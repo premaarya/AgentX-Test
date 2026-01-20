@@ -1,0 +1,59 @@
+# AgentX Security Configuration
+# 4-Layer Security Architecture for Autonomous Agent Operations
+
+## Layer 1: Kill Switch
+enabled: true  # Set to false to instantly disable all autonomous operations
+
+## Layer 2: Protected Paths
+# Files matching these patterns require manual review (no auto-merge)
+protected_paths:
+  - ".github/workflows/**"
+  - ".github/agents/**"
+  - ".vscode/**"
+  - "AGENTS.md"
+  - "Skills.md"
+  - "package.json"
+  - "package-lock.json"
+  - "*.csproj"
+  - "*.sln"
+  - "pyproject.toml"
+  - "poetry.lock"
+
+## Layer 3: Actor Allowlist
+# Only these actors can trigger auto-merge (managed in CODEOWNERS)
+allowed_actors:
+  - "github-actions[bot]"
+  - "@jnPiyush"  # Repository owner
+
+## Layer 4: Audit Trail
+# All autonomous operations are logged in:
+# - PR comments (security check results)
+# - GitHub Actions logs (full execution trace)
+# - Issue comments (agent handoff documentation)
+
+## Agent Constraints
+max_iterations: 15
+max_tokens_per_iteration: 4000
+slow_mode: false
+
+## Command Safety
+# Safe commands (auto-approved):
+# - git commit, push, pull, fetch, status, diff, log
+# - npm/yarn test, lint, build
+# - dotnet/pytest test, build, run
+# - gh issue, pr, repo, workflow commands
+
+# Blocked commands (never auto-approve):
+# - rm, rm -rf
+# - kill, pkill
+# - git reset --hard
+# - drop database
+# - any destructive operations
+
+## Branch Protection
+# Configure on GitHub:
+# Settings → Branches → Branch protection rules
+# - Require pull request reviews
+# - Require status checks to pass
+# - Require conversation resolution
+# - Do not allow bypassing the above settings
