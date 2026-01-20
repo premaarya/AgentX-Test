@@ -49,8 +49,8 @@ jobs:
             // State machine routing
             if (has('type:epic') && !has('orch:pm-done')) agents.push('product-manager');
             if (has('orch:pm-done') && !has('orch:architect-done')) agents.push('architect');
-            if (has('orch:pm-done') && !has('orch:ux-done')) agents.push('ux-designer');
-            if (has('type:story') && has('orch:architect-done') && has('orch:ux-done') && !has('orch:engineer-done')) agents.push('engineer');
+            if (has('orch:pm-done') && !has('orch:ux-done') && has('needs:ux')) agents.push('ux-designer');
+            if ((has('type:story') || has('type:feature')) && !has('orch:engineer-done')) agents.push('engineer');
             if (has('orch:engineer-done') && !issue.closed_at) agents.push('reviewer');
             if (has('type:spike') && !has('orch:architect-done') && !agents.includes('architect')) agents.push('architect');
             if ((has('type:bug') || has('type:docs')) && !has('orch:engineer-done') && !agents.includes('engineer')) agents.push('engineer');
@@ -81,11 +81,13 @@ jobs:
       - name: Create PRD
         run: |
           mkdir -p docs/prd
-          cat > "docs/prd/PRD-${{ needs.route.outputs.issue_number }}.md" << 'EOF'
-          # PRD: Issue #${{ needs.route.outputs.issue_number }}
+          ISSUE="${{ needs.route.outputs.issue_number }}"
+          DATE=$(date -u '+%Y-%m-%d')
+          cat > "docs/prd/PRD-${ISSUE}.md" << EOF
+          # PRD: Issue #${ISSUE}
           
           **Status**: Draft  
-          **Created**: $(date -u '+%Y-%m-%d')
+          **Created**: ${DATE}
           
           ## Overview
           [Generated from issue requirements]
@@ -125,13 +127,14 @@ jobs:
       - name: Create ADR + Spec
         run: |
           mkdir -p docs/adr docs/specs
-          ISSUE=${{ needs.route.outputs.issue_number }}
+          ISSUE="${{ needs.route.outputs.issue_number }}"
+          DATE=$(date -u '+%Y-%m-%d')
           
-          cat > "docs/adr/ADR-${ISSUE}.md" << 'EOF'
+          cat > "docs/adr/ADR-${ISSUE}.md" << EOF
           # ADR: Issue #${ISSUE}
           
           **Status**: Proposed
-          **Created**: $(date -u '+%Y-%m-%d')
+          **Created**: ${DATE}
           
           ## Decision
           [Architecture decision]
@@ -141,7 +144,7 @@ jobs:
           - Option B
           EOF
           
-          cat > "docs/specs/SPEC-${ISSUE}.md" << 'EOF'
+          cat > "docs/specs/SPEC-${ISSUE}.md" << EOF
           # Tech Spec: Issue #${ISSUE}
           
           ## API Endpoints
@@ -149,9 +152,9 @@ jobs:
           - POST /api/resource
           
           ## Database Schema
-          ```sql
+          \`\`\`sql
           CREATE TABLE example (id SERIAL PRIMARY KEY);
-          ```
+          \`\`\`
           EOF
 
       - name: Commit Docs
@@ -181,8 +184,9 @@ jobs:
       - name: Create UX Design
         run: |
           mkdir -p docs/ux
-          cat > "docs/ux/UX-${{ needs.route.outputs.issue_number }}.md" << 'EOF'
-          # UX Design: Issue #${{ needs.route.outputs.issue_number }}
+          ISSUE="${{ needs.route.outputs.issue_number }}"
+          cat > "docs/ux/UX-${ISSUE}.md" << EOF
+          # UX Design: Issue #${ISSUE}
           
           ## Wireframes
           [Link to wireframes]
@@ -258,11 +262,13 @@ jobs:
       - name: Review Code
         run: |
           mkdir -p docs/reviews
-          cat > "docs/reviews/REVIEW-${{ needs.route.outputs.issue_number }}.md" << 'EOF'
-          # Code Review: Issue #${{ needs.route.outputs.issue_number }}
+          ISSUE="${{ needs.route.outputs.issue_number }}"
+          DATE=$(date -u '+%Y-%m-%d')
+          cat > "docs/reviews/REVIEW-${ISSUE}.md" << EOF
+          # Code Review: Issue #${ISSUE}
           
           **Reviewer**: Automated Review Agent
-          **Date**: $(date -u '+%Y-%m-%d')
+          **Date**: ${DATE}
           
           ## Checklist
           - [x] Code quality standards met
