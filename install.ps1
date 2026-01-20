@@ -133,9 +133,10 @@ $skillsFiles = @(
 $optionalFiles = @(
     @{ Src = ".github/agents/product-manager.agent.md"; Dest = ".github/agents/product-manager.agent.md" },
     @{ Src = ".github/agents/architect.agent.md"; Dest = ".github/agents/architect.agent.md" },
+    @{ Src = ".github/agents/ux-designer.agent.md"; Dest = ".github/agents/ux-designer.agent.md" },
     @{ Src = ".github/agents/engineer.agent.md"; Dest = ".github/agents/engineer.agent.md" },
     @{ Src = ".github/agents/reviewer.agent.md"; Dest = ".github/agents/reviewer.agent.md" },
-    @{ Src = ".github/agents/ux-designer.agent.md"; Dest = ".github/agents/ux-designer.agent.md" },
+    @{ Src = ".github/agents/orchestrator.agent.md"; Dest = ".github/agents/orchestrator.agent.md" },
     @{ Src = ".github/instructions/csharp.instructions.md"; Dest = ".github/instructions/csharp.instructions.md" },
     @{ Src = ".github/instructions/python.instructions.md"; Dest = ".github/instructions/python.instructions.md" },
     @{ Src = ".github/instructions/react.instructions.md"; Dest = ".github/instructions/react.instructions.md" },
