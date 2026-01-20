@@ -203,8 +203,8 @@ if (Test-Path ".vscode/mcp.json") {
 # Check 10: GitHub Actions
 Write-Check "Checking GitHub Actions workflows..."
 $workflows = @(
-    ".github/workflows/enforce-issue-workflow.yml",
-    ".github/workflows/orchestrate.yml"
+    ".github/workflows/agent-orchestrator.yml",
+    ".github/workflows/test-e2e.yml"
 )
 $workflowsPresent = $true
 foreach ($workflow in $workflows) {

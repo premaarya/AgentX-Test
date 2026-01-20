@@ -180,7 +180,7 @@ fi
 # Check 10: GitHub Actions
 check "Checking GitHub Actions workflows..."
 WORKFLOWS_PRESENT=true
-for workflow in ".github/workflows/enforce-issue-workflow.yml" ".github/workflows/orchestrate.yml"; do
+for workflow in ".github/workflows/agent-orchestrator.yml" ".github/workflows/test-e2e.yml"; do
     if [ ! -f "$workflow" ]; then
         warn "Missing workflow: $workflow"
         WORKFLOWS_PRESENT=false
