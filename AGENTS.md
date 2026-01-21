@@ -195,7 +195,7 @@ User asks: "Build me a feature"
 | 🤖 **Orchestrator** | Label changes (`orch:*`) | (Monitors all) | Routing decisions + Comments | (Coordinates flow) |
 | 📋 **PM** | User input | Backlog → In Progress → Ready | PRD + Backlog | `orch:pm-done` |
 | 🏭️ **Architect** | `orch:pm-done` | Ready (no change) | ADR + Tech Spec | `orch:architect-done` |
-| 🎨 **UX** | `orch:pm-done` | Ready (no change) | Wireframes + Prototypes | `orch:ux-done` |
+| 🎨 **UX** | `orch:pm-done` | Ready (no change) | Wireframes + HTML Prototypes | `orch:ux-done` |
 | 🔧 **Engineer** | Both: `orch:architect-done` + `orch:ux-done` | Ready → In Progress → In Review | Code + Tests + Docs | `orch:engineer-done` |
 | ✅ **Reviewer** | `orch:engineer-done` | In Review → Done (+ close) | Review doc | Close issue |
 
@@ -222,7 +222,7 @@ User asks: "Build me a feature"
 
 🎨 **UX Designer:** (parallel)
 1. Review backlog for UX needs
-2. Create wireframes + prototypes at docs/ux/
+2. Create wireframes + HTML prototypes at docs/ux/
 3. Add `orch:ux-done` to Epic
 
 🔧 **Engineer:**
@@ -835,6 +835,23 @@ gh run list --workflow=<workflow-file.yml>
 | **Priority** | `priority:p0`, `priority:p1`, `priority:p2`, `priority:p3` | Determine urgency (p0=critical, p3=low) |
 | **Orchestration** | `orch:pm-done`, `orch:architect-done`, `orch:ux-done`, `orch:engineer-done` | Signal handoff readiness (cumulative) |
 | **Workflow** | `needs:ux`, `needs:help`, `needs:changes`, `needs:fixes` | Flag special requirements |
+
+### Label Placement Rules
+
+**Epic-Level Labels** (workflow coordination):
+- `type:epic` - Always on Epic
+- `orch:pm-done` - Added by PM, triggers Architect + UX Designer (parallel)
+- `orch:architect-done` - Added by Architect when design complete
+- `orch:ux-done` - Added by UX Designer when wireframes complete
+- `priority:p0/p1/p2/p3` - Priority level
+
+**Feature/Story-Level Labels** (work requirements):
+- `type:feature`, `type:story`, `type:bug`, etc. - Issue classification
+- `needs:ux` - **ONLY on Features/Stories** - Indicates UI/UX work required
+- `needs:help` - Blocked or assistance needed
+- `needs:changes` - Reviewer requested changes
+
+**Important**: The `needs:ux` label is NEVER placed on Epics. The orchestrator automatically triggers UX Designer for all Epics when `orch:pm-done` is added. UX Designer checks child Features/Stories for `needs:ux` and exits early if no work is found.
 
 ### ⚠️ Removed: Custom Status Labels
 
