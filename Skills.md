@@ -10,6 +10,117 @@ description: 'Production-ready guidelines for AI agents to build secure, scalabl
 
 ---
 
+## 🎯 Quick Reference by Task Type
+
+> **Purpose**: Find relevant skills fast based on what you're building.  
+> **Usage**: Match your task below, load only the recommended skills to stay within token budget.
+
+### API Implementation
+
+**When**: Creating REST endpoints, controllers, HTTP APIs
+
+**Load These Skills** (Total: ~18K tokens):
+- [#09 API Design](skills/09-api-design.md) - REST patterns, versioning, rate limiting (5K)
+- [#04 Security](skills/04-security.md) - Input validation, authentication, authorization (6K)
+- [#02 Testing](skills/02-testing.md) - Controller tests, integration tests (4K)
+- [#11 Documentation](skills/11-documentation.md) - XML docs, OpenAPI/Swagger (3K)
+
+**Context Routing**: Controller implementation → Load Skills #09, #04, #02, #11
+
+---
+
+### Database Changes
+
+**When**: Adding tables, migrations, queries, indexing
+
+**Load These Skills** (Total: ~15K tokens):
+- [#06 Database](skills/06-database.md) - Migrations, indexing, transactions (5K)
+- [#04 Security](skills/04-security.md) - SQL injection prevention, parameterization (6K)
+- [#02 Testing](skills/02-testing.md) - Repository tests, integration tests (4K)
+
+**Context Routing**: Database/Repository files → Load Skills #06, #04, #02
+
+---
+
+### Security Feature
+
+**When**: Authentication, authorization, encryption, secrets management
+
+**Load These Skills** (Total: ~20K tokens):
+- [#04 Security](skills/04-security.md) - OWASP Top 10, input validation, auth patterns (6K)
+- [#10 Configuration](skills/10-configuration.md) - Secrets management, environment variables (5K)
+- [#02 Testing](skills/02-testing.md) - Security tests, penetration test patterns (4K)
+- [#13 Type Safety](skills/13-type-safety.md) - Nullable reference types, analyzers (3K)
+- [#15 Logging](skills/15-logging-monitoring.md) - Security event logging, audit trails (2K)
+
+**Context Routing**: Security-related files → Load Skills #04, #10, #02, #13, #15
+
+---
+
+### Bug Fix
+
+**When**: Fixing errors, exceptions, crashes, incorrect behavior
+
+**Load These Skills** (Total: ~10K tokens):
+- [#03 Error Handling](skills/03-error-handling.md) - Exception patterns, retry logic (4K)
+- [#02 Testing](skills/02-testing.md) - Regression tests, debugging patterns (4K)
+- [#15 Logging](skills/15-logging-monitoring.md) - Log analysis, correlation IDs (2K)
+
+**Context Routing**: Bug fix → Load Skills #03, #02, #15
+
+---
+
+### Performance Optimization
+
+**When**: Improving speed, reducing latency, optimizing queries
+
+**Load These Skills** (Total: ~15K tokens):
+- [#05 Performance](skills/05-performance.md) - Async/await, caching, profiling (5K)
+- [#06 Database](skills/06-database.md) - Query optimization, indexing (5K)
+- [#02 Testing](skills/02-testing.md) - Performance tests, benchmarks (3K)
+- [#15 Logging](skills/15-logging-monitoring.md) - Performance metrics, APM (2K)
+
+**Context Routing**: Performance work → Load Skills #05, #06, #02, #15
+
+---
+
+### Documentation
+
+**When**: Writing README, API docs, code comments, guides
+
+**Load These Skills** (Total: ~5K tokens):
+- [#11 Documentation](skills/11-documentation.md) - XML docs, README patterns, inline comments (5K)
+
+**Context Routing**: Documentation only → Load Skill #11
+
+---
+
+### Code Review
+
+**When**: Reviewing pull requests, auditing code quality
+
+**Load These Skills** (Total: ~18K tokens):
+- [#18 Code Review & Audit](skills/18-code-review-and-audit.md) - Review checklist, quality gates (5K)
+- [#04 Security](skills/04-security.md) - Security audit checklist (6K)
+- [#02 Testing](skills/02-testing.md) - Test quality review (4K)
+- [#01 Core Principles](skills/01-core-principles.md) - SOLID, design patterns review (3K)
+
+**Context Routing**: Code review → Load Skills #18, #04, #02, #01
+
+---
+
+### AI Agent Development
+
+**When**: Building AI agents, LLM integration, orchestration
+
+**Load These Skills** (Total: ~12K tokens):
+- [#17 AI Agent Development](skills/17-ai-agent-development.md) - Foundry, Agent Framework, tracing (8K)
+- [#04 Security](skills/04-security.md) - Prompt injection prevention, secrets (4K)
+
+**Context Routing**: AI agent work → Load Skills #17, #04
+
+---
+
 ## Technology Stack
 
 | Component | Technology | Version |

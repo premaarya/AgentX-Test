@@ -60,7 +60,37 @@ Prerequisites Check → Read Specs → Implement → Test → Document → Commi
    - Read existing controllers, services, models
    - Identify where code should live
 
-4. **Implement Code** (see [Skills.md](../../Skills.md)):
+4. **Auto-Load Guidelines** (MANDATORY - see [Skills.md Quick Reference](../../Skills.md#-quick-reference-by-task-type)):
+   
+   **Classify your task, then load ONLY relevant skills**:
+   
+   | Task Type | Auto-Load Skills | Token Budget |
+   |-----------|------------------|--------------|
+   | **API Implementation** | #09, #04, #02, #11 | ~18K tokens |
+   | **Database Changes** | #06, #04, #02 | ~15K tokens |
+   | **Security Feature** | #04, #10, #02, #13, #15 | ~20K tokens |
+   | **Bug Fix** | #03, #02, #15 | ~10K tokens |
+   | **Performance Optimization** | #05, #06, #02, #15 | ~15K tokens |
+   | **Documentation** | #11 | ~5K tokens |
+   
+   **Pre-Code Checklist**:
+   ```
+   ✅ Step 1: Identified task type from table above
+   ✅ Step 2: Read corresponding skill documents (use read_file tool)
+   ✅ Step 3: Confirmed understanding of key requirements
+   ✅ Step 4: Token budget within limits (check total < 72K)
+   ```
+   
+   **Example - API Implementation**:
+   ```json
+   // Read skills in priority order
+   { "tool": "read_file", "args": { "filePath": "skills/09-api-design.md" } }
+   { "tool": "read_file", "args": { "filePath": "skills/04-security.md" } }
+   { "tool": "read_file", "args": { "filePath": "skills/02-testing.md" } }
+   { "tool": "read_file", "args": { "filePath": "skills/11-documentation.md" } }
+   ```
+
+5. **Implement Code with Inline Compliance Checks**:
    
    **File Structure** (from Tech Spec):
    ```
@@ -74,16 +104,52 @@ Prerequisites Check → Read Specs → Implement → Test → Document → Commi
    └── Data/{Resource}Repository.cs
    ```
    
-   **Code Standards**:
-   - Follow SOLID principles ([01-core-principles.md](../../skills/01-core-principles.md))
-   - Implement error handling ([03-error-handling.md](../../skills/03-error-handling.md))
-   - Validate all inputs ([04-security.md](../../skills/04-security.md))
-   - Use async/await ([05-performance.md](../../skills/05-performance.md))
-   - Add XML docs ([11-documentation.md](../../skills/11-documentation.md))
-
-5. **Write Tests** ([02-testing.md](../../skills/02-testing.md)):
-   
+   **Code Standards with Inline Compliance**:
    ```csharp
+   // ✅ COMPLIANCE: Input validation per skills/04-security.md
+   public async Task<IActionResult> CreateUser([FromBody] UserRequest request)
+   {
+       var validator = new UserRequestValidator();
+       var result = await validator.ValidateAsync(request);
+       if (!result.IsValid) return BadRequest(result.Errors);
+       
+       // ✅ COMPLIANCE: SQL parameterization per skills/04-security.md
+       await _context.Users.AddAsync(new User { /* ... */ });
+       
+       // ✅ COMPLIANCE: Async/await per skills/05-performance.md
+       await _context.SaveChangesAsync();
+       
+       return Created($"/api/users/{user.Id}", user);
+   }
+   
+   /// <summary>
+   /// ✅ COMPLIANCE: XML docs per skills/11-documentation.md
+   /// Creates a new user account.
+   /// </summary>
+   ```
+   
+   **Standards Reference**:
+   - SOLID principles ([01-core-principles.md](../../skills/01-core-principles.md))
+   - Error handling ([03-error-handling.md](../../skills/03-error-handling.md))
+   - Input validation ([04-security.md](../../skills/04-security.md))
+7. **Update Documentation**:
+   - XML docs on all public APIs
+   - README if new module
+   - Inline comments for complex logic
+
+8. **Verify Compliance** (Auto-Check):
+   ```bash
+   # Security scan (no secrets, SQL safe)
+   git diff --staged | grep -iE 'password|secret|api[_-]?key'
+   
+   # Test coverage check
+   dotnet test /p:CollectCoverage=true /p:CoverageThreshold=80
+   
+   # No compiler warnings
+   dotnet build --no-incremental /warnaserror
+   ```
+
+9  ```csharp
    // tests/{Resource}ServiceTests.cs (70% - unit)
    [Fact]
    public async Task GetById_ValidId_ReturnsResource() { ... }
@@ -102,23 +168,26 @@ Prerequisites Check → Read Specs → Implement → Test → Document → Commi
    dotnet test /p:CollectCoverage=true /p:CoverageThreshold=80
    ```
 
-6. **Update Documentation**:
-   - XML docs on all public APIs
-   - README if new module
-   - Inline comments for complex logic
-
-7. **Commit Changes**:
-   ```bash
-   git add src/ tests/
-   git commit -m "feat: implement {feature} (#{story-id})"
-   git push
-   ```
-
-8. **Complete Handoff** (see Completion Checklist below)
+10. **Complete Handoff** (see Completion Checklist below)
 
 ---
 
 ## Completion Checklist
+
+Before handoff:
+- [ ] **Guidelines Loaded**: Confirmed relevant skills loaded per task type
+- [ ] **Inline Compliance**: Added `✅ COMPLIANCE` comments for key standards
+- [ ] **Code Standards**: Follows Skills.md (SOLID, error handling, validation)
+- [ ] **Tests Passing**: All unit + integration + e2e tests pass
+- [ ] **Coverage Target**: ≥80% (verified with `dotnet test /p:CollectCoverage=true`)
+- [ ] **No Warnings**: Compiler warnings = 0, linter errors = 0
+- [ ] **XML Documentation**: All public APIs documented
+- [ ] **Security Scan**: No secrets, SQL parameterized, inputs validated
+- [ ] **Compliance Verified**: Auto-check passed (step 8 above)
+- [ ] **Commit Format**: Proper message format `type: description (#issue-id)`
+- [ ] **Status Updated**: Story moved to "In Review" in Projects board
+- [ ] **Label Added**: `orch:engineer-done` label applied
+- [ ] **Summary Posted**: Handoff comment with commit SHA and coverage
 
 Before handoff:
 - [ ] Code follows Skills.md standards
