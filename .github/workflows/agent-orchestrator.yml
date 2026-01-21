@@ -126,8 +126,19 @@ jobs:
             }
             
             if (labels.includes('orch:pm-done')) {
-              if (!labels.includes('orch:architect-done')) agents.push('architect');
-              if (labels.includes('needs:ux') && !labels.includes('orch:ux-done')) agents.push('ux-designer');
+              // For Epics: Always run Architect + UX Designer in parallel
+              // UX Designer will check child issues for needs:ux and exit early if none found
+              if (labels.includes('type:epic')) {
+                if (!labels.includes('orch:architect-done')) agents.push('architect');
+                if (!labels.includes('orch:ux-done')) agents.push('ux-designer');
+              }
+              // For Features: Check needs:ux conditionally
+              else {
+                if (!labels.includes('orch:architect-done')) agents.push('architect');
+                if (labels.includes('needs:ux') && !labels.includes('orch:ux-done')) {
+                  agents.push('ux-designer');
+                }
+              }
             }
             
             if ((labels.includes('type:story') || labels.includes('type:feature')) && 
