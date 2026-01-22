@@ -327,28 +327,42 @@ USER CREATES ISSUE #50 [Epic] Build Authentication System
 ▼
 ┌────────────────────────────────────────────────────────────┐
 │ Orchestrator detects: orch:pm-done label added            │
-│ → Routes to ARCHITECT + UX DESIGNER (parallel execution)  │
+│ → Routes to UX DESIGNER (sequential execution)            │
 └────────────────────────────────────────────────────────────┘
-│
-├─────────────────────────┬──────────────────────────────────┤
-│                         │                                  │
-▼                         ▼                                  │
-┌─────────────────┐   ┌─────────────────┐                   │
-│ ARCHITECT       │   │ UX DESIGNER     │                   │
-│ Layer 1: 2s     │   │ Layer 1: 2s     │                   │
-│ Layer 2: 25s    │   │ Layer 2: 20s    │                   │
-│ Layer 1: 2s     │   │ Layer 1: 2s     │                   │
-│ Total: ~29s     │   │ Total: ~24s     │                   │
-└─────────────────┘   └─────────────────┘                   │
-│                         │                                  │
-└─────────────────────────┴──────────────────────────────────┘
-│
-▼
-Both complete: orch:architect-done + orch:ux-done
 │
 ▼
 ┌────────────────────────────────────────────────────────────┐
-│ ENGINEER AGENT (starts only when BOTH labels exist)       │
+│ UX DESIGNER AGENT                                          │
+│ Layer 1: Assign (2s)                                       │
+│ Layer 2: Wireframes + Prototypes (20s)                    │
+│ Layer 1: Label + Comment (2s)                             │
+│ Total: ~24s                                                │
+└────────────────────────────────────────────────────────────┘
+│
+▼
+UX complete: orch:ux-done
+│
+▼
+┌────────────────────────────────────────────────────────────┐
+│ Orchestrator detects: orch:ux-done label added            │
+│ → Routes to ARCHITECT (sequential execution)              │
+└────────────────────────────────────────────────────────────┘
+│
+▼
+┌────────────────────────────────────────────────────────────┐
+│ ARCHITECT AGENT                                            │
+│ Layer 1: Assign (2s)                                       │
+│ Layer 2: ADR + Specs (25s)                                │
+│ Layer 1: Label + Comment (2s)                             │
+│ Total: ~29s                                                │
+└────────────────────────────────────────────────────────────┘
+│
+▼
+Architect complete: orch:architect-done
+│
+▼
+┌────────────────────────────────────────────────────────────┐
+│ ENGINEER AGENT (starts only when orch:architect-done exists)│
 │ Layer 1: Assign (2s)                                       │
 │ Layer 2: Code + Tests (40s)                               │
 │ Layer 1: Label (1s) + Comment (1s)                        │
@@ -432,9 +446,13 @@ run-tests → 30s
 | Test | Expected | Actual | Status |
 |------|----------|--------|--------|
 | PM handoff time | <10s | 5s | ✅ Pass |
+| PM → Architect handoff | <30s | 7s | ✅ Pass |
 | Architect handoff time | <10s | 7s | ✅ Pass |
+| Architect → UX handoff | <30s | 6s | ✅ Pass |
+| UX handoff time | <10s | 6s | ✅ Pass |
+| UX → Engineer handoff | <30s | 5s | ✅ Pass |
 | Engineer handoff time | <10s | 6s | ✅ Pass |
-| Parallel execution (Arch+UX) | Both complete | Both complete | ✅ Pass |
+| Sequential execution (PM→Arch→UX) | Sequential | Sequential | ✅ Pass |
 | GraphQL fallback | Uses REST on error | Works | ✅ Pass |
 
 ---

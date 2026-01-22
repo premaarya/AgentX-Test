@@ -125,25 +125,17 @@ jobs:
               agents.push('product-manager');
             }
             
-            if (labels.includes('orch:pm-done')) {
-              // For Epics: Always run Architect + UX Designer in parallel
-              // UX Designer will check child issues for needs:ux and exit early if none found
-              if (labels.includes('type:epic')) {
-                if (!labels.includes('orch:architect-done')) agents.push('architect');
-                if (!labels.includes('orch:ux-done')) agents.push('ux-designer');
-              }
-              // For Features: Check needs:ux conditionally
-              else {
-                if (!labels.includes('orch:architect-done')) agents.push('architect');
-                if (labels.includes('needs:ux') && !labels.includes('orch:ux-done')) {
-                  agents.push('ux-designer');
-                }
-              }
+            // Sequential flow: PM → UX → Architect → Engineer
+            if (labels.includes('orch:pm-done') && !labels.includes('orch:ux-done')) {
+              agents.push('ux-designer');
+            }
+            
+            if (labels.includes('orch:ux-done') && !labels.includes('orch:architect-done')) {
+              agents.push('architect');
             }
             
             if ((labels.includes('type:story') || labels.includes('type:feature')) && 
                 labels.includes('orch:architect-done') && 
-                (!labels.includes('needs:ux') || labels.includes('orch:ux-done')) &&
                 !labels.includes('orch:engineer-done')) {
               agents.push('engineer');
             }
@@ -228,7 +220,7 @@ jobs:
             **Deliverables:**
             - 📋 PRD: `docs/prd/PRD-${{ needs.route.outputs.issue_number }}.md`
             
-            **Next:** Architect + UX (parallel)
+            **Next:** UX Designer (sequential)
             
             **Performance:** Assignment 2s (GraphQL) | Label 1s (GraphQL) | Total: ~5s
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -301,7 +293,7 @@ jobs:
             - 🏗️ ADR: `docs/adr/ADR-${{ needs.route.outputs.issue_number }}.md`
             - 📐 Spec: `docs/specs/SPEC-${{ needs.route.outputs.issue_number }}.md`
             
-            **Next:** Waiting for UX
+            **Next:** Engineer (sequential)
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
   ux-designer:
@@ -343,6 +335,13 @@ jobs:
 
       # LAYER 1: GraphQL Operations
       - name: Mark UX Done via GraphQL
+        uses: ./.github/actions/update-labels
+        with:
+          issue_number: ${{ needs.route.outputs.issue_number }}
+          add_labels: orch:ux-done
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Post Summary via GraphQL
         uses: ./.github/actions/post-comment
         with:
           issue_number: ${{ needs.route.outputs.issue_number }}
@@ -352,7 +351,7 @@ jobs:
             **Deliverables:**
             - 🎨 UX: `docs/ux/UX-${{ needs.route.outputs.issue_number }}.md`
             
-            **Next:** Waiting for Architect
+            **Next:** Architect (sequential)
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
   engineer:

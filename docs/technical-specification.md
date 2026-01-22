@@ -214,17 +214,19 @@ AgentX is a **multi-agent orchestration system** that coordinates AI agents (Pro
 │  │ Routing Logic (based on labels)                           │ │
 │  ├────────────────────────────────────────────────────────────┤ │
 │  │ type:epic (no orch:pm-done)        → Product Manager      │ │
-│  │ orch:pm-done (no architect/ux)     → Architect + UX (||)  │ │
-│  │ orch:architect-done + orch:ux-done → Engineer             │ │
+  │ orch:pm-done                       → UX Designer (sequential)│ │
+  │ orch:ux-done                       → Architect (sequential)│ │
+  │ orch:architect-done                → Engineer             │ │
 │  │ orch:engineer-done                 → Reviewer             │ │
 │  └────────────────────────────────────────────────────────────┘ │
-│                                                                  │
-│  Each agent:                                                     │
-│  1. Comments on issue (starting work)                           │
-│  2. Executes role-specific tasks                                │
-│  3. Commits deliverables                                         │
-│  4. Adds completion label (orch:*-done)                         │
-│  5. Triggers next agent automatically                           │
+  │                                                               │
+  │  Each agent:                                                     │
+  │  1. Comments on issue (starting work)                           │
+  │  2. Executes role-specific tasks                                │
+  │  3. **Self-Review**: Validates completeness and quality         │
+  │  4. Commits deliverables                                         │
+  │  5. Adds completion label (orch:*-done)                         │
+  │  6. Triggers next agent automatically (sequential)              │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -282,11 +284,17 @@ PM completes Epic → adds orch:pm-done
     ↓
 Workflow detects label change
     ↓
-Triggers Architect + UX Designer (parallel)
+Triggers UX Designer (sequential)
     ↓
-Both complete → add orch:architect-done + orch:ux-done
+UX Designer completes → adds orch:ux-done
     ↓
-Workflow detects BOTH labels present
+Workflow detects label change
+    ↓
+Triggers Architect (sequential)
+    ↓
+Architect completes → adds orch:architect-done
+    ↓
+Workflow detects label change
     ↓
 Triggers Engineer
     ↓
@@ -315,14 +323,27 @@ AgentX uses GitHub's native **Projects Status field** instead of custom status l
 - Mutually exclusive (only one status at a time)
 - Standard GitHub feature (no custom setup)
 
-### 4.5 Parallel Execution
+### 4.5 Sequential Execution & Self-Review
 
-When a Product Manager completes an Epic, **two agents work in parallel**:
+AgentX enforces a **sequential workflow** to ensure quality gates:
 
-- **Architect**: Creates ADR + Tech Specs for all Features/Stories
-- **UX Designer**: Creates wireframes + prototypes for all user-facing items
+**Sequential Steps:**
+1. **Product Manager**: Creates PRD + backlog → **Self-Review** → `orch:pm-done`
+2. **Architect**: Creates ADR + Tech Specs → **Self-Review** → `orch:architect-done`
+3. **UX Designer**: Creates wireframes + prototypes → **Self-Review** → `orch:ux-done`
+4. **Engineer**: Implements code + tests → **Self-Review** → `orch:engineer-done`
+5. **Reviewer**: Reviews quality → Approves or requests changes
 
-Both agents work on the **same Epic issue** but focus on different aspects. Engineer only starts when **BOTH** have completed their work.
+**Why Sequential (UX before Architect)?**
+- ✅ **User-Centered Design**: UX defines user needs before technical constraints
+- ✅ **Design Freedom**: UX Designer not limited by premature technical decisions
+- ✅ **Technical Feasibility**: Architect validates UX designs and creates supporting architecture
+- ✅ **Quality Gates**: Each agent performs self-review before handoff
+- ✅ **Clear Dependencies**: No ambiguity about which agent goes next
+- ✅ **Audit Trail**: Sequential commits show clear progression
+
+**Self-Review Checklists:**
+Each agent must validate their deliverables using role-specific checklists before adding `orch:*-done` label. See [AGENTS.md](../AGENTS.md) for detailed checklists.
 
 ---
 
@@ -332,10 +353,10 @@ Both agents work on the **same Epic issue** but focus on different aspects. Engi
 
 | Agent | Trigger | Input | Output | Handoff |
 |-------|---------|-------|--------|---------|
-| **📋 Product Manager** | `type:epic` | User requirements | PRD + Feature/Story backlog | `orch:pm-done` |
-| **🏗️ Architect** | `orch:pm-done` | PRD, technical requirements | ADR + Tech Specs | `orch:architect-done` |
-| **🎨 UX Designer** | `orch:pm-done` (parallel) | PRD, user flows | Wireframes + Prototypes | `orch:ux-done` |
-| **🔧 Engineer** | Both architect + UX done | Tech Spec + UX design | Code + Tests + Docs | `orch:engineer-done` |
+| **📋 Product Manager** | `type:epic` | User requirements | PRD + Feature/Story backlog (with self-review) | `orch:pm-done` |
+| **� UX Designer** | `orch:pm-done` (sequential) | PRD, user flows | Wireframes + Prototypes (with self-review) | `orch:ux-done` |
+| **🏭️ Architect** | `orch:ux-done` (sequential) | PRD, UX designs | ADR + Tech Specs (with self-review) | `orch:architect-done` |
+| **🔧 Engineer** | `orch:architect-done` | Tech Spec + UX design | Code + Tests + Docs (with self-review) | `orch:engineer-done` |
 | **✅ Reviewer** | `orch:engineer-done` | Code changes | Review doc + Approval | Close issue |
 
 ### 5.2 Agent Execution Pattern
@@ -354,28 +375,31 @@ Epic Issue Created (#48)
     ▼
 PM completes → Adds label: orch:pm-done
     │
-    ├──────────────────┬─────────────────┐
-    │ (Parallel)       │                 │
-    ▼                  ▼                 │
-┌──────────────┐  ┌─────────────┐       │
-│ Architect    │  │ UX Designer │       │
-│ (triggered)  │  │ (triggered) │       │
-└──────┬───────┘  └──────┬──────┘       │
-       │                 │              │
-       │ orch:architect- │ orch:ux-done │
-       │ done            │              │
-       └────────┬────────┘              │
-                │                       │
-                ▼                       │
-    Both labels present? YES            │
-                │                       │
-                ▼                       │
-        ┌──────────────┐                │
-        │  Engineer    │                │
-        │  (triggered) │                │
-        └──────┬───────┘                │
-               │ orch:engineer-done     │
-               ▼                        │
+    ▼
+┌─────────────────────────────────────────────────┐
+│ Architect (triggered sequentially)              │
+└─────────────────────────────────────────────────┘
+    │
+    ▼
+Architect completes → Adds label: orch:architect-done
+    │
+    ▼
+┌─────────────────────────────────────────────────┐
+│ UX Designer (triggered sequentially)            │
+└─────────────────────────────────────────────────┘
+    │
+    ▼
+UX Designer completes → Adds label: orch:ux-done
+    │
+    ▼
+┌─────────────────────────────────────────────────┐
+│  Engineer (triggered when ux-done present)       │
+└─────────────────────────────────────────────────┘
+       │
+       ▼
+Engineer completes → Adds label: orch:engineer-done
+       │
+       ▼
         ┌──────────────┐                │
         │   Reviewer   │                │
         │  (triggered) │                │
@@ -385,14 +409,15 @@ PM completes → Adds label: orch:pm-done
         Close Issue (Done)              │
 ```
 
-### 5.3 Parallel Execution
+### 5.3 Sequential Execution (User-Centered Design)
 
-When PM completes an Epic, **both Architect and UX Designer** are triggered simultaneously:
+When PM completes an Epic, the workflow proceeds **sequentially**:
 
-- **Architect** reviews entire backlog → creates ADR + Tech Specs
-- **UX Designer** reviews entire backlog → creates wireframes + prototypes
+1. **UX Designer** reviews entire backlog → creates wireframes + prototypes → adds `orch:ux-done`
+2. **Architect** (triggered by `orch:ux-done`) reads UX designs → creates ADR + Tech Specs → adds `orch:architect-done`
+3. **Engineer** (triggered by `orch:architect-done`) implements Stories with both UX and technical context
 
-Both add their completion labels to the Epic. Engineer only starts when **BOTH** labels are present.
+This ensures UX defines user needs first, then Architect designs technical solution to support those needs.
 
 ---
 

@@ -8,6 +8,7 @@ tools:
   - issue_write
   - update_issue
   - add_issue_comment
+  - run_workflow
   - read_file
   - semantic_search
   - grep_search
@@ -29,97 +30,132 @@ Transform user needs into structured product requirements:
 - **Create PRD** at `docs/prd/PRD-{issue}.md` (problem, users, requirements, stories)
 - **Break down** Epic → Features → User Stories with acceptance criteria
 - **Create backlog** via GitHub Issues with proper hierarchy
-- **Hand off** to Architect + UX Designer (parallel) via `orch:pm-done` label
+- **Self-Review** PRD completeness, backlog hierarchy, acceptance criteria clarity
+- **Hand off** to UX Designer (sequential) via `orch:pm-done` label
 
 ## Workflow
 
 ```
-User Request → Research → Create PRD → Create Issues → Commit → Handoff
+User Request → Research → Create PRD → Create Issues → Self-Review → Commit → Handoff
 ```
 
-### Execution Steps
+## Execution Steps
 
-1. **Research Requirements** (see [AGENTS.md §Research Tools](../../AGENTS.md))
-   - Semantic search for similar features
-   - Read existing docs, PRDs, user feedback
-   - Identify constraints, dependencies, risks
+### 1. Research Requirements
 
-2. **Create PRD** at `docs/prd/PRD-{epic-id}.md`:
-   ```markdown
-   # PRD: {Epic Title}
-   
-   ## Problem
-   {What user problem are we solving?}
-   
-   ## Users
-   {Who are the target users?}
-   
-   ## Requirements
-   ### Functional
-   - {Requirement 1}
-   
-   ### Non-Functional
-   - Performance: {metric}
-   - Security: {requirement}
-   
-   ## User Stories
-   ### Feature 1: {Name}
-   | Story | As a... | I want... | So that... | Acceptance Criteria |
-   |-------|---------|-----------|------------|---------------------|
-   | US-1 | {role} | {capability} | {benefit} | - [ ] Criterion 1 |
-   
-   ## Dependencies & Risks
-   | Item | Impact | Mitigation |
-   |------|--------|------------|
-   | {dependency} | High/Med/Low | {plan} |
-   ```
+Use research tools to understand context:
+- `semantic_search` - Find similar features, existing PRDs, user feedback
+- `grep_search` - Search for specific requirements, patterns
+- `read_file` - Read existing docs, PRDs, user feedback
+- `runSubagent` - Quick competitor research, feasibility checks
 
-3. **Create GitHub Issues**:
-   
-   **Epic** (parent):
-   ```json
-   { "tool": "issue_write", "args": { 
-     "method": "create",
-     "title": "[Epic] {Title}",
-     "body": "## Overview\n{Problem}\n\n## PRD\n`docs/prd/PRD-{id}.md`\n\n## Features\n- [ ] Feature 1\n- [ ] Feature 2",
-     "labels": ["type:epic", "priority:p1"]
-   } }
-   ```
-   
-   **Features** (children of Epic):
-   ```json
-   { "tool": "issue_write", "args": {
-     "method": "create",
-     "title": "[Feature] {Name}",
-     "body": "## Description\n{Feature desc}\n\n## Parent\nEpic: #{epic-id}\n\n## Stories\n- [ ] Story 1\n- [ ] Story 2",
-     "labels": ["type:feature", "priority:p1"]
-   } }
-   ```
-   
-   **Stories** (children of Features):
-   ```json
-   { "tool": "issue_write", "args": {
-     "method": "create",
-     "title": "[Story] {User Story}",
-     "body": "## User Story\nAs a {role}, I want {capability} so that {benefit}.\n\n## Parent\nFeature: #{feature-id}\n\n## Acceptance Criteria\n- [ ] {criterion}",
-     "labels": ["type:story", "priority:p1", "needs:ux"] // add needs:ux if UI work
-   } }
-   ```
+**Example research:**
+```javascript
+await runSubagent({
+  prompt: "Research top 3 competitors for [feature]. Compare features, pricing, UX.",
+  description: "Competitor analysis"
+});
+```
 
-4. **Commit PRD**:
-   ```bash
-   git add docs/prd/PRD-{id}.md
-   git commit -m "feat: add PRD for Epic #{epic-id}"
-   git push
-   ```
+### 2. Create PRD
 
-5. **Complete Handoff** (see Completion Checklist below)
+Create `docs/prd/PRD-{epic-id}.md`:
 
----
+```markdown
+# PRD: {Epic Title}
 
-## Completion Checklist
+## Problem
+{What user problem are we solving?}
 
-Before handoff:
+## Users
+{Who are the target users?}
+
+## Requirements
+### Functional
+- {Requirement 1}
+
+### Non-Functional
+- Performance: {metric}
+- Security: {requirement}
+
+## User Stories
+### Feature 1: {Name}
+| Story | As a... | I want... | So that... | Acceptance Criteria |
+|-------|---------|-----------|------------|---------------------|
+| US-1 | {role} | {capability} | {benefit} | - [ ] Criterion 1 |
+
+## Dependencies & Risks
+| Item | Impact | Mitigation |
+|------|--------|------------|
+| {dependency} | High/Med/Low | {plan} |
+```
+
+### 3. Create GitHub Issues
+
+**Epic** (parent):
+```json
+{ "tool": "issue_write", "args": { 
+  "method": "create",
+  "title": "[Epic] {Title}",
+  "body": "## Overview\n{Problem}\n\n## PRD\n`docs/prd/PRD-{id}.md`\n\n## Features\n- [ ] Feature 1\n- [ ] Feature 2",
+  "labels": ["type:epic", "priority:p1"]
+} }
+```
+
+**Features** (children of Epic):
+```json
+{ "tool": "issue_write", "args": {
+  "method": "create",
+  "title": "[Feature] {Name}",
+  "body": "## Description\n{Feature desc}\n\n## Parent\nEpic: #{epic-id}\n\n## Stories\n- [ ] Story 1",
+  "labels": ["type:feature", "priority:p1"]
+} }
+```
+
+**Stories** (children of Features):
+```json
+{ "tool": "issue_write", "args": {
+  "method": "create",
+  "title": "[Story] {User Story}",
+  "body": "## User Story\nAs a {role}, I want {capability} so that {benefit}.\n\n## Parent\nFeature: #{feature-id}\n\n## Acceptance Criteria\n- [ ] {criterion}",
+  "labels": ["type:story", "priority:p1", "needs:ux"]
+} }
+```
+
+### 4. Self-Review
+
+**Pause and review with fresh eyes:**
+
+**Completeness:**
+- Did I fully understand the user's problem?
+- Are all functional requirements captured?
+- Did I miss any user stories or edge cases?
+- Are acceptance criteria specific and testable?
+
+**Quality:**
+- Is the PRD clear enough for someone unfamiliar with the project?
+- Are user stories sized appropriately (2-5 days each)?
+- Did I avoid overbuilding (YAGNI)?
+- Are dependencies and risks identified?
+
+**Clarity:**
+- Would an engineer understand exactly what to build?
+- Are technical terms defined?
+- Are priorities clear?
+
+**If issues found during reflection, fix them NOW before handoff.**
+
+### 5. Commit Changes
+
+```bash
+git add docs/prd/PRD-{epic-id}.md
+git commit -m "feat: add PRD for Epic #{epic-id}"
+git push
+```
+
+### 6. Completion Checklist
+
+Before handoff, verify:
 - [ ] PRD created at `docs/prd/PRD-{epic-id}.md`
 - [ ] Epic issue created with Feature links
 - [ ] Feature issues created with Story links
@@ -128,55 +164,173 @@ Before handoff:
 - [ ] All issues have parent references (`Parent: #{id}`)
 - [ ] PRD committed to repository
 - [ ] Epic Status updated to "Ready" in Projects board
-- [ ] Orchestration label added: `orch:pm-done`
-- [ ] Summary comment posted
 
 ---
 
-## Self-Reflection (Before Reporting)
+## Tools & Capabilities
 
-**Pause and review with fresh eyes:**
+### Research Tools
 
-### Completeness
-- Did I fully understand the user's problem?
-- Are all functional requirements captured?
-- Did I miss any user stories or edge cases?
-- Are acceptance criteria specific and testable?
+**Primary Tools:**
+- `semantic_search` - Find similar features, existing PRDs, user feedback
+- `grep_search` - Search for specific requirements, patterns
+- `file_search` - Locate existing documentation
+- `read_file` - Read PRDs, user stories, feedback
 
-### Quality
-- Is the PRD clear enough for someone unfamiliar with the project?
-- Are user stories sized appropriately (2-5 days each)?
-- Did I avoid overbuilding (YAGNI)?
-- Are dependencies and risks identified?
+### Quick Research with runSubagent
 
-### Clarity
-- Would an engineer understand exactly what to build?
-- Are technical terms defined?
-- Are priorities clear?
+Use `runSubagent` for focused investigations without creating issues:
 
-**If issues found during reflection, fix them NOW before handoff.**
+```javascript
+// Market research
+await runSubagent({
+  prompt: "Research top 3 competitors for [feature]. Compare features, pricing, UX.",
+  description: "Competitor analysis"
+});
+
+// User research synthesis
+await runSubagent({
+  prompt: "Analyze user feedback in docs/feedback/ and summarize top 3 pain points.",
+  description: "User pain point analysis"
+});
+
+// Technical feasibility check
+await runSubagent({
+  prompt: "Assess feasibility of [feature] given current tech stack. Estimate effort (S/M/L).",
+  description: "Feasibility check"
+});
+```
+
+**When to use runSubagent:**
+- Quick competitor/market research
+- Synthesizing user feedback
+- Feasibility checks before committing to PRD
+- Estimating effort/complexity
+- Risk assessment
+
+**When NOT to use:**
+- Creating full PRD (use main workflow)
+- Breaking down Epic (your primary responsibility)
+- Creating issues (use `issue_write`)
 
 ---
 
-## Handoff Steps
+## 🔄 Handoff Protocol
 
-1. **Update Epic Issue**:
-   ```json
-   { "tool": "update_issue", "args": {
-     "issue_number": <EPIC_ID>,
-     "labels": ["type:epic", "orch:pm-done"]
-   } }
+### Step 1: Capture Context
+
+Run context capture script:
+```bash
+# Bash
+./.github/scripts/capture-context.sh pm <EPIC_ID>
+
+# PowerShell
+./.github/scripts/capture-context.ps1 -Role pm -IssueNumber <EPIC_ID>
+```
+
+This creates `.agent-context/issue-<ID>-pm.md` and posts summary to GitHub issue.
+
+### Step 2: Add Orchestration Label
+
+```json
+{
+  "tool": "update_issue",
+  "args": {
+    "owner": "jnPiyush",
+    "repo": "AgentX",
+    "issue_number": <EPIC_ID>,
+    "labels": ["type:epic", "orch:pm-done"]
+  }
+}
+```
+
+### Step 3: Trigger Next Agent (Automatic)
+
+Orchestrator automatically triggers UX Designer workflow within 30 seconds.
+
+**Manual trigger (if needed):**
+```json
+{
+  "tool": "run_workflow",
+  "args": {
+    "owner": "jnPiyush",
+    "repo": "AgentX",
+    "workflow_id": "run-ux-designer.yml",
+    "ref": "master",
+    "inputs": { "issue_number": "<EPIC_ID>" }
+  }
+}
+```
+
+### Step 4: Post Handoff Comment
+
+```json
+{
+  "tool": "add_issue_comment",
+  "args": {
+    "owner": "jnPiyush",
+    "repo": "AgentX",
+    "issue_number": <EPIC_ID>,
+    "body": "## ✅ Product Manager Complete\n\n**Deliverables:**\n- PRD: [docs/prd/PRD-<ID>.md](docs/prd/PRD-<ID>.md)\n- Features: #X, #Y, #Z\n- User Stories: #A, #B, #C\n\n**Next:** UX Designer triggered (sequential)"
+  }
+}
+```
+
+---
+
+## 🔒 Enforcement (Cannot Bypass)
+
+### Before Starting Work
+
+1. ✅ **Verify Epic label**: `type:epic` present on issue
+2. ✅ **Check no duplicate work**: No `orch:pm-done` label exists
+3. ✅ **Read issue description**: Understand requirements and context
+
+### Before Adding `orch:pm-done` Label
+
+1. ✅ **Run validation script**:
+   ```bash
+   ./.github/scripts/validate-handoff.sh <issue_number> pm
+   ```
+   **Checks**:
+   - PRD exists at `docs/prd/PRD-{issue}.md`
+   - PRD has required sections (Overview, User Stories)
+   - Backlog created (Feature/Story issues)
+
+2. ✅ **Complete self-review checklist** (document in issue comment):
+   - [ ] PRD completeness (problem, users, requirements, stories)
+   - [ ] Backlog hierarchy (Epic → Features → Stories)
+   - [ ] Acceptance criteria clarity (all stories have clear AC)
+   - [ ] Dependencies and risks documented
+
+3. ✅ **Capture context**:
+   ```bash
+   ./.github/scripts/capture-context.sh <issue_number> pm
+   ```
+   This auto-posts session summary to issue
+
+4. ✅ **Commit all changes**:
+   ```bash
+   git add docs/prd/PRD-{issue}.md
+   git commit -m "feat: create PRD and backlog for #{issue}"
+   git push
    ```
 
-2. **Post Summary Comment**:
-   ```json
-   { "tool": "add_issue_comment", "args": {
-     "issue_number": <EPIC_ID>,
-     "body": "## ✅ Product Manager Complete\n\n**PRD**: `docs/prd/PRD-{epic-id}.md`\n**Commit**: {SHA}\n\n**Backlog**:\n| Type | Count | Issues |\n|------|-------|--------|\n| Epic | 1 | #{epic} |\n| Features | N | #{f1}, #{f2}, ... |\n| Stories | M | #{s1}, #{s2}, ... |\n\n**Next**: Architect + UX Designer will start automatically (parallel)"
-   } }
-   ```
+### Workflow Will Automatically
 
-**Next Agents**: Orchestrator triggers both Architect + UX Designer workflows (<30s SLA)
+- ✅ Block if validation fails (PRD missing, sections incomplete)
+- ✅ Post context summary to issue
+- ✅ Add `orch:pm-done` label only after validation passes
+- ✅ Trigger UX Designer workflow (sequential, <30s SLA)
+
+### Recovery from Errors
+
+If validation fails:
+1. Fix the identified issue (missing PRD sections, incomplete backlog)
+2. Re-run validation script
+3. Try handoff again (workflow will re-validate)
+
+**Important**: Cannot manually add `orch:pm-done` label to bypass validation. Orchestrator checks for artifacts before routing to next agent.
 
 ---
 
@@ -185,8 +339,10 @@ Before handoff:
 - **Workflow**: [AGENTS.md](../../AGENTS.md)
 - **Standards**: [Skills.md](../../Skills.md)
 - **Example PRD**: [PRD-48.md](../../docs/prd/PRD-48.md)
+- **Validation Script**: [validate-handoff.sh](../scripts/validate-handoff.sh)
+- **Context Capture**: [capture-context.sh](../scripts/capture-context.sh)
 
 ---
 
-**Version**: 2.0 (Optimized)  
-**Last Updated**: January 20, 2026
+**Version**: 2.2 (Restructured)  
+**Last Updated**: January 21, 2026

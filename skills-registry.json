@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "lastUpdated": "2026-01-20",
+  "lastUpdated": "2026-01-21",
   "budget": {
     "total": 72000,
     "tier2Max": 20000,
@@ -10,7 +10,7 @@
     "01": {
       "id": "01",
       "name": "Core Principles",
-      "file": "skills/01-core-principles.md",
+      "file": ".github/skills/core-principles/SKILL.md",
       "tokens": 3000,
       "priority": "foundation",
       "tags": ["architecture", "design", "patterns", "SOLID"]
@@ -18,7 +18,7 @@
     "02": {
       "id": "02",
       "name": "Testing",
-      "file": "skills/02-testing.md",
+      "file": ".github/skills/testing/SKILL.md",
       "tokens": 4000,
       "priority": "critical",
       "tags": ["testing", "coverage", "unit", "integration", "e2e"]
@@ -26,7 +26,7 @@
     "03": {
       "id": "03",
       "name": "Error Handling",
-      "file": "skills/03-error-handling.md",
+      "file": ".github/skills/error-handling/SKILL.md",
       "tokens": 4000,
       "priority": "high",
       "tags": ["exceptions", "retry", "circuit-breaker"]
@@ -34,7 +34,7 @@
     "04": {
       "id": "04",
       "name": "Security",
-      "file": "skills/04-security.md",
+      "file": ".github/skills/security/SKILL.md",
       "tokens": 6000,
       "priority": "critical",
       "tags": ["security", "validation", "SQL-injection", "auth", "OWASP"]
@@ -42,7 +42,7 @@
     "05": {
       "id": "05",
       "name": "Performance",
-      "file": "skills/05-performance.md",
+      "file": ".github/skills/performance/SKILL.md",
       "tokens": 5000,
       "priority": "high",
       "tags": ["async", "caching", "profiling", "optimization"]
@@ -50,7 +50,7 @@
     "06": {
       "id": "06",
       "name": "Database",
-      "file": "skills/06-database.md",
+      "file": ".github/skills/database/SKILL.md",
       "tokens": 5000,
       "priority": "high",
       "tags": ["database", "migrations", "indexing", "transactions"]
@@ -58,7 +58,7 @@
     "07": {
       "id": "07",
       "name": "Scalability",
-      "file": "skills/07-scalability.md",
+      "file": ".github/skills/scalability/SKILL.md",
       "tokens": 4000,
       "priority": "medium",
       "tags": ["scalability", "load-balancing", "queues", "stateless"]
@@ -66,7 +66,7 @@
     "08": {
       "id": "08",
       "name": "Code Organization",
-      "file": "skills/08-code-organization.md",
+      "file": ".github/skills/code-organization/SKILL.md",
       "tokens": 3000,
       "priority": "foundation",
       "tags": ["structure", "separation-of-concerns", "modules"]
@@ -74,7 +74,7 @@
     "09": {
       "id": "09",
       "name": "API Design",
-      "file": "skills/09-api-design.md",
+      "file": ".github/skills/api-design/SKILL.md",
       "tokens": 5000,
       "priority": "high",
       "tags": ["REST", "API", "versioning", "rate-limiting"]
@@ -82,7 +82,7 @@
     "10": {
       "id": "10",
       "name": "Configuration",
-      "file": "skills/10-configuration.md",
+      "file": ".github/skills/configuration/SKILL.md",
       "tokens": 5000,
       "priority": "high",
       "tags": ["config", "env-vars", "secrets", "feature-flags"]
@@ -90,7 +90,7 @@
     "11": {
       "id": "11",
       "name": "Documentation",
-      "file": "skills/11-documentation.md",
+      "file": ".github/skills/documentation/SKILL.md",
       "tokens": 3000,
       "priority": "medium",
       "tags": ["docs", "XML", "README", "comments"]
@@ -98,7 +98,7 @@
     "12": {
       "id": "12",
       "name": "Version Control",
-      "file": "skills/12-version-control.md",
+      "file": ".github/skills/version-control/SKILL.md",
       "tokens": 3000,
       "priority": "foundation",
       "tags": ["git", "commits", "branching"]
@@ -106,7 +106,7 @@
     "13": {
       "id": "13",
       "name": "Type Safety",
-      "file": "skills/13-type-safety.md",
+      "file": ".github/skills/type-safety/SKILL.md",
       "tokens": 3000,
       "priority": "medium",
       "tags": ["nullable", "analyzers", "static-analysis"]
@@ -114,7 +114,7 @@
     "14": {
       "id": "14",
       "name": "Dependencies",
-      "file": "skills/14-dependency-management.md",
+      "file": ".github/skills/dependency-management/SKILL.md",
       "tokens": 3000,
       "priority": "medium",
       "tags": ["dependencies", "lock-files", "security-audit"]
@@ -122,7 +122,7 @@
     "15": {
       "id": "15",
       "name": "Logging & Monitoring",
-      "file": "skills/15-logging-monitoring.md",
+      "file": ".github/skills/logging-monitoring/SKILL.md",
       "tokens": 2000,
       "priority": "medium",
       "tags": ["logging", "metrics", "tracing", "observability"]
@@ -130,7 +130,7 @@
     "16": {
       "id": "16",
       "name": "Remote Git Ops",
-      "file": "skills/16-remote-git-operations.md",
+      "file": ".github/skills/remote-git-operations/SKILL.md",
       "tokens": 4000,
       "priority": "medium",
       "tags": ["CI/CD", "PRs", "GitHub-Actions"]
@@ -138,7 +138,7 @@
     "17": {
       "id": "17",
       "name": "AI Agent Development",
-      "file": "skills/17-ai-agent-development.md",
+      "file": ".github/skills/ai-agent-development/SKILL.md",
       "tokens": 8000,
       "priority": "high",
       "tags": ["AI", "agents", "Foundry", "tracing", "evaluation"]
@@ -146,7 +146,7 @@
     "18": {
       "id": "18",
       "name": "Code Review & Audit",
-      "file": "skills/18-code-review-and-audit.md",
+      "file": ".github/skills/code-review-and-audit/SKILL.md",
       "tokens": 5000,
       "priority": "high",
       "tags": ["review", "audit", "quality", "compliance"]

@@ -97,46 +97,39 @@ Write-Host ""
 $coreFiles = @(
     @{ Src = "AGENTS.md"; Dest = "AGENTS.md" },
     @{ Src = "Skills.md"; Dest = "Skills.md" },
+    @{ Src = "CONTRIBUTING.md"; Dest = "CONTRIBUTING.md" },
     @{ Src = ".github/copilot-instructions.md"; Dest = ".github/copilot-instructions.md" },
-    @{ Src = ".github/autonomous-mode.yml"; Dest = ".github/autonomous-mode.yml" },
     @{ Src = ".github/orchestration-config.yml"; Dest = ".github/orchestration-config.yml" },
-    @{ Src = ".github/agentx-security.yml"; Dest = ".github/agentx-security.yml" },
-    @{ Src = ".github/CODEOWNERS"; Dest = ".github/CODEOWNERS" },
     @{ Src = ".github/workflows/agent-orchestrator.yml"; Dest = ".github/workflows/agent-orchestrator.yml" },
-    @{ Src = ".github/workflows/sync-status-to-labels.yml"; Dest = ".github/workflows/sync-status-to-labels.yml" },
     @{ Src = ".github/workflows/test-e2e.yml"; Dest = ".github/workflows/test-e2e.yml" },
-    @{ Src = ".github/actions/assign-agent/action.yml"; Dest = ".github/actions/assign-agent/action.yml" },
-    @{ Src = ".github/actions/update-labels/action.yml"; Dest = ".github/actions/update-labels/action.yml" },
-    @{ Src = ".github/actions/post-comment/action.yml"; Dest = ".github/actions/post-comment/action.yml" },
-    @{ Src = ".vscode/settings.json"; Dest = ".vscode/settings.json" },
     @{ Src = ".vscode/mcp.json"; Dest = ".vscode/mcp.json" },
     @{ Src = "docs/mcp-integration.md"; Dest = "docs/mcp-integration.md" },
     @{ Src = "docs/project-setup.md"; Dest = "docs/project-setup.md" },
-    @{ Src = "docs/architecture-decision-hybrid-orchestration.md"; Dest = "docs/architecture-decision-hybrid-orchestration.md" },
-    @{ Src = "docs/hybrid-implementation-summary.md"; Dest = "docs/hybrid-implementation-summary.md" },
-    @{ Src = "docs/hybrid-architecture-visual.md"; Dest = "docs/hybrid-architecture-visual.md" }
+    @{ Src = "docs/technical-specification.md"; Dest = "docs/technical-specification.md" },
+    @{ Src = "docs/architecture-hybrid-orchestration.md"; Dest = "docs/architecture-hybrid-orchestration.md" },
+    @{ Src = "docs/context-engineering.md"; Dest = "docs/context-engineering.md" }
 )
 
-# Skills files
+# Skills files (new structure: .github/skills/<skill-name>/SKILL.md)
 $skillsFiles = @(
-    "01-core-principles.md",
-    "02-testing.md",
-    "03-error-handling.md",
-    "04-security.md",
-    "05-performance.md",
-    "06-database.md",
-    "07-scalability.md",
-    "08-code-organization.md",
-    "09-api-design.md",
-    "10-configuration.md",
-    "11-documentation.md",
-    "12-version-control.md",
-    "13-type-safety.md",
-    "14-dependency-management.md",
-    "15-logging-monitoring.md",
-    "16-remote-git-operations.md",
-    "17-ai-agent-development.md",
-    "18-code-review-and-audit.md"
+    @{ Src = ".github/skills/core-principles/SKILL.md"; Dest = ".github/skills/core-principles/SKILL.md" },
+    @{ Src = ".github/skills/testing/SKILL.md"; Dest = ".github/skills/testing/SKILL.md" },
+    @{ Src = ".github/skills/error-handling/SKILL.md"; Dest = ".github/skills/error-handling/SKILL.md" },
+    @{ Src = ".github/skills/security/SKILL.md"; Dest = ".github/skills/security/SKILL.md" },
+    @{ Src = ".github/skills/performance/SKILL.md"; Dest = ".github/skills/performance/SKILL.md" },
+    @{ Src = ".github/skills/database/SKILL.md"; Dest = ".github/skills/database/SKILL.md" },
+    @{ Src = ".github/skills/scalability/SKILL.md"; Dest = ".github/skills/scalability/SKILL.md" },
+    @{ Src = ".github/skills/code-organization/SKILL.md"; Dest = ".github/skills/code-organization/SKILL.md" },
+    @{ Src = ".github/skills/api-design/SKILL.md"; Dest = ".github/skills/api-design/SKILL.md" },
+    @{ Src = ".github/skills/configuration/SKILL.md"; Dest = ".github/skills/configuration/SKILL.md" },
+    @{ Src = ".github/skills/documentation/SKILL.md"; Dest = ".github/skills/documentation/SKILL.md" },
+    @{ Src = ".github/skills/version-control/SKILL.md"; Dest = ".github/skills/version-control/SKILL.md" },
+    @{ Src = ".github/skills/type-safety/SKILL.md"; Dest = ".github/skills/type-safety/SKILL.md" },
+    @{ Src = ".github/skills/dependency-management/SKILL.md"; Dest = ".github/skills/dependency-management/SKILL.md" },
+    @{ Src = ".github/skills/logging-monitoring/SKILL.md"; Dest = ".github/skills/logging-monitoring/SKILL.md" },
+    @{ Src = ".github/skills/remote-git-operations/SKILL.md"; Dest = ".github/skills/remote-git-operations/SKILL.md" },
+    @{ Src = ".github/skills/ai-agent-development/SKILL.md"; Dest = ".github/skills/ai-agent-development/SKILL.md" },
+    @{ Src = ".github/skills/code-review-and-audit/SKILL.md"; Dest = ".github/skills/code-review-and-audit/SKILL.md" }
 )
 
 # Optional files for --Full
@@ -193,8 +186,8 @@ foreach ($file in $coreFiles) {
 
 # Download skills
 Write-Info "Downloading skills documentation..."
-foreach ($skill in $skillsFiles) {
-    Download-File "skills/$skill" "skills/$skill"
+foreach ($file in $skillsFiles) {
+    Download-File $file.Src $file.Dest
 }
 
 # Download additional files (agents, instructions, prompts)
@@ -209,10 +202,11 @@ Install-GitHooks
 Write-Host ""
 Write-Host "Next Steps" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "1. Review and customize " -NoNewline
-Write-Host ".github/autonomous-mode.yml" -ForegroundColor Cyan
-Write-Host "2. Add your GitHub username to the allowed_actors list"
-Write-Host "3. Create GitHub labels by running:"
+Write-Host "1. Review " -NoNewline
+Write-Host "AGENTS.md" -ForegroundColor Cyan -NoNewline
+Write-Host " for the complete workflow: PM → UX → Architect → Engineer → Reviewer"
+Write-Host ""
+Write-Host "2. Create GitHub labels by running:"
 Write-Host ""
 Write-Host '   # Type labels (required - determines agent role)' -ForegroundColor Yellow
 Write-Host '   gh label create "type:epic" --description "Large initiative (multiple features)" --color "5319E7"' -ForegroundColor Yellow
@@ -222,38 +216,45 @@ Write-Host '   gh label create "type:bug" --description "Something broken" --col
 Write-Host '   gh label create "type:spike" --description "Research/investigation" --color "EDEDED"' -ForegroundColor Yellow
 Write-Host '   gh label create "type:docs" --description "Documentation only" --color "0075CA"' -ForegroundColor Yellow
 Write-Host ""
-Write-Host '   # Orchestration labels (agent coordination)' -ForegroundColor Yellow
-Write-Host '   gh label create "orch:pm-done" --description "Product Manager work complete" --color "BFD4F2"' -ForegroundColor Yellow
-Write-Host '   gh label create "orch:architect-done" --description "Architect work complete" --color "BFD4F2"' -ForegroundColor Yellow
-Write-Host '   gh label create "orch:ux-done" --description "UX Designer work complete" --color "BFD4F2"' -ForegroundColor Yellow
-Write-Host '   gh label create "orch:engineer-done" --description "Engineer work complete" --color "BFD4F2"' -ForegroundColor Yellow
+Write-Host '   # Orchestration labels (sequential handoffs: PM→UX→Architect→Engineer)' -ForegroundColor Yellow
+Write-Host '   gh label create "orch:pm-done" --description "PM: PRD + Backlog complete" --color "BFD4F2"' -ForegroundColor Yellow
+Write-Host '   gh label create "orch:ux-done" --description "UX: Wireframes + Prototypes + Personas complete" --color "BFD4F2"' -ForegroundColor Yellow
+Write-Host '   gh label create "orch:architect-done" --description "Architect: ADR + Specs + Architecture complete" --color "BFD4F2"' -ForegroundColor Yellow
+Write-Host '   gh label create "orch:engineer-done" --description "Engineer: Code + Tests complete" --color "BFD4F2"' -ForegroundColor Yellow
 Write-Host ""
 Write-Host '   # Priority labels' -ForegroundColor Yellow
 Write-Host '   gh label create "priority:p0" --description "Critical" --color "D93F0B"' -ForegroundColor Yellow
 Write-Host '   gh label create "priority:p1" --description "High - do next" --color "FBCA04"' -ForegroundColor Yellow
+Write-Host '   gh label create "priority:p2" --description "Medium" --color "FEF2C0"' -ForegroundColor Yellow
+Write-Host '   gh label create "priority:p3" --description "Low" --color "C5DEF5"' -ForegroundColor Yellow
 Write-Host ""
 Write-Host '   # Workflow labels' -ForegroundColor Yellow
 Write-Host '   gh label create "needs:ux" --description "Requires UX design work" --color "C5DEF5"' -ForegroundColor Yellow
 Write-Host '   gh label create "needs:help" --description "Blocked or needs assistance" --color "D93F0B"' -ForegroundColor Yellow
+Write-Host '   gh label create "needs:changes" --description "Reviewer requested changes" --color "FBCA04"' -ForegroundColor Yellow
+Write-Host '   gh label create "needs:fixes" --description "Tests failing, needs fixes" --color "D93F0B"' -ForegroundColor Yellow
 Write-Host ""
-Write-Host "4. Set up GitHub Project v2 with Status field (see docs/project-setup.md)"
-Write-Host "   Status values: Backlog, In Progress, In Review, Done"
+Write-Host "3. Set up GitHub Project v2 with Status field (see docs/project-setup.md)"
+Write-Host "   Status values: Backlog, In Progress, In Review, Done, Ready (optional)"
 Write-Host ""
-Write-Host "5. Read " -NoNewline
-Write-Host "AGENTS.md" -ForegroundColor Cyan -NoNewline
-Write-Host " for workflow guidelines"
-Write-Host "6. Check " -NoNewline
+Write-Host "4. Check " -NoNewline
 Write-Host "Skills.md" -ForegroundColor Cyan -NoNewline
-Write-Host " for production standards"
-Write-Host "7. Review " -NoNewline
+Write-Host " for 18 production code skills"
+Write-Host "5. Review " -NoNewline
 Write-Host ".github/orchestration-config.yml" -ForegroundColor Cyan -NoNewline
 Write-Host " for multi-agent orchestration settings"
-Write-Host "8. Review " -NoNewline
-Write-Host "docs/architecture-decision-hybrid-orchestration.md" -ForegroundColor Cyan -NoNewline
-Write-Host " for hybrid architecture details"
-Write-Host "9. MCP Server is pre-configured (requires VS Code 1.101+ and GitHub Copilot)"
-Write-Host "10. GraphQL actions provide 9x faster handoffs (2s vs 45s)"
+Write-Host "6. Read " -NoNewline
+Write-Host "docs/mcp-integration.md" -ForegroundColor Cyan -NoNewline
+Write-Host " for GitHub MCP Server setup (requires VS Code 1.101+ and GitHub Copilot)"
+Write-Host "7. Review " -NoNewline
+Write-Host "docs/architecture-hybrid-orchestration.md" -ForegroundColor Cyan -NoNewline
+Write-Host " for 3-layer hybrid architecture"
+Write-Host "8. Install agent definition files (optional):"
+Write-Host "   .github/agents/{product-manager,ux-designer,architect,engineer,reviewer,orchestrator}.agent.md"
 Write-Host ""
 Write-Success "AgentX installed successfully! 🚀"
+Write-Host ""
+Write-Host "Workflow: PM creates PRD+Backlog → UX creates Wireframes+Prototypes+Personas →" -ForegroundColor Green
+Write-Host "          Architect creates ADR+Specs+Architecture → Engineer creates Low-level Design+Code+Tests" -ForegroundColor Green
 Write-Host ""
 

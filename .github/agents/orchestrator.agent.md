@@ -52,9 +52,9 @@ handoffs:
 | Agent | Trigger | Deliverable | Handoff Signal |
 |-------|---------|-------------|----------------|
 | **Product Manager** | `type:epic` | PRD + backlog at `docs/prd/PRD-{id}.md` | `orch:pm-done` |
-| **Architect** | `orch:pm-done` | ADR + Specs at `docs/adr/`, `docs/specs/` | `orch:architect-done` |
-| **UX Designer** | `orch:pm-done` (parallel) | Wireframes + flows at `docs/ux/UX-{id}.md` | `orch:ux-done` |
-| **Engineer** | BOTH `orch:architect-done` + `orch:ux-done` | Code + tests + docs | `orch:engineer-done` |
+| **UX Designer** | `orch:pm-done` (sequential) | Wireframes + flows at `docs/ux/UX-{id}.md` | `orch:ux-done` |
+| **Architect** | `orch:ux-done` (sequential) | ADR + Specs at `docs/adr/`, `docs/specs/` | `orch:architect-done` |
+| **Engineer** | `orch:architect-done` (sequential) | Code + tests + docs | `orch:engineer-done` |
 | **Reviewer** | `orch:engineer-done` | Review at `docs/reviews/REVIEW-{id}.md` | Close issue |
 
 ## Routing Logic
@@ -88,12 +88,12 @@ await add_issue_comment({
 ## State Machine
 
 ```
-Epic → PM → (Architect ∥ UX) → Engineer* → Reviewer → Close
+Epic → PM → UX → Architect → Engineer → Reviewer → Close
 Story/Feature → Check Epic prerequisites → Engineer → Reviewer → Close
 Bug/Docs → Engineer → Reviewer → Close
 Spike → Architect → Close
 
-* Engineer blocked until BOTH Architect + UX complete
+Sequential: Each agent waits for previous to complete
 ```
 
 ## Design Thinking Gates
@@ -101,11 +101,12 @@ Spike → Architect → Close
 | IDEO Phase | Agent | Gate Check |
 |------------|-------|------------|
 | **Define** | Product Manager | PRD + stories exist |
-| **Ideate** | Architect + UX (parallel) | ADR + Specs + Wireframes complete |
-| **Prototype** | Engineer | **BLOCKED until** `orch:architect-done` + `orch:ux-done` |
+| **Ideate (UX)** | UX Designer | Wireframes + user flows complete |
+| **Ideate (Tech)** | Architect | ADR + Specs complete, reads UX designs |
+| **Prototype** | Engineer | **BLOCKED until** `orch:architect-done` (waits for UX→Arch chain) |
 | **Test** | Reviewer | Coverage ≥80%, CI passes, security OK |
 
-**Philosophy**: "Design before build" — Engineer waits for complete ideation.
+**Philosophy**: "User-centered design" — UX defines needs, Architect designs to support, Engineer implements.
 
 ## Autonomous Subagents
 

@@ -193,10 +193,10 @@ User asks: "Build me a feature"
 | Role | Trigger | GitHub Status | Deliverable | Handoff Label |
 |------|---------|---------------|-------------|---------------|
 | 🤖 **Orchestrator** | Label changes (`orch:*`) | (Monitors all) | Routing decisions + Comments | (Coordinates flow) |
-| 📋 **PM** | User input | Backlog → In Progress → Ready | PRD + Backlog | `orch:pm-done` |
-| 🏭️ **Architect** | `orch:pm-done` | Ready (no change) | ADR + Tech Spec | `orch:architect-done` |
-| 🎨 **UX** | `orch:pm-done` | Ready (no change) | Wireframes + HTML Prototypes | `orch:ux-done` |
-| 🔧 **Engineer** | Both: `orch:architect-done` + `orch:ux-done` | Ready → In Progress → In Review | Code + Tests + Docs | `orch:engineer-done` |
+| 📋 **PM** | User input | Backlog → In Progress → Ready | PRD + Backlog (with self-review) | `orch:pm-done` |
+| � **UX** | `orch:pm-done` | Ready → In Progress → Ready | Wireframes + HTML Prototypes (with self-review) | `orch:ux-done` |
+| 🏭️ **Architect** | `orch:ux-done` | Ready → In Progress → Ready | ADR + Tech Spec (with self-review) | `orch:architect-done` |
+| 🔧 **Engineer** | `orch:architect-done` | Ready → In Progress → In Review | Code + Tests + Docs (with self-review) | `orch:engineer-done` |
 | ✅ **Reviewer** | `orch:engineer-done` | In Review → Done (+ close) | Review doc | Close issue |
 
 **Execution Steps by Role:**
@@ -213,24 +213,32 @@ User asks: "Build me a feature"
 1. Claim Epic (set Status to "In Progress" in Projects board)
 2. Create PRD at docs/prd/PRD-{issue}.md
 3. Create Feature + Story issues (all Status: "Backlog")
-4. Update Epic Status to "Ready" + add `orch:pm-done`
+4. **Self-Review**: Verify PRD completeness, backlog hierarchy, acceptance criteria clarity
+5. Update Epic Status to "Ready" + add `orch:pm-done`
 
-🏗️ **Architect:** (parallel)
-1. Review backlog, read PRD
-2. Create ADR + Tech Specs for all items
-3. Add `orch:architect-done` to Epic
+� **UX Designer:** (sequential - triggered after PM)
+1. Wait for `orch:pm-done`, claim Epic (set Status to "In Progress")
+2. Review backlog for UX needs, read PRD
+3. Create wireframes + HTML prototypes + user personas at docs/ux/
+4. **Self-Review**: Verify design completeness, accessibility standards, responsive layouts
+5. Commit all UX design documents
+6. Set Status to "Ready" + add `orch:ux-done` to Epic
 
-🎨 **UX Designer:** (parallel)
-1. Review backlog for UX needs
-2. Create wireframes + HTML prototypes at docs/ux/
-3. Add `orch:ux-done` to Epic
+🏗️ **Architect:** (sequential - triggered after UX)
+1. Wait for `orch:ux-done`, claim Epic (set Status to "In Progress")
+2. Review entire backlog (Epic, Features, Stories), read PRD + UX designs
+3. Create ADR + Tech Specs + Architecture document for all items
+4. **Self-Review**: Verify ADR completeness, tech spec accuracy, implementation feasibility
+5. Commit all technical documents
+6. Set Status to "Ready" + add `orch:architect-done` to Epic
 
 🔧 **Engineer:**
-1. Check Epic has BOTH `orch:architect-done` + `orch:ux-done`
-2. Claim Story (set Status to "In Progress" in Projects board)
-3. Write code + tests (≥80% coverage)
-4. Commit: "type: description (#issue)"
-5. Update Story Status to "In Review" + add `orch:engineer-done`
+1. Wait for `orch:architect-done`, claim Story (set Status to "In Progress" in Projects board)
+2. Read Backlog context, Architecture + Tech Spec + UX design
+3. Create Low-level design (if complex), write code + tests (≥80% coverage)
+4. **Self-Review**: Verify code quality, test coverage, documentation completeness, security
+5. Commit: "type: description (#issue)"
+6. Update Story Status to "In Review" + add `orch:engineer-done`
 
 ✅ **Reviewer:**
 1. Review code, tests, security
@@ -274,89 +282,109 @@ Epic Issue Created (#<EPIC_ID> - "Build User Authentication System")
 │ 9. Add orch:pm-done label to Epic #<EPIC_ID>                │
 │ 10. Comment with backlog summary + links                    │
 │                                                              │
-│ Handoff: Triggers BOTH UX Designer + Architect (parallel)   │
+│ Handoff: Triggers UX Designer (sequential)                  │
 └─────────────────────────────────────────────────────────────┘
     │
-    ├────────────────────┬─────────────────────┐
-    │ (Parallel Work)    │                     │
-    ▼                    ▼                     │
-┌─────────────────┐  ┌──────────────────────┐ │
-│ 2️⃣ UX DESIGNER   │  │ 3️⃣ ARCHITECT AGENT    │ │
-│                 │  │                      │ │
-│ Reviews entire  │  │ Reviews entire       │ │
-│ backlog for UX  │  │ backlog for tech     │ │
-│ needs           │  │ design               │ │
-└─────────────────┘  └──────────────────────┘ │
-    │                    │                     │
-    └────────────────────┴─────────────────────┘
-                          │
-                          ▼
-        (Both must complete before Engineer can start)
-
+    ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ 2️⃣ UX DESIGNER AGENT (Parallel Track)                       │
+│ 2️⃣ UX DESIGNER AGENT (Sequential - after PM)                │
 │ Trigger: orch:pm-done label on Epic                         │
 │                                                              │
-│ GitHub Status: Epic stays in 'Ready' (set by PM)            │
+│ GitHub Status: Ready → In Progress → Ready                  │
 │                                                              │
 │ Execution Steps:                                             │
-│ 1. Read entire backlog (all Features & Stories)             │
-│ 2. Identify items needing UX (user-facing features)         │
-│ 3. Research existing UI patterns, brand guidelines          │
-│ 4. Create wireframes + HTML prototypes for each item:       │
+│ 1. Wait for orch:pm-done label on Epic                      │
+│ 2. Claim Epic: Set Status to 'In Progress' in Projects      │
+│ 3. Read entire backlog (all Features & Stories)             │
+│ 4. Read PRD for user needs and requirements                 │
+│ 5. Identify items needing UX (user-facing features)         │
+│ 6. Research existing UI patterns, brand guidelines          │
+│ 7. Create wireframes + HTML prototypes + user personas:     │
 │    - docs/ux/UX-{feature_id}.md (Feature level)             │
 │    - docs/ux/UX-{story_id}.md (Story level)                 │
 │    - Wireframes/mockups                                      │
 │    - User flow diagrams                                      │
+│    - User personas                                           │
 │    - HTML prototypes                                         │
-│ 5. Commit all UX design documents                            │
-│ 6. Add orch:ux-done label to Epic #<EPIC_ID>                │
-│ 7. Comment on Epic with UX deliverables summary             │
 │                                                              │
-│ Note: Epic stays in 'Ready' until BOTH UX + Architect       │
-│       complete. Reviews full backlog, creates all UX designs │
+│ 🔍 SELF-REVIEW CHECKLIST (Mandatory):                       │
+│ ✅ Design completeness (all user flows covered)              │
+│ ✅ Accessibility standards (WCAG 2.1 AA compliance)          │
+│ ✅ Responsive layouts (mobile, tablet, desktop)              │
+│ ✅ Component consistency (design system alignment)           │
+│ ✅ User experience clarity (intuitive navigation)            │
+│ ✅ Visual hierarchy effectiveness                             │
+│                                                              │
+│ 8. Commit all UX design documents                            │
+│ 9. Set Status to 'Ready' in Projects board                  │
+│ 10. Add orch:ux-done label to Epic #<EPIC_ID>               │
+│ 11. Comment on Epic with UX deliverables summary            │
+│                                                              │
+│ Handoff: Triggers Architect (sequential)                    │
 └─────────────────────────────────────────────────────────────┘
-
+    │
+    ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ 3️⃣ ARCHITECT AGENT (Parallel Track)                         │
-│ Trigger: orch:pm-done label on Epic                         │
+│ 3️⃣ ARCHITECT AGENT (Sequential - after UX)                  │
+│ Trigger: orch:ux-done label on Epic                         │
 │                                                              │
-│ GitHub Status: Epic stays in 'Ready' (set by PM)            │
+│ GitHub Status: Ready → In Progress → Ready                  │
 │                                                              │
 │ Execution Steps:                                             │
-│ 1. Read entire backlog (Epic, all Features & Stories)       │
-│ 2. Read PRD at docs/prd/PRD-{epic_id}.md                   │
-│ 3. Research codebase for implementation approaches          │
-│ 4. Create architecture decisions & tech specs for all:      │
+│ 1. Wait for orch:ux-done label on Epic                      │
+│ 2. Claim Epic: Set Status to 'In Progress' in Projects      │
+│ 3. Read entire backlog (Epic, all Features & Stories)       │
+│ 4. Read PRD at docs/prd/PRD-{epic_id}.md                   │
+│ 5. Read UX designs at docs/ux/ for UI requirements          │
+│ 6. Research codebase for implementation approaches          │
+│ 7. Create architecture decisions & tech specs for all:      │
 │    - docs/adr/ADR-{epic_id}.md (overall architecture)       │
 │    - docs/specs/SPEC-{feature_id}.md (per feature)          │
-│ 5. Commit all technical documents                            │
-│ 6. Add orch:architect-done label to Epic #<EPIC_ID>         │
-│ 7. Comment on Epic with technical deliverables summary      │
+│    - docs/architecture/ARCH-{epic_id}.md (system design)    │
 │                                                              │
-│ Note: Epic stays in 'Ready' until BOTH UX + Architect       │
-│       complete. Reviews full backlog, creates all tech specs│
+│ 🔍 SELF-REVIEW CHECKLIST (Mandatory):                       │
+│ ✅ ADR completeness (context, decision, consequences)        │
+│ ✅ Tech specs accurate (API contracts, data models)          │
+│ ✅ Implementation feasibility verified                        │
+│ ✅ Security considerations documented                         │
+│ ✅ Performance requirements specified                         │
+│ ✅ Dependencies identified and documented                     │
+│                                                              │
+│ 8. Commit all technical documents                            │
+│ 9. Set Status to 'Ready' in Projects board                  │
+│ 10. Add orch:architect-done label to Epic #<EPIC_ID>        │
+│ 11. Comment on Epic with technical deliverables summary     │
+│                                                              │
+│ Handoff: Triggers Engineer (sequential)                     │
 └─────────────────────────────────────────────────────────────┘
     │
     ▼ (for each Story)
 ┌─────────────────────────────────────────────────────────────┐
-│ 4️⃣ ENGINEER AGENT                                           │
+│ 4️⃣ ENGINEER AGENT (Sequential - after Architect)            │
 │ Trigger: type:story, type:bug, or type:docs detected        │
 │                                                              │
 │ GitHub Status: Backlog → In Progress → In Review            │
 │                                                              │
 │ Execution Steps:                                             │
-│ 1. Check prerequisites on parent Epic (BOTH must exist):    │
-│    ✅ orch:architect-done label                              │
-│    ✅ orch:ux-done label (if needed)                         │
-│                                                              │
+│ 1. Wait for orch:architect-done label on parent Epic        │
 │ 2. Claim issue: Set Status to 'In Progress' in Projects     │
-│ 3. Read story/bug description, Tech Spec, UX design         │
+│ 3. Read story/bug description, Architecture, Tech Spec, UX  │
 │ 4. Research codebase for implementation location            │
-│ 5. Implement the change following Skills.md standards       │
-│ 6. Write unit tests (70%), integration tests (20%)          │
-│ 7. Update/create documentation (XML docs, README, etc.)     │
-│ 8. Run tests and verify ≥80% coverage                       │
+│ 5. Create Low-level design (if complex story)               │
+│ 6. Implement the change following Skills.md standards       │
+│ 7. Write unit tests (70%), integration tests (20%)          │
+│ 8. Update/create documentation (XML docs, README, etc.)     │
+│ 9. Run tests and verify ≥80% coverage                       │
+│                                                              │
+│ 🔍 SELF-REVIEW CHECKLIST (Mandatory):                       │
+│ ✅ Low-level design created (if complex story)                │
+│ ✅ Code quality (SOLID principles, DRY, clean code)          │
+│ ✅ Test coverage (≥80%, unit + integration + e2e)            │
+│ ✅ Documentation completeness (XML docs, inline comments)    │
+│ ✅ Security verification (no secrets, SQL injection, XSS)    │
+│ ✅ Error handling (try-catch, validation, logging)           │
+│ ✅ Performance considerations (async, caching, queries)       │
+│                                                              │
 │ 9. Commit with message: "type: description (#<STORY_ID>)"   │
 │ 10. Set Status to 'In Review' + add orch:engineer-done      │
 │ 11. Comment with summary + commit SHA                       │
@@ -450,10 +478,9 @@ Epic Issue Created (#<EPIC_ID> - "Build User Authentication System")
 
 | From → To | Trigger Condition | Signal (Label) | Action Required |
 |-----------|------------------|----------------|-----------------|
-| **Product Manager → UX + Architect** | Complete backlog created (Epic→Features→Stories) | `orch:pm-done` on Epic | Create ALL child issues, trigger BOTH UX Designer and Architect workflows |
-| **UX Designer → (Updates Epic)** | All UX designs complete (wireframes + prototypes) | `orch:ux-done` on Epic | Commit all UX docs, add label to Epic, comment with deliverables |
-| **Architect → (Updates Epic)** | All Tech Specs complete (ADR + Specs for all items) | `orch:architect-done` on Epic | Commit all technical docs, add label to Epic, comment with deliverables |
-| **UX + Architect → Engineer** | BOTH complete (all designs + specs ready) | `orch:ux-done` + `orch:architect-done` on Epic | Engineer checks Epic labels before starting any Story |
+| **Product Manager → UX Designer** | Complete backlog created (Epic→Features→Stories) | `orch:pm-done` on Epic | Create ALL child issues, trigger UX Designer workflow (sequential) |
+| **UX Designer → Architect** | All UX designs complete (wireframes + prototypes) | `orch:ux-done` on Epic | Commit all UX docs, add label to Epic, triggers Architect (sequential) |
+| **Architect → Engineer** | All Tech Specs complete (ADR + Specs for all items) | `orch:architect-done` on Epic | Commit all technical docs, Engineer can start Stories (sequential) |
 | **Engineer → Reviewer** | Implementation complete, tests passing, code committed | `orch:engineer-done` on Story | Commit code, comment on Story with commit SHA |
 | **Reviewer → Close** | Code review passed quality gates | Review approved in `docs/reviews/REVIEW-{issue}.md` | Close Story (auto-moves to Done in Projects) |
 
@@ -467,8 +494,9 @@ Epic Issue Created (#<EPIC_ID> - "Build User Authentication System")
 
 **Triggers automatically on label changes:**
 - `type:epic` (no orch:pm-done) → Product Manager
-- `orch:pm-done` → Architect + UX Designer (parallel)
-- `orch:architect-done` + `orch:ux-done` → Engineer
+- `orch:pm-done` → UX Designer (sequential)
+- `orch:ux-done` → Architect (sequential)
+- `orch:architect-done` → Engineer (sequential)
 - `orch:engineer-done` → Reviewer
 
 **How it works:**
@@ -504,7 +532,6 @@ gh workflow run agent-orchestrator.yml -f issue_number=50
 | **Review rejected** | Reviewer adds `needs:changes` label | Remove `orch:engineer-done`, Engineer fixes issues | Reviewer |
 | **UX design missing** | Engineer starts but Epic lacks `orch:ux-done` label | Block Engineer, notify UX Designer, add `needs:help` label to Epic | System |
 | **Architect spec missing** | Engineer starts but Epic lacks `orch:architect-done` label | Block Engineer, notify Architect, add `needs:help` label to Epic | System |
-| **UX/Architect conflict** | Both complete but requirements conflict | Add `needs:resolution` label to Epic, escalate to PM | System |
 
 ---
 
@@ -514,10 +541,9 @@ gh workflow run agent-orchestrator.yml -f issue_number=50
 
 | Handoff | Target Time | Measured By |
 |---------|-------------|-------------|
-| PM → UX + Architect | <30 seconds | Time between `orch:pm-done` on Epic and both UX + Architect workflow starts |
-| UX Designer → (Updates Epic) | N/A (parallel) | UX Designer adds `orch:ux-done` to Epic when all designs complete |
-| Architect → (Updates Epic) | N/A (parallel) | Architect adds `orch:architect-done` to Epic when all specs complete |
-| UX + Architect → Engineer | <30 seconds | Time between BOTH labels on Epic and Engineer starting any Story |
+| PM → UX Designer | <30 seconds | Time between `orch:pm-done` on Epic and UX Designer workflow start |
+| UX Designer → Architect | <30 seconds | Time between `orch:ux-done` and Architect workflow start |
+| Architect → Engineer | <30 seconds | Time between `orch:architect-done` and Engineer starting any Story |
 | Engineer → Reviewer | <30 seconds | Time between `orch:engineer-done` and Reviewer workflow start |
 | Reviewer → Close | <5 minutes | Time from review document creation to issue closure |
 
@@ -553,7 +579,7 @@ The Orchestrator is a **meta-agent** that doesn't write code or create artifacts
 - **Monitors** orchestration labels (`orch:*`) for state changes
 - **Routes** issues to appropriate agents based on type and completion state
 - **Validates** prerequisites before allowing handoffs (Epic has ADR, UX designs, etc.)
-- **Coordinates** parallel work (Architect + UX Designer run simultaneously)
+- **Sequences** workflow (PM → UX → Architect → Engineer → Reviewer)
 - **Blocks** issues when prerequisites aren't met (clear error messages)
 - **Recovers** from errors (timeouts, missing artifacts, circular dependencies)
 - **Tracks** metrics (handoff latency, stage duration, SLA compliance)
@@ -575,12 +601,12 @@ gh workflow run agent-orchestrator.yml -f issue_number=71
 ```
 Epic (type:epic)
   ├─ No orch:pm-done → Route to Product Manager
-  ├─ orch:pm-done, no orch:architect-done → Route to Architect
-  ├─ orch:pm-done, no orch:ux-done → Route to UX Designer (parallel)
-  └─ Both orch:architect-done + orch:ux-done → Unblock child Stories
+  ├─ orch:pm-done, no orch:ux-done → Route to UX Designer (sequential)
+  ├─ orch:ux-done, no orch:architect-done → Route to Architect (sequential)
+  └─ orch:architect-done → Unblock child Stories for Engineer
 
 Story/Feature (type:story, type:feature)
-  ├─ Check parent Epic prerequisites
+  ├─ Check parent Epic prerequisites (orch:ux-done required)
   ├─ No orch:engineer-done → Route to Engineer (if prerequisites met)
   └─ orch:engineer-done → Route to Reviewer
 
@@ -622,12 +648,13 @@ The Orchestrator aligns AgentX workflow with **IDEO's human-centered design meth
 | IDEO Phase | AgentX Agent | Deliverables | Gate |
 |------------|--------------|--------------|------|
 | **1. Empathize** | Future: Researcher | User research, interviews, personas | → Define |
-| **2. Define** | Product Manager | PRD, problem statement, user stories | → Ideate |
-| **3. Ideate** | Architect + UX Designer | ADR, specs, wireframes, prototypes | → Prototype |
+| **2. Define** | Product Manager | PRD, problem statement, user stories | → Ideate (UX) |
+| **3. Ideate (UX)** | UX Designer | Wireframes, prototypes, user flows | → Ideate (Tech) |
+| **3. Ideate (Tech)** | Architect | ADR, specs, technical design | → Prototype |
 | **4. Prototype** | Engineer | Working code, interactive demos, tests | → Test |
 | **5. Test** | Reviewer + Tester | Quality verification, user feedback | → Iterate/Ship |
 
-**Key Principle**: The Orchestrator **enforces "design before build"** by blocking Engineer until both Architect (`orch:architect-done`) and UX Designer (`orch:ux-done`) complete their ideation work.
+**Key Principle**: The Orchestrator **enforces "design before build"** by following a **user-centered approach**. UX Designer (`orch:ux-done`) creates the user experience first, then Architect (`orch:architect-done`) designs the technical implementation to support that UX. Engineer starts only after this **sequential chain** completes.
 
 **Example Flow**:
 ```
@@ -636,10 +663,11 @@ User Need: "Search is too slow"
 Research findings: 78% abandon after 2 attempts
     ↓ DEFINE (Product Manager)
 PRD: Epic #100 - Intelligent Search System
-    ↓ IDEATE (Architect + UX in parallel)
-Architect: Elasticsearch architecture
+    ↓ IDEATE (UX first, sequential)
 UX: Search UI redesign + filters
-    ↓ PROTOTYPE (Engineer - BLOCKED until both done)
+    ↓ IDEATE (Architect second, sequential)
+Architect: Elasticsearch architecture (reads UX design)
+    ↓ PROTOTYPE (Engineer - BLOCKED until architect-done)
 Stories #101-103: Implementation
     ↓ TEST (Reviewer)
 Security + performance verification
@@ -840,9 +868,9 @@ gh run list --workflow=<workflow-file.yml>
 
 **Epic-Level Labels** (workflow coordination):
 - `type:epic` - Always on Epic
-- `orch:pm-done` - Added by PM, triggers Architect + UX Designer (parallel)
-- `orch:architect-done` - Added by Architect when design complete
-- `orch:ux-done` - Added by UX Designer when wireframes complete
+- `orch:pm-done` - Added by PM, triggers UX Designer (sequential)
+- `orch:ux-done` - Added by UX Designer when wireframes complete, triggers Architect (sequential)
+- `orch:architect-done` - Added by Architect when design complete, allows Engineer to start (sequential)
 - `priority:p0/p1/p2/p3` - Priority level
 
 **Feature/Story-Level Labels** (work requirements):

@@ -1,33 +1,31 @@
 ---
 name: ai-agent-development
-description: 'Build production-ready AI agents with Microsoft Foundry and Agent Framework. Use this skill when asked to create AI agents, configure model endpoints, implement multi-agent orchestration, set up OpenTelemetry tracing, or evaluate agent performance. Triggers on requests like "create an agent", "set up tracing", "evaluate my agent", "orchestrate agents", or any AI agent development task.'
-license: Complete terms in LICENSE.txt
+description: 'Build production-ready AI agents with Microsoft Foundry and Agent Framework. Covers agent architecture, model selection, orchestration, tracing, and evaluation.'
 ---
 
 # AI Agent Development
 
-Build production-ready AI agents with Microsoft Foundry and Agent Framework. This skill provides comprehensive guidance for agent architecture, model selection, orchestration patterns, observability, and evaluation.
+> **Purpose**: Build production-ready AI agents with Microsoft Foundry and Agent Framework.  
+> **Scope**: Agent architecture, model selection, orchestration, observability, evaluation.
 
-## When to Use This Skill
+---
 
-Use this skill when you need to:
-- Create single or multi-agent AI applications
-- Select and deploy AI models from Microsoft Foundry
-- Implement agent orchestration patterns (sequential, parallel, conditional)
-- Set up OpenTelemetry tracing for agent observability
-- Evaluate agent performance with test datasets
-- Configure agent tools and plugins
+## Quick Start
 
-## Prerequisites
+### Installation
 
-- Python 3.11+ or .NET 8
-- VS Code with AI Toolkit extension
-- Azure account with access to Microsoft Foundry
-- Environment variables configured for model access
+**Python** (Recommended):
+```bash
+pip install agent-framework-azure-ai --pre  # --pre required during preview
+```
 
-## Core Capabilities
+**.NET**:
+```bash
+dotnet add package Microsoft.Agents.AI.AzureAI --prerelease
+dotnet add package Microsoft.Agents.AI.Workflows --prerelease
+```
 
-### 1. Model Selection & Deployment
+### Model Selection
 
 **Top Production Models** (Microsoft Foundry):
 
@@ -41,7 +39,11 @@ Use this skill when you need to:
 
 **Deploy Model**: `Ctrl+Shift+P` → `AI Toolkit: Deploy Model`
 
-### 2. Single Agent Pattern
+---
+
+## Agent Patterns
+
+### Single Agent
 
 ```python
 from agent_framework.openai import OpenAIChatClient
@@ -64,7 +66,7 @@ response = await client.chat(
 )
 ```
 
-### 3. Multi-Agent Orchestration
+### Multi-Agent Orchestration
 
 ```python
 from agent_framework.workflows import SequentialWorkflow
@@ -85,7 +87,11 @@ result = await workflow.run(query="Write about AI agents")
 - Human-in-the-Loop, Reflection, Fan-out/Fan-in
 - MCP, Multimodal, Custom Executors
 
-### 4. Observability (Tracing)
+---
+
+## Observability (Tracing)
+
+### Setup OpenTelemetry
 
 ```python
 from agent_framework.observability import configure_otel_providers
@@ -101,67 +107,173 @@ configure_otel_providers(
 
 ⚠️ **CRITICAL**: Open trace viewer BEFORE running your agent.
 
-### 5. Evaluation
+---
 
-See [evaluation workflow](./references/evaluation-guide.md) for detailed evaluation setup.
+## Evaluation
 
-## Step-by-Step Workflows
+### Workflow
 
-### Workflow 1: Create a Single Agent
-
-1. Install dependencies:
-   ```bash
-   pip install agent-framework-azure-ai --pre
-   ```
-
-2. Set environment variables:
-   ```bash
-   export FOUNDRY_API_KEY="your-api-key"
-   export FOUNDRY_ENDPOINT="https://your-endpoint.ai.azure.com"
-   ```
-
-3. Create agent code (see Single Agent Pattern above)
-
-4. Set up tracing (see Observability section)
-
-5. Run and test the agent
-
-### Workflow 2: Multi-Agent Orchestration
-
-1. Design agent roles and responsibilities
-2. Choose orchestration pattern (Sequential, Parallel, Conditional)
-3. Implement each agent with clear instructions
-4. Configure handoff strategy
-5. Set up tracing for visualization
-6. Test with sample queries
-
-### Workflow 3: Evaluation Setup
-
-1. Create test dataset (JSONL format)
-2. Upload to Microsoft Foundry
-3. Define evaluators (built-in or custom)
+1. Upload dataset (JSONL)
+2. Define evaluators (built-in or custom)
+3. Create evaluation
 4. Run evaluation
-5. Analyze results and iterate
+5. Analyze results
 
-## Guidelines
+### Prerequisites
 
-1. **Plan Architecture First** - Design before coding
-2. **Use Foundry for Production** - GitHub models have free tier limits
-3. **Enable Tracing from Day One** - Critical for debugging
-4. **Evaluate Before Deployment** - Test with datasets
-5. **Never Hardcode Secrets** - Use environment variables or Key Vault
+```bash
+pip install "azure-ai-projects>=2.0.0b2"
+```
+
+### Built-in Evaluators
+
+**Agent Evaluators**:
+- `builtin.intent_resolution` - Intent correctly identified?
+- `builtin.task_adherence` - Instructions followed?
+- `builtin.task_completion` - Task completed end-to-end?
+- `builtin.tool_call_accuracy` - Tools used correctly?
+- `builtin.tool_selection` - Right tools chosen?
+
+**Quality Evaluators**:
+- `builtin.coherence` - Natural text flow?
+- `builtin.fluency` - Grammar correct?
+- `builtin.groundedness` - Claims substantiated? (RAG)
+- `builtin.relevance` - Answers key points? (RAG)
+
+### Evaluation Example
+
+```python
+from azure.identity import DefaultAzureCredential
+from azure.ai.projects import AIProjectClient
+from openai.types.eval_create_params import DataSourceConfigCustom
+from openai.types.evals.create_eval_jsonl_run_data_source_param import (
+    CreateEvalJSONLRunDataSourceParam, SourceFileID
+)
+
+endpoint = os.getenv("FOUNDRY_PROJECT_ENDPOINT")
+model_deployment = os.getenv("MODEL_DEPLOYMENT_NAME")
+
+with (
+    DefaultAzureCredential() as credential,
+    AIProjectClient(endpoint=endpoint, credential=credential) as project_client,
+    project_client.get_openai_client() as openai_client,
+):
+    # 1. Upload Dataset
+    dataset = project_client.datasets.upload_file(
+        name="eval-data",
+        version="1",
+        file_path="data.jsonl"
+    )
+
+    # 2. Define Data Schema
+    data_source_config = DataSourceConfigCustom({
+        "type": "custom",
+        "item_schema": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string"},
+                "response": {"type": "string"}
+            },
+            "required": ["query", "response"]
+        },
+        "include_sample_schema": True
+    })
+
+    # 3. Define Evaluators
+    testing_criteria = [
+        {
+            "type": "azure_ai_evaluator",
+            "name": "coherence",
+            "evaluator_name": "builtin.coherence",
+            "data_mapping": {
+                "query": "{{item.query}}", 
+                "response": "{{item.response}}"
+            },
+            "initialization_parameters": {"deployment_name": model_deployment}
+        }
+    ]
+
+    # 4. Create Evaluation
+    evaluation = openai_client.evals.create(
+        name="agent-eval",
+        data_source_config=data_source_config,
+        testing_criteria=testing_criteria
+    )
+
+    # 5. Run Evaluation
+    run = openai_client.evals.runs.create(
+        eval_id=evaluation.id,
+        name="eval-run",
+        data_source=CreateEvalJSONLRunDataSourceParam(
+            type="jsonl", 
+            source=SourceFileID(type="file_id", id=dataset.id)
+        )
+    )
+
+    # 6. Wait for Completion
+    while run.status not in ["completed", "failed"]:
+        run = openai_client.evals.runs.retrieve(run_id=run.id, eval_id=evaluation.id)
+        time.sleep(3)
+
+    print(f"Report: {run.report_url}")
+```
+
+### Custom Evaluators
+
+**Code-based** (objective metrics):
+```python
+code_evaluator = project_client.evaluators.create_version(
+    name="response_length_check",
+    evaluator_version={
+        "name": "response_length_check",
+        "definition": {
+            "type": "CODE",
+            "code_text": """
+def grade(sample, item):
+    length = len(item.get("response", ""))
+    return 1.0 if 100 <= length <= 500 else 0.5
+""",
+            # ... schema omitted for brevity
+        }
+    }
+)
+```
+
+**Prompt-based** (subjective metrics):
+```python
+prompt_evaluator = project_client.evaluators.create_version(
+    name="friendliness_check",
+    evaluator_version={
+        "name": "friendliness_check",
+        "definition": {
+            "type": "PROMPT",
+            "prompt_text": """
+Rate friendliness (1-5):
+Query: {{query}}
+Response: {{response}}
+
+Output JSON: {"result": <int>, "reason": "<text>"}
+""",
+            # ... schema omitted for brevity
+        }
+    }
+)
+```
+
+---
 
 ## Best Practices
 
 ### Development
 
 ✅ **DO**:
-- Plan agent architecture before coding
+- Plan agent architecture before coding (Research → Design → Implement)
 - Use Microsoft Foundry models for production
 - Implement tracing from day one
 - Test with evaluation datasets before deployment
 - Use structured outputs for reliable agent responses
 - Implement error handling and retry logic
+- Version your agents and track changes
 
 ❌ **DON'T**:
 - Hardcode API keys or endpoints
@@ -169,6 +281,7 @@ See [evaluation workflow](./references/evaluation-guide.md) for detailed evaluat
 - Deploy without evaluation
 - Use GitHub models in production (free tier has limits)
 - Ignore token limits and context windows
+- Mix agent logic with business logic
 
 ### Security
 
@@ -176,7 +289,8 @@ See [evaluation workflow](./references/evaluation-guide.md) for detailed evaluat
 - Validate all tool inputs and outputs
 - Implement rate limiting for agent APIs
 - Log agent actions for audit trails
-- Review OWASP Top 10 for AI
+- Use role-based access control (RBAC) for Foundry resources
+- Review OWASP Top 10 for AI: [owasp.org/AI-Security-and-Privacy-Guide](https://owasp.org/www-project-ai-security-and-privacy-guide/)
 
 ### Performance
 
@@ -185,36 +299,77 @@ See [evaluation workflow](./references/evaluation-guide.md) for detailed evaluat
 - Monitor token usage and costs
 - Implement timeout handling
 - Use async/await for I/O operations
+- Consider model size vs. latency tradeoffs
+
+### Monitoring
+
+- Track key metrics: latency, success rate, token usage, cost
+- Set up alerts for failures and anomalies
+- Use structured logging with context
+- Integrate with Azure Monitor / Application Insights
+- Review traces regularly for optimization opportunities
+
+---
 
 ## Production Checklist
 
+**Development**
 - [ ] Agent architecture documented
 - [ ] Model selected and deployed
 - [ ] Tools/plugins implemented and tested
 - [ ] Error handling with retries
+- [ ] Structured outputs configured
+- [ ] No hardcoded secrets
+
+**Observability**
 - [ ] OpenTelemetry tracing enabled
+- [ ] Trace viewer tested
+- [ ] Structured logging implemented
+- [ ] Metrics collection configured
+
+**Evaluation**
 - [ ] Evaluation dataset created
+- [ ] Evaluators defined (built-in + custom)
 - [ ] Evaluation runs passing
+- [ ] Results meet quality thresholds
+
+**Security & Compliance**
 - [ ] Credentials in Key Vault/env vars
 - [ ] Input validation implemented
+- [ ] RBAC configured
+- [ ] Audit logging enabled
+- [ ] OWASP AI Top 10 reviewed
+
+**Operations**
 - [ ] Health checks implemented
+- [ ] Rate limiting configured
 - [ ] Monitoring alerts set up
+- [ ] Deployment strategy defined
+- [ ] Rollback plan documented
+- [ ] Cost monitoring enabled
 
-## Troubleshooting
+---
 
-| Issue | Cause | Solution |
-|-------|-------|----------|
-| Traces not appearing | Trace viewer not open | Open trace viewer BEFORE running agent |
-| Model not responding | Invalid endpoint/key | Verify FOUNDRY_ENDPOINT and FOUNDRY_API_KEY |
-| Context window exceeded | Too much data | Reduce input size or use larger context model |
-| Evaluation failing | Data format mismatch | Verify JSONL schema matches evaluator expectations |
-| High latency | Wrong model choice | Consider smaller, faster models for simple tasks |
+## Resources
 
-## References
+**Official Documentation**:
+- Agent Framework: [github.com/microsoft/agent-framework](https://github.com/microsoft/agent-framework)
+- Microsoft Foundry: [ai.azure.com](https://ai.azure.com)
+- Azure AI Projects SDK: [learn.microsoft.com/python/api/overview/azure/ai-projects](https://learn.microsoft.com/python/api/overview/azure/ai-projects)
+- OpenTelemetry: [opentelemetry.io](https://opentelemetry.io)
 
-- [Agent Framework GitHub](https://github.com/microsoft/agent-framework)
-- [Microsoft Foundry](https://ai.azure.com)
-- [Evaluation Guide](./references/evaluation-guide.md)
-- [Orchestration Patterns](./references/orchestration-patterns.md)
-- [Full Documentation](../../../skills/17-ai-agent-development.md)
+**AI Toolkit**:
+- Model Catalog: `Ctrl+Shift+P` → `AI Toolkit: Model Catalog`
+- Trace Viewer: `Ctrl+Shift+P` → `AI Toolkit: Open Trace Viewer`
+- Playground: `Ctrl+Shift+P` → `AI Toolkit: Model Playground`
+
+**Security**:
+- OWASP AI Security: [owasp.org/AI-Security-and-Privacy-Guide](https://owasp.org/www-project-ai-security-and-privacy-guide/)
+- Azure Security Best Practices: [learn.microsoft.com/azure/security](https://learn.microsoft.com/azure/security)
+
+---
+
+**Related**: [AGENTS.md](../AGENTS.md) for agent behavior guidelines • [Skills.md](../Skills.md) for general production practices
+
+**Last Updated**: January 17, 2026
 
