@@ -32,20 +32,21 @@ cp .github/templates/ADR-TEMPLATE.md docs/adr/ADR-71.md
 
 **When to use**: Architect Agent creating implementation specs for Features/Stories
 
-**13 sections**:
+**12 sections**:
 1. Overview (scope, success criteria)
-2. Architecture Diagram (component layout)
+2. Architecture Diagrams (high-level components, interactions, data flow, tech stack, sequence diagrams, class diagrams)
 3. API Design (endpoints, contracts, errors)
-4. Data Models (C# classes, DTOs, SQL schema, migrations)
-5. Service Layer (interfaces, implementation patterns)
-6. Security (authentication, authorization, validation, secrets)
+4. Data Models Diagrams (ERD, C# classes, DTOs, SQL schema, migrations)
+5. Service Layer Diagrams (interfaces, DI graph, implementation patterns)
+6. Security Diagrams (auth flow, RBAC, defense in depth, secrets management)
 7. Performance (caching, DB optimization, async, rate limiting)
 8. Testing Strategy (unit/integration/e2e with code examples)
 9. Implementation Notes (files to create, dependencies, config, workflow)
 10. Rollout Plan (phases with stories and timelines)
 11. Risks & Mitigations (impact, probability, mitigation plans)
 12. Monitoring & Observability (metrics, alerts, logs)
-13. Handoff Checklist (completeness verification)
+
+**Note**: Handoff checklist is in architect.agent.md (60+ items organized in 6 categories).
 
 **Output location**: `docs/specs/SPEC-{issue}.md`
 
@@ -89,7 +90,7 @@ cp .github/templates/PRD-TEMPLATE.md docs/prd/PRD-48.md
 
 **When to use**: UX Designer Agent creating user interface designs for Features
 
-**14 sections**:
+**13 sections**:
 1. Overview (summary, goals, success criteria)
 2. User Research (personas, needs)
 3. User Flows (diagrams with primary, alternative, error paths)
@@ -101,9 +102,10 @@ cp .github/templates/PRD-TEMPLATE.md docs/prd/PRD-48.md
 9. Responsive Design (mobile/tablet/desktop breakpoints)
 10. Interactive Prototypes (Figma/HTML links)
 11. Implementation Notes (components, assets, testing checklist)
-12. Handoff Checklist (completeness verification)
-13. Open Questions (design decisions)
-14. References (inspiration, research, standards)
+12. Open Questions (design decisions)
+13. References (inspiration, research, standards)
+
+**Note**: Handoff checklist is in ux-designer.agent.md (50+ items organized in 7 categories).
 
 **Output location**: `docs/ux/UX-{issue}.md`
 
@@ -167,7 +169,7 @@ cp .github/templates/REVIEW-TEMPLATE.md docs/reviews/REVIEW-50.md
 4. Define component specs with states/variants
 5. Document design system (colors, typography, spacing)
 6. Ensure WCAG 2.1 AA accessibility compliance
-7. Self-review for usability and completeness
+7. Complete handoff checklist (see ux-designer.agent.md for 50+ items)
 8. Commit and add `orch:ux-done` label
 
 ### For Architect Agent
@@ -178,6 +180,7 @@ cp .github/templates/REVIEW-TEMPLATE.md docs/reviews/REVIEW-50.md
 3. Read UX designs (`docs/ux/UX-*.md`) for user flows
 4. Research existing patterns (`semantic_search`, `grep_search`)
 5. Fill in ALL sections (no placeholders)
+6. Complete handoff checklist (see architect.agent.md for 60+ items)
 6. Self-review for completeness and clarity
 7. Commit and add `orch:architect-done` label
 
