@@ -88,6 +88,8 @@ fi
 
 # Core files
 info "Downloading core files..."
+download_file "README.md" "README.md"
+download_file "LICENSE" "LICENSE"
 download_file "AGENTS.md" "AGENTS.md"
 download_file "Skills.md" "Skills.md"
 download_file "CONTRIBUTING.md" "CONTRIBUTING.md"
@@ -95,6 +97,29 @@ download_file ".github/copilot-instructions.md" ".github/copilot-instructions.md
 download_file ".github/orchestration-config.yml" ".github/orchestration-config.yml"
 download_file ".github/workflows/agent-orchestrator.yml" ".github/workflows/agent-orchestrator.yml"
 download_file ".github/workflows/test-e2e.yml" ".github/workflows/test-e2e.yml"
+
+# Git hooks
+info "Downloading git hooks..."
+download_file ".github/hooks/pre-commit" ".github/hooks/pre-commit"
+download_file ".github/hooks/commit-msg" ".github/hooks/commit-msg"
+
+# Scripts
+info "Downloading helper scripts..."
+download_file ".github/scripts/validate-handoff.ps1" ".github/scripts/validate-handoff.ps1"
+download_file ".github/scripts/validate-handoff.sh" ".github/scripts/validate-handoff.sh"
+download_file ".github/scripts/capture-context.ps1" ".github/scripts/capture-context.ps1"
+download_file ".github/scripts/capture-context.sh" ".github/scripts/capture-context.sh"
+
+# Issue and PR templates
+info "Downloading issue and PR templates..."
+download_file ".github/ISSUE_TEMPLATE/epic.yml" ".github/ISSUE_TEMPLATE/epic.yml"
+download_file ".github/ISSUE_TEMPLATE/feature.yml" ".github/ISSUE_TEMPLATE/feature.yml"
+download_file ".github/ISSUE_TEMPLATE/story.yml" ".github/ISSUE_TEMPLATE/story.yml"
+download_file ".github/ISSUE_TEMPLATE/bug.yml" ".github/ISSUE_TEMPLATE/bug.yml"
+download_file ".github/PULL_REQUEST_TEMPLATE.md" ".github/PULL_REQUEST_TEMPLATE.md"
+
+# VS Code and docs
+info "Downloading configuration and documentation..."
 download_file ".vscode/mcp.json" ".vscode/mcp.json"
 download_file "docs/mcp-integration.md" "docs/mcp-integration.md"
 download_file "docs/project-setup.md" "docs/project-setup.md"

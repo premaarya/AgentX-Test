@@ -95,6 +95,8 @@ Write-Host ""
 
 # Core files to download
 $coreFiles = @(
+    @{ Src = "README.md"; Dest = "README.md" },
+    @{ Src = "LICENSE"; Dest = "LICENSE" },
     @{ Src = "AGENTS.md"; Dest = "AGENTS.md" },
     @{ Src = "Skills.md"; Dest = "Skills.md" },
     @{ Src = "CONTRIBUTING.md"; Dest = "CONTRIBUTING.md" },
@@ -102,6 +104,17 @@ $coreFiles = @(
     @{ Src = ".github/orchestration-config.yml"; Dest = ".github/orchestration-config.yml" },
     @{ Src = ".github/workflows/agent-orchestrator.yml"; Dest = ".github/workflows/agent-orchestrator.yml" },
     @{ Src = ".github/workflows/test-e2e.yml"; Dest = ".github/workflows/test-e2e.yml" },
+    @{ Src = ".github/hooks/pre-commit"; Dest = ".github/hooks/pre-commit" },
+    @{ Src = ".github/hooks/commit-msg"; Dest = ".github/hooks/commit-msg" },
+    @{ Src = ".github/scripts/validate-handoff.ps1"; Dest = ".github/scripts/validate-handoff.ps1" },
+    @{ Src = ".github/scripts/validate-handoff.sh"; Dest = ".github/scripts/validate-handoff.sh" },
+    @{ Src = ".github/scripts/capture-context.ps1"; Dest = ".github/scripts/capture-context.ps1" },
+    @{ Src = ".github/scripts/capture-context.sh"; Dest = ".github/scripts/capture-context.sh" },
+    @{ Src = ".github/ISSUE_TEMPLATE/epic.yml"; Dest = ".github/ISSUE_TEMPLATE/epic.yml" },
+    @{ Src = ".github/ISSUE_TEMPLATE/feature.yml"; Dest = ".github/ISSUE_TEMPLATE/feature.yml" },
+    @{ Src = ".github/ISSUE_TEMPLATE/story.yml"; Dest = ".github/ISSUE_TEMPLATE/story.yml" },
+    @{ Src = ".github/ISSUE_TEMPLATE/bug.yml"; Dest = ".github/ISSUE_TEMPLATE/bug.yml" },
+    @{ Src = ".github/PULL_REQUEST_TEMPLATE.md"; Dest = ".github/PULL_REQUEST_TEMPLATE.md" },
     @{ Src = ".vscode/mcp.json"; Dest = ".vscode/mcp.json" },
     @{ Src = "docs/mcp-integration.md"; Dest = "docs/mcp-integration.md" },
     @{ Src = "docs/project-setup.md"; Dest = "docs/project-setup.md" },
