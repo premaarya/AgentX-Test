@@ -59,36 +59,31 @@ await runSubagent({
 
 ### 2. Create PRD
 
-Create `docs/prd/PRD-{epic-id}.md`:
+Create `docs/prd/PRD-{epic-id}.md` following the [PRD template](../templates/PRD-TEMPLATE.md):
 
-```markdown
-# PRD: {Epic Title}
+**Template location**: `.github/templates/PRD-TEMPLATE.md`
 
-## Problem
-{What user problem are we solving?}
+**12 comprehensive sections**:
+0. TOC
+1. Problem Statement (what, why, consequences)
+2. Target Users (personas, goals, pain points)
+3. Goals & Success Metrics (KPIs, user success)
+4. Requirements (functional P0/P1/P2, non-functional)
+5. User Stories & Features (with acceptance criteria)
+6. User Flows (primary/secondary/error scenarios)
+7. Dependencies & Constraints (technical, business, resources)
+8. Risks & Mitigations (impact, probability, plans)
+9. Timeline & Milestones (phases with deliverables)
+10. Out of Scope (explicitly excluded items)
+11. Open Questions (tracking decisions)
+12. Appendix (research, glossary, references)
 
-## Users
-{Who are the target users?}
-
-## Requirements
-### Functional
-- {Requirement 1}
-
-### Non-Functional
-- Performance: {metric}
-- Security: {requirement}
-
-## User Stories
-### Feature 1: {Name}
-| Story | As a... | I want... | So that... | Acceptance Criteria |
-|-------|---------|-----------|------------|---------------------|
-| US-1 | {role} | {capability} | {benefit} | - [ ] Criterion 1 |
-
-## Dependencies & Risks
-| Item | Impact | Mitigation |
-|------|--------|------------|
-| {dependency} | High/Med/Low | {plan} |
+**Quick start**:
+```bash
+cp .github/templates/PRD-TEMPLATE.md docs/prd/PRD-{epic-id}.md
 ```
+
+Then fill in all sections with specific details from research.
 
 ### 3. Create GitHub Issues
 

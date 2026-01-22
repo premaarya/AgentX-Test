@@ -75,75 +75,33 @@ await runSubagent({
 
 ### 4. Create UX Spec
 
-Create `docs/ux/UX-{feature-id}.md`:
+Create `docs/ux/UX-{feature-id}.md` following the [UX Design template](../templates/UX-TEMPLATE.md):
 
-```markdown
-# UX Design: {Feature Name}
+**Template location**: `.github/templates/UX-TEMPLATE.md`
 
-**Feature**: #{feature-id}  
-**Epic**: #{epic-id}  
-**PRD**: [PRD-{epic-id}.md](../prd/PRD-{epic-id}.md)
+**13 comprehensive sections**:
+1. Overview (summary, goals, success criteria)
+2. User Research (personas, needs from PRD)
+3. User Flows (primary, secondary, error scenarios with diagrams)
+4. Wireframes (ASCII art layouts for each screen)
+5. Component Specifications (states, variants, CSS specs)
+6. Design System (grid, typography, colors, spacing, elevation)
+7. Interactions & Animations (transitions, micro-interactions, loading)
+8. Accessibility (WCAG 2.1 AA: keyboard, screen readers, contrast)
+9. Responsive Design (mobile/tablet/desktop breakpoints)
+10. Interactive Prototypes (Figma/HTML links)
+11. Implementation Notes (components, assets, testing)
+12. Open Questions (tracking design decisions)
+13. References (inspiration, research, standards)
 
-## User Flows
-### Primary Flow: {Action}
-```
-[User] → [Page 1] → [Action] → [Page 2] → [Success State]
-```
+**Note**: Handoff checklist is in this agent file (see UX Designer Completion Checklist section below).
 
-## Wireframes
-### Screen 1: {Name}
-```
-+----------------------------------+
-| Header                 [Profile] |
-+----------------------------------+
-| Sidebar   | Main Content        |
-|           |                     |
-| Nav 1     | {Component}         |
-| Nav 2     | {Component}         |
-+----------------------------------+
+**Quick start**:
+```bash
+cp .github/templates/UX-TEMPLATE.md docs/ux/UX-{feature-id}.md
 ```
 
-### Components
-#### {ComponentName}
-- **Purpose**: {Description}
-- **States**: Default, Hover, Active, Disabled
-- **Variants**: Primary, Secondary
-
-## Design Specifications
-### Layout
-- Grid: 12-column responsive
-- Breakpoints: Mobile (<768px), Tablet (768-1024px), Desktop (>1024px)
-
-### Typography
-- Headings: {Font family}, {sizes}
-- Body: {Font family}, {sizes}
-
-### Colors
-- Primary: #{hex}
-- Secondary: #{hex}
-- Success/Warning/Error: #{hex}
-
-### Spacing
-- Base unit: 8px
-- Padding: {values}
-- Margins: {values}
-
-## Accessibility (WCAG 2.1 AA)
-- Keyboard navigation: Tab order defined
-- Screen reader: ARIA labels on all interactive elements
-- Color contrast: Min 4.5:1 for text
-- Focus indicators: Visible on all controls
-
-## Interactive Prototypes
-[Link to Figma/Sketch prototype or HTML mockup]
-
-## Implementation Notes
-### For Engineer
-- Use existing components: {list}
-- Custom components needed: {list}
-- Responsive behavior: {details}
-- Animation/transitions: {specs}
-```
+Then fill in all sections with wireframes, component specs, and accessibility requirements.
 
 ### 5. Self-Review
 
@@ -350,6 +308,65 @@ If validation fails:
 1. Fix the identified issue (missing wireframes, incomplete accessibility specs)
 2. Re-run validation script
 3. Try handoff again (workflow will re-validate)
+
+---
+
+## UX Designer Completion Checklist
+
+### Documentation Completeness
+- [ ] All user flows documented (primary + alternative paths)
+- [ ] Wireframes created for all screens/views
+- [ ] Component specifications defined with states
+- [ ] Design system guidelines provided
+- [ ] Implementation notes for Engineer included
+- [ ] All files committed to `docs/ux/UX-{issue}.md`
+
+### Accessibility (WCAG 2.1 AA)
+- [ ] Color contrast ratios verified (4.5:1 for text, 3:1 for UI)
+- [ ] Keyboard navigation defined for all interactions
+- [ ] Screen reader landmarks specified (header, nav, main, footer)
+- [ ] Focus indicators designed for all interactive elements
+- [ ] Alternative text strategy documented for images
+- [ ] Form labels and error messages designed accessibly
+- [ ] Touch target sizes ≥44x44px for mobile
+
+### Responsive Design
+- [ ] Mobile breakpoint designs (320px-767px)
+- [ ] Tablet breakpoint designs (768px-1023px)
+- [ ] Desktop breakpoint designs (1024px+)
+- [ ] Flexible grid system specified
+- [ ] Responsive typography scale defined
+- [ ] Image scaling strategies documented
+
+### Interactive Prototypes (if applicable)
+- [ ] Prototype created with tool (Figma, Adobe XD, etc.)
+- [ ] Key interactions demonstrated (clicks, hovers, transitions)
+- [ ] Error states and validations shown
+- [ ] Loading states visualized
+- [ ] Prototype link included in UX doc
+
+### Design Assets
+- [ ] Icon set specified (from design system or custom)
+- [ ] Illustrations prepared (if any)
+- [ ] Logo files provided (SVG format)
+- [ ] Favicon designed (multiple sizes: 16x16, 32x32, 180x180)
+- [ ] Color palette documented with hex codes
+- [ ] Typography fonts specified (family, weights, sizes)
+
+### Cross-Browser/Device Testing Plan
+- [ ] Browsers to test specified (Chrome, Firefox, Safari, Edge)
+- [ ] Mobile devices to test specified (iOS Safari, Android Chrome)
+- [ ] Keyboard-only navigation testing plan
+- [ ] Screen reader testing plan (NVDA/JAWS)
+- [ ] Zoom level testing specified (up to 200%)
+- [ ] Slow network testing consideration (3G)
+
+### Process & Handoff
+- [ ] Epic Status updated to "Ready" in Projects board
+- [ ] `orch:ux-done` label added to Epic issue
+- [ ] Handoff summary comment posted to Epic
+- [ ] Open questions documented (if any)
+- [ ] Next agent triggered (Architect)
 
 ---
 

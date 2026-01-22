@@ -74,30 +74,25 @@ await runSubagent({
 
 ### 4. Create ADR
 
-Create `docs/adr/ADR-{epic-id}.md`:
+Create `docs/adr/ADR-{epic-id}.md` following the [ADR template](../templates/ADR-TEMPLATE.md):
 
-```markdown
-# ADR-{ID}: {Decision Title}
+**Template location**: `.github/templates/ADR-TEMPLATE.md`
 
-**Status**: Accepted | Rejected | Superseded  
-**Date**: {YYYY-MM-DD}  
-**Epic**: #{epic-id}  
-**PRD**: [PRD-{epic-id}.md](../prd/PRD-{epic-id}.md)  
-**UX**: [UX-{feature-id}.md](../ux/UX-{feature-id}.md)
+**Key sections:**
+- Context (requirements, constraints, background)
+- Decision (specific architectural choices)
+- Options Considered (pros/cons/effort/risk)
+- Rationale (why this option)
+- Consequences (positive/negative/neutral)
+- Implementation (reference to tech spec)
+- References (internal/external docs)
 
-## Context
+**Quick start:**
+```bash
+cp .github/templates/ADR-TEMPLATE.md docs/adr/ADR-{epic-id}.md
+```
 
-{What is the issue we're addressing? Why is this decision needed?}
-
-**Requirements:**
-- {Requirement from PRD}
-- {Requirement from UX}
-
-**Constraints:**
-- {Technical constraint}
-- {Resource constraint}
-
-## Decision
+Then fill in all sections with specific details from PRD and UX designs.
 
 We will {architectural decision}.
 
@@ -144,109 +139,32 @@ See [SPEC-{issue}.md](../specs/SPEC-{issue}.md) for technical details.
 
 ### 5. Create Tech Spec
 
-Create `docs/specs/SPEC-{feature-id}.md`:
+Create `docs/specs/SPEC-{feature-id}.md` following the [Technical Specification template](../templates/SPEC-TEMPLATE.md):
 
-```markdown
-# Technical Specification: {Feature Name}
+**Template location**: `.github/templates/SPEC-TEMPLATE.md`
 
-**Feature**: #{feature-id}  
-**Epic**: #{epic-id}  
-**ADR**: [ADR-{epic-id}.md](../adr/ADR-{epic-id}.md)
+**13 comprehensive sections:**
+0. TOC
+1. Overview (scope, success criteria)
+2. Architecture Diagram (High-level components, interactions, data flow, tech stack, Sequence diagrams, class diagrams)
+3. API Design (endpoints, contracts, errors)
+4. Data Models Diagrams(DTOs, SQL schema, migrations)
+5. Service Layer Diagrams(interfaces, implementation)
+6. Security diagrams (auth, authz, validation, secrets)
+7. Performance (caching, DB optimization, async, rate limiting)
+8. Testing Strategy (unit/integration/e2e with examples)
+9. Implementation Notes (files, dependencies, config, workflow)
+10. Rollout Plan (phases with stories)
+11. Risks & Mitigations (table with impact/probability)
+12. Monitoring & Observability (metrics, alerts, logs)
 
-## Overview
 
-{Brief description of what will be built}
-
-## Architecture Diagram
-
-```
-+------------------+     +------------------+     +------------------+
-| Client           |<--->| API Gateway      |<--->| Database         |
-| (React)          |     | (ASP.NET Core)   |     | (PostgreSQL)     |
-+------------------+     +------------------+     +------------------+
-```
-
-## API Contracts
-
-### Endpoint: POST /api/v1/{resource}
-
-**Request:**
-```json
-{
-  "field": "value"
-}
+**Quick start:**
+```bash
+cp .github/templates/SPEC-TEMPLATE.md docs/specs/SPEC-{feature-id}.md
 ```
 
-**Response (200 OK):**
-```json
-{
-  "id": "uuid",
-  "field": "value"
-}
-```
-
-**Error (400 Bad Request):**
-```json
-{
-  "error": "ValidationError",
-  "message": "field is required"
-}
-```
-
-## Data Models
-
-### Entity: {EntityName}
-```csharp
-public class EntityName
-{
-    public Guid Id { get; set; }
-    public string Name { get; set; }
-    public DateTime CreatedAt { get; set; }
-}
-```
-
-**Database Table:** `entity_names`
-```sql
-CREATE TABLE entity_names (
-    id UUID PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX idx_name ON entity_names(name);
-```
-
-## Security
-
-- **Authentication**: JWT Bearer tokens
-- **Authorization**: Role-based (Admin, User)
-- **Input Validation**: FluentValidation
-- **SQL Injection Prevention**: Parameterized queries (EF Core)
-- **Secrets**: Store in Azure Key Vault
-
-## Performance
-
-- **Caching**: Redis for frequently accessed data (1-hour TTL)
-- **Database**: Index on frequently queried fields
-- **Async**: Use async/await for I/O operations
-
-## Testing Strategy
-
-- Unit tests: Controllers, services (70% of test budget)
-- Integration tests: Database, API endpoints (20%)
-- E2E tests: Critical user flows (10%)
-
-**Target coverage**: ≥80%
-
-## Implementation Notes
-
-### For Engineer
-
-**Files to create:**
-- `Controllers/{Resource}Controller.cs`
-- `Services/{Resource}Service.cs`
-- `Models/{Resource}.cs`
-- `Data/Migrations/{Date}_{Resource}.cs`
+Then fill in all sections with specific implementation details.
 
 **Dependencies:**
 ```xml
@@ -315,18 +233,92 @@ git push
 
 ### 8. Completion Checklist
 
-Before handoff, verify:
+Before marking `orch:architect-done`, verify ALL items:
+
+**Documentation:**
 - [ ] ADR created at `docs/adr/ADR-{epic-id}.md`
-- [ ] Tech Specs created for all Features
-- [ ] Architecture document created
-- [ ] API contracts defined (endpoints, request/response)
-- [ ] Data models specified (C# classes + SQL schema)
-- [ ] Security requirements documented
+  - [ ] Context section complete (requirements, constraints, background)
+  - [ ] All options considered with pros/cons/effort/risk
+  - [ ] Decision rationale clearly stated
+  - [ ] Consequences documented (positive, negative, neutral)
+  - [ ] References to PRD and UX included
+- [ ] Tech Specs created for ALL Features at `docs/specs/SPEC-{feature-id}.md`
+  - [ ] Table of Contents complete
+  - [ ] Architecture diagrams included (high-level, interactions, data flow, sequence, class)
+  - [ ] Technology stack fully documented with versions
+- [ ] Architecture document created at `docs/architecture/ARCH-{epic-id}.md` (if Epic-level)
+
+**Technical Specifications:**
+- [ ] API contracts fully specified for all endpoints
+  - [ ] Request/response schemas defined
+  - [ ] Error responses documented (400, 401, 404, 429, 500)
+  - [ ] Rate limiting specified
+  - [ ] Authentication/authorization requirements
+- [ ] Data models completely defined
+  - [ ] C# classes with properties and types
+  - [ ] DTOs for create/update/response
+  - [ ] SQL schema with CREATE TABLE statements
+  - [ ] Database indexes specified
+  - [ ] Migrations planned
+  - [ ] ERD diagram included
+- [ ] Service layer architecture documented
+  - [ ] Interfaces defined
+  - [ ] Dependency injection graph
+  - [ ] Repository pattern specified
+
+**Security:**
+- [ ] Security requirements fully documented
+  - [ ] Authentication flow diagram
+  - [ ] Authorization model (RBAC/ABAC)
+  - [ ] Defense in depth layers specified
+  - [ ] Input validation rules
+  - [ ] SQL injection prevention strategy
+  - [ ] Secrets management approach (Key Vault)
+  - [ ] Security headers configuration
+
+**Performance & Quality:**
 - [ ] Performance considerations addressed
+  - [ ] Caching strategy (Redis with TTLs)
+  - [ ] Database optimization (indexes, query patterns)
+  - [ ] Async/await patterns specified
+  - [ ] Connection pooling configured
+  - [ ] Rate limiting strategy
 - [ ] Testing strategy defined
+  - [ ] Unit test approach (70% of tests)
+  - [ ] Integration test scope (20% of tests)
+  - [ ] E2E test scenarios (10% of tests)
+  - [ ] Coverage target ≥80%
+  - [ ] Test examples provided
+
+**Implementation Guidance:**
 - [ ] Dependencies and configuration listed
+  - [ ] NuGet packages with versions
+  - [ ] appsettings.json structure
+  - [ ] Environment variables defined
+- [ ] Implementation notes for Engineer provided
+  - [ ] Exact files to create with paths
+  - [ ] Component reuse identified
+  - [ ] Development workflow outlined
+- [ ] Rollout plan documented
+  - [ ] Phases with timelines
+  - [ ] Stories mapped to phases
+  - [ ] Launch criteria defined
+- [ ] Risks identified with mitigations
+  - [ ] Impact and probability assessed
+  - [ ] Mitigation plans specific and actionable
+- [ ] Monitoring & observability specified
+  - [ ] Metrics to track
+  - [ ] Alert thresholds
+  - [ ] Logging strategy
+
+**Process:**
 - [ ] All files committed to repository
+  - [ ] ADR committed
+  - [ ] All Tech Specs committed
+  - [ ] Architecture doc committed (if applicable)
 - [ ] Epic Status updated to "Ready" in Projects board
+- [ ] Self-review completed (no placeholders, no TODOs)
+- [ ] All referenced files exist and are accessible
 
 ---
 

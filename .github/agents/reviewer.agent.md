@@ -120,84 +120,33 @@ await runSubagent({
 
 ### 5. Create Review Document
 
-Create `docs/reviews/REVIEW-{story-id}.md`:
+Create `docs/reviews/REVIEW-{story-id}.md` following the [Code Review template](../templates/REVIEW-TEMPLATE.md):
 
-```markdown
-# Code Review: {Story Title}
+**Template location**: `.github/templates/REVIEW-TEMPLATE.md`
 
-**Story**: #{story-id}  
-**Engineer**: {GitHub username}  
-**Reviewer**: {Your GitHub username}  
-**Commit**: {SHA}  
-**Date**: {YYYY-MM-DD}
+**15 comprehensive sections**:
+1. Executive Summary (overview, verdict, confidence)
+2. Code Quality (strengths, issues by severity with fixes)
+3. Architecture & Design (patterns, SOLID, organization)
+4. Testing (coverage metrics, test quality, examples)
+5. Security Review (checklist, vulnerabilities, headers)
+6. Performance Review (async, N+1 queries, caching)
+7. Documentation Review (XML docs, README, comments)
+8. Acceptance Criteria Verification (from Story)
+9. Technical Debt (new debt introduced, debt addressed)
+10. Compliance & Standards (coding standards, Skills.md)
+11. Recommendations (must fix, should fix, nice to have)
+12. Decision (approved/changes/rejected with rationale)
+13. Next Steps (for Engineer, Reviewer, PM)
+14. Related Issues & PRs (dependencies, blockers)
+15. Appendix (files reviewed, coverage report, CI results)
 
-## Summary
+**Quick start**:
+```bash
+cp .github/templates/REVIEW-TEMPLATE.md docs/reviews/REVIEW-{story-id}.md
+```
 
-{Brief overview of changes}
-
-## Code Quality
-
-### ✅ Strengths
-- {Strength 1}
-- {Strength 2}
-
-### ⚠️ Issues Found
-| Severity | Issue | File:Line | Recommendation |
-|----------|-------|-----------|----------------|
-| Critical | {Issue} | {file}:{line} | {Fix} |
-| High | {Issue} | {file}:{line} | {Fix} |
-| Medium | {Issue} | {file}:{line} | {Fix} |
-| Low | {Issue} | {file}:{line} | {Fix} |
-
-## Testing
-
-- **Coverage**: {X}% (Target: ≥80%)
-- **Unit Tests**: {count} tests
-- **Integration Tests**: {count} tests
-- **E2E Tests**: {count} tests
-
-### Test Quality
-- [ ] Tests follow AAA pattern
-- [ ] Edge cases covered
-- [ ] Error paths tested
-
-## Security
-
-- [ ] No secrets in code
-- [ ] SQL queries parameterized
-- [ ] Input validation present
-- [ ] Auth/authz implemented
-
-### Vulnerabilities Found
-{List any security issues or "None"}
-
-## Performance
-
-- [ ] Async/await used appropriately
-- [ ] No N+1 queries
-- [ ] Indexes added where needed
-- [ ] Caching considered
-
-## Documentation
-
-- [ ] XML docs complete
-- [ ] README updated
-- [ ] Inline comments clear
-
-## Decision
-
-**Status**: ✅ APPROVED | ⚠️ CHANGES REQUESTED
-
-### Reason
-{Explanation of decision}
-
-### Changes Requested (if applicable)
-1. {Change 1}
-2. {Change 2}
-
-## Next Steps
-
-{What happens next}
+Then fill in all sections with detailed code review findings.
 ```
 
 ### 6. Make Decision

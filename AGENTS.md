@@ -304,6 +304,12 @@ gh workflow run agent-orchestrator.yml -f issue_number=71
 | MCP Config | `.vscode/mcp.json` |
 | Production Standards | `Skills.md` |
 | Agent Definitions | `.github/agents/*.agent.md` |
+| **Templates** | `.github/templates/` |
+| ADR Template | `.github/templates/ADR-TEMPLATE.md` |
+| Spec Template | `.github/templates/SPEC-TEMPLATE.md` |
+| PRD Template | `.github/templates/PRD-TEMPLATE.md` |
+| UX Template | `.github/templates/UX-TEMPLATE.md` |
+| Review Template | `.github/templates/REVIEW-TEMPLATE.md` |
 | PRDs | `docs/prd/PRD-{issue}.md` |
 | ADRs | `docs/adr/ADR-{issue}.md` |
 | Specs | `docs/specs/SPEC-{issue}.md` |
