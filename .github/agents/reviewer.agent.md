@@ -297,7 +297,7 @@ git push
   "args": {
     "owner": "jnPiyush",
     "repo": "AgentX",
-    "workflow_id": "run-engineer.yml",
+    "workflow_id": "agent-orchestrator.yml",
     "ref": "master",
     "inputs": { "issue_number": "<STORY_ID>" }
   }
@@ -403,7 +403,7 @@ Issue automatically moves to "Done" in Projects board.
 **Step 3: Reassign to Engineer**
 ```json
 { "tool": "run_workflow", "args": { 
-  "workflow_id": "run-engineer.yml", 
+  "workflow_id": "agent-orchestrator.yml", 
   "inputs": { "issue_number": "<STORY_ID>" }
 } }
 ```
