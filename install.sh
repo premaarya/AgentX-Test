@@ -140,6 +140,15 @@ download_file ".github/agents/engineer.agent.md" ".github/agents/engineer.agent.
 download_file ".github/agents/reviewer.agent.md" ".github/agents/reviewer.agent.md"
 download_file ".github/agents/orchestrator.agent.md" ".github/agents/orchestrator.agent.md"
 
+# Templates
+info "Downloading templates..."
+download_file ".github/templates/ADR-TEMPLATE.md" ".github/templates/ADR-TEMPLATE.md"
+download_file ".github/templates/SPEC-TEMPLATE.md" ".github/templates/SPEC-TEMPLATE.md"
+download_file ".github/templates/PRD-TEMPLATE.md" ".github/templates/PRD-TEMPLATE.md"
+download_file ".github/templates/UX-TEMPLATE.md" ".github/templates/UX-TEMPLATE.md"
+download_file ".github/templates/REVIEW-TEMPLATE.md" ".github/templates/REVIEW-TEMPLATE.md"
+download_file ".github/templates/README.md" ".github/templates/README.md"
+
 # Instructions
 download_file ".github/instructions/csharp.instructions.md" ".github/instructions/csharp.instructions.md"
 download_file ".github/instructions/python.instructions.md" ".github/instructions/python.instructions.md"
