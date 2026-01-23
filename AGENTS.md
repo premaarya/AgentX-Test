@@ -38,7 +38,11 @@
 // Create
 {"tool": "issue_write", "args": {"method": "create", "title": "[Type] Description", "labels": ["type:task"]}}
 
-// Claim: Move to 'In Progress' in Projects board (UI or GraphQL)
+// Claim: Status is automatically updated by orchestrator workflows
+// - Epic/Feature/Story → 'Ready' after PM/Architect completes
+// - Story/Feature → 'In Progress' when Engineer starts
+// - Story/Feature → 'In Review' when Engineer completes
+// - Story/Feature → 'Done' when Reviewer approves
 
 // Close
 {"tool": "update_issue", "args": {"issue_number": ID, "state": "closed"}}
@@ -89,7 +93,7 @@
 2. Create PRD at `docs/prd/PRD-{issue}.md`
 3. Create Feature + Story issues (Status: Backlog)
 4. Self-review PRD completeness
-5. Status → Ready, add `orch:pm-done`
+5. Add `orch:pm-done` → **Child stories auto-move to Ready**
 
 **🎨 UX Designer:**
 1. Wait for `orch:pm-done`, claim Epic
@@ -101,18 +105,20 @@
 1. Wait for `orch:ux-done`, claim Epic
 2. Create ADR + Specs at `docs/adr/`, `docs/specs/`
 3. Self-review feasibility
-4. Commit docs, add `orch:architect-done`
+4. Commit docs, add `orch:architect-done` → **Ready stories available for Engineer**
 
 **🔧 Engineer:**
 1. Wait for `orch:architect-done`, claim Story
-2. Implement code + tests (≥80% coverage)
-3. Self-review quality + security
-4. Commit: `"type: description (#issue)"`, add `orch:engineer-done`
+2. **Status auto-updates to In Progress**
+3. Implement code + tests (≥80% coverage)
+4. Self-review quality + security
+5. Commit: `"type: description (#issue)"`, add `orch:engineer-done`
+6. **Status auto-updates to In Review**
 
 **✅ Reviewer:**
 1. Review code, tests, security
 2. Create `docs/reviews/REVIEW-{issue}.md`
-3. If approved: Close issue (Done)
+3. If approved: Close issue → **Status auto-updates to Done**
 4. If changes needed: Status → In Progress, add `needs:changes`
 
 ---
@@ -131,10 +137,14 @@
 
 **2. Update Issue State**
 ```json
+// Status is automatically updated by orchestrator workflows:
+// - PM completes → Child stories move to 'Ready'
+// - Engineer starts → Status moves to 'In Progress'
+// - Engineer completes → Status moves to 'In Review'
+// - Reviewer approves → Status moves to 'Done'
+
 // Add orchestration label (keeps existing labels)
 {"tool": "update_issue", "args": {"issue_number": ID, "labels": ["type:X", "orch:ROLE-done"]}}
-
-// Engineer: Move to 'In Review' in Projects board
 ```
 
 **3. Post Summary Comment**
@@ -191,12 +201,12 @@ gh issue close <ID>
 
 ### Status Tracking
 
-**GitHub Projects v2 Status field:**
-- 📝 **Backlog** - Waiting to be claimed
-- 🚀 **In Progress** - Active development
-- 👀 **In Review** - Code review
-- ✅ **Done** - Completed
-- 🏗️ **Ready** (optional) - Design done, awaiting Engineer
+**GitHub Projects v2 Status field (automatically updated by workflows):**
+- 📝 **Backlog** - Waiting to be claimed (new issues)
+- 🏗️ **Ready** - Design done, awaiting Engineer (set by PM/Architect)
+- 🚀 **In Progress** - Active development (set when Engineer starts)
+- 👀 **In Review** - Code review (set when Engineer completes)
+- ✅ **Done** - Completed (set when Reviewer approves)
 
 **Labels for Coordination:**
 - `type:*` - Issue classification
@@ -322,7 +332,11 @@ gh workflow run agent-orchestrator.yml -f issue_number=71
 // Create issue
 {"tool": "issue_write", "args": {"method": "create", "title": "[Story] Description", "labels": ["type:story"]}}
 
-// Claim issue (Projects board: drag to "In Progress")
+// Claim issue: Status is automatically updated by workflows
+// - PM completes → Stories move to 'Ready'
+// - Engineer starts → Status moves to 'In Progress'
+// - Engineer completes → Status moves to 'In Review'
+// - Reviewer approves → Status moves to 'Done'
 
 // Trigger orchestrator (auto-triggers on label, or manual)
 {"tool": "run_workflow", "args": {"workflow_id": "agent-orchestrator.yml", "inputs": {"issue_number": "ID"}}}

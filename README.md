@@ -1,54 +1,271 @@
-# AgentX - Dynamic Multi-agent Workflow and AI Agent Guidelines 
+# AgentX - AI-Powered Development Accelerator
 
 [![Standard](https://img.shields.io/badge/Standard-awesome--copilot-green)](https://github.com/github/awesome-copilot)
 [![Skills Spec](https://img.shields.io/badge/Skills-agentskills.io-orange)](https://agentskills.io/specification)
-[![Status](https://img.shields.io/badge/Status-Implemented%20%26%20Verified-brightgreen)]()
+[![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)]()
+[![Install](https://img.shields.io/badge/Install-pip%20install%20agentx--cli-blue)]()
 
-> **A comprehensive framework for AI coding agents to produce production-ready code with consistent quality, security, and operational standards.**
-
----
-
-## 🎯 Overview
-
-AgentX provides structured guidelines, skills, and workflows for AI coding agents (like GitHub Copilot, Claude, etc.) to write high-quality, secure, and maintainable code. It enables both supervised and fully autonomous (YOLO) execution modes while maintaining safety through architectural controls.
-
-**Optimized & Production-Ready**: AGENTS.md reduced to ~350 lines (66% smaller) with comprehensive TOC, all workflows validated, and 18 production skills tested.
-
-**Works with or without GitHub Copilot** - Enforcement via issue templates, PR templates, pre-commit hooks, and GitHub Actions.
-
-### Key Problems Solved
-
-| Challenge | Solution |
-|-----------|----------|
-| **Inconsistent code quality** | 18 production skills with clear standards |
-| **Security risks** | 4-layer security architecture with guardrails |
-| **Context loss between sessions** | GitHub Issues as persistent memory |
-| **No coordination for parallel work** | Multi-agent orchestration protocol |
-| **Manual oversight overhead** | YOLO mode for autonomous execution |
-| **Workflow not enforced** | Templates, hooks, Actions (no Copilot required) |
+> **Installable CLI tool that brings AI agents to your project in 5 minutes. No hosting, no Docker, no complexity.**
 
 ---
 
-## ✨ Features
+## 🎯 What is AgentX?
 
-### 🚀 Execution Modes
+AgentX is a **Python CLI tool** that adds AI-powered agents to any project (new or existing) to accelerate:
+- **Code Development** - Engineer agent implements features with tests
+- **Backlog Management** - PM agent creates PRDs and decomposes epics
+- **Design Creation** - Architect agent creates ADRs and technical specs
+- **UX Development** - UX agent creates wireframes and user flows
+- **Critical Thinking** - Multi-agent conversations for complex decisions
 
-- **Standard Mode**: Pauses for confirmation at critical decision points
-- **YOLO Mode**: Fully autonomous execution with architectural guardrails
+**Install in 30 seconds. Start using in 5 minutes.**
 
-### 🤖 5-Agent Orchestration System
+```bash
+pip install agentx-cli       # Install
+agentx init                   # Initialize in your project
+agentx create-prd 123         # Create PRD for issue #123
+```
 
-| Agent | Role | Trigger |
-|-------|------|---------|
-| **Product Manager** | PRD & backlog creation | `type:epic` issues |
-| **Solution Architect** | ADR & tech specs | `type:feature`, `type:spike` |
-| **UX Designer** | Wireframes & user flows | `needs:ux` label |
-| **Engineer** | Implementation & tests | `type:story`, `type:bug` |
-| **Reviewer** | Code review & security | PR created |
+**Zero cost. Zero hosting. Zero complexity.**
 
-**Orchestration**: Hybrid 3-layer model (GraphQL + Workflows + MCP) with <5s handoffs. Validated with comprehensive E2E test suite (>85% coverage).
+---
 
-### 🚀 Hybrid Orchestration Architecture
+## 🚀 Quick Start
+
+### 1. Install AgentX
+
+```bash
+# From PyPI (when published)
+pip install agentx-cli
+
+# Or from GitHub
+pip install git+https://github.com/jnPiyush/AgentX.git
+
+# Or clone and install locally
+git clone https://github.com/jnPiyush/AgentX.git && cd AgentX
+pip install -e .
+```
+
+### 2. Initialize in Your Project
+
+```bash
+cd /path/to/your-project
+agentx init                    # Creates .github/, agentx.yaml, docs/
+export GITHUB_TOKEN=ghp_xxx    # Configure GitHub token
+```
+
+### 3. Use It!
+
+```bash
+# Create PRD for an issue
+agentx create-prd 123
+
+# Create technical architecture
+agentx create-adr 456
+
+# Implement a feature
+agentx implement 789
+
+# Multi-agent collaboration
+agentx collaborate 100 --agents pm,architect
+```
+
+**See:** [CLI Quick Start Guide](docs/CLI-QUICKSTART.md) for full usage examples.
+
+---
+
+## ✨ Key Features
+
+### 🎯 5 AI Agents
+
+| Agent | Command | Output |
+|-------|---------|--------|
+| **Product Manager** | `agentx create-prd <issue>` | PRD + Features + Stories |
+| **Solution Architect** | `agentx create-adr <issue>` | ADR + Technical Spec |
+| **UX Designer** | `agentx design <issue>` | Wireframes + User Flows |
+| **Software Engineer** | `agentx implement <issue>` | Code + Tests (80%+ coverage) |
+| **Code Reviewer** | `agentx review <pr>` | Review + Security Analysis |
+
+### 🧠 Multi-Agent Conversations
+
+```bash
+# PM and Architect collaborate on Epic planning
+agentx collaborate 100 --agents pm,architect
+
+# Output:
+# ✅ PM: Drafts PRD
+# ✅ Architect: Reviews for technical feasibility
+# ✅ PM: Addresses concerns
+# ✅ Architect: Creates ADR
+# ✅ Both: Finalize plan
+```
+
+### 📚 18 Production Skills
+
+All agents follow production-grade skills:
+- **Testing** (xUnit, 80%+ coverage)
+- **Security** (OWASP Top 10, input validation)
+- **Performance** (async, caching, profiling)
+- **API Design** (REST, versioning, OpenAPI)
+- **Documentation** (XML docs, README)
+- **...and 13 more** ([see all](Skills.md))
+
+### 🔄 GitHub Actions Automation
+
+**Auto-execute agents when issues are labeled:**
+
+```yaml
+# .github/workflows/agent-orchestrator.yml (auto-generated)
+on:
+  issues:
+    types: [labeled]
+
+# Label 'type:feature' → PM agent creates PRD
+# Label 'type:story' → Engineer agent implements
+```
+
+### 🎨 Template-Based Documents
+
+All documents use standardized templates:
+- **PRD** - Product Requirements Document
+- **ADR** - Architecture Decision Record
+- **Spec** - Technical Specification
+- **UX** - UX Design Document
+- **Review** - Code Review Report
+
+---
+
+## 📋 What Gets Created
+
+**Run `agentx init` in your project:**
+
+```
+your-project/
+├─ .github/
+│  ├─ workflows/        ✅ Auto-agent execution (GitHub Actions)
+│  ├─ agents/           ✅ 5 agent definitions (PM, Architect, etc.)
+│  ├─ skills/           ✅ 18 production skills
+│  └─ templates/        ✅ Document templates (PRD, ADR, etc.)
+├─ docs/
+│  ├─ prd/              ✅ Generated PRDs
+│  ├─ adr/              ✅ Generated ADRs
+│  ├─ specs/            ✅ Generated specs
+│  ├─ ux/               ✅ Generated UX docs
+│  └─ reviews/          ✅ Generated reviews
+└─ agentx.yaml          ✅ Configuration file
+```
+
+**Total setup time:** 30 seconds
+
+---
+
+## 💡 Use Cases
+
+**1. Feature Development**
+```bash
+# Issue #123: Add OAuth login
+agentx create-prd 123     # PM creates PRD
+agentx create-adr 123     # Architect creates technical design
+agentx implement 123      # Engineer implements with tests
+agentx review 456         # Reviewer checks PR
+
+# Result: Production-ready feature in minutes
+```
+
+**2. Epic Planning**
+```bash
+# Issue #100: User Authentication System
+agentx collaborate 100 --agents pm,architect
+
+# PM drafts PRD → Architect reviews → Iterate → Final plan
+# Outputs: PRD-100.md + ADR-100.md
+```
+
+**3. Bug Fixing**
+```bash
+# Issue #789: Login returns 500 error
+agentx implement 789
+
+# Engineer investigates, fixes, adds regression tests
+# Creates PR with fix
+```
+
+**4. Design Review**
+```bash
+# Need UX feedback on feature
+agentx design 123
+
+# UX Designer creates wireframes, user flows, accessibility checklist
+```
+
+---
+
+## 💰 Cost
+
+**AgentX CLI Tool:** **FREE** (MIT License)
+
+**Usage Costs:**
+
+| Component | Cost | Notes |
+|-----------|------|-------|
+| GitHub Copilot | $10-39/mo per user | Already paying if using Copilot |
+| GitHub Actions | Free tier: 2,000 min/mo | ~400 agent runs/mo |
+| **AgentX** | **$0** | **Completely free** |
+
+**No hidden costs:**
+- ❌ No hosting fees
+- ❌ No database costs
+- ❌ No infrastructure
+- ❌ No per-seat licensing
+- ✅ Just install and use
+
+**Example:** Team of 5 developers, 50 agent executions/week:
+- AgentX: $0
+- Copilot: $195/mo (already paying)
+- GitHub Actions: Free tier (200 executions = 1,000 min < 2,000 free)
+- **Total additional cost: $0**
+
+---
+
+## 🏗️ Architecture
+
+### CLI Tool + GitHub Actions
+
+```
+Developer Machine                  GitHub
+─────────────────                  ──────
+                                   
+agentx create-prd 123 ────────┐   
+                              │   
+pip install agentx-cli        │   
+                              ▼   
+                           GitHub Issue #123
+                                   │
+                                   │ Label: type:feature
+                                   ▼
+                           GitHub Actions Workflow
+                                   │
+                                   │ Install: pip install agentx-cli
+                                   │ Execute: agentx create-prd 123
+                                   ▼
+                           Copilot SDK (in runner)
+                                   │
+                                   │ Uses skills, templates, tools
+                                   ▼
+                           Output: docs/prd/PRD-123.md
+                                   │
+                                   │ git commit && git push
+                                   ▼
+                           PR or commit to repo
+```
+
+**Key Points:**
+- Runs locally OR in GitHub Actions
+- No hosted service needed
+- No Docker containers
+- Zero infrastructure costs
+
+**See:** [Architecture Revision](docs/ARCHITECTURE-REVISION.md) for design rationale
 
 **3-Layer Model** for optimal performance:
 

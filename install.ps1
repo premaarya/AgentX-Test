@@ -99,13 +99,14 @@ $coreFiles = @(
     @{ Src = "LICENSE"; Dest = "LICENSE" },
     @{ Src = "AGENTS.md"; Dest = "AGENTS.md" },
     @{ Src = "Skills.md"; Dest = "Skills.md" },
-    @{ Src = "CONTRIBUTING.md"; Dest = "CONTRIBUTING.md" },
+    
     @{ Src = ".github/copilot-instructions.md"; Dest = ".github/copilot-instructions.md" },
     @{ Src = ".github/CODEOWNERS"; Dest = ".github/CODEOWNERS" },
     @{ Src = ".github/agentx-security.yml"; Dest = ".github/agentx-security.yml" },
     @{ Src = ".github/orchestration-config.yml"; Dest = ".github/orchestration-config.yml" },
     @{ Src = ".github/workflows/agent-orchestrator.yml"; Dest = ".github/workflows/agent-orchestrator.yml" },
-    @{ Src = ".github/workflows/test-e2e.yml"; Dest = ".github/workflows/test-e2e.yml" },
+    @{ Src = ".github/actions/update-project-status/action.yml"; Dest = ".github/actions/update-project-status/action.yml" },
+    
     @{ Src = ".github/hooks/pre-commit"; Dest = ".github/hooks/pre-commit" },
     @{ Src = ".github/hooks/commit-msg"; Dest = ".github/hooks/commit-msg" },
     @{ Src = ".github/scripts/validate-handoff.ps1"; Dest = ".github/scripts/validate-handoff.ps1" },
@@ -147,8 +148,8 @@ $skillsFiles = @(
     @{ Src = ".github/skills/code-review-and-audit/SKILL.md"; Dest = ".github/skills/code-review-and-audit/SKILL.md" }
 )
 
-# Optional files for --Full
-$optionalFiles = @(
+# subagents files for --Full
+$subagentsFiles = @(
     @{ Src = ".github/agents/product-manager.agent.md"; Dest = ".github/agents/product-manager.agent.md" },
     @{ Src = ".github/agents/architect.agent.md"; Dest = ".github/agents/architect.agent.md" },
     @{ Src = ".github/agents/ux-designer.agent.md"; Dest = ".github/agents/ux-designer.agent.md" },
@@ -213,7 +214,7 @@ foreach ($file in $skillsFiles) {
 
 # Download additional files (agents, instructions, prompts)
 Write-Info "Downloading agents, instructions, and prompts..."
-foreach ($file in $optionalFiles) {
+foreach ($file in $subagentsFiles) {
     Download-File $file.Src $file.Dest
 }
 
