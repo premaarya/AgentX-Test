@@ -18,6 +18,9 @@ AgentX provides structured guidelines, skills, and workflows for AI coding agent
 - **Issue-First Workflow**: All work tracked via GitHub Issues
 - **Orchestration**: Sequential handoffs with label-based coordination
 - **Templates**: Standardized PRD, ADR, Spec, UX, and Review documents
+- **Custom GitHub Actions**: 4 reusable actions for issue/project management
+- **Demo Project**: Todo API showcasing complete agent workflow
+- **Dependency Scanning**: Automated security checks for .NET, Python, Node.js
 
 ---
 
