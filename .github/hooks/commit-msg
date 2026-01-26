@@ -66,13 +66,27 @@ if command -v gh &> /dev/null && [ -n "$ISSUE_NUMBER" ]; then
         fi
         ;;
       "type:feature")
+        # Feature requires both ADR and Tech Spec
+        if [ ! -f "docs/adr/ADR-${ISSUE_NUMBER}.md" ]; then
+          echo "❌ COMMIT REJECTED: Feature requires ADR before code"
+          echo ""
+          echo "  Issue: #${ISSUE_NUMBER} (type:feature)"
+          echo "  Missing: docs/adr/ADR-${ISSUE_NUMBER}.md"
+          echo ""
+          echo "📐 Feature workflow: Architect → ADR → Spec → then code"
+          echo ""
+          echo "  Fix: Create Architecture Decision Record before committing code"
+          echo "       See .github/templates/ADR-TEMPLATE.md"
+          echo ""
+          exit 1
+        fi
         if [ ! -f "docs/specs/SPEC-${ISSUE_NUMBER}.md" ]; then
           echo "❌ COMMIT REJECTED: Feature requires Tech Spec before code"
           echo ""
           echo "  Issue: #${ISSUE_NUMBER} (type:feature)"
           echo "  Missing: docs/specs/SPEC-${ISSUE_NUMBER}.md"
           echo ""
-          echo "📐 Feature workflow: Architect → Spec → then code"
+          echo "📐 Feature workflow: Architect → ADR → Spec → then code"
           echo ""
           echo "  Fix: Create Tech Spec before committing code"
           echo "       See .github/templates/SPEC-TEMPLATE.md"
@@ -81,6 +95,23 @@ if command -v gh &> /dev/null && [ -n "$ISSUE_NUMBER" ]; then
         fi
         ;;
     esac
+    
+    # Check if UX design is required (needs:ux label)
+    if echo "$ISSUE_LABELS" | grep -q "needs:ux"; then
+      if [ ! -f "docs/ux/UX-${ISSUE_NUMBER}.md" ]; then
+        echo "❌ COMMIT REJECTED: Issue requires UX design before code"
+        echo ""
+        echo "  Issue: #${ISSUE_NUMBER} (needs:ux)"
+        echo "  Missing: docs/ux/UX-${ISSUE_NUMBER}.md"
+        echo ""
+        echo "🎨 UX workflow: UX Designer → UX Design → then code"
+        echo ""
+        echo "  Fix: Create UX design document before committing code"
+        echo "       See .github/templates/UX-TEMPLATE.md"
+        echo ""
+        exit 1
+      fi
+    fi
   fi
 fi
 

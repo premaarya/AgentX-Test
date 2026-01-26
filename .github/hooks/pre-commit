@@ -106,7 +106,24 @@ if [ -f "$COMMIT_MSG_FILE" ]; then
               fi
               ;;
             "type:feature")
-              if [ ! -f "docs/specs/SPEC-${ISSUE_NUMBER}.md" ]; then
+              # Feature requires both ADR and Tech Spec
+              if [ ! -f "docs/adr/ADR-${ISSUE_NUMBER}.md" ]; then
+                echo -e "${RED}❌ BLOCKED${NC}"
+                echo ""
+                echo -e "╔════════════════════════════════════════════════════╗"
+                echo -e "║  ${RED}WORKFLOW VIOLATION: Feature requires ADR first${NC}    ║"
+                echo -e "╚════════════════════════════════════════════════════╝"
+                echo ""
+                echo "  Issue: #${ISSUE_NUMBER} (type:feature)"
+                echo "  Missing: docs/adr/ADR-${ISSUE_NUMBER}.md"
+                echo ""
+                echo "📐 Feature workflow: Architect → ADR → Spec → then code"
+                echo ""
+                echo "  ${GREEN}Fix:${NC} Create Architecture Decision Record before committing code"
+                echo "       See .github/templates/ADR-TEMPLATE.md"
+                echo ""
+                FAILED=1
+              elif [ ! -f "docs/specs/SPEC-${ISSUE_NUMBER}.md" ]; then
                 echo -e "${RED}❌ BLOCKED${NC}"
                 echo ""
                 echo -e "╔════════════════════════════════════════════════════╗"
@@ -116,20 +133,43 @@ if [ -f "$COMMIT_MSG_FILE" ]; then
                 echo "  Issue: #${ISSUE_NUMBER} (type:feature)"
                 echo "  Missing: docs/specs/SPEC-${ISSUE_NUMBER}.md"
                 echo ""
-                echo "📐 Feature workflow: Architect → Spec → then code"
+                echo "📐 Feature workflow: Architect → ADR → Spec → then code"
                 echo ""
                 echo "  ${GREEN}Fix:${NC} Create Tech Spec before committing code"
                 echo "       See .github/templates/SPEC-TEMPLATE.md"
                 echo ""
                 FAILED=1
               else
-                echo -e "${GREEN}✅ Spec exists${NC}"
+                echo -e "${GREEN}✅ ADR and Spec exist${NC}"
               fi
               ;;
             *)
               echo -e "${GREEN}✅ Type: ${ISSUE_TYPE}${NC}"
               ;;
           esac
+          
+          # Check if UX design is required (needs:ux label)
+          if echo "$ISSUE_LABELS" | grep -q "needs:ux"; then
+            if [ ! -f "docs/ux/UX-${ISSUE_NUMBER}.md" ]; then
+              echo -e "${RED}❌ BLOCKED${NC}"
+              echo ""
+              echo -e "╔════════════════════════════════════════════════════╗"
+              echo -e "║  ${RED}WORKFLOW VIOLATION: UX design required first${NC}      ║"
+              echo -e "╚════════════════════════════════════════════════════╝"
+              echo ""
+              echo "  Issue: #${ISSUE_NUMBER} (needs:ux)"
+              echo "  Missing: docs/ux/UX-${ISSUE_NUMBER}.md"
+              echo ""
+              echo "🎨 UX workflow: UX Designer → UX Design → then code"
+              echo ""
+              echo "  ${GREEN}Fix:${NC} Create UX design document before committing code"
+              echo "       See .github/templates/UX-TEMPLATE.md"
+              echo ""
+              FAILED=1
+            else
+              echo -e "${GREEN}✅ UX design exists${NC}"
+            fi
+          fi
         fi
       fi
     else
