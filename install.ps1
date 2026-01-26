@@ -179,6 +179,42 @@ if (Test-Path ".github/hooks") {
     }
 }
 
+# Install Git hooks
+Write-Host ""
+Write-Host "Installing Git hooks..." -ForegroundColor Cyan
+if (Test-Path ".git") {
+    $hooksDir = ".git\hooks"
+    
+    # Copy pre-commit hook (bash version)
+    if (Test-Path ".github\hooks\pre-commit") {
+        Copy-Item ".github\hooks\pre-commit" "$hooksDir\pre-commit" -Force
+        Write-Success "Installed: pre-commit hook (bash)"
+    }
+    
+    # Copy pre-commit hook (PowerShell version for Windows)
+    if (Test-Path ".github\hooks\pre-commit.ps1") {
+        Copy-Item ".github\hooks\pre-commit.ps1" "$hooksDir\pre-commit.ps1" -Force
+        Write-Success "Installed: pre-commit hook (PowerShell)"
+    }
+    
+    # Copy commit-msg hook
+    if (Test-Path ".github\hooks\commit-msg") {
+        Copy-Item ".github\hooks\commit-msg" "$hooksDir\commit-msg" -Force
+        Write-Success "Installed: commit-msg hook"
+    }
+    
+    Write-Host ""
+    Write-Host "  Git hooks enforce AgentX workflow compliance:" -ForegroundColor Yellow
+    Write-Host "  • Issue number required in commit messages"
+    Write-Host "  • PRD required before Epic implementation"
+    Write-Host "  • Tech Spec required before Feature implementation"
+    Write-Host "  • No secrets in code"
+    Write-Host "  • Code formatting"
+} else {
+    Write-Warn "Not a Git repository - skipping hook installation"
+    Write-Host "  Run 'git init' first to enable workflow enforcement"
+}
+
 # Done
 Write-Host ""
 Write-Host "═══════════════════════════════════════════════════" -ForegroundColor Green
@@ -202,5 +238,8 @@ Write-Host '     gh label create "orch:architect-done" --color "BFD4F2"'
 Write-Host '     gh label create "orch:engineer-done" --color "BFD4F2"'
 Write-Host ""
 Write-Host "  4. Set up GitHub Project with Status field (see docs/project-setup.md)"
+Write-Host ""
+Write-Host "  ⚠️  IMPORTANT: Git hooks are now active!" -ForegroundColor Yellow
+Write-Host "  Your commits will be validated for workflow compliance."
 Write-Host ""
 

@@ -166,6 +166,38 @@ if [ -d ".github/hooks" ]; then
     done
 fi
 
+# Install Git hooks
+echo ""
+echo -e "${CYAN}Installing Git hooks...${NC}"
+if [ -d ".git" ]; then
+    HOOKS_DIR=".git/hooks"
+    
+    # Copy pre-commit hook
+    if [ -f ".github/hooks/pre-commit" ]; then
+        cp ".github/hooks/pre-commit" "$HOOKS_DIR/pre-commit"
+        chmod +x "$HOOKS_DIR/pre-commit"
+        echo -e "${GREEN}✓ Installed: pre-commit hook${NC}"
+    fi
+    
+    # Copy commit-msg hook
+    if [ -f ".github/hooks/commit-msg" ]; then
+        cp ".github/hooks/commit-msg" "$HOOKS_DIR/commit-msg"
+        chmod +x "$HOOKS_DIR/commit-msg"
+        echo -e "${GREEN}✓ Installed: commit-msg hook${NC}"
+    fi
+    
+    echo ""
+    echo -e "${YELLOW}  Git hooks enforce AgentX workflow compliance:${NC}"
+    echo "  • Issue number required in commit messages"
+    echo "  • PRD required before Epic implementation"
+    echo "  • Tech Spec required before Feature implementation"
+    echo "  • No secrets in code"
+    echo "  • Code formatting"
+else
+    echo -e "${YELLOW}⚠ Not a Git repository - skipping hook installation${NC}"
+    echo "  Run 'git init' first to enable workflow enforcement"
+fi
+
 # Done
 echo ""
 echo -e "${GREEN}═══════════════════════════════════════════════════${NC}"
@@ -189,4 +221,7 @@ echo '     gh label create "orch:architect-done" --color "BFD4F2"'
 echo '     gh label create "orch:engineer-done" --color "BFD4F2"'
 echo ""
 echo "  4. Set up GitHub Project with Status field (see docs/project-setup.md)"
+echo ""
+echo -e "${YELLOW}  ⚠️  IMPORTANT: Git hooks are now active!${NC}"
+echo "  Your commits will be validated for workflow compliance."
 echo ""
