@@ -1,628 +1,204 @@
-# Agent Orchestrator - Hybrid Model (GraphQL + Workflows + MCP)
-# Performance: GraphQL ops ~2s, REST ops ~5s, Workflow trigger ~10-30s
-# Architecture: Layer 1 (GraphQL fast ops) → Layer 2 (Workflow execution) → Layer 3 (MCP coordination)
+# Agent Orchestrator - Simplified
+# Routes issues to agents based on type labels
+# Status tracked via GitHub Projects V2 (not labels)
 
-name: Agent Orchestrator (Hybrid)
+name: Agent Orchestrator
 
 on:
-  push:
-    branches: [ master, main ]
   issues:
     types: [labeled, opened]
-  pull_request_target:
-    types: [opened, synchronize, closed]
   workflow_dispatch:
     inputs:
       issue_number:
-        description: 'Issue number'
+        description: 'Issue number to process'
         required: true
         type: string
-  schedule:
-    - cron: '*/10 * * * *'  # Every 10 minutes - catch pending issues
 
 permissions:
   issues: write
   contents: write
-  actions: write
-  pull-requests: write
 
 jobs:
-  # Validation job for push events - prevents "failure" UI
-  validate-on-push:
-    name: Validate Workflow Configuration
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push'
-    steps:
-      - name: Validate Workflow
-        run: |
-          echo "✅ Workflow file is valid"
-          echo "This job ensures push events show as success in Actions UI"
-          echo "Orchestration only runs on: issues, pull_request_target, workflow_dispatch, schedule"
-
-  check-active-workflows:
-    name: Check Active Agent Workflows
-    runs-on: ubuntu-latest
-    if: github.event_name != 'push'
-    outputs:
-      has_active: ${{ steps.check.outputs.has_active }}
-    steps:
-      - name: Check for Active Workflows
-        id: check
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const { data: runs } = await github.rest.actions.listWorkflowRunsForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              status: 'in_progress',
-              per_page: 50
-            });
-            
-            const agentRuns = runs.workflow_runs.filter(run => {
-              const name = (run.name || '').toLowerCase();
-              return name.includes('agent') || name.includes('orchestrator');
-            });
-            
-            const hasActive = agentRuns.length > 0;
-            console.log(hasActive ? `⏳ ${agentRuns.length} agent workflow(s) running` : '✅ No active agent workflows');
-            core.setOutput('has_active', hasActive);
-
   route:
-    name: Route to Agent
+    name: Route Issue to Agent
     runs-on: ubuntu-latest
-    needs: check-active-workflows
-    if: (github.event_name != 'push') && (needs.check-active-workflows.outputs.has_active == 'false' || github.event_name == 'workflow_dispatch')
     outputs:
-      run_pm: ${{ steps.route.outputs.run_pm }}
-      run_architect: ${{ steps.route.outputs.run_architect }}
-      run_ux: ${{ steps.route.outputs.run_ux }}
-      run_engineer: ${{ steps.route.outputs.run_engineer }}
-      run_reviewer: ${{ steps.route.outputs.run_reviewer }}
+      agent: ${{ steps.route.outputs.agent }}
       issue_number: ${{ steps.route.outputs.issue_number }}
-    
     steps:
-      - name: Route to Agent(s)
+      - name: Determine Agent
         id: route
         uses: actions/github-script@v7
         with:
           script: |
-            let issue_number;
+            // Get issue number
+            const issueNumber = context.eventName === 'workflow_dispatch'
+              ? parseInt(context.payload.inputs.issue_number)
+              : context.payload.issue?.number;
             
-            if (context.eventName === 'issues') {
-              issue_number = context.payload.issue.number;
-            } else if (context.eventName === 'pull_request_target') {
-              const match = context.payload.pull_request.body?.match(/Parent:\s*#(\d+)/);
-              issue_number = match ? parseInt(match[1]) : null;
-            } else if (context.eventName === 'workflow_dispatch') {
-              issue_number = parseInt(context.payload.inputs.issue_number);
-            } else if (context.eventName === 'schedule') {
-              const { data: issues } = await github.rest.issues.listForRepo({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                state: 'open',
-                sort: 'created',
-                direction: 'asc',
-                per_page: 1
-              });
-              issue_number = issues[0]?.number;
-            }
-            
-            if (!issue_number) {
-              console.log('No issue to process');
+            if (!issueNumber) {
+              console.log('❌ No issue to process');
               return;
             }
             
+            // Get issue details
             const { data: issue } = await github.rest.issues.get({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: issue_number
+              issue_number: issueNumber
             });
             
             const labels = issue.labels.map(l => l.name);
-            const agents = [];
+            console.log(`Issue #${issueNumber}: ${labels.join(', ')}`);
             
-            // Route based on type labels and Status field (NOT orchestration labels)
-            // Status flow: Backlog → In Progress → In Review → Ready → Done
+            // Route based on AGENTS.md workflow:
+            // type:epic → PM
+            // type:feature/spike → Architect
+            // type:story/bug → Engineer
+            // needs:ux → UX Designer (before others)
+            let agent = null;
             
             if (labels.includes('type:epic')) {
-              // Epic needs PM if not yet Ready
-              agents.push('product-manager');
+              agent = 'pm';
+            } else if (labels.includes('needs:ux')) {
+              agent = 'ux';
+            } else if (labels.includes('type:feature') || labels.includes('type:spike')) {
+              agent = 'architect';
+            } else if (labels.includes('type:story') || labels.includes('type:bug') || labels.includes('type:docs')) {
+              agent = 'engineer';
             }
             
-            // Features/Stories with needs:ux go to UX Designer first
-            if (labels.includes('needs:ux')) {
-              agents.push('ux-designer');
-            }
-            
-            // Features and Spikes go to Architect
-            if (labels.includes('type:feature') || labels.includes('type:spike')) {
-              agents.push('architect');
-            }
-            
-            // Stories and Bugs go to Engineer (when Status = Ready)
-            if (labels.includes('type:story') || labels.includes('type:bug')) {
-              agents.push('engineer');
-            }
-            
-            // Note: Reviewer is triggered when Status = In Review (handled by Projects V2)
-            // Status transitions are managed via GitHub Projects, not labels
-            
-            core.setOutput('run_pm', agents.includes('product-manager'));
-            core.setOutput('run_architect', agents.includes('architect'));
-            core.setOutput('run_ux', agents.includes('ux-designer'));
-            core.setOutput('run_engineer', agents.includes('engineer'));
-            core.setOutput('run_reviewer', agents.includes('reviewer'));
-            core.setOutput('issue_number', issue_number);
-            
-            console.log(agents.length > 0 ? `✅ Routing to: ${agents.join(', ')}` : '⏸️ No routing needed');
+            core.setOutput('agent', agent || '');
+            core.setOutput('issue_number', issueNumber);
+            console.log(agent ? `✅ Routing to: ${agent}` : '⏸️ No routing needed');
 
-  product-manager:
-    name: 📋 Product Manager (Hybrid)
+  # Product Manager: Creates PRD for Epics
+  pm:
+    name: 📋 Product Manager
     needs: route
-    if: needs.route.outputs.run_pm == 'true'
+    if: needs.route.outputs.agent == 'pm'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       
-      # LAYER 1: GraphQL Assignment (2s vs 30s workflow trigger)
-      - name: Assign PM Agent via GraphQL
-        uses: ./.github/actions/assign-agent
-        with:
-          issue_number: ${{ needs.route.outputs.issue_number }}
-          agent_login: copilot-swe-agent
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-      
-      # LAYER 2: Complex Workflow Execution (document generation)
-      - name: Create PRD
+      - name: Create PRD Scaffold
         run: |
           mkdir -p docs/prd
           ISSUE="${{ needs.route.outputs.issue_number }}"
-          DATE=$(date -u '+%Y-%m-%d')
-          cat > "docs/prd/PRD-${ISSUE}.md" << EOF
-          # PRD: Issue #${ISSUE}
-          
-          **Status**: Draft  
-          **Created**: ${DATE}
-          
-          ## Overview
-          [Generated from issue requirements]
-          
-          ## User Stories
-          - [ ] Story 1
-          - [ ] Story 2
-          
-          ## Success Metrics
-          - Metric 1
-          - Metric 2
-          EOF
-
-      - name: Commit PRD
+          if [ ! -f "docs/prd/PRD-${ISSUE}.md" ]; then
+            cp .github/templates/PRD-TEMPLATE.md "docs/prd/PRD-${ISSUE}.md"
+            sed -i "s/{epic-id}/${ISSUE}/g" "docs/prd/PRD-${ISSUE}.md"
+            echo "✅ Created PRD scaffold"
+          else
+            echo "⏭️ PRD already exists"
+          fi
+      
+      - name: Commit & Comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/prd/PRD-${{ needs.route.outputs.issue_number }}.md
-          git commit -m "docs: add PRD for issue #${{ needs.route.outputs.issue_number }}"
-          git push
-      
-      # Update Status to 'Ready' via Projects V2
-      - name: Set Status to Ready
-        uses: ./.github/actions/update-project-status
-        with:
-          issue_number: ${{ needs.route.outputs.issue_number }}
-          status: 'Ready'
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-      
-      # LAYER 1: GraphQL Comment (1s vs 5s REST)
-      - name: Post Summary via GraphQL
-        uses: ./.github/actions/post-comment
-        with:
-          issue_number: ${{ needs.route.outputs.issue_number }}
-          body: |
-            ## ✅ Product Manager Complete
-            
-            **Deliverables:**
-            - 📋 PRD: `docs/prd/PRD-${{ needs.route.outputs.issue_number }}.md`
-            
-            **Status:** → Ready (in Projects board)
-            **Next:** UX Designer or Architect
-            
-            > ⚠️ Status is tracked via GitHub Projects V2, not labels.
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-      
-      # Update all child user stories to 'Ready' status
-      - name: Set Child Stories to Ready
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const epicNumber = ${{ needs.route.outputs.issue_number }};
-            
-            // Get all open issues in the repo
-            const { data: allIssues } = await github.rest.issues.listForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open',
-              per_page: 100
-            });
-            
-            // Find issues that reference this epic in their body
-            const childIssues = allIssues.filter(issue => {
-              const body = issue.body || '';
-              const labels = issue.labels.map(l => l.name);
-              // Check if it's a story/feature and mentions this epic
-              return (labels.includes('type:story') || labels.includes('type:feature')) &&
-                     (body.includes(`#${epicNumber}`) || body.includes(`Parent: #${epicNumber}`));
-            });
-            
-            console.log(`Found ${childIssues.length} child issues for Epic #${epicNumber}`);
-            
-            // Update status for each child issue
-            for (const issue of childIssues) {
-              console.log(`Setting issue #${issue.number} to Ready status...`);
-              
-              // Call the update-project-status action using exec
-              try {
-                const script = `
-                  const core = require('@actions/core');
-                  const github = require('@actions/github');
-                  const token = process.env.GITHUB_TOKEN;
-                  const octokit = github.getOctokit(token);
-                  
-                  // This would need to be implemented with proper GraphQL
-                  // For now, we'll add a comment indicating the status change
-                  await octokit.rest.issues.createComment({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    issue_number: ${issue.number},
-                    body: '🚀 Status updated to **Ready** - Design and architecture complete, ready for implementation'
-                  });
-                `;
-                
-                await github.rest.issues.createComment({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: issue.number,
-                  body: '🚀 Status updated to **Ready** - Design and architecture complete, ready for implementation'
-                });
-                
-                console.log(`✅ Updated issue #${issue.number}`);
-              } catch (error) {
-                console.log(`⚠️ Could not update issue #${issue.number}: ${error.message}`);
-              }
-            }
-
-  architect:
-    name: 🏗️ Architect (Hybrid)
-    needs: route
-    if: needs.route.outputs.run_architect == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      # LAYER 1: GraphQL Assignment
-      - name: Assign Architect Agent via GraphQL
-        uses: ./.github/actions/assign-agent
-        with:
-          issue_number: ${{ needs.route.outputs.issue_number }}
-          agent_login: copilot-swe-agent
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
-      # LAYER 2: Workflow Execution
-      - name: Create ADR + Spec
-        run: |
-          mkdir -p docs/adr docs/specs
           ISSUE="${{ needs.route.outputs.issue_number }}"
-          DATE=$(date -u '+%Y-%m-%d')
-          
-          cat > "docs/adr/ADR-${ISSUE}.md" << EOF
-          # ADR: Issue #${ISSUE}
-          
-          **Status**: Proposed
-          **Created**: ${DATE}
-          
-          ## Decision
-          [Architecture decision]
-          EOF
-          
-          cat > "docs/specs/SPEC-${ISSUE}.md" << EOF
-          # Tech Spec: Issue #${ISSUE}
-          
-          ## API Endpoints
-          - GET /api/resource
-          EOF
-
-      - name: Commit Docs
-        run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/adr docs/specs
-          git commit -m "docs: add ADR + Spec for issue #${{ needs.route.outputs.issue_number }}"
-          git pull --rebase origin master
-          git push
+          git add docs/prd/
+          git diff --cached --quiet || git commit -m "docs: scaffold PRD for Epic #${ISSUE}"
+          git push || true
+          gh issue comment ${ISSUE} --body "📋 **PM Agent**: PRD scaffold created at \`docs/prd/PRD-${ISSUE}.md\`
 
-      # Update Status to 'Ready' via Projects V2
-      - name: Set Status to Ready
-        uses: ./.github/actions/update-project-status
-        with:
-          issue_number: ${{ needs.route.outputs.issue_number }}
-          status: 'Ready'
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Post Summary via GraphQL
-        uses: ./.github/actions/post-comment
-        with:
-          issue_number: ${{ needs.route.outputs.issue_number }}
-          body: |
-            ## ✅ Architect Complete
-            
-            **Deliverables:**
-            - 🏗️ ADR: `docs/adr/ADR-${{ needs.route.outputs.issue_number }}.md`
-            - 📐 Spec: `docs/specs/SPEC-${{ needs.route.outputs.issue_number }}.md`
-            
-            **Status:** → Ready (in Projects board)
-            **Next:** Engineer
-            
-            > ⚠️ Status is tracked via GitHub Projects V2, not labels.
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+Status: Update to **Ready** in Projects board when complete."
 
-  ux-designer:
-    name: 🎨 UX Designer (Hybrid)
+  # UX Designer: Creates UX design for needs:ux issues
+  ux:
+    name: 🎨 UX Designer
     needs: route
-    if: needs.route.outputs.run_ux == 'true'
+    if: needs.route.outputs.agent == 'ux'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      # LAYER 1: GraphQL Assignment
-      - name: Assign UX Agent via GraphQL
-        uses: ./.github/actions/assign-agent
-        with:
-          issue_number: ${{ needs.route.outputs.issue_number }}
-          agent_login: copilot-swe-agent
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
-      # LAYER 2: Workflow Execution
-      - name: Create UX Design
+      
+      - name: Create UX Scaffold
         run: |
           mkdir -p docs/ux
           ISSUE="${{ needs.route.outputs.issue_number }}"
-          cat > "docs/ux/UX-${ISSUE}.md" << EOF
-          # UX Design: Issue #${ISSUE}
-          
-          ## Wireframes
-          [Link to wireframes]
-          EOF
-
-      - name: Commit UX Docs
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/ux
-          git commit -m "docs: add UX design for issue #${{ needs.route.outputs.issue_number }}"
-          git pull --rebase origin master
-          git push
-
-      # Update Status to 'Ready' via Projects V2
-      - name: Set Status to Ready
-        uses: ./.github/actions/update-project-status
-        with:
-          issue_number: ${{ needs.route.outputs.issue_number }}
-          status: 'Ready'
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          if [ ! -f "docs/ux/UX-${ISSUE}.md" ]; then
+            cp .github/templates/UX-TEMPLATE.md "docs/ux/UX-${ISSUE}.md"
+            sed -i "s/{feature-id}/${ISSUE}/g" "docs/ux/UX-${ISSUE}.md"
+            echo "✅ Created UX scaffold"
+          else
+            echo "⏭️ UX design already exists"
+          fi
       
-      - name: Post Summary via GraphQL
-        uses: ./.github/actions/post-comment
-        with:
-          issue_number: ${{ needs.route.outputs.issue_number }}
-          body: |
-            ## ✅ UX Designer Complete
-            
-            **Deliverables:**
-            - 🎨 UX: `docs/ux/UX-${{ needs.route.outputs.issue_number }}.md`
-            
-            **Status:** → Ready (in Projects board)
-            **Next:** Architect
-            
-            > ⚠️ Status is tracked via GitHub Projects V2, not labels.
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
-  engineer:
-    name: 🔧 Engineer (Hybrid)
-    needs: route
-    if: needs.route.outputs.run_engineer == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      # Update status to 'In Progress'
-      - name: Set Status to In Progress
-        uses: ./.github/actions/update-project-status
-        with:
-          issue_number: ${{ needs.route.outputs.issue_number }}
-          status: 'In Progress'
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-      
-      # LAYER 1: GraphQL Assignment
-      - name: Assign Engineer Agent via GraphQL
-        uses: ./.github/actions/assign-agent
-        with:
-          issue_number: ${{ needs.route.outputs.issue_number }}
-          agent_login: copilot-swe-agent
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
-      # LAYER 2: Workflow Execution (code generation + tests)
-      - name: Implement Code
+      - name: Commit & Comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          mkdir -p src tests
-          echo "// Implementation for issue #${{ needs.route.outputs.issue_number }}" > src/feature.cs
-          echo "// Tests for issue #${{ needs.route.outputs.issue_number }}" > tests/feature.test.cs
-
-      - name: Commit Code
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add src tests
-          git commit -m "feat: implement issue #${{ needs.route.outputs.issue_number }}" || echo "No changes"
-          git pull --rebase origin master || echo "No remote changes"
-          git push || echo "No changes to push"
-
-      # Status already set to 'In Review' above
-      
-      - name: Post Summary via GraphQL
-        uses: ./.github/actions/post-comment
-        with:
-          issue_number: ${{ needs.route.outputs.issue_number }}
-          body: |
-            ## ✅ Engineer Complete
-            
-            **Deliverables:**
-            - 💻 Code + Tests committed
-            - 📊 Coverage: ≥80%
-            
-            **Status:** → In Review (in Projects board)
-            **Next:** Reviewer
-            
-            > ⚠️ Status is tracked via GitHub Projects V2, not labels.
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
-  reviewer:
-    name: ✅ Reviewer (Hybrid)
-    needs: route
-    if: needs.route.outputs.run_reviewer == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      # LAYER 1: GraphQL Assignment
-      - name: Assign Reviewer Agent via GraphQL
-        uses: ./.github/actions/assign-agent
-        with:
-          issue_number: ${{ needs.route.outputs.issue_number }}
-          agent_login: copilot-swe-agent
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
-      # LAYER 2: Workflow Execution (review generation)
-      - name: Review Code
-        run: |
-          mkdir -p docs/reviews
           ISSUE="${{ needs.route.outputs.issue_number }}"
-          DATE=$(date -u '+%Y-%m-%d')
-          cat > "docs/reviews/REVIEW-${ISSUE}.md" << EOF
-          # Code Review: Issue #${ISSUE}
-          
-          **Date**: ${DATE}
-          
-          ## Checklist
-          - [x] Code quality ✅
-          - [x] Tests passing ✅
-          - [x] Security ✅
-          
-          ## Decision
-          ✅ APPROVED
-          EOF
-
-      - name: Commit Review
-        run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/reviews
-          git commit -m "docs: add review for issue #${{ needs.route.outputs.issue_number }}"
-          git push
+          git add docs/ux/
+          git diff --cached --quiet || git commit -m "docs: scaffold UX design for #${ISSUE}"
+          git push || true
+          gh issue comment ${ISSUE} --body "🎨 **UX Agent**: Design scaffold created at \`docs/ux/UX-${ISSUE}.md\`
 
-      # LAYER 1: GraphQL Comment
-      - name: Post Review via GraphQL
-        uses: ./.github/actions/post-comment
-        with:
-          issue_number: ${{ needs.route.outputs.issue_number }}
-          body: |
-            ## ✅ Review Complete - APPROVED
-            
-            **Review:** `docs/reviews/REVIEW-${{ needs.route.outputs.issue_number }}.md`
-            
-            **Status:** Closing as complete
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+Status: Update to **Ready** in Projects board when complete."
 
-      # Update status to 'Done'
-      - name: Set Status to Done
-        uses: ./.github/actions/update-project-status
-        with:
-          issue_number: ${{ needs.route.outputs.issue_number }}
-          status: 'Done'
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-      
-      # LAYER 1: GraphQL Issue Close (1s vs 5s REST)
-      - name: Close Issue via GraphQL
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const { data: issue } = await github.rest.issues.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: ${{ needs.route.outputs.issue_number }}
-            });
-            
-            await github.graphql(`
-              mutation($issueId: ID!) {
-                closeIssue(input: { issueId: $issueId, stateReason: COMPLETED }) {
-                  issue { number state }
-                }
-              }
-            `, { issueId: issue.node_id });
-
-  auto-merge-agent-prs:
-    name: Auto-merge Agent PRs
+  # Architect: Creates ADR + Spec for Features/Spikes
+  architect:
+    name: 🏗️ Architect
+    needs: route
+    if: needs.route.outputs.agent == 'architect'
     runs-on: ubuntu-latest
-    needs: [route]
-    if: always() && github.event_name == 'pull_request_target'
     steps:
-      - name: Check and Merge Agent PRs
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const pr = context.payload.pull_request;
-            
-            if (pr.user.login !== 'github-actions[bot]') {
-              console.log(`Not an agent PR (author: ${pr.user.login})`);
-              return;
-            }
-            
-            console.log(`Processing agent PR #${pr.number}: ${pr.title}`);
-            
-            if (pr.title.includes('[WIP]') || pr.draft || pr.state === 'closed') {
-              console.log('Skipping: WIP, draft, or closed');
-              return;
-            }
-            
-            const { data: prDetails } = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: pr.number
-            });
-            
-            if (prDetails.mergeable_state === 'dirty') {
-              console.log('Cannot merge: conflicts');
-              return;
-            }
-            
-            try {
-              await github.rest.pulls.createReview({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: pr.number,
-                event: 'APPROVE',
-                body: '✅ Auto-approved by Hybrid Orchestrator'
-              });
-              
-              await github.rest.pulls.merge({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: pr.number,
-                merge_method: 'squash',
-                commit_title: pr.title,
-                commit_message: `Auto-merged by Hybrid Orchestrator\n\n${pr.body || ''}`
-              });
-              
-              console.log(`✅ Merged PR #${pr.number}`);
-            } catch (error) {
-              console.log(`❌ Merge failed: ${error.message}`);
-            }
+      - uses: actions/checkout@v4
+      
+      - name: Create ADR + Spec Scaffold
+        run: |
+          mkdir -p docs/adr docs/specs
+          ISSUE="${{ needs.route.outputs.issue_number }}"
+          
+          if [ ! -f "docs/adr/ADR-${ISSUE}.md" ]; then
+            cp .github/templates/ADR-TEMPLATE.md "docs/adr/ADR-${ISSUE}.md"
+            sed -i "s/{epic-id}/${ISSUE}/g" "docs/adr/ADR-${ISSUE}.md"
+          fi
+          
+          if [ ! -f "docs/specs/SPEC-${ISSUE}.md" ]; then
+            cp .github/templates/SPEC-TEMPLATE.md "docs/specs/SPEC-${ISSUE}.md"
+            sed -i "s/{feature-id}/${ISSUE}/g" "docs/specs/SPEC-${ISSUE}.md"
+          fi
+      
+      - name: Commit & Comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ISSUE="${{ needs.route.outputs.issue_number }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/adr/ docs/specs/
+          git diff --cached --quiet || git commit -m "docs: scaffold ADR + Spec for #${ISSUE}"
+          git push || true
+          gh issue comment ${ISSUE} --body "🏗️ **Architect Agent**: Scaffolds created:
+- ADR: \`docs/adr/ADR-${ISSUE}.md\`
+- Spec: \`docs/specs/SPEC-${ISSUE}.md\`
+
+Status: Update to **Ready** in Projects board when complete."
+
+  # Engineer: Acknowledges story/bug assignment
+  engineer:
+    name: 🔧 Engineer
+    needs: route
+    if: needs.route.outputs.agent == 'engineer'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Acknowledge Assignment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ISSUE="${{ needs.route.outputs.issue_number }}"
+          gh issue comment ${ISSUE} --repo ${{ github.repository }} --body "🔧 **Engineer Agent**: Ready for implementation.
+
+**Workflow:**
+1. Move status to **In Progress** in Projects board
+2. Implement code with tests (≥80% coverage)
+3. Move status to **In Review** when done
+
+See \`docs/specs/\` for technical requirements."

@@ -1,128 +1,163 @@
 #!/usr/bin/env bash
-# Pre-commit hook: Enforces Issue-First workflow
-# Validates commit messages reference GitHub Issues
+# Commit-msg hook: Issue-First Workflow Validation
+# Single source of truth for all workflow enforcement
 
 COMMIT_MSG_FILE=$1
 COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
 
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+echo ""
+echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${BLUE}AgentX Workflow Validation${NC}"
+echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo ""
+
 # Skip for merge commits, reverts, and initial commits
 if echo "$COMMIT_MSG" | grep -qE '^(Merge|Revert|Initial commit)'; then
+  echo -e "${GREEN}✅ Merge/Revert commit - skipping validation${NC}"
   exit 0
 fi
 
 # Skip if [skip-issue] in commit message (emergency only)
 if echo "$COMMIT_MSG" | grep -qE '\[skip-issue\]'; then
-  echo "⚠️  WARNING: Skipping issue validation (emergency mode)"
+  echo -e "${YELLOW}⚠️  WARNING: Skipping issue validation (emergency mode)${NC}"
   exit 0
 fi
 
-# Check for issue reference: #123 or closes #123, fixes #123, refs #123
+# ===================================================================
+# STEP 1: Check for issue reference
+# ===================================================================
+echo -n "Checking for issue reference... "
 if ! echo "$COMMIT_MSG" | grep -qE '#[0-9]+|((closes|fixes|resolves|refs?)\s+#[0-9]+)'; then
-  echo "❌ COMMIT REJECTED: No GitHub Issue reference found"
+  echo -e "${RED}❌ FAILED${NC}"
   echo ""
   echo "Your commit message must reference a GitHub Issue."
   echo ""
-  echo "Valid formats:"
-  echo "  - feat: add login button (#123)"
-  echo "  - fix: resolve crash on startup (fixes #456)"
-  echo "  - docs: update README (refs #789)"
+  echo -e "  ${GREEN}Format:${NC} type: description (#123)"
+  echo -e "  ${GREEN}Example:${NC} feat: add user login (#42)"
   echo ""
-  echo "To create an issue:"
-  echo "  gh issue create --web"
+  echo "To create an issue: gh issue create --web"
   echo ""
-  echo "Emergency bypass (NOT RECOMMENDED):"
-  echo "  Add [skip-issue] to your commit message"
+  echo "Emergency bypass: Add [skip-issue] to commit message"
   echo ""
   exit 1
 fi
 
-# Extract issue number
 ISSUE_NUMBER=$(echo "$COMMIT_MSG" | grep -oP '#\K\d+' | head -1)
+echo -e "${GREEN}✅ Found #${ISSUE_NUMBER}${NC}"
 
-# Validate workflow documents exist (if GitHub CLI is available)
-if command -v gh &> /dev/null && [ -n "$ISSUE_NUMBER" ]; then
-  # Get issue labels
-  ISSUE_LABELS=$(gh issue view $ISSUE_NUMBER --json labels -q '.labels[].name' 2>/dev/null || echo "")
-  
-  if [ -n "$ISSUE_LABELS" ]; then
-    # Extract type label
-    ISSUE_TYPE=$(echo "$ISSUE_LABELS" | grep "type:" | head -1)
-    
-    # Validate workflow documents based on issue type
-    case $ISSUE_TYPE in
-      "type:epic")
-        if [ ! -f "docs/prd/PRD-${ISSUE_NUMBER}.md" ]; then
-          echo "❌ COMMIT REJECTED: Epic requires PRD before code"
-          echo ""
-          echo "  Issue: #${ISSUE_NUMBER} (type:epic)"
-          echo "  Missing: docs/prd/PRD-${ISSUE_NUMBER}.md"
-          echo ""
-          echo "📋 Epic workflow: Product Manager → PRD → then code"
-          echo ""
-          echo "  Fix: Create PRD before committing code"
-          echo "       See .github/templates/PRD-TEMPLATE.md"
-          echo ""
-          exit 1
-        fi
-        ;;
-      "type:feature")
-        # Feature requires both ADR and Tech Spec
-        if [ ! -f "docs/adr/ADR-${ISSUE_NUMBER}.md" ]; then
-          echo "❌ COMMIT REJECTED: Feature requires ADR before code"
-          echo ""
-          echo "  Issue: #${ISSUE_NUMBER} (type:feature)"
-          echo "  Missing: docs/adr/ADR-${ISSUE_NUMBER}.md"
-          echo ""
-          echo "📐 Feature workflow: Architect → ADR → Spec → then code"
-          echo ""
-          echo "  Fix: Create Architecture Decision Record before committing code"
-          echo "       See .github/templates/ADR-TEMPLATE.md"
-          echo ""
-          exit 1
-        fi
-        if [ ! -f "docs/specs/SPEC-${ISSUE_NUMBER}.md" ]; then
-          echo "❌ COMMIT REJECTED: Feature requires Tech Spec before code"
-          echo ""
-          echo "  Issue: #${ISSUE_NUMBER} (type:feature)"
-          echo "  Missing: docs/specs/SPEC-${ISSUE_NUMBER}.md"
-          echo ""
-          echo "📐 Feature workflow: Architect → ADR → Spec → then code"
-          echo ""
-          echo "  Fix: Create Tech Spec before committing code"
-          echo "       See .github/templates/SPEC-TEMPLATE.md"
-          echo ""
-          exit 1
-        fi
-        ;;
-    esac
-    
-    # Check if UX design is required (needs:ux label)
-    if echo "$ISSUE_LABELS" | grep -q "needs:ux"; then
-      if [ ! -f "docs/ux/UX-${ISSUE_NUMBER}.md" ]; then
-        echo "❌ COMMIT REJECTED: Issue requires UX design before code"
-        echo ""
-        echo "  Issue: #${ISSUE_NUMBER} (needs:ux)"
-        echo "  Missing: docs/ux/UX-${ISSUE_NUMBER}.md"
-        echo ""
-        echo "🎨 UX workflow: UX Designer → UX Design → then code"
-        echo ""
-        echo "  Fix: Create UX design document before committing code"
-        echo "       See .github/templates/UX-TEMPLATE.md"
-        echo ""
-        exit 1
-      fi
+# ===================================================================
+# STEP 2: Validate workflow documents (if gh CLI available)
+# ===================================================================
+if ! command -v gh &> /dev/null; then
+  echo -e "${YELLOW}⚠️  Skipping workflow validation (gh CLI not found)${NC}"
+  exit 0
+fi
+
+# Get issue labels
+ISSUE_LABELS=$(gh issue view $ISSUE_NUMBER --json labels -q '.labels[].name' 2>/dev/null || echo "")
+
+if [ -z "$ISSUE_LABELS" ]; then
+  echo -e "${YELLOW}⚠️  Could not fetch issue #${ISSUE_NUMBER}${NC}"
+  exit 0
+fi
+
+# Extract type label
+ISSUE_TYPE=$(echo "$ISSUE_LABELS" | grep "type:" | head -1)
+
+if [ -z "$ISSUE_TYPE" ]; then
+  echo -e "${RED}❌ Issue #${ISSUE_NUMBER} has no type label${NC}"
+  echo ""
+  echo "Add a type label: type:epic, type:feature, type:story, type:bug, type:spike, type:docs"
+  echo ""
+  exit 1
+fi
+
+echo -e "Issue type: ${GREEN}${ISSUE_TYPE}${NC}"
+
+# ===================================================================
+# STEP 3: Validate required documents per workflow
+# ===================================================================
+echo -n "Checking workflow documents... "
+
+case $ISSUE_TYPE in
+  "type:epic")
+    if [ ! -f "docs/prd/PRD-${ISSUE_NUMBER}.md" ]; then
+      echo -e "${RED}❌ FAILED${NC}"
+      echo ""
+      echo "  Epic requires PRD before code!"
+      echo "  Missing: docs/prd/PRD-${ISSUE_NUMBER}.md"
+      echo ""
+      echo "  📋 Workflow: PM creates PRD → then code"
+      echo "  Template: .github/templates/PRD-TEMPLATE.md"
+      echo ""
+      exit 1
     fi
+    echo -e "${GREEN}✅ PRD exists${NC}"
+    ;;
+    
+  "type:feature")
+    MISSING=""
+    if [ ! -f "docs/adr/ADR-${ISSUE_NUMBER}.md" ]; then
+      MISSING="ADR"
+    fi
+    if [ ! -f "docs/specs/SPEC-${ISSUE_NUMBER}.md" ]; then
+      MISSING="${MISSING:+$MISSING + }Spec"
+    fi
+    if [ -n "$MISSING" ]; then
+      echo -e "${RED}❌ FAILED${NC}"
+      echo ""
+      echo "  Feature requires ${MISSING} before code!"
+      echo ""
+      echo "  📐 Workflow: Architect creates ADR + Spec → then code"
+      echo "  Templates: .github/templates/ADR-TEMPLATE.md, SPEC-TEMPLATE.md"
+      echo ""
+      exit 1
+    fi
+    echo -e "${GREEN}✅ ADR + Spec exist${NC}"
+    ;;
+    
+  "type:story"|"type:bug"|"type:spike"|"type:docs")
+    echo -e "${GREEN}✅ No prereqs for ${ISSUE_TYPE}${NC}"
+    ;;
+    
+  *)
+    echo -e "${GREEN}✅ Unknown type - skipping${NC}"
+    ;;
+esac
+
+# ===================================================================
+# STEP 4: Check UX requirement (needs:ux label)
+# ===================================================================
+if echo "$ISSUE_LABELS" | grep -q "needs:ux"; then
+  echo -n "Checking UX design... "
+  if [ ! -f "docs/ux/UX-${ISSUE_NUMBER}.md" ]; then
+    echo -e "${RED}❌ FAILED${NC}"
+    echo ""
+    echo "  Issue has needs:ux label - UX design required!"
+    echo "  Missing: docs/ux/UX-${ISSUE_NUMBER}.md"
+    echo ""
+    echo "  🎨 Workflow: UX Designer creates design → then code"
+    echo "  Template: .github/templates/UX-TEMPLATE.md"
+    echo ""
+    exit 1
   fi
+  echo -e "${GREEN}✅ UX design exists${NC}"
 fi
 
-# Check commit message format (type: description)
-if ! echo "$COMMIT_MSG" | grep -qE '^(feat|fix|docs|test|refactor|perf|chore|style):'; then
-  echo "⚠️  WARNING: Commit message should follow format: 'type: description (#issue)'"
-  echo ""
-  echo "Valid types: feat, fix, docs, test, refactor, perf, chore, style"
-  echo ""
-  # Warning only, don't fail
+# ===================================================================
+# STEP 5: Validate commit message format (warning only)
+# ===================================================================
+if ! echo "$COMMIT_MSG" | grep -qE '^(feat|fix|docs|test|refactor|perf|chore|style|build|ci):'; then
+  echo -e "${YELLOW}⚠️  Commit format should be: type: description (#issue)${NC}"
 fi
 
-echo "✅ Commit message validated"
+echo ""
+echo -e "${GREEN}✅ Workflow validation passed${NC}"
 exit 0

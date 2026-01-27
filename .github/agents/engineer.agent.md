@@ -436,7 +436,7 @@ Run context capture script:
 ./.github/scripts/capture-context.ps1 -Role engineer -IssueNumber <STORY_ID>
 ```
 
-### Step 2: Add Orchestration Label
+### Step 2: Update Status to In Review
 
 ```json
 // Update Status to "In Review" via GitHub Projects V2
