@@ -72,7 +72,6 @@ Write-Info "GitHub configuration..."
 Download-File ".github/copilot-instructions.md" ".github/copilot-instructions.md"
 Download-File ".github/CODEOWNERS" ".github/CODEOWNERS"
 Download-File ".github/agentx-security.yml" ".github/agentx-security.yml"
-Download-File ".github/orchestration-config.yml" ".github/orchestration-config.yml"
 Download-File ".github/PULL_REQUEST_TEMPLATE.md" ".github/PULL_REQUEST_TEMPLATE.md"
 
 # Workflows
@@ -83,6 +82,7 @@ Download-File ".github/workflows/quality-gates.yml" ".github/workflows/quality-g
 # Git hooks
 Write-Info "Git hooks..."
 Download-File ".github/hooks/pre-commit" ".github/hooks/pre-commit"
+Download-File ".github/hooks/pre-commit.ps1" ".github/hooks/pre-commit.ps1"
 Download-File ".github/hooks/commit-msg" ".github/hooks/commit-msg"
 
 # Issue templates
@@ -125,22 +125,24 @@ Download-File ".github/prompts/code-review.prompt.md" ".github/prompts/code-revi
 Download-File ".github/prompts/refactor.prompt.md" ".github/prompts/refactor.prompt.md"
 Download-File ".github/prompts/test-gen.prompt.md" ".github/prompts/test-gen.prompt.md"
 
-# Skills (18 production skills)
-Write-Info "Production skills (18 skills)..."
-$skills = @(
-    "core-principles", "testing", "error-handling", "security",
-    "performance", "database", "scalability", "code-organization",
-    "api-design", "configuration", "documentation", "version-control",
-    "type-safety", "dependency-management", "logging-monitoring",
-    "remote-git-operations", "ai-agent-development", "code-review-and-audit"
-)
-foreach ($skill in $skills) {
-    Download-File ".github/skills/$skill/SKILL.md" ".github/skills/$skill/SKILL.md"
+# Skills (25 production skills organized by category)
+Write-Info "Production skills (25 skills)..."
+$skills = @{
+    "architecture" = @("core-principles", "security", "performance", "database", "scalability", "code-organization", "api-design")
+    "development" = @("testing", "error-handling", "configuration", "documentation", "version-control", "type-safety", "dependency-management", "logging-monitoring", "code-review-and-audit", "csharp", "python", "frontend-ui", "react", "blazor", "postgresql", "sql-server")
+    "operations" = @("remote-git-operations")
+    "ai-systems" = @("ai-agent-development")
+}
+foreach ($category in $skills.Keys) {
+    foreach ($skill in $skills[$category]) {
+        Download-File ".github/skills/$category/$skill/SKILL.md" ".github/skills/$category/$skill/SKILL.md"
+    }
 }
 
 # VS Code configuration
 Write-Info "VS Code configuration..."
 Download-File ".vscode/mcp.json" ".vscode/mcp.json"
+Download-File ".vscode/settings.json" ".vscode/settings.json"
 
 # Documentation
 Write-Info "Documentation..."

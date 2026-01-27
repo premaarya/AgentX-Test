@@ -62,7 +62,6 @@ echo -e "${CYAN}  GitHub configuration...${NC}"
 download_file ".github/copilot-instructions.md" ".github/copilot-instructions.md"
 download_file ".github/CODEOWNERS" ".github/CODEOWNERS"
 download_file ".github/agentx-security.yml" ".github/agentx-security.yml"
-download_file ".github/orchestration-config.yml" ".github/orchestration-config.yml"
 download_file ".github/PULL_REQUEST_TEMPLATE.md" ".github/PULL_REQUEST_TEMPLATE.md"
 
 # Workflows
@@ -73,6 +72,7 @@ download_file ".github/workflows/quality-gates.yml" ".github/workflows/quality-g
 # Git hooks
 echo -e "${CYAN}  Git hooks...${NC}"
 download_file ".github/hooks/pre-commit" ".github/hooks/pre-commit"
+download_file ".github/hooks/pre-commit.ps1" ".github/hooks/pre-commit.ps1"
 download_file ".github/hooks/commit-msg" ".github/hooks/commit-msg"
 
 # Issue templates
@@ -115,22 +115,29 @@ download_file ".github/prompts/code-review.prompt.md" ".github/prompts/code-revi
 download_file ".github/prompts/refactor.prompt.md" ".github/prompts/refactor.prompt.md"
 download_file ".github/prompts/test-gen.prompt.md" ".github/prompts/test-gen.prompt.md"
 
-# Skills (18 production skills)
-echo -e "${CYAN}  Production skills (18 skills)...${NC}"
-skills=(
-    "core-principles" "testing" "error-handling" "security"
-    "performance" "database" "scalability" "code-organization"
-    "api-design" "configuration" "documentation" "version-control"
-    "type-safety" "dependency-management" "logging-monitoring"
-    "remote-git-operations" "ai-agent-development" "code-review-and-audit"
-)
-for skill in "${skills[@]}"; do
-    download_file ".github/skills/$skill/SKILL.md" ".github/skills/$skill/SKILL.md"
+# Skills (25 production skills organized by category)
+echo -e "${CYAN}  Production skills (25 skills)...${NC}"
+
+# Architecture skills
+for skill in core-principles security performance database scalability code-organization api-design; do
+    download_file ".github/skills/architecture/$skill/SKILL.md" ".github/skills/architecture/$skill/SKILL.md"
 done
+
+# Development skills
+for skill in testing error-handling configuration documentation version-control type-safety dependency-management logging-monitoring code-review-and-audit csharp python frontend-ui react blazor postgresql sql-server; do
+    download_file ".github/skills/development/$skill/SKILL.md" ".github/skills/development/$skill/SKILL.md"
+done
+
+# Operations skills
+download_file ".github/skills/operations/remote-git-operations/SKILL.md" ".github/skills/operations/remote-git-operations/SKILL.md"
+
+# AI Systems skills
+download_file ".github/skills/ai-systems/ai-agent-development/SKILL.md" ".github/skills/ai-systems/ai-agent-development/SKILL.md"
 
 # VS Code configuration
 echo -e "${CYAN}  VS Code configuration...${NC}"
 download_file ".vscode/mcp.json" ".vscode/mcp.json"
+download_file ".vscode/settings.json" ".vscode/settings.json"
 
 # Documentation
 echo -e "${CYAN}  Documentation...${NC}"
