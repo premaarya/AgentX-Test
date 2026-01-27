@@ -12,20 +12,22 @@
 2. **Classify** request (Epic/Feature/Story/Bug/Spike/Docs)
 3. **Create Issue** with type label
 4. **Execute** role-specific work
-5. **Handoff** via orchestration labels
+5. **Update Status** in GitHub Projects V2
 
 ### Issue Commands
 
 ```bash
-# Create issue
+# Create issue (auto-added to Project board)
 gh issue create --title "[Type] Description" --label "type:story"
 
-# Update status (via GitHub Projects UI or API)
-# Backlog → In Progress → In Review → Done
+# Update status via GitHub Projects (NOT labels!)
+# Backlog → In Progress → In Review → Ready → Done
 
 # Close issue
 gh issue close <ID>
 ```
+
+> ⚠️ **Status Tracking**: Use GitHub Projects V2 **Status** field, NOT labels.
 
 ---
 
@@ -55,28 +57,28 @@ gh issue close <ID>
 ### Product Manager
 - **Trigger**: `type:epic`
 - **Output**: PRD at `docs/prd/PRD-{issue}.md`
-- **Handoff**: Add `orch:pm-done` label, Status → `Ready`
+- **Status**: Move to `Ready` when PRD complete
 
 ### Solution Architect
-- **Trigger**: `type:feature`, `type:spike`, or after `orch:pm-done`
+- **Trigger**: `type:feature`, `type:spike`, or PRD complete
 - **Output**: ADR at `docs/adr/ADR-{issue}.md`, Spec at `docs/specs/`
-- **Handoff**: Add `orch:architect-done` label, Status → `Ready`
+- **Status**: Move to `Ready` when spec complete
 
 ### UX Designer
 - **Trigger**: `needs:ux` label
 - **Output**: Design at `docs/ux/UX-{issue}.md`
-- **Handoff**: Add `orch:ux-done` label, Status → `Ready`
+- **Status**: Move to `Ready` when designs complete
 
 ### Software Engineer
-- **Trigger**: `type:story`, `type:bug`, or after `orch:architect-done`
-- **Status**: Set to `In Progress` when starting
+- **Trigger**: `type:story`, `type:bug`, or spec complete
+- **Status**: Move to `In Progress` when starting
 - **Output**: Code + Tests (≥80% coverage)
-- **Handoff**: Add `orch:engineer-done` label, Status → `In Review`
+- **Status**: Move to `In Review` when code complete
 
 ### Code Reviewer
-- **Trigger**: `orch:engineer-done`
+- **Trigger**: Status = `In Review`
 - **Output**: Review at `docs/reviews/REVIEW-{issue}.md`
-- **Handoff**: Close issue, Status → `Done`
+- **Status**: Move to `Done` and close issue
 
 ---
 
@@ -88,13 +90,14 @@ PM → UX → Architect → Engineer → Reviewer → Done
    (optional) (optional for small tasks)
 ```
 
-| Signal | Meaning | Status |
-|--------|---------|--------|
-| `orch:pm-done` | PRD complete, ready for design/architecture | → Ready |
-| `orch:ux-done` | UX designs complete | → Ready |
-| `orch:architect-done` | Tech spec complete, ready for implementation | → Ready |
-| `orch:engineer-done` | Code complete, ready for review | → In Review |
-| Issue closed | Review approved | → Done |
+| Phase | Status Transition | Meaning |
+|-------|-------------------|---------|
+| PM completes PRD | → `Ready` | Ready for design/architecture |
+| UX completes designs | → `Ready` | Ready for architecture |
+| Architect completes spec | → `Ready` | Ready for implementation |
+| Engineer starts work | → `In Progress` | Active development |
+| Engineer completes code | → `In Review` | Ready for code review |
+| Reviewer approves | → `Done` + Close | Work complete |
 
 ### Status Values
 
@@ -156,8 +159,6 @@ Types: `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `chore`
 ### Labels
 
 **Type Labels**: `type:epic`, `type:feature`, `type:story`, `type:bug`, `type:spike`, `type:docs`
-
-**Orchestration Labels**: `orch:pm-done`, `orch:ux-done`, `orch:architect-done`, `orch:engineer-done`
 
 **Priority Labels**: `priority:p0`, `priority:p1`, `priority:p2`, `priority:p3`
 
