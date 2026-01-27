@@ -1,12 +1,12 @@
 # GitHub Project Setup Guide
 
-> **Simplified Status Tracking**: This project uses GitHub Projects v2 Status field directly. No label synchronization needed.
+> **Status Tracking**: This project uses GitHub Projects V2 **Status** field exclusively. No orchestration labels needed.
 
 ---
 
 ## 📋 Initial Setup
 
-### 1. Create GitHub Project v2
+### 1. Create GitHub Project V2
 
 ```bash
 # Via GitHub CLI
@@ -22,12 +22,10 @@ In your project settings, create a **Status** field with these standard values:
 | Status Value | Description |
 |--------------|-------------|
 | **📝 Backlog** | Issue created, waiting to be claimed |
-| **🚀 In Progress** | Active work (PM/Architect/UX/Engineer) |
+| **🚀 In Progress** | Active work by Engineer |
 | **👀 In Review** | Code review phase |
+| **🏗️ Ready** | Design/spec complete, awaiting next phase |
 | **✅ Done** | Completed and closed |
-
-**Optional (for granularity):**
-| **🏗️ Ready** | Design complete, ready for engineering |
 
 **Configuration:**
 - Field Type: **Single Select**
@@ -46,16 +44,22 @@ In your project settings, create a **Status** field with these standard values:
 
 ### Status Field (Primary and Only)
 
-**Users manually update status:**
-```
-Drag issue from "In Progress" → "In Review" in project board
-```
+> ⚠️ **Status Tracking**: Use GitHub Projects V2 **Status** field, NOT labels.
 
-**Agents coordinate via `orch:*` labels only:**
-- `orch:pm-done` - Product Manager completed
-- `orch:architect-done` - Architect completed
-- `orch:ux-done` - UX Designer completed  
-- `orch:engineer-done` - Engineer completed
+**Status transitions:**
+| Phase | Status Transition | Meaning |
+|-------|-------------------|---------|
+| PM completes PRD | → `Ready` | Ready for design/architecture |
+| UX completes designs | → `Ready` | Ready for architecture |
+| Architect completes spec | → `Ready` | Ready for implementation |
+| Engineer starts work | → `In Progress` | Active development |
+| Engineer completes code | → `In Review` | Ready for code review |
+| Reviewer approves | → `Done` + Close | Work complete |
+
+**Labels are for type only:**
+- `type:epic`, `type:feature`, `type:story`, `type:bug`, `type:spike`, `type:docs`
+- `needs:ux` - Indicates UI/UX work required
+- `needs:changes` - Reviewer requested changes
 
 ---
 
@@ -63,32 +67,25 @@ Drag issue from "In Progress" → "In Review" in project board
 
 ### For Agents Using MCP Server
 
-**Check coordination status:**
+**Check issue status:**
 ```json
 { "tool": "issue_read", "args": { "issue_number": 60 } }
-// Returns: labels: ["type:story", "orch:architect-done", "orch:ux-done"]
+// Check Status field in Projects board (not labels)
 ```
 
-**Signal completion:**
-```json
-// Agent completes work and adds orchestration label
-{ "tool": "update_issue", "args": { 
-  "issue_number": 60, 
-  "labels": ["type:story", "orch:engineer-done"] 
-} }
-```
-
-**Status managed manually:**
-- Users drag issues in Projects board
-- Agents comment when starting: "🔧 Engineer starting implementation..."
-- Status updates happen in Projects UI
+**Agent workflow:**
+1. Check issue Status in Projects board
+2. Comment when starting: "🔧 Engineer starting implementation..."
+3. Complete work
+4. Update Status in Projects board (manual or via GraphQL)
+5. Comment when done: "✅ Implementation complete, ready for review"
 
 ### For Users in Project Board
 
 **Drag & drop between columns:**
 - Move issue from "In Progress" → "In Review"
-- Automation syncs label immediately
-- Agent sees updated label
+- Status updates immediately
+- Next agent can pick up work
 
 ---
 
@@ -97,13 +94,11 @@ Drag issue from "In Progress" → "In Review" in project board
 ### GitHub CLI
 
 ```bash
-**Status filters:**
-```bash
 # Find issues by type
 gh issue list --label "type:story"
 
-# Find issues ready for engineer (both arch + ux done)
-gh issue list --label "orch:architect-done" --label "orch:ux-done"
+# Find issues needing UX work
+gh issue list --label "needs:ux"
 
 # Find all Epic child issues
 gh issue list --search "parent:#<EPIC_ID>"
@@ -112,11 +107,11 @@ gh issue list --search "parent:#<EPIC_ID>"
 ### MCP Server
 
 ```json
-// List all stories with completed design
+// List all open stories
 { "tool": "list_issues", "args": { 
   "owner": "jnPiyush",
   "repo": "AgentX",
-  "labels": ["type:story", "orch:architect-done", "orch:ux-done"],
+  "labels": ["type:story"],
   "state": "open"
 } }
 ```
@@ -125,7 +120,7 @@ gh issue list --search "parent:#<EPIC_ID>"
 
 ```bash
 curl -H "Authorization: token $TOKEN" \
-  "https://api.github.com/repos/jnPiyush/AgentX/issues?labels=type:story,orch:engineer-done"
+  "https://api.github.com/repos/jnPiyush/AgentX/issues?labels=type:story"
 ```
 
 ---
@@ -148,12 +143,10 @@ Status is managed in Projects UI, not via code.
 
 **Columns:**
 1. 📝 Backlog (`Status = Backlog`)
-2. 🚀 In Progress (`Status = In Progress`)
-3. 👀 In Review (`Status = In Review`)
-4. ✅ Done (`Status = Done`)
-
-**Optional:**
-5. 🏗️ Ready (`Status = Ready`) - Between design and implementation
+2. 🏗️ Ready (`Status = Ready`) - Design/spec complete
+3. 🚀 In Progress (`Status = In Progress`)
+4. 👀 In Review (`Status = In Review`)
+5. ✅ Done (`Status = Done`)
 
 **Filters:**
 - Group by: `Status`
@@ -163,9 +156,8 @@ Status is managed in Projects UI, not via code.
 
 **Columns to show:**
 - Issue
-- Status (managed in Projects board)
-- Labels (for type:* and orch:* tracking)
-- Type
+- Status
+- Labels (for type:* tracking)
 - Priority
 - Assignees
 - Updated
@@ -188,23 +180,17 @@ gh project item-add <PROJECT_ID> --owner jnPiyush --url <ISSUE_URL>
 
 ### Agent coordination not working
 
-**Check `orch:*` labels:**
-```bash
-# Verify labels exist
-gh issue view <ID> --json labels
-
-# Expected for Engineer to start:
-# - type:story
-# - orch:architect-done
-# - orch:ux-done (if needed)
-```
+**Check Status field in Projects board:**
+1. Go to Projects board
+2. Verify issue Status is correct
+3. Engineer should start when Status = `Ready`
 
 ### Status field missing
 
 Create Status field in Project Settings:
 1. Go to project → Settings → Fields
 2. Add new field → Single Select → Name: "Status"
-3. Add options: Backlog, In Progress, In Review, Done
+3. Add options: Backlog, Ready, In Progress, In Review, Done
 
 ---
 
@@ -216,4 +202,4 @@ Create Status field in Project Settings:
 
 ---
 
-**Last Updated**: January 19, 2026
+**Last Updated**: January 27, 2026

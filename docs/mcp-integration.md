@@ -248,7 +248,7 @@ Re-run only failed jobs (more efficient).
     "repo": "AgentX",
     "title": "[Feature] New capability",
     "body": "## Description\n...",
-    "labels": ["type:feature", "priority:p1"]
+    "labels": ["type:feature"]
   }
 }
 ```
@@ -261,10 +261,12 @@ Re-run only failed jobs (more efficient).
     "owner": "jnPiyush",
     "repo": "AgentX",
     "issue_number": 50,
-    "labels": ["type:story", "orch:engineer-done"]
+    "labels": ["type:story"]
   }
 }
 ```
+
+> ⚠️ **Status Tracking**: Use GitHub Projects V2 **Status** field, NOT labels. Update status via Projects board UI or GraphQL.
 
 ### `add_issue_comment`
 ```json
@@ -281,44 +283,44 @@ Re-run only failed jobs (more efficient).
 
 ## Agent Orchestration Workflow
 
-### Using MCP for Agent Handoffs
+### Using Projects V2 Status for Agent Handoffs
 
-Instead of relying on polling workflows, agents can trigger the next agent directly:
+Agents coordinate via the **Status** field in GitHub Projects V2:
 
 ```
-1. PM Agent completes → triggers Architect workflow via MCP
-2. Architect completes → triggers Engineer workflow via MCP
-3. Engineer completes → triggers Reviewer workflow via MCP
+1. PM Agent completes → Status = Ready → UX/Architect picks up
+2. Architect completes → Status = Ready → Engineer picks up  
+3. Engineer completes → Status = In Review → Reviewer picks up
+4. Reviewer approves → Status = Done + Close issue
 ```
 
-### Example: PM → Architect Handoff
+### Status Values
+
+| Status | Meaning |
+|--------|--------|
+| `Backlog` | Issue created, not started |
+| `In Progress` | Active work by current agent |
+| `In Review` | Code review phase |
+| `Ready` | Design/spec done, awaiting next phase |
+| `Done` | Completed and closed |
+
+### Example: Triggering Next Workflow
 
 ```json
-// PM Agent marks issue done and triggers Architect
+// Agent completes work and triggers next workflow
 {
-  "sequence": [
-    {
-      "tool": "update_issue",
-      "args": {
-        "owner": "jnPiyush",
-        "repo": "AgentX",
-        "issue_number": 48,
-        "labels": ["orch:pm-done"]
-      }
-    },
-    {
-      "tool": "run_workflow",
-      "args": {
-        "owner": "jnPiyush",
-        "repo": "AgentX",
-        "workflow_id": "run-architect.yml",
-        "ref": "master",
-        "inputs": { "issue_number": "50" }
-      }
-    }
-  ]
+  "tool": "run_workflow",
+  "args": {
+    "owner": "jnPiyush",
+    "repo": "AgentX",
+    "workflow_id": "run-architect.yml",
+    "ref": "master",
+    "inputs": { "issue_number": "50" }
+  }
 }
 ```
+
+> **Note**: Status updates are done manually in Projects board or via GraphQL API.
 
 ## Troubleshooting
 

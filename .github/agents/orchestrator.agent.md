@@ -49,13 +49,15 @@ handoffs:
 
 ## Team & Handoffs
 
-| Agent | Trigger | Deliverable | Handoff Signal |
-|-------|---------|-------------|----------------|
-| **Product Manager** | `type:epic` | PRD + backlog at `docs/prd/PRD-{id}.md` | `orch:pm-done` |
-| **UX Designer** | `orch:pm-done` (sequential) | Wireframes + flows at `docs/ux/UX-{id}.md` | `orch:ux-done` |
-| **Architect** | `orch:ux-done` (sequential) | ADR + Specs at `docs/adr/`, `docs/specs/` | `orch:architect-done` |
-| **Engineer** | `orch:architect-done` (sequential) | Code + tests + docs | `orch:engineer-done` |
-| **Reviewer** | `orch:engineer-done` | Review at `docs/reviews/REVIEW-{id}.md` | Close issue |
+| Agent | Trigger | Deliverable | Status Transition |
+|-------|---------|-------------|-------------------|
+| **Product Manager** | `type:epic` | PRD + backlog at `docs/prd/PRD-{id}.md` | → `Ready` |
+| **UX Designer** | Status = `Ready` + `needs:ux` | Wireframes + flows at `docs/ux/UX-{id}.md` | → `Ready` |
+| **Architect** | Status = `Ready` (after UX/PM) | ADR + Specs at `docs/adr/`, `docs/specs/` | → `Ready` |
+| **Engineer** | Status = `Ready` (spec complete) | Code + tests + docs | → `In Progress` → `In Review` |
+| **Reviewer** | Status = `In Review` | Review at `docs/reviews/REVIEW-{id}.md` | → `Done` + Close |
+
+> ⚠️ **Status Tracking**: Use GitHub Projects V2 **Status** field, NOT labels.
 
 ## Routing Logic
 
@@ -89,22 +91,22 @@ await add_issue_comment({
 
 ```
 Epic → PM → UX → Architect → Engineer → Reviewer → Close
-Story/Feature → Check Epic prerequisites → Engineer → Reviewer → Close
+Story/Feature → Check Status = Ready → Engineer → Reviewer → Close
 Bug/Docs → Engineer → Reviewer → Close
 Spike → Architect → Close
 
-Sequential: Each agent waits for previous to complete
+Status Flow: Backlog → In Progress → In Review → Ready → Done
 ```
 
 ## Design Thinking Gates
 
 | IDEO Phase | Agent | Gate Check |
 |------------|-------|------------|
-| **Define** | Product Manager | PRD + stories exist |
-| **Ideate (UX)** | UX Designer | Wireframes + user flows complete |
-| **Ideate (Tech)** | Architect | ADR + Specs complete, reads UX designs |
-| **Prototype** | Engineer | **BLOCKED until** `orch:architect-done` (waits for UX→Arch chain) |
-| **Test** | Reviewer | Coverage ≥80%, CI passes, security OK |
+| **Define** | Product Manager | PRD + stories exist, Status → `Ready` |
+| **Ideate (UX)** | UX Designer | Wireframes + user flows complete, Status → `Ready` |
+| **Ideate (Tech)** | Architect | ADR + Specs complete, Status → `Ready` |
+| **Prototype** | Engineer | **Starts when** Status = `Ready` (spec complete), Status → `In Progress` → `In Review` |
+| **Test** | Reviewer | Coverage ≥80%, CI passes, security OK, Status → `Done` |
 
 **Philosophy**: "User-centered design" — UX defines needs, Architect designs to support, Engineer implements.
 
@@ -133,10 +135,10 @@ await runSubagent({
 
 | Error | Detection | Recovery |
 |-------|-----------|----------|
-| **Timeout** | No `orch:*-done` after 15 min | `needs:help` + notify |
-| **Missing artifacts** | Label without files | Remove label, retry |
+| **Timeout** | Status unchanged after 15 min | `needs:help` + notify |
+| **Missing artifacts** | Status changed without files | Reset status, retry |
 | **Blocked >30 min** | Prerequisites unmet | `needs:resolution` + escalate |
-| **Test failure** | CI fails | `needs:fixes`, reassign Engineer |
+| **Test failure** | CI fails | `needs:fixes`, Status → `In Progress` |
 
 
 ## Conversational Feedback

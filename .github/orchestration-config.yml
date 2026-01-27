@@ -327,28 +327,35 @@ agents:
     token_budget: 50000
 
 # =============================================================================
-# STATE LABELS
-# Labels used to track workflow state
+# STATE TRACKING
+# Status is tracked via GitHub Projects V2 Status field, NOT labels
 # =============================================================================
-state_labels:
-  # Workflow stages
-  stage_prefix: "stage:"
-  stages:
-    - "stage:product-manager"
-    - "stage:architect"
-    - "stage:engineer"
-    - "stage:reviewer"
-    - "stage:ux-designer"
-    - "stage:complete"
+status_tracking:
+  # Primary: GitHub Projects V2 Status field
+  # Backlog → In Progress → In Review → Ready → Done
   
-  # Workflow status
-  status_prefix: "orchestration:"
-  statuses:
-    - "orchestration:active"
-    - "orchestration:paused"
-    - "orchestration:blocked"
-    - "orchestration:complete"
-    - "orchestration:failed"
+  # Status transitions by workflow phase:
+  # PM completes PRD → Status = Ready
+  # UX completes designs → Status = Ready
+  # Architect completes spec → Status = Ready
+  # Engineer starts work → Status = In Progress
+  # Engineer completes code → Status = In Review
+  # Reviewer approves → Status = Done + Close
+
+  # Labels are for type classification only:
+  type_labels:
+    - "type:epic"
+    - "type:feature"
+    - "type:story"
+    - "type:bug"
+    - "type:spike"
+    - "type:docs"
+  
+  # Workflow labels (NOT for status)
+  workflow_labels:
+    - "needs:ux"
+    - "needs:help"
+    - "needs:changes"
 
 # =============================================================================
 # COMMANDS

@@ -60,7 +60,7 @@ gh issue close <ID>
 - **Status**: Move to `Ready` when PRD complete
 
 ### Solution Architect
-- **Trigger**: `type:feature`, `type:spike`, or PRD complete
+- **Trigger**: `type:feature`, `type:spike`, Status = `Ready` or PRD complete
 - **Output**: ADR at `docs/adr/ADR-{issue}.md`, Spec at `docs/specs/`
 - **Status**: Move to `Ready` when spec complete
 

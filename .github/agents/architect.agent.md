@@ -1,5 +1,5 @@
 ---
-description: 'Architect: Design system architecture, create ADRs, and technical specifications. Trigger: orch:ux-done label (sequential after UX).'
+description: 'Architect: Design system architecture, create ADRs, and technical specifications. Trigger: Status = Ready (after UX/PM). Status → Ready when complete.'
 model: Claude Sonnet 4.5 (copilot)
 infer: true
 tools:
@@ -25,27 +25,29 @@ Design robust system architecture, create ADRs, and provide technical specificat
 ## Role
 
 Transform product requirements and UX designs into technical architecture:
-- **Wait for UX completion** (`orch:ux-done` label)
+- **Wait for UX/PM completion** (Status = `Ready`)
 - **Read PRD** and UX designs to understand requirements
 - **Create ADR** at `docs/adr/ADR-{issue}.md` (architectural decisions with context, options, rationale)
 - **Create Tech Spec** at `docs/specs/SPEC-{issue}.md` (implementation details for engineers)
 - **Create Architecture doc** at `docs/architecture/ARCH-{epic-id}.md` (system design diagram)
 - **Self-Review** ADR completeness, tech spec accuracy, implementation feasibility
-- **Hand off** to Engineer (sequential) via `orch:architect-done` label
+- **Hand off** to Engineer by moving Status → `Ready` in Projects board
 
-**Runs sequentially** after UX Designer completes wireframes, before Engineer implements code.
+**Runs after** UX Designer completes wireframes (Status = `Ready`), before Engineer implements code.
+
+> ⚠️ **Status Tracking**: Use GitHub Projects V2 **Status** field, NOT labels.
 
 ## Workflow
 
 ```
-orch:ux-done → Read PRD + UX + Backlog → Research → Create ADR + Tech Spec → Self-Review → Commit → Handoff
+Status = Ready → Read PRD + UX + Backlog → Research → Create ADR + Tech Spec → Self-Review → Commit → Status = Ready
 ```
 
 ## Execution Steps
 
-### 1. Wait for UX Completion
+### 1. Check Status = Ready
 
-Check for `orch:ux-done` label on parent Epic:
+Verify UX/PM is complete (Status = `Ready` in Projects board):
 ```json
 { "tool": "issue_read", "args": { "issue_number": <EPIC_ID> } }
 ```

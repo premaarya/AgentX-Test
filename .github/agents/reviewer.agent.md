@@ -1,5 +1,5 @@
 ---
-description: 'Reviewer: Review code quality, tests, security, and approve/reject. Trigger: orch:engineer-done label.'
+description: 'Reviewer: Review code quality, tests, security, and approve/reject. Trigger: Status = In Review. Status → Done when approved.'
 model: Claude Sonnet 4.5 (copilot)
 infer: true
 tools:
@@ -26,25 +26,27 @@ Ensure code quality, security, and standards compliance before production deploy
 ## Role
 
 Review engineer's work and approve or request changes:
-- **Wait for Engineer completion** (`orch:engineer-done` label)
+- **Wait for Engineer completion** (Status = `In Review`)
 - **Review code** for quality, security, performance
 - **Verify tests** (≥80% coverage, meaningful assertions)
 - **Check documentation** (XML docs, README, inline comments)
 - **Create review doc** at `docs/reviews/REVIEW-{issue}.md`
-- **Approve** → Close issue (Status: Done) OR
-- **Request changes** → Return to Engineer (Status: In Progress, `needs:changes` label)
+- **Approve** → Status → `Done` and close issue OR
+- **Request changes** → Status → `In Progress` with `needs:changes` label
+
+> ⚠️ **Status Tracking**: Use GitHub Projects V2 **Status** field, NOT labels.
 
 ## Workflow
 
 ```
-orch:engineer-done → Read Code + Tests → Review → Create Review Doc → Approve/Reject
+Status = In Review → Read Code + Tests → Review → Create Review Doc → Status = Done (or In Progress if changes needed)
 ```
 
 ## Execution Steps
 
-### 1. Wait for Engineer Completion
+### 1. Check Status = In Review
 
-Check for `orch:engineer-done` label:
+Verify engineer has completed work (Status = `In Review` in Projects board):
 ```json
 { "tool": "issue_read", "args": { "issue_number": <STORY_ID> } }
 ```
