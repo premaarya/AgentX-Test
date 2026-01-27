@@ -1,16 +1,7 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://img.shields.io/badge/🤖_AgentX-Multi--Agent_Framework-7C3AED?style=for-the-badge&labelColor=0F172A">
-    <img src="https://img.shields.io/badge/🤖_AgentX-Multi--Agent_Framework-7C3AED?style=for-the-badge&labelColor=1E293B" alt="AgentX"/>
-  </picture>
-</p>
-
-<h1 align="center">
-  <img src="https://em-content.zobj.net/source/twitter/376/robot_1f916.png" width="32"/> AgentX
-</h1>
-
-<p align="center">
-  <strong>Multi-Agent Framework for Production-Ready AI Development</strong>
+  <a href="https://github.com/jnPiyush/AgentX">
+    <img src="docs/assets/agentx-logo.svg" alt="AgentX Logo" width="400"/>
+  </a>
 </p>
 
 <p align="center">
