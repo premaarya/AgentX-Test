@@ -15,17 +15,15 @@ Before writing ANY code, creating ANY file, or making ANY modification:
 ### 1. READ [AGENTS.md](../AGENTS.md) - AUTHORITATIVE SOURCE
 **Contains:**
 - ✅ Issue-First Workflow (MANDATORY)
-- ✅ Research-First Workflow
-- ✅ Request Classification
+- ✅ Request Classification (Epic/Feature/Story/Bug/Spike/Docs)
 - ✅ Agent Roles & Handoffs
-- ✅ GitHub MCP Server Tools
-- ✅ Multi-Agent Orchestration
-- ✅ Security Architecture
-- ✅ Execution Modes
+- ✅ GitHub Projects V2 Status Tracking
+- ✅ Commit Message Format
+- ✅ Security Checklist
 
 ### 2. READ [Skills.md](../Skills.md) - Technical Standards
 **Contains:**
-- 18 production skills (testing, security, architecture, etc.)
+- 25 production skills (testing, security, architecture, etc.)
 - Code quality standards
 - Performance guidelines
 - Documentation requirements
@@ -108,11 +106,11 @@ gh issue close <ID>
                           ↓
 ┌─────────────────────────────────────────────────────────┐
 │ Skills.md - Technical Standards Index                   │
-│ ↓ Points to 18 detailed skill documents                │
+│ ↓ Points to 25 detailed skill documents                │
 └─────────────────────────────────────────────────────────┘
                           ↓
 ┌─────────────────────────────────────────────────────────┐
-│ skills/*.md - Detailed Implementation Guides            │
+│ .github/skills/{category}/*/SKILL.md                    │
 │ ↓ Testing, security, architecture, etc.                │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -143,10 +141,10 @@ This repository contains AI agent guidelines and production code skills for buil
 
 ## Key Files
 
-- **[AGENTS.md](../AGENTS.md)**: Agent behavior, workflows, YOLO mode, security architecture, memory management, GitHub Issues task management, request classification, agent roles
-- **[Skills.md](../Skills.md)**: Index of 18 production skills covering testing, security, architecture, and operations
+- **[AGENTS.md](../AGENTS.md)**: Agent behavior, workflows, GitHub Projects V2 status tracking, request classification, agent roles
+- **[Skills.md](../Skills.md)**: Index of 25 production skills covering testing, security, architecture, and operations
 - **[CONTRIBUTING.md](../CONTRIBUTING.md)**: Complete contributor guide for users without Copilot
-- **skills/**: Detailed skill documentation
+- **.github/skills/**: Detailed skill documentation organized by category
 
 ## When Working in This Repository
 
