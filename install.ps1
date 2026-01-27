@@ -85,13 +85,6 @@ Write-Info "Git hooks..."
 Download-File ".github/hooks/pre-commit" ".github/hooks/pre-commit"
 Download-File ".github/hooks/commit-msg" ".github/hooks/commit-msg"
 
-# Scripts
-Write-Info "Scripts..."
-Download-File ".github/scripts/validate-handoff.ps1" ".github/scripts/validate-handoff.ps1"
-Download-File ".github/scripts/validate-handoff.sh" ".github/scripts/validate-handoff.sh"
-Download-File ".github/scripts/capture-context.ps1" ".github/scripts/capture-context.ps1"
-Download-File ".github/scripts/capture-context.sh" ".github/scripts/capture-context.sh"
-
 # Issue templates
 Write-Info "Issue templates..."
 Download-File ".github/ISSUE_TEMPLATE/config.yml" ".github/ISSUE_TEMPLATE/config.yml"

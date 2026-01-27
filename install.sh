@@ -75,13 +75,6 @@ echo -e "${CYAN}  Git hooks...${NC}"
 download_file ".github/hooks/pre-commit" ".github/hooks/pre-commit"
 download_file ".github/hooks/commit-msg" ".github/hooks/commit-msg"
 
-# Scripts
-echo -e "${CYAN}  Scripts...${NC}"
-download_file ".github/scripts/validate-handoff.ps1" ".github/scripts/validate-handoff.ps1"
-download_file ".github/scripts/validate-handoff.sh" ".github/scripts/validate-handoff.sh"
-download_file ".github/scripts/capture-context.ps1" ".github/scripts/capture-context.ps1"
-download_file ".github/scripts/capture-context.sh" ".github/scripts/capture-context.sh"
-
 # Issue templates
 echo -e "${CYAN}  Issue templates...${NC}"
 download_file ".github/ISSUE_TEMPLATE/config.yml" ".github/ISSUE_TEMPLATE/config.yml"
