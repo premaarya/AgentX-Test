@@ -21,8 +21,8 @@ description: 'Production-ready guidelines for AI agents to build secure, scalabl
 
 **Load These Skills** (Total: ~18K tokens):
 - [#09 API Design](.github/skills/architecture/api-design/SKILL.md) - REST patterns, versioning, rate limiting (5K)
-- [#04 Security](.github/skills/foundation/security/SKILL.md) - Input validation, authentication, authorization (6K)
-- [#02 Testing](.github/skills/foundation/testing/SKILL.md) - Controller tests, integration tests (4K)
+- [#04 Security](.github/skills/architecture/security/SKILL.md) - Input validation, authentication, authorization (6K)
+- [#02 Testing](.github/skills/development/testing/SKILL.md) - Controller tests, integration tests (4K)
 - [#11 Documentation](.github/skills/development/documentation/SKILL.md) - XML docs, OpenAPI/Swagger (3K)
 
 **Context Routing**: Controller implementation → Load Skills #09, #04, #02, #11
@@ -35,8 +35,8 @@ description: 'Production-ready guidelines for AI agents to build secure, scalabl
 
 **Load These Skills** (Total: ~15K tokens):
 - [#06 Database](.github/skills/architecture/database/SKILL.md) - Migrations, indexing, transactions (5K)
-- [#04 Security](.github/skills/foundation/security/SKILL.md) - SQL injection prevention, parameterization (6K)
-- [#02 Testing](.github/skills/foundation/testing/SKILL.md) - Repository tests, integration tests (4K)
+- [#04 Security](.github/skills/architecture/security/SKILL.md) - SQL injection prevention, parameterization (6K)
+- [#02 Testing](.github/skills/development/testing/SKILL.md) - Repository tests, integration tests (4K)
 
 **Context Routing**: Database/Repository files → Load Skills #06, #04, #02
 
@@ -47,9 +47,9 @@ description: 'Production-ready guidelines for AI agents to build secure, scalabl
 **When**: Authentication, authorization, encryption, secrets management
 
 **Load These Skills** (Total: ~20K tokens):
-- [#04 Security](.github/skills/foundation/security/SKILL.md) - OWASP Top 10, input validation, auth patterns (6K)
+- [#04 Security](.github/skills/architecture/security/SKILL.md) - OWASP Top 10, input validation, auth patterns (6K)
 - [#10 Configuration](.github/skills/development/configuration/SKILL.md) - Secrets management, environment variables (5K)
-- [#02 Testing](.github/skills/foundation/testing/SKILL.md) - Security tests, penetration test patterns (4K)
+- [#02 Testing](.github/skills/development/testing/SKILL.md) - Security tests, penetration test patterns (4K)
 - [#13 Type Safety](.github/skills/development/type-safety/SKILL.md) - Nullable reference types, analyzers (3K)
 - [#15 Logging](.github/skills/development/logging-monitoring/SKILL.md) - Security event logging, audit trails (2K)
 
@@ -62,8 +62,8 @@ description: 'Production-ready guidelines for AI agents to build secure, scalabl
 **When**: Fixing errors, exceptions, crashes, incorrect behavior
 
 **Load These Skills** (Total: ~10K tokens):
-- [#03 Error Handling](.github/skills/foundation/error-handling/SKILL.md) - Exception patterns, retry logic (4K)
-- [#02 Testing](.github/skills/foundation/testing/SKILL.md) - Regression tests, debugging patterns (4K)
+- [#03 Error Handling](.github/skills/development/error-handling/SKILL.md) - Exception patterns, retry logic (4K)
+- [#02 Testing](.github/skills/development/testing/SKILL.md) - Regression tests, debugging patterns (4K)
 - [#15 Logging](.github/skills/development/logging-monitoring/SKILL.md) - Log analysis, correlation IDs (2K)
 
 **Context Routing**: Bug fix → Load Skills #03, #02, #15
@@ -77,7 +77,7 @@ description: 'Production-ready guidelines for AI agents to build secure, scalabl
 **Load These Skills** (Total: ~15K tokens):
 - [#05 Performance](.github/skills/architecture/performance/SKILL.md) - Async/await, caching, profiling (5K)
 - [#06 Database](.github/skills/architecture/database/SKILL.md) - Query optimization, indexing (5K)
-- [#02 Testing](.github/skills/foundation/testing/SKILL.md) - Performance tests, benchmarks (3K)
+- [#02 Testing](.github/skills/development/testing/SKILL.md) - Performance tests, benchmarks (3K)
 - [#15 Logging](.github/skills/development/logging-monitoring/SKILL.md) - Performance metrics, APM (2K)
 
 **Context Routing**: Performance work → Load Skills #05, #06, #02, #15
@@ -100,10 +100,10 @@ description: 'Production-ready guidelines for AI agents to build secure, scalabl
 **When**: Reviewing pull requests, auditing code quality
 
 **Load These Skills** (Total: ~18K tokens):
-- [#18 Code Review & Audit](.github/skills/operations/code-review-and-audit/SKILL.md) - Review checklist, quality gates (5K)
-- [#04 Security](.github/skills/foundation/security/SKILL.md) - Security audit checklist (6K)
-- [#02 Testing](.github/skills/foundation/testing/SKILL.md) - Test quality review (4K)
-- [#01 Core Principles](.github/skills/foundation/core-principles/SKILL.md) - SOLID, design patterns review (3K)
+- [#18 Code Review & Audit](.github/skills/development/code-review-and-audit/SKILL.md) - Review checklist, quality gates (5K)
+- [#04 Security](.github/skills/architecture/security/SKILL.md) - Security audit checklist (6K)
+- [#02 Testing](.github/skills/development/testing/SKILL.md) - Test quality review (4K)
+- [#01 Core Principles](.github/skills/architecture/core-principles/SKILL.md) - SOLID, design patterns review (3K)
 
 **Context Routing**: Code review → Load Skills #18, #04, #02, #01
 
@@ -115,7 +115,7 @@ description: 'Production-ready guidelines for AI agents to build secure, scalabl
 
 **Load These Skills** (Total: ~12K tokens):
 - [#17 AI Agent Development](.github/skills/ai-systems/ai-agent-development/SKILL.md) - Foundry, Agent Framework, tracing (8K)
-- [#04 Security](.github/skills/foundation/security/SKILL.md) - Prompt injection prevention, secrets (4K)
+- [#04 Security](.github/skills/architecture/security/SKILL.md) - Prompt injection prevention, secrets (4K)
 
 **Context Routing**: AI agent work → Load Skills #17, #04
 
