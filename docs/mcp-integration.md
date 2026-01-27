@@ -140,8 +140,8 @@ Trigger a workflow via `workflow_dispatch` event.
 {
   "tool": "run_workflow",
   "args": {
-    "owner": "jnPiyush",
-    "repo": "AgentX",
+    "owner": "<OWNER>",
+    "repo": "<REPO>",
     "workflow_id": "run-product-manager.yml",
     "ref": "master",
     "inputs": {
@@ -169,8 +169,8 @@ List workflow runs with optional filters.
 {
   "tool": "list_workflow_runs",
   "args": {
-    "owner": "jnPiyush",
-    "repo": "AgentX",
+    "owner": "<OWNER>",
+    "repo": "<REPO>",
     "workflow_id": "run-product-manager.yml",
     "status": "in_progress"
   }
@@ -186,8 +186,8 @@ Get details of a specific workflow run.
 {
   "tool": "get_workflow_run",
   "args": {
-    "owner": "jnPiyush",
-    "repo": "AgentX",
+    "owner": "<OWNER>",
+    "repo": "<REPO>",
     "run_id": 12345678
   }
 }
@@ -202,8 +202,8 @@ Cancel a running workflow.
 {
   "tool": "cancel_workflow_run",
   "args": {
-    "owner": "jnPiyush",
-    "repo": "AgentX",
+    "owner": "<OWNER>",
+    "repo": "<REPO>",
     "run_id": 12345678
   }
 }
@@ -216,8 +216,8 @@ Re-run an entire workflow.
 {
   "tool": "rerun_workflow_run",
   "args": {
-    "owner": "jnPiyush",
-    "repo": "AgentX",
+    "owner": "<OWNER>",
+    "repo": "<REPO>",
     "run_id": 12345678
   }
 }
@@ -230,8 +230,8 @@ Re-run only failed jobs (more efficient).
 {
   "tool": "rerun_failed_jobs",
   "args": {
-    "owner": "jnPiyush",
-    "repo": "AgentX",
+    "owner": "<OWNER>",
+    "repo": "<REPO>",
     "run_id": 12345678
   }
 }
@@ -244,8 +244,8 @@ Re-run only failed jobs (more efficient).
 {
   "tool": "create_issue",
   "args": {
-    "owner": "jnPiyush",
-    "repo": "AgentX",
+    "owner": "<OWNER>",
+    "repo": "<REPO>",
     "title": "[Feature] New capability",
     "body": "## Description\n...",
     "labels": ["type:feature"]
@@ -258,8 +258,8 @@ Re-run only failed jobs (more efficient).
 {
   "tool": "update_issue",
   "args": {
-    "owner": "jnPiyush",
-    "repo": "AgentX",
+    "owner": "<OWNER>",
+    "repo": "<REPO>",
     "issue_number": 50,
     "labels": ["type:story"]
   }
@@ -273,8 +273,8 @@ Re-run only failed jobs (more efficient).
 {
   "tool": "add_issue_comment",
   "args": {
-    "owner": "jnPiyush",
-    "repo": "AgentX",
+    "owner": "<OWNER>",
+    "repo": "<REPO>",
     "issue_number": 50,
     "body": "Progress: Completed implementation phase"
   }
@@ -311,8 +311,8 @@ Agents coordinate via the **Status** field in GitHub Projects V2:
 {
   "tool": "run_workflow",
   "args": {
-    "owner": "jnPiyush",
-    "repo": "AgentX",
+    "owner": "<OWNER>",
+    "repo": "<REPO>",
     "workflow_id": "run-architect.yml",
     "ref": "master",
     "inputs": { "issue_number": "50" }

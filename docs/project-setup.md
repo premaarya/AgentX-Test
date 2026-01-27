@@ -10,7 +10,7 @@
 
 ```bash
 # Via GitHub CLI
-gh project create --owner jnPiyush --title "AgentX Development"
+gh project create --owner <OWNER> --title "AgentX Development"
 
 # Or via web: https://github.com/users/jnPiyush/projects
 ```
@@ -35,7 +35,7 @@ In your project settings, create a **Status** field with these standard values:
 ### 3. Link Repository
 
 1. Go to Project Settings → Manage Access
-2. Add repository: `jnPiyush/AgentX`
+2. Add repository: `<OWNER>/<REPO>`
 3. Issues automatically sync to project board
 
 ---
@@ -109,7 +109,7 @@ gh issue list --search "parent:#<EPIC_ID>"
 ```json
 // List all open stories
 { "tool": "list_issues", "args": { 
-  "owner": "jnPiyush",
+  "owner": "<OWNER>",
   "repo": "AgentX",
   "labels": ["type:story"],
   "state": "open"
@@ -120,7 +120,7 @@ gh issue list --search "parent:#<EPIC_ID>"
 
 ```bash
 curl -H "Authorization: token $TOKEN" \
-  "https://api.github.com/repos/jnPiyush/AgentX/issues?labels=type:story"
+  "https://api.github.com/repos/<OWNER>/<REPO>/issues?labels=type:story"
 ```
 
 ---
@@ -175,7 +175,7 @@ Status is managed in Projects UI, not via code.
 
 **Manual add:**
 ```bash
-gh project item-add <PROJECT_ID> --owner jnPiyush --url <ISSUE_URL>
+gh project item-add <PROJECT_ID> --owner <OWNER> --url <ISSUE_URL>
 ```
 
 ### Agent coordination not working

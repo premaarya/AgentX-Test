@@ -67,7 +67,7 @@ Before writing ANY code, creating ANY file, or making ANY modification:
 
 ### Create Issue (MCP - Primary)
 ```json
-{ "tool": "issue_write", "args": { "owner": "jnPiyush", "repo": "AgentX", "method": "create", "title": "[Type] Description", "body": "## Description\n[Details]", "labels": ["type:task"] } }
+{ "tool": "issue_write", "args": { "owner": "<OWNER>", "repo": "<REPO>", "method": "create", "title": "[Type] Description", "body": "## Description\n[Details]", "labels": ["type:task"] } }
 ```
 
 ### Claim Issue (MCP - Primary)
@@ -78,7 +78,7 @@ Before writing ANY code, creating ANY file, or making ANY modification:
 
 ### Close Issue (MCP - Primary)
 ```json
-{ "tool": "update_issue", "args": { "owner": "jnPiyush", "repo": "AgentX", "issue_number": <ID>, "state": "closed" } }
+{ "tool": "update_issue", "args": { "owner": "<OWNER>", "repo": "<REPO>", "issue_number": <ID>, "state": "closed" } }
 ```
 
 ### CLI Fallback (if MCP unavailable)
