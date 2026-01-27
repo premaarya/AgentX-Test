@@ -4,23 +4,25 @@
 # Part of AgentX 4-layer security architecture.
 #
 # Learn more: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# ⚠️  IMPORTANT: Replace <YOUR_GITHUB_USERNAME> with your actual GitHub username!
 
 # Default owners for everything in the repo
-* @jnPiyush
+* @<YOUR_GITHUB_USERNAME>
 
 # Agents can auto-merge to these safe paths
-docs/** @jnPiyush @github-actions[bot]
-samples/** @jnPiyush @github-actions[bot]
-tests/** @jnPiyush @github-actions[bot]
+docs/** @<YOUR_GITHUB_USERNAME> @github-actions[bot]
+samples/** @<YOUR_GITHUB_USERNAME> @github-actions[bot]
+tests/** @<YOUR_GITHUB_USERNAME> @github-actions[bot]
 
 # Critical paths require human review
-.github/workflows/** @jnPiyush
-.github/agents/** @jnPiyush
-.github/hooks/** @jnPiyush
-package.json @jnPiyush
-*.csproj @jnPiyush
-*.sln @jnPiyush
+.github/workflows/** @<YOUR_GITHUB_USERNAME>
+.github/agents/** @<YOUR_GITHUB_USERNAME>
+.github/hooks/** @<YOUR_GITHUB_USERNAME>
+package.json @<YOUR_GITHUB_USERNAME>
+*.csproj @<YOUR_GITHUB_USERNAME>
+*.sln @<YOUR_GITHUB_USERNAME>
 
 # Security-sensitive files
-.github/CODEOWNERS @jnPiyush
-.github/agentx-security.yml @jnPiyush
+.github/CODEOWNERS @<YOUR_GITHUB_USERNAME>
+.github/agentx-security.yml @<YOUR_GITHUB_USERNAME>

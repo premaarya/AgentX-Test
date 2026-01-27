@@ -12,7 +12,7 @@
 # Via GitHub CLI
 gh project create --owner <OWNER> --title "AgentX Development"
 
-# Or via web: https://github.com/users/jnPiyush/projects
+# Or via web: https://github.com/users/<YOUR_USERNAME>/projects
 ```
 
 ### 2. Add Status Field

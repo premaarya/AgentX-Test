@@ -9,7 +9,7 @@ updates:
       time: "09:00"
     open-pull-requests-limit: 5
     reviewers:
-      - "jnPiyush"
+      - "<YOUR_GITHUB_USERNAME>"  # Replace with your GitHub username
     labels:
       - "dependencies"
       - "dotnet"
@@ -34,7 +34,7 @@ updates:
       time: "09:00"
     open-pull-requests-limit: 5
     reviewers:
-      - "jnPiyush"
+      - "<YOUR_GITHUB_USERNAME>"
     labels:
       - "dependencies"
       - "python"
@@ -58,7 +58,7 @@ updates:
       time: "09:00"
     open-pull-requests-limit: 5
     reviewers:
-      - "jnPiyush"
+      - "<YOUR_GITHUB_USERNAME>"
     labels:
       - "dependencies"
       - "npm"
@@ -80,7 +80,7 @@ updates:
       interval: "monthly"
     open-pull-requests-limit: 3
     reviewers:
-      - "jnPiyush"
+      - "<YOUR_GITHUB_USERNAME>"
     labels:
       - "dependencies"
       - "github-actions"

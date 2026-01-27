@@ -5,6 +5,8 @@
 # - Layer 3: Kill Switch (emergency disable)
 #
 # This file is consumed by GitHub Actions workflows to enforce security policies.
+#
+# ⚠️  IMPORTANT: Replace <YOUR_GITHUB_USERNAME> with your actual GitHub username!
 
 # Layer 3: Kill Switch
 # Set to false to immediately disable all autonomous agent operations
@@ -13,7 +15,7 @@ autonomous_mode_enabled: true
 # Layer 1: Actor Allowlist
 # GitHub users/bots authorized to trigger autonomous workflows
 allowed_actors:
-  - jnPiyush
+  - <YOUR_GITHUB_USERNAME>
   - github-actions[bot]
 
 # Layer 2: Protected Paths
