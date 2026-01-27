@@ -528,12 +528,8 @@ If validation fails:
 
 ## References
 
-- **Workflow**: [AGENTS.md §Engineer](../../AGENTS.md#-orchestration--handoffs)
+- **Workflow**: [AGENTS.md](../../AGENTS.md) § Agent Roles
 - **Standards**: [Skills.md](../../Skills.md) → All 18 skills
-- **Code Examples**: [samples/src/](../../samples/src/)
-- **Test Examples**: [samples/tests/](../../samples/tests/)
-- **Validation Script**: [validate-handoff.sh](../scripts/validate-handoff.sh)
-- **Context Capture**: [capture-context.sh](../scripts/capture-context.sh)
 
 ---
 

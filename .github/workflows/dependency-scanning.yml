@@ -18,7 +18,7 @@ jobs:
   dotnet-scan:
     name: Scan .NET Dependencies
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('**/*.csproj', '**/*.sln') != '' }}
+    if: hashFiles('**/*.csproj', '**/*.sln') != ''
     steps:
       - uses: actions/checkout@v4
       
@@ -55,7 +55,7 @@ jobs:
   python-scan:
     name: Scan Python Dependencies
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('**/requirements.txt', '**/Pipfile', '**/pyproject.toml') != '' }}
+    if: hashFiles('**/requirements.txt', '**/Pipfile', '**/pyproject.toml') != ''
     steps:
       - uses: actions/checkout@v4
       
@@ -96,7 +96,7 @@ jobs:
   node-scan:
     name: Scan Node.js Dependencies
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('**/package.json', '**/package-lock.json') != '' }}
+    if: hashFiles('**/package.json', '**/package-lock.json') != ''
     steps:
       - uses: actions/checkout@v4
       

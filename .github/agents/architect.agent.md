@@ -470,12 +470,10 @@ If validation fails:
 
 ## References
 
-- **Workflow**: [AGENTS.md §Architect](../../AGENTS.md#-orchestration--handoffs)
+- **Workflow**: [AGENTS.md](../../AGENTS.md) § Agent Roles
 - **Standards**: [Skills.md](../../Skills.md) → Core Principles, Security, Architecture
-- **Example ADR**: [ADR-50.md](../../docs/adr/ADR-50.md)
-- **Example Spec**: [SPEC-50.md](../../docs/specs/SPEC-50.md)
-- **Validation Script**: [validate-handoff.sh](../scripts/validate-handoff.sh)
-- **Context Capture**: [capture-context.sh](../scripts/capture-context.sh)
+- **ADR Template**: [ADR-TEMPLATE.md](../templates/ADR-TEMPLATE.md)
+- **Spec Template**: [SPEC-TEMPLATE.md](../templates/SPEC-TEMPLATE.md)
 
 ---
 

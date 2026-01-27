@@ -72,7 +72,6 @@ jobs:
             core.setOutput('issue_number', issueNumber);
             console.log(agent ? `✅ Routing to: ${agent}` : '⏸️ No routing needed');
 
-  # Product Manager: Creates PRD for Epics
   pm:
     name: 📋 Product Manager
     needs: route
@@ -103,11 +102,8 @@ jobs:
           git add docs/prd/
           git diff --cached --quiet || git commit -m "docs: scaffold PRD for Epic #${ISSUE}"
           git push || true
-          gh issue comment ${ISSUE} --body "📋 **PM Agent**: PRD scaffold created at \`docs/prd/PRD-${ISSUE}.md\`
+          gh issue comment ${ISSUE} --body "📋 **PM Agent**: PRD scaffold created at docs/prd/PRD-${ISSUE}.md - Update status to Ready in Projects board when complete."
 
-Status: Update to **Ready** in Projects board when complete."
-
-  # UX Designer: Creates UX design for needs:ux issues
   ux:
     name: 🎨 UX Designer
     needs: route
@@ -138,11 +134,8 @@ Status: Update to **Ready** in Projects board when complete."
           git add docs/ux/
           git diff --cached --quiet || git commit -m "docs: scaffold UX design for #${ISSUE}"
           git push || true
-          gh issue comment ${ISSUE} --body "🎨 **UX Agent**: Design scaffold created at \`docs/ux/UX-${ISSUE}.md\`
+          gh issue comment ${ISSUE} --body "🎨 **UX Agent**: Design scaffold created at docs/ux/UX-${ISSUE}.md - Update status to Ready in Projects board when complete."
 
-Status: Update to **Ready** in Projects board when complete."
-
-  # Architect: Creates ADR + Spec for Features/Spikes
   architect:
     name: 🏗️ Architect
     needs: route
@@ -176,13 +169,8 @@ Status: Update to **Ready** in Projects board when complete."
           git add docs/adr/ docs/specs/
           git diff --cached --quiet || git commit -m "docs: scaffold ADR + Spec for #${ISSUE}"
           git push || true
-          gh issue comment ${ISSUE} --body "🏗️ **Architect Agent**: Scaffolds created:
-- ADR: \`docs/adr/ADR-${ISSUE}.md\`
-- Spec: \`docs/specs/SPEC-${ISSUE}.md\`
+          gh issue comment ${ISSUE} --body "🏗️ **Architect Agent**: Scaffolds created (ADR: docs/adr/ADR-${ISSUE}.md, Spec: docs/specs/SPEC-${ISSUE}.md) - Update status to Ready in Projects board when complete."
 
-Status: Update to **Ready** in Projects board when complete."
-
-  # Engineer: Acknowledges story/bug assignment
   engineer:
     name: 🔧 Engineer
     needs: route
@@ -194,11 +182,4 @@ Status: Update to **Ready** in Projects board when complete."
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           ISSUE="${{ needs.route.outputs.issue_number }}"
-          gh issue comment ${ISSUE} --repo ${{ github.repository }} --body "🔧 **Engineer Agent**: Ready for implementation.
-
-**Workflow:**
-1. Move status to **In Progress** in Projects board
-2. Implement code with tests (≥80% coverage)
-3. Move status to **In Review** when done
-
-See \`docs/specs/\` for technical requirements."
+          gh issue comment ${ISSUE} --repo ${{ github.repository }} --body "🔧 **Engineer Agent**: Ready for implementation. Move status to In Progress, implement with tests (80%+ coverage), then move to In Review when done."
