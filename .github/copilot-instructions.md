@@ -45,7 +45,8 @@ Before writing ANY code, creating ANY file, or making ANY modification:
 ║                                                           ║
 ║   □ Step 1: Read AGENTS.md (if not already read)         ║
 ║   □ Step 2: Create GitHub Issue (if none exists)         ║
-║   □ Step 3: Claim Issue (move to In Progress in Projects)║
+║   □ Step 3: Update Status in Projects board              ║
+║             (Engineer: In Progress, Others: work→Ready)  ║
 ║   □ Step 4: NOW you can proceed with work                ║
 ║                                                           ║
 ║   ⚠️  NO RETROACTIVE ISSUES - defeats audit trail        ║
