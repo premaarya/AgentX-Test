@@ -183,13 +183,13 @@ npm audit                      # Node.js
 ### Read Before Coding
 1. [AGENTS.md](AGENTS.md) - Workflow and behavior guidelines
 2. [Skills.md](Skills.md) - Technical standards index
-3. Relevant skill docs in `skills/` folder
+3. Relevant skill docs in `.github/skills/` folder
 
 ### Key Standards
-- **Security**: [skills/04-security.md](skills/04-security.md)
-- **Testing**: [skills/02-testing.md](skills/02-testing.md)
-- **API Design**: [skills/09-api-design.md](skills/09-api-design.md)
-- **Documentation**: [skills/11-documentation.md](skills/11-documentation.md)
+- **Security**: [.github/skills/architecture/security/SKILL.md](.github/skills/architecture/security/SKILL.md)
+- **Testing**: [.github/skills/development/testing/SKILL.md](.github/skills/development/testing/SKILL.md)
+- **API Design**: [.github/skills/architecture/api-design/SKILL.md](.github/skills/architecture/api-design/SKILL.md)
+- **Documentation**: [.github/skills/development/documentation/SKILL.md](.github/skills/development/documentation/SKILL.md)
 
 ### Documentation
 - XML docs for all public APIs (C#)
@@ -221,7 +221,7 @@ npm audit                      # Node.js
 ### Required
 - **Git** - Version control
 - **GitHub CLI** (`gh`) - Issue/PR management
-- **.NET 8+** (for C# projects)
+- **.NET 10+** (for C# projects)
 - **Python 3.11+** (for Python projects)
 - **PostgreSQL 16+** (for database projects)
 
