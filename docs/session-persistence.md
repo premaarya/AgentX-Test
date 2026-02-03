@@ -391,7 +391,6 @@ dotnet test                         # Verify stability
 
 - [AGENTS.md](../AGENTS.md) - Core workflow documentation
 - [.github/templates/PROGRESS-TEMPLATE.md](../.github/templates/PROGRESS-TEMPLATE.md) - Progress log template
-- [Anthropic Autonomous Coding](https://github.com/anthropics/claude-quickstarts/tree/main/autonomous-coding) - Inspiration source
 
 ---
 
