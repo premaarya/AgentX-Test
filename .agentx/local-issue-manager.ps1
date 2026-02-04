@@ -91,7 +91,7 @@ function Create-Issue {
     $issueFile = Get-IssueFile $number
     $issue | ConvertTo-Json -Depth 10 | Set-Content $issueFile
     
-    Write-Host "Created issue #$number: $Title" -ForegroundColor Green
+    Write-Host "Created issue #${number}: $Title" -ForegroundColor Green
     return $issue
 }
 
@@ -100,7 +100,7 @@ function Get-Issue {
     
     $issueFile = Get-IssueFile $Number
     if (-not (Test-Path $issueFile)) {
-        Write-Error "Issue #$Number not found"
+        Write-Error "Issue #${Number} not found"
         return $null
     }
     
@@ -129,7 +129,7 @@ function Update-Issue {
     $issueFile = Get-IssueFile $Number
     $issue | ConvertTo-Json -Depth 10 | Set-Content $issueFile
     
-    Write-Host "Updated issue #$Number" -ForegroundColor Green
+    Write-Host "Updated issue #${Number}" -ForegroundColor Green
     return $issue
 }
 
@@ -146,7 +146,7 @@ function Close-Issue {
     $issueFile = Get-IssueFile $Number
     $issue | ConvertTo-Json -Depth 10 | Set-Content $issueFile
     
-    Write-Host "Closed issue #$Number" -ForegroundColor Green
+    Write-Host "Closed issue #${Number}" -ForegroundColor Green
     return $issue
 }
 
@@ -170,7 +170,7 @@ function Add-Comment {
     $issueFile = Get-IssueFile $Number
     $issue | ConvertTo-Json -Depth 10 | Set-Content $issueFile
     
-    Write-Host "Added comment to issue #$Number" -ForegroundColor Green
+    Write-Host "Added comment to issue #${Number}" -ForegroundColor Green
     return $issue
 }
 
