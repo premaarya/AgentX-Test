@@ -283,6 +283,7 @@ download_file ".github/agents/engineer.agent.md" ".github/agents/engineer.agent.
 download_file ".github/agents/reviewer.agent.md" ".github/agents/reviewer.agent.md"
 download_file ".github/agents/devops.agent.md" ".github/agents/devops.agent.md"
 download_file ".github/agents/agent-x.agent.md" ".github/agents/agent-x.agent.md"
+download_file ".github/agents/agent-x-auto.agent.md" ".github/agents/agent-x-auto.agent.md"
 
 # Document templates
 echo -e "${CYAN}  Document templates...${NC}"
@@ -321,6 +322,7 @@ download_file ".github/prompts/architecture.prompt.md" ".github/prompts/architec
 download_file ".github/prompts/devops.prompt.md" ".github/prompts/devops.prompt.md"
 download_file ".github/prompts/security-review.prompt.md" ".github/prompts/security-review.prompt.md"
 download_file ".github/prompts/bug-triage.prompt.md" ".github/prompts/bug-triage.prompt.md"
+download_file ".github/prompts/doc-convert.prompt.md" ".github/prompts/doc-convert.prompt.md"
 
 # Skills (32 production skills organized by category)
 echo -e "${CYAN}  Production skills (32 skills)...${NC}"
