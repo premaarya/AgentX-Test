@@ -405,6 +405,7 @@ Get-FileDownload ".github/templates/ADR-TEMPLATE.md" ".github/templates/ADR-TEMP
 Get-FileDownload ".github/templates/SPEC-TEMPLATE.md" ".github/templates/SPEC-TEMPLATE.md"
 Get-FileDownload ".github/templates/UX-TEMPLATE.md" ".github/templates/UX-TEMPLATE.md"
 Get-FileDownload ".github/templates/REVIEW-TEMPLATE.md" ".github/templates/REVIEW-TEMPLATE.md"
+Get-FileDownload ".github/templates/PROGRESS-TEMPLATE.md" ".github/templates/PROGRESS-TEMPLATE.md"
 
 # Instructions
 Write-Info "Coding instructions..."
@@ -458,7 +459,7 @@ Get-FileDownload "docs/troubleshooting.md" "docs/troubleshooting.md"
 
 # Create output directories
 Write-Info "Creating output directories..."
-$dirs = @("docs/prd", "docs/adr", "docs/specs", "docs/ux", "docs/reviews")
+$dirs = @("docs/prd", "docs/adr", "docs/specs", "docs/ux", "docs/reviews", "docs/progress")
 foreach ($dir in $dirs) {
     if (-not (Test-Path $dir)) {
         New-Item -ItemType Directory -Path $dir -Force | Out-Null

@@ -292,6 +292,7 @@ download_file ".github/templates/ADR-TEMPLATE.md" ".github/templates/ADR-TEMPLAT
 download_file ".github/templates/SPEC-TEMPLATE.md" ".github/templates/SPEC-TEMPLATE.md"
 download_file ".github/templates/UX-TEMPLATE.md" ".github/templates/UX-TEMPLATE.md"
 download_file ".github/templates/REVIEW-TEMPLATE.md" ".github/templates/REVIEW-TEMPLATE.md"
+download_file ".github/templates/PROGRESS-TEMPLATE.md" ".github/templates/PROGRESS-TEMPLATE.md"
 
 # Instructions
 echo -e "${CYAN}  Coding instructions...${NC}"
@@ -365,7 +366,7 @@ download_file ".vscode/settings.json" ".vscode/settings.json"
 
 # Create output directories
 echo -e "${CYAN}  Creating output directories...${NC}"
-for dir in docs/prd docs/adr docs/specs docs/ux docs/reviews; do
+for dir in docs/prd docs/adr docs/specs docs/ux docs/reviews docs/progress; do
     if [ ! -d "$dir" ]; then
         mkdir -p "$dir"
         echo -e "${GREEN}✓ Created: $dir/${NC}"
