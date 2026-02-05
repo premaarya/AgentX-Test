@@ -301,16 +301,29 @@ download_file ".github/instructions/python.instructions.md" ".github/instruction
 # Validation scripts
 echo -e "${CYAN}  Validation scripts...${NC}"
 download_file ".github/scripts/validate-handoff.sh" ".github/scripts/validate-handoff.sh"
+download_file ".github/scripts/capture-context.sh" ".github/scripts/capture-context.sh"
+download_file ".github/scripts/capture-context.ps1" ".github/scripts/capture-context.ps1"
+
+# Additional instructions
 download_file ".github/instructions/react.instructions.md" ".github/instructions/react.instructions.md"
+download_file ".github/instructions/blazor.instructions.md" ".github/instructions/blazor.instructions.md"
+download_file ".github/instructions/sql.instructions.md" ".github/instructions/sql.instructions.md"
+download_file ".github/instructions/devops.instructions.md" ".github/instructions/devops.instructions.md"
 
 # Prompts
 echo -e "${CYAN}  Prompt templates...${NC}"
 download_file ".github/prompts/code-review.prompt.md" ".github/prompts/code-review.prompt.md"
 download_file ".github/prompts/refactor.prompt.md" ".github/prompts/refactor.prompt.md"
 download_file ".github/prompts/test-gen.prompt.md" ".github/prompts/test-gen.prompt.md"
+download_file ".github/prompts/prd-gen.prompt.md" ".github/prompts/prd-gen.prompt.md"
+download_file ".github/prompts/ux-design.prompt.md" ".github/prompts/ux-design.prompt.md"
+download_file ".github/prompts/architecture.prompt.md" ".github/prompts/architecture.prompt.md"
+download_file ".github/prompts/devops.prompt.md" ".github/prompts/devops.prompt.md"
+download_file ".github/prompts/security-review.prompt.md" ".github/prompts/security-review.prompt.md"
+download_file ".github/prompts/bug-triage.prompt.md" ".github/prompts/bug-triage.prompt.md"
 
-# Skills (29 production skills organized by category)
-echo -e "${CYAN}  Production skills (29 skills)...${NC}"
+# Skills (32 production skills organized by category)
+echo -e "${CYAN}  Production skills (32 skills)...${NC}"
 
 # Architecture skills
 for skill in core-principles security performance database scalability code-organization api-design; do
@@ -318,7 +331,7 @@ for skill in core-principles security performance database scalability code-orga
 done
 
 # Development skills
-for skill in testing error-handling configuration documentation version-control type-safety dependency-management logging-monitoring code-review-and-audit csharp python frontend-ui react blazor postgresql sql-server; do
+for skill in testing error-handling configuration documentation version-control type-safety dependency-management logging-monitoring code-review-and-audit csharp python frontend-ui react blazor postgresql sql-server go rust; do
     download_file ".github/skills/development/$skill/SKILL.md" ".github/skills/development/$skill/SKILL.md"
 done
 
@@ -328,21 +341,25 @@ download_file ".github/skills/operations/github-actions-workflows/SKILL.md" ".gi
 download_file ".github/skills/operations/yaml-pipelines/SKILL.md" ".github/skills/operations/yaml-pipelines/SKILL.md"
 download_file ".github/skills/operations/release-management/SKILL.md" ".github/skills/operations/release-management/SKILL.md"
 
+# Cloud skills
+download_file ".github/skills/cloud/azure/SKILL.md" ".github/skills/cloud/azure/SKILL.md"
+
 # AI Systems skills
 download_file ".github/skills/ai-systems/ai-agent-development/SKILL.md" ".github/skills/ai-systems/ai-agent-development/SKILL.md"
 
 # Design skills
 download_file ".github/skills/design/ux-ui-design/SKILL.md" ".github/skills/design/ux-ui-design/SKILL.md"
 
+# Documentation
+echo -e "${CYAN}  Documentation...${NC}"
+download_file "docs/mcp-integration.md" "docs/mcp-integration.md"
+download_file "docs/troubleshooting.md" "docs/troubleshooting.md"
+download_file "docs/project-setup.md" "docs/project-setup.md"
+
 # VS Code configuration
 echo -e "${CYAN}  VS Code configuration...${NC}"
 download_file ".vscode/mcp.json" ".vscode/mcp.json"
 download_file ".vscode/settings.json" ".vscode/settings.json"
-
-# Documentation
-echo -e "${CYAN}  Documentation...${NC}"
-download_file "docs/mcp-integration.md" "docs/mcp-integration.md"
-download_file "docs/project-setup.md" "docs/project-setup.md"
 
 # Create output directories
 echo -e "${CYAN}  Creating output directories...${NC}"

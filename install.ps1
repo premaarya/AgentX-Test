@@ -411,19 +411,29 @@ Get-FileDownload ".github/instructions/api.instructions.md" ".github/instruction
 Get-FileDownload ".github/instructions/csharp.instructions.md" ".github/instructions/csharp.instructions.md"
 Get-FileDownload ".github/instructions/python.instructions.md" ".github/instructions/python.instructions.md"
 Get-FileDownload ".github/instructions/react.instructions.md" ".github/instructions/react.instructions.md"
+Get-FileDownload ".github/instructions/blazor.instructions.md" ".github/instructions/blazor.instructions.md"
+Get-FileDownload ".github/instructions/sql.instructions.md" ".github/instructions/sql.instructions.md"
+Get-FileDownload ".github/instructions/devops.instructions.md" ".github/instructions/devops.instructions.md"
 
 # Prompts
 Write-Info "Prompt templates..."
 Get-FileDownload ".github/prompts/code-review.prompt.md" ".github/prompts/code-review.prompt.md"
 Get-FileDownload ".github/prompts/refactor.prompt.md" ".github/prompts/refactor.prompt.md"
 Get-FileDownload ".github/prompts/test-gen.prompt.md" ".github/prompts/test-gen.prompt.md"
+Get-FileDownload ".github/prompts/prd-gen.prompt.md" ".github/prompts/prd-gen.prompt.md"
+Get-FileDownload ".github/prompts/ux-design.prompt.md" ".github/prompts/ux-design.prompt.md"
+Get-FileDownload ".github/prompts/architecture.prompt.md" ".github/prompts/architecture.prompt.md"
+Get-FileDownload ".github/prompts/devops.prompt.md" ".github/prompts/devops.prompt.md"
+Get-FileDownload ".github/prompts/security-review.prompt.md" ".github/prompts/security-review.prompt.md"
+Get-FileDownload ".github/prompts/bug-triage.prompt.md" ".github/prompts/bug-triage.prompt.md"
 
-# Skills (29 production skills organized by category)
-Write-Info "Production skills (29 skills)..."
+# Skills (32 production skills organized by category)
+Write-Info "Production skills (32 skills)..."
 $skills = @{
     "architecture" = @("core-principles", "security", "performance", "database", "scalability", "code-organization", "api-design")
-    "development" = @("testing", "error-handling", "configuration", "documentation", "version-control", "type-safety", "dependency-management", "logging-monitoring", "code-review-and-audit", "csharp", "python", "frontend-ui", "react", "blazor", "postgresql", "sql-server")
+    "development" = @("testing", "error-handling", "configuration", "documentation", "version-control", "type-safety", "dependency-management", "logging-monitoring", "code-review-and-audit", "csharp", "python", "frontend-ui", "react", "blazor", "postgresql", "sql-server", "go", "rust")
     "operations" = @("remote-git-operations", "github-actions-workflows", "yaml-pipelines", "release-management")
+    "cloud" = @("azure")
     "ai-systems" = @("ai-agent-development")
     "design" = @("ux-ui-design")
 }
@@ -442,6 +452,7 @@ Get-FileDownload ".vscode/settings.json" ".vscode/settings.json"
 Write-Info "Documentation..."
 Get-FileDownload "docs/mcp-integration.md" "docs/mcp-integration.md"
 Get-FileDownload "docs/project-setup.md" "docs/project-setup.md"
+Get-FileDownload "docs/troubleshooting.md" "docs/troubleshooting.md"
 
 # Create output directories
 Write-Info "Creating output directories..."
@@ -482,6 +493,8 @@ if ($useLocalMode) {
 # Validation scripts
 Write-Info "Validation scripts..."
 Get-FileDownload ".github/scripts/validate-handoff.sh" ".github/scripts/validate-handoff.sh"
+Get-FileDownload ".github/scripts/capture-context.sh" ".github/scripts/capture-context.sh"
+Get-FileDownload ".github/scripts/capture-context.ps1" ".github/scripts/capture-context.ps1"
 
 # Install Git hooks
 Write-Host ""

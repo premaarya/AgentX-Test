@@ -256,9 +256,46 @@ case $ROLE in
     fi
     ;;
   
+  devops)
+    echo "Validating DevOps Engineer deliverables..."
+    echo ""
+
+    # Check for workflow files
+    if ! check_dir_has_files ".github/workflows/*.yml" "GitHub Actions workflows"; then
+      echo -e "${YELLOW}⚠${NC} No new workflow files found (may be updating existing)"
+    fi
+
+    # Check for deployment documentation
+    if ! check_file_exists "docs/deployment/DEPLOY-${ISSUE}.md" "Deployment documentation"; then
+      # Check for alternative naming
+      if ! check_dir_has_files "docs/deployment/*.md" "Deployment documentation (any)"; then
+        echo -e "${YELLOW}⚠${NC} No deployment docs found (optional for minor changes)"
+      fi
+    fi
+
+    # Check code committed with issue reference
+    if ! check_git_commit "${ISSUE}"; then
+      VALIDATION_PASSED=false
+    fi
+
+    # Check for secrets in workflow files (security)
+    if find .github/workflows -name "*.yml" -exec grep -l 'password\|secret\|api_key' {} \; 2>/dev/null | grep -q .; then
+      echo -e "${RED}✗${NC} Warning: Potential secrets found in workflow files"
+      echo "    Ensure all secrets use GitHub Secrets (\${{ secrets.NAME }})"
+      VALIDATION_PASSED=false
+    else
+      echo -e "${GREEN}✓${NC} No hardcoded secrets detected in workflows"
+    fi
+
+    # Check for proper secret references
+    if find .github/workflows -name "*.yml" -exec grep -l '\${{ secrets\.' {} \; 2>/dev/null | grep -q .; then
+      echo -e "${GREEN}✓${NC} Workflows use GitHub Secrets properly"
+    fi
+    ;;
+
   *)
     echo -e "${RED}✗${NC} Unknown role: ${ROLE}"
-    echo "Valid roles: pm, ux, architect, engineer, reviewer"
+    echo "Valid roles: pm, ux, architect, engineer, reviewer, devops"
     exit 1
     ;;
 esac
