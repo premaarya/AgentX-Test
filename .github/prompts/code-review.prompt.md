@@ -1,5 +1,6 @@
 ---
-description: 'Structured code review prompt for thorough PR reviews.'
+mode: agent
+description: Structured code review prompt for thorough PR reviews
 ---
 
 # Code Review Prompt

@@ -1,5 +1,6 @@
 ---
-description: 'Code refactoring prompt for improving code quality.'
+mode: agent
+description: Code refactoring prompt for improving code quality
 ---
 
 # Refactoring Prompt

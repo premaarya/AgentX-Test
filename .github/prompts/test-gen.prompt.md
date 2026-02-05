@@ -1,5 +1,6 @@
 ---
-description: 'Test generation prompt for creating comprehensive test suites.'
+mode: agent
+description: Test generation prompt for creating comprehensive test suites
 ---
 
 # Test Generation Prompt
@@ -44,7 +45,5 @@ For each method/function:
 
 ## Generated Tests
 [Code implementation]
-```
-```
 ```
 
