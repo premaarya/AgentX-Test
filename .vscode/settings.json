@@ -25,5 +25,15 @@
   "yaml.schemas": {
     "https://json.schemastore.org/github-workflow.json": ".github/workflows/*.yml"
   },
-  "chat.mcp.assisted.nuget.enabled": true
+  "chat.mcp.assisted.nuget.enabled": true,
+  "chat.mcp.discovery.enabled": {
+    "claude-desktop": true
+  },
+  "chat.mcp.gallery.enabled": true,
+  "chat.tools.terminal.autoReplyToPrompts": true,
+  "chat.unifiedAgentsBar.enabled": true,
+  "chat.useNestedAgentsMdFiles": true,
+  "chat.viewProgressBadge.enabled": true,
+  "inlineChat.enableV2": true,
+  "inlineChat.notebookAgent": true
 }
