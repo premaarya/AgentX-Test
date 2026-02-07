@@ -255,13 +255,16 @@ All AgentX core agents are currently **stable** (production-ready).
 
 ### Agent X (Hub Coordinator)
 - **Maturity**: Stable
-- **Mode**: Coordinator (default) | Autonomous (for simple tasks)
+- **Mode**: Adaptive (auto-detects complexity)
 - **Role**: Routes work to specialized agents based on issue type and complexity
 - **Tools**: All tools available + runSubagent for delegation
 - **Constraints**:
-  - ✅ CAN route issues, validate prerequisites, update status, coordinate handoffs
+  - ✅ CAN analyze complexity and route autonomously or through full workflow
+  - ✅ CAN skip PM/Architect for simple bugs/docs (≤3 files, clear scope)
+  - ✅ MUST escalate to full workflow when complexity detected
   - ❌ CANNOT create deliverables (PRD, ADR, Code, etc.)
-- **Autonomous Mode**: For `type:bug`, `type:docs`, and simple stories (≤3 files), can route directly to Engineer, skipping PM/Architect phases
+- **Autonomous Triggers**: `type:bug`, `type:docs`, simple `type:story` (≤3 files, clear acceptance criteria)
+- **Full Workflow Triggers**: `type:epic`, `type:feature`, `needs:ux`, complex stories (>3 files)
 
 ---
 
@@ -416,7 +419,7 @@ Types: `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `chore`
 | **Handoff Buttons** | Agent frontmatter `handoffs:` field | ✅ Stable |
 | **Input Variables** | [Template Input Variables](docs/template-input-variables.md) | ✅ Stable |
 | **Context Clearing** | [Context Management](#context-management) | ✅ Stable |
-| **Autonomous Mode** | [Agent X Autonomous](.github/agents/agent-x-auto.agent.md) | ✅ Stable |
+| **Agent X Adaptive Mode** | [.github/agents/agent-x.agent.md](.github/agents/agent-x.agent.md) | ✅ Stable |
 
 ### New Features (v3.0 Roadmap)
 

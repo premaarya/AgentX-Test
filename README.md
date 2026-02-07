@@ -131,9 +131,8 @@ AgentX is a **multi-agent orchestration framework** that enables AI coding assis
 <tr>
 <td width="50%">
 
-### 🤖 8 Specialized Agents
-- **Agent X** - Coordinator & router (hub)
-- **Agent X Auto** - Autonomous mode for simple tasks
+### 🤖 7 Specialized Agents
+- **Agent X** - Adaptive coordinator (auto-detects complexity)
 - **Product Manager** - PRDs & backlog
 - **UX Designer** - Wireframes & flows
 - **Solution Architect** - ADRs & specs
@@ -192,7 +191,7 @@ AgentX is a **multi-agent orchestration framework** that enables AI coding assis
 - **Enhanced Handoff Buttons**: Visual transitions with 📋🎨🏗️🔧🔍 icons and context
 
 ### Smarter Workflows
-- **Autonomous Mode**: Auto-route simple bugs and docs directly to Engineer
+- **Adaptive Routing**: Auto-detects complexity, routes simple tasks directly to Engineer
 - **Context Clearing**: Prevent assumption contamination between phases
 - **Input Variables**: Dynamic templates with `${variable_name}` syntax
 
@@ -202,6 +201,8 @@ AgentX is a **multi-agent orchestration framework** that enables AI coding assis
 - [New Features Summary](docs/NEW-FEATURES-v2.1.md)
 
 **[See What's New →](docs/NEW-FEATURES-v2.1.md)**
+
+**[Roadmap v3.0 →](#%EF%B8%8F-roadmap-v30)**
 
 ---
 
