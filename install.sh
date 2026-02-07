@@ -1,8 +1,10 @@
 #!/bin/bash
-# Install AgentX v2.1.0 in your project
+# Install AgentX v3.0.0 in your project
 #
-# New in v2.1: Maturity levels, constraint-based design, handoff buttons,
-# input variables, context clearing, and autonomous mode.
+# New in v3.0: Agent analytics, auto-fix reviewer, prompt engineering,
+# cross-repo orchestration, CLI spec, agent memory, visualization.
+# Includes all v2.1 features: maturity levels, constraint-based design,
+# handoff buttons, input variables, context clearing, and adaptive mode.
 #
 # Usage:
 #   ./install.sh
@@ -52,9 +54,9 @@ download_file() {
 # Banner
 echo ""
 echo -e "${CYAN}╔═══════════════════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║  AgentX v2.1.0 - Multi-Agent Orchestration       ║${NC}"
-echo -e "${CYAN}╚═══════════════════════════════════════════════════╝${NC}"
-echo -e "${GREEN}New: Autonomous mode, input variables, constraints${NC}"
+echo -e "${CYAN}║  AgentX v3.0.0 - Multi-Agent Orchestration       ║${NC}"
+echo -e "${CYAN}╚═══════════════════════════════════════════════════${NC}"
+echo -e "${GREEN}New: Analytics, auto-fix reviewer, prompt engineering, adaptive mode${NC}"
 echo ""
 
 # Pre-installation validation
@@ -283,7 +285,7 @@ download_file ".github/agents/engineer.agent.md" ".github/agents/engineer.agent.
 download_file ".github/agents/reviewer.agent.md" ".github/agents/reviewer.agent.md"
 download_file ".github/agents/devops.agent.md" ".github/agents/devops.agent.md"
 download_file ".github/agents/agent-x.agent.md" ".github/agents/agent-x.agent.md"
-download_file ".github/agents/agent-x-auto.agent.md" ".github/agents/agent-x-auto.agent.md"
+download_file ".github/agents/reviewer-auto.agent.md" ".github/agents/reviewer-auto.agent.md"
 
 # Document templates
 echo -e "${CYAN}  Document templates...${NC}"
@@ -307,6 +309,7 @@ download_file ".github/scripts/capture-context.sh" ".github/scripts/capture-cont
 download_file ".github/scripts/capture-context.ps1" ".github/scripts/capture-context.ps1"
 download_file ".github/scripts/setup-hooks.sh" ".github/scripts/setup-hooks.sh"
 download_file ".github/scripts/setup-hooks.ps1" ".github/scripts/setup-hooks.ps1"
+download_file ".github/scripts/collect-metrics.ps1" ".github/scripts/collect-metrics.ps1"
 
 # Utility scripts
 echo -e "${CYAN}  Utility scripts...${NC}"
@@ -331,8 +334,8 @@ download_file ".github/prompts/devops.prompt.md" ".github/prompts/devops.prompt.
 download_file ".github/prompts/security-review.prompt.md" ".github/prompts/security-review.prompt.md"
 download_file ".github/prompts/bug-triage.prompt.md" ".github/prompts/bug-triage.prompt.md"
 
-# Skills (32 production skills organized by category)
-echo -e "${CYAN}  Production skills (32 skills)...${NC}"
+# Skills (33 production skills organized by category)
+echo -e "${CYAN}  Production skills (33 skills)...${NC}"
 
 # Architecture skills
 for skill in core-principles security performance database scalability code-organization api-design; do
@@ -355,6 +358,7 @@ download_file ".github/skills/cloud/azure/SKILL.md" ".github/skills/cloud/azure/
 
 # AI Systems skills
 download_file ".github/skills/ai-systems/ai-agent-development/SKILL.md" ".github/skills/ai-systems/ai-agent-development/SKILL.md"
+download_file ".github/skills/ai-systems/prompt-engineering/SKILL.md" ".github/skills/ai-systems/prompt-engineering/SKILL.md"
 
 # Design skills
 download_file ".github/skills/design/ux-ui-design/SKILL.md" ".github/skills/design/ux-ui-design/SKILL.md"
@@ -365,6 +369,14 @@ download_file "docs/mcp-integration.md" "docs/mcp-integration.md"
 download_file "docs/troubleshooting.md" "docs/troubleshooting.md"
 download_file "docs/project-setup.md" "docs/project-setup.md"
 download_file "docs/markdown-to-doc-conversion.md" "docs/markdown-to-doc-conversion.md"
+
+# v3.0 Documentation
+echo -e "${CYAN}  v3.0 feature documentation...${NC}"
+download_file "docs/analytics/METRICS.md" "docs/analytics/METRICS.md"
+download_file "docs/multi-repo.md" "docs/multi-repo.md"
+download_file "docs/cli-specification.md" "docs/cli-specification.md"
+download_file "docs/agent-memory.md" "docs/agent-memory.md"
+download_file "docs/visualization.md" "docs/visualization.md"
 
 # VS Code configuration
 echo -e "${CYAN}  VS Code configuration...${NC}"

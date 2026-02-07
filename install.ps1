@@ -1,14 +1,16 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-    Install AgentX v2.1.0 in your project
+    Install AgentX v3.0.0 in your project
 
 .DESCRIPTION
     Downloads and installs all AgentX files including agents, skills,
     templates, workflows, and documentation.
     
-    New in v2.1: Maturity levels, constraint-based design, handoff buttons,
-    input variables, context clearing, and autonomous mode.
+    New in v3.0: Agent analytics, auto-fix reviewer, prompt engineering,
+    cross-repo orchestration, CLI spec, agent memory, visualization.
+    Includes all v2.1 features: maturity levels, constraint-based design,
+    handoff buttons, input variables, context clearing, and adaptive mode.
 
 .PARAMETER Force
     Overwrite existing files
@@ -87,9 +89,9 @@ function Get-FileDownload($src, $dest) {
 # Banner
 Write-Host ""
 Write-Host "╔═══════════════════════════════════════════════════╗" -ForegroundColor Cyan
-Write-Host "║  AgentX v2.1.0 - Multi-Agent Orchestration       ║" -ForegroundColor Cyan
+Write-Host "║  AgentX v3.0.0 - Multi-Agent Orchestration       ║" -ForegroundColor Cyan
 Write-Host "╚═══════════════════════════════════════════════════╝" -ForegroundColor Cyan
-Write-Host "New: Autonomous mode, input variables, constraints" -ForegroundColor Green
+Write-Host "New: Analytics, auto-fix reviewer, prompt engineering, adaptive mode" -ForegroundColor Green
 Write-Host ""
 Write-Host "╚═══════════════════════════════════════════════════╝" -ForegroundColor Cyan
 Write-Host ""
@@ -396,7 +398,7 @@ Get-FileDownload ".github/agents/engineer.agent.md" ".github/agents/engineer.age
 Get-FileDownload ".github/agents/reviewer.agent.md" ".github/agents/reviewer.agent.md"
 Get-FileDownload ".github/agents/devops.agent.md" ".github/agents/devops.agent.md"
 Get-FileDownload ".github/agents/agent-x.agent.md" ".github/agents/agent-x.agent.md"
-Get-FileDownload ".github/agents/agent-x-auto.agent.md" ".github/agents/agent-x-auto.agent.md"
+Get-FileDownload ".github/agents/reviewer-auto.agent.md" ".github/agents/reviewer-auto.agent.md"
 
 # Document templates
 Write-Info "Document templates..."
@@ -429,14 +431,14 @@ Get-FileDownload ".github/prompts/devops.prompt.md" ".github/prompts/devops.prom
 Get-FileDownload ".github/prompts/security-review.prompt.md" ".github/prompts/security-review.prompt.md"
 Get-FileDownload ".github/prompts/bug-triage.prompt.md" ".github/prompts/bug-triage.prompt.md"
 
-# Skills (32 production skills organized by category)
-Write-Info "Production skills (32 skills)..."
+# Skills (33 production skills organized by category)
+Write-Info "Production skills (33 skills)..."
 $skills = @{
     "architecture" = @("core-principles", "security", "performance", "database", "scalability", "code-organization", "api-design")
     "development" = @("testing", "error-handling", "configuration", "documentation", "version-control", "type-safety", "dependency-management", "logging-monitoring", "code-review-and-audit", "csharp", "python", "frontend-ui", "react", "blazor", "postgresql", "sql-server", "go", "rust")
     "operations" = @("remote-git-operations", "github-actions-workflows", "yaml-pipelines", "release-management")
     "cloud" = @("azure")
-    "ai-systems" = @("ai-agent-development")
+    "ai-systems" = @("ai-agent-development", "prompt-engineering")
     "design" = @("ux-ui-design")
 }
 foreach ($category in $skills.Keys) {
@@ -456,6 +458,14 @@ Get-FileDownload "docs/mcp-integration.md" "docs/mcp-integration.md"
 Get-FileDownload "docs/project-setup.md" "docs/project-setup.md"
 Get-FileDownload "docs/troubleshooting.md" "docs/troubleshooting.md"
 Get-FileDownload "docs/markdown-to-doc-conversion.md" "docs/markdown-to-doc-conversion.md"
+
+# v3.0 Documentation
+Write-Info "v3.0 feature documentation..."
+Get-FileDownload "docs/analytics/METRICS.md" "docs/analytics/METRICS.md"
+Get-FileDownload "docs/multi-repo.md" "docs/multi-repo.md"
+Get-FileDownload "docs/cli-specification.md" "docs/cli-specification.md"
+Get-FileDownload "docs/agent-memory.md" "docs/agent-memory.md"
+Get-FileDownload "docs/visualization.md" "docs/visualization.md"
 
 # Create output directories
 Write-Info "Creating output directories..."
@@ -500,6 +510,7 @@ Get-FileDownload ".github/scripts/capture-context.sh" ".github/scripts/capture-c
 Get-FileDownload ".github/scripts/capture-context.ps1" ".github/scripts/capture-context.ps1"
 Get-FileDownload ".github/scripts/setup-hooks.sh" ".github/scripts/setup-hooks.sh"
 Get-FileDownload ".github/scripts/setup-hooks.ps1" ".github/scripts/setup-hooks.ps1"
+Get-FileDownload ".github/scripts/collect-metrics.ps1" ".github/scripts/collect-metrics.ps1"
 
 # Utility scripts
 Write-Info "Utility scripts..."
