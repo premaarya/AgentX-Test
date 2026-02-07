@@ -40,12 +40,12 @@ tools:
   - manage_todo_list
   - runSubagent
 handoffs:
-  - label: "🔧 Direct to Engineer"
+  - label: "Direct to Engineer"
     agent: engineer
     prompt: "Implement fix for issue #${issue_number}"
     send: false
     context: "For simple bugs and stories (≤3 files)"
-  - label: "📋 Escalate to PM"
+  - label: "Escalate to PM"
     agent: product-manager
     prompt: "Complex issue detected - create PRD for #${issue_number}"
     send: false

@@ -110,7 +110,7 @@ type:devops + Backlog → DevOps Engineer (skip PM/Architect for infrastructure 
 
 **Validation checks:**
 - PM: PRD exists, child issues created, required sections present
-- UX: Wireframes + user flows complete, accessibility considered
+- UX: Wireframes + user flows + **HTML/CSS prototypes (MANDATORY)** complete, accessibility considered
 - Architect: ADR + Tech Spec exist, NO CODE EXAMPLES compliance
 - Engineer: Code committed, tests ≥80% coverage, docs updated
 - Reviewer: Review document complete, approval decision present
@@ -171,12 +171,12 @@ All AgentX core agents are currently **stable** (production-ready).
 ### UX Designer
 - **Maturity**: Stable
 - **Trigger**: `needs:ux` label + Status = `Ready`
-- **Output**: UX Design at `docs/ux/UX-{issue}.md` + Prototypes
+- **Output**: UX Design at `docs/ux/UX-{issue}.md` + **HTML/CSS Prototypes (MANDATORY)** at `docs/ux/prototypes/`
 - **Status**: Move to `Ready` when designs complete
 - **Tools**: All tools available (create_file, read_file, semantic_search, etc.)
 - **Validation**: `.github/scripts/validate-handoff.sh {issue} ux`
 - **Constraints**:
-  - ✅ CAN create wireframes, user flows, HTML/CSS prototypes
+  - ✅ MUST create wireframes, user flows, and production-ready HTML/CSS prototypes
   - ❌ CANNOT write application code or create technical architecture
 - **Boundaries**:
   - Can modify: `docs/ux/**`, `docs/assets/**`
@@ -184,7 +184,7 @@ All AgentX core agents are currently **stable** (production-ready).
 
 ### Solution Architect
 - **Maturity**: Stable
-- **Trigger**: `type:feature`, `type:spike`, or Status = `Ready` (after UX/PM)
+- **Trigger**: `type:feature`, `type:spike`, or Status = `Ready` (after PM, parallel with UX)
 - **Output**: ADR at `docs/adr/ADR-{issue}.md` + Tech Specs at `docs/specs/`
 - **Status**: Move to `Ready` when spec complete
 - **Tools**: All tools available (create_file, semantic_search, grep_search, etc.)
@@ -254,10 +254,42 @@ All AgentX core agents are currently **stable** (production-ready).
 ## Handoff Flow
 
 ```
-PM → UX → Architect → Engineer → Reviewer → Done
-     ↑         ↑
-   (optional) (optional for small tasks)
+PM → UX (optional, parallel) → Engineer → Reviewer → Done
+  ↘ Architect (parallel) ───────↗
 ```
+
+**Parallel Work**: UX Designer and Architect can work simultaneously after PM completes PRD.
+
+### Backlog-Based Handoffs
+
+**Work Selection**: Agents query the backlog for the next priority item instead of receiving explicit issue numbers.
+
+**Selection Criteria**:
+
+| Agent | Queries Backlog For |
+|-------|---------------------|
+| **UX Designer** | Status=`Ready` + `needs:ux` label, sorted by priority |
+| **Architect** | Status=`Ready` + PRD complete, sorted by priority (no UX dependency) |
+| **Engineer** | Status=`Ready` + ADR/Spec complete, sorted by priority |
+| **Reviewer** | Status=`In Review`, sorted by priority |
+| **DevOps** | `type:devops` + Status=`Ready`, sorted by priority |
+
+**Priority Order**: `priority:p0` > `priority:p1` > `priority:p2` > `priority:p3` > (no priority label)
+
+**Handoff Query Example**:
+```bash
+# UX Designer queries for next work item:
+gh issue list --label "needs:ux" --json number,title,labels \
+  --jq '.[] | select(.labels[].name == "priority:p0" or .labels[].name == "priority:p1") | .number'
+```
+
+**Benefits**:
+- ✅ **Autonomous work distribution** - No manual issue assignment needed
+- ✅ **Priority-driven** - Highest priority work gets done first
+- ✅ **Flexible coordination** - Agents adapt to backlog changes dynamically
+- ✅ **Parallel work support** - Multiple agents can work on different priority items
+
+**No Work Available**: If no matching issues found, agent reports "No [role] work pending" and waits for backlog updates.
 
 ### Context Management
 
@@ -266,13 +298,13 @@ PM → UX → Architect → Engineer → Reviewer → Done
 | Transition | Clear Context? | Reason |
 |------------|----------------|--------|
 | PM → UX | ❌ No | UX needs PRD context for design decisions |
-| UX → Architect | ❌ No | Architect needs both UX + PRD for technical design |
-| Architect → Engineer | ✅ **YES** | Engineer follows spec only, not design assumptions |
+| PM → Architect | ❌ No | Architect needs PRD context for technical design |
+| UX/Architect → Engineer | ✅ **YES** | Engineer follows spec only, not design assumptions |
 | Engineer → Reviewer | ❌ No | Reviewer needs full context for comprehensive review |
 | Reviewer → Engineer (rework) | ❌ No | Engineer needs review feedback |
 
 **When to Clear Context**:
-1. Before starting implementation (Architect → Engineer)
+1. Before starting implementation (UX/Architect → Engineer)
 2. When switching from research to execution
 3. When starting autonomous mode for simple tasks
 

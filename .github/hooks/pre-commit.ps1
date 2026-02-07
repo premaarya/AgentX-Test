@@ -3,7 +3,7 @@
 # Issue reference validation is handled by commit-msg hook
 # PowerShell version for Windows
 
-Write-Host "🔍 Running pre-commit checks..." -ForegroundColor Cyan
+Write-Host "[INFO] Running pre-commit checks..." -ForegroundColor Cyan
 Write-Host ""
 
 $script:Failed = $false
@@ -38,12 +38,12 @@ foreach ($file in $stagedFiles) {
 }
 
 if ($foundSecrets) {
-    Write-Host "❌ FAILED" -ForegroundColor Red
+    Write-Host "[FAILED]" -ForegroundColor Red
     Write-Host "  Found potential secrets in staged files!" -ForegroundColor Red
     Write-Host "  Use environment variables instead."
     $script:Failed = $true
 } else {
-    Write-Host "✅ PASSED" -ForegroundColor Green
+    Write-Host "[PASSED]" -ForegroundColor Green
 }
 
 # Check 2: No large files (>1MB)
@@ -59,17 +59,17 @@ foreach ($file in $stagedFiles) {
 }
 
 if ($largeFiles.Count -gt 0) {
-    Write-Host "⚠️  WARNING" -ForegroundColor Yellow
+    Write-Host "[WARNING]" -ForegroundColor Yellow
     Write-Host "  Large files detected (>1MB):"
     $largeFiles | ForEach-Object { Write-Host "    $_" }
 } else {
-    Write-Host "✅ PASSED" -ForegroundColor Green
+    Write-Host "[PASSED]" -ForegroundColor Green
 }
 
 # Check 3: Warn on direct master/main commits
 $branch = git symbolic-ref --short HEAD 2>$null
 if ($branch -eq "main" -or $branch -eq "master") {
-    Write-Host "⚠️  WARNING: Committing directly to $branch" -ForegroundColor Yellow
+    Write-Host "[WARNING] Committing directly to $branch" -ForegroundColor Yellow
 }
 
 # Check 4: C# formatting (if dotnet available)
@@ -95,9 +95,9 @@ if (Get-Command black -ErrorAction SilentlyContinue) {
         Write-Host "Checking Python formatting... " -NoNewline
         $checkResult = & black --check ($pyFiles -join ' ') 2>&1
         if ($LASTEXITCODE -eq 0) {
-            Write-Host "✅ PASSED" -ForegroundColor Green
+            Write-Host "[PASSED]" -ForegroundColor Green
         } else {
-            Write-Host "⚠️  Auto-formatting" -ForegroundColor Yellow
+            Write-Host "[AUTO-FIX] Auto-formatting" -ForegroundColor Yellow
             & black ($pyFiles -join ' ')
             $pyFiles | ForEach-Object { git add $_ }
         }
@@ -109,9 +109,9 @@ Write-Host "Checking for SQL injection risks... " -NoNewline
 $sqlRisk = git diff --cached | Select-String -Pattern '\+.*\b(ExecuteRaw|FromSqlRaw|SqlQuery)' |
            Where-Object { $_ -notmatch 'parameterized|@' }
 if ($sqlRisk) {
-    Write-Host "⚠️  WARNING: Potential SQL injection" -ForegroundColor Yellow
+    Write-Host "[WARNING] Potential SQL injection" -ForegroundColor Yellow
 } else {
-    Write-Host "✅ PASSED" -ForegroundColor Green
+    Write-Host "[PASSED]" -ForegroundColor Green
 }
 
 # Check 7: Blocked commands validation
@@ -134,25 +134,25 @@ $blockedFound = $false
 
 foreach ($cmd in $blockedCommands) {
     if ($diffContent -match [regex]::Escape($cmd)) {
-        Write-Host "❌ BLOCKED COMMAND: $cmd" -ForegroundColor Red
+        Write-Host "[BLOCKED] BLOCKED COMMAND: $cmd" -ForegroundColor Red
         $blockedFound = $true
     }
 }
 
 if ($blockedFound) {
-    Write-Host "❌ Blocked destructive command found" -ForegroundColor Red
+    Write-Host "[FAILED] Blocked destructive command found" -ForegroundColor Red
     Write-Host "  Review .github/security/allowed-commands.json for allowed operations"
     $script:Failed = $true
 } else {
-    Write-Host "✅ PASSED" -ForegroundColor Green
+    Write-Host "[PASSED]" -ForegroundColor Green
 }
 
 # Summary
 Write-Host ""
 if ($script:Failed) {
-    Write-Host "❌ Pre-commit checks FAILED" -ForegroundColor Red
+    Write-Host "[FAILED] Pre-commit checks FAILED" -ForegroundColor Red
     exit 1
 } else {
-    Write-Host "✅ Security checks passed" -ForegroundColor Green
+    Write-Host "[PASSED] Security checks passed" -ForegroundColor Green
     exit 0
 }

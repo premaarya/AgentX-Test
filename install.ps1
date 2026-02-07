@@ -44,8 +44,8 @@ $skipGitChecks = $false
 $detectedRepo = $null  # Store detected/provided repo to avoid asking twice
 
 function Write-Info($msg) { Write-Host "  $msg" -ForegroundColor Cyan }
-function Write-Success($msg) { Write-Host "✓ $msg" -ForegroundColor Green }
-function Write-Warn($msg) { Write-Host "⚠ $msg" -ForegroundColor Yellow }
+function Write-Success($msg) { Write-Host "[OK] $msg" -ForegroundColor Green }
+function Write-Warn($msg) { Write-Host "[WARN] $msg" -ForegroundColor Yellow }
 
 function Get-GitHubRepo {
     # Try to detect from existing git remote
@@ -89,7 +89,7 @@ Write-Host ""
 Write-Host "╔═══════════════════════════════════════════════════╗" -ForegroundColor Cyan
 Write-Host "║  AgentX v2.1.0 - Multi-Agent Orchestration       ║" -ForegroundColor Cyan
 Write-Host "╚═══════════════════════════════════════════════════╝" -ForegroundColor Cyan
-Write-Host "✨ New: Autonomous mode, input variables, constraints" -ForegroundColor Green
+Write-Host "New: Autonomous mode, input variables, constraints" -ForegroundColor Green
 Write-Host ""
 Write-Host "╚═══════════════════════════════════════════════════╝" -ForegroundColor Cyan
 Write-Host ""
@@ -115,7 +115,7 @@ if (-not (Test-Path ".git")) {
         $skipGitChecks = $true
         Write-Warn "Proceeding without Git (non-interactive mode)"
     } else {
-        Write-Host "❌ Not a git repository" -ForegroundColor Red
+        Write-Host "[ERROR] Not a git repository" -ForegroundColor Red
         Write-Host ""
         Write-Host "AgentX works best in a Git repository for hooks and workflows." -ForegroundColor Yellow
         Write-Host "Options:" -ForegroundColor Yellow

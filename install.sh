@@ -38,14 +38,14 @@ download_file() {
     [ -n "$dir" ] && mkdir -p "$dir"
     
     if [ -f "$dest" ] && [ "$FORCE" != "true" ]; then
-        echo -e "${YELLOW}⚠ Skipped (exists): $dest${NC}"
+        echo -e "${YELLOW}[SKIP] Skipped (exists): $dest${NC}"
         return
     fi
     
     if curl -fsSL "$REPO_URL/$src" -o "$dest" 2>/dev/null; then
-        echo -e "${GREEN}✓ Downloaded: $dest${NC}"
+        echo -e "${GREEN}[OK] Downloaded: $dest${NC}"
     else
-        echo -e "${YELLOW}⚠ Failed: $src${NC}"
+        echo -e "${YELLOW}[WARN] Failed: $src${NC}"
     fi
 }
 
@@ -54,7 +54,7 @@ echo ""
 echo -e "${CYAN}╔═══════════════════════════════════════════════════╗${NC}"
 echo -e "${CYAN}║  AgentX v2.1.0 - Multi-Agent Orchestration       ║${NC}"
 echo -e "${CYAN}╚═══════════════════════════════════════════════════╝${NC}"
-echo -e "${GREEN}✨ New: Autonomous mode, input variables, constraints${NC}"
+echo -e "${GREEN}New: Autonomous mode, input variables, constraints${NC}"
 echo ""
 
 # Pre-installation validation
@@ -64,25 +64,25 @@ echo ""
 # Auto-detect repository
 DETECTED_REPO=$(detect_github_repo)
 if [ -n "$DETECTED_REPO" ]; then
-    echo -e "${GREEN}✓ Detected GitHub repository: $DETECTED_REPO${NC}"
+    echo -e "${GREEN}[OK] Detected GitHub repository: $DETECTED_REPO${NC}"
 fi
 
 # Check 1: Git repository
 if [ ! -d ".git" ]; then
-    echo -e "${YELLOW}❌ Not a git repository${NC}"
+    echo -e "${YELLOW}[ERROR] Not a git repository${NC}"
     echo ""
     echo -e "${YELLOW}AgentX requires a Git repository to work.${NC}"
     echo -e "${CYAN}Initialize one with: git init${NC}"
     echo ""
     exit 1
 fi
-echo -e "${GREEN}✓ Git repository detected${NC}"
+echo -e "${GREEN}[OK] Git repository detected${NC}"
 
 # Check 2: GitHub remote (optional - can setup later)
 if git remote -v 2>/dev/null | grep -q "github\.com"; then
-    echo -e "${GREEN}✓ GitHub remote configured${NC}"
+    echo -e "${GREEN}[OK] GitHub remote configured${NC}"
 else
-    echo -e "${YELLOW}⚠️  No GitHub remote configured${NC}"
+    echo -e "${YELLOW}[WARN] No GitHub remote configured${NC}"
     echo ""
     echo -e "\033[90mAgentX requires GitHub for Issues, Projects, and Workflows.${NC}"
     echo ""
@@ -112,7 +112,7 @@ else
             elif [[ $DETECTED_REPO =~ ^[^/]+/[^/]+$ ]]; then
                 repoUrl="https://github.com/$DETECTED_REPO.git"
             else
-                echo -e "${YELLOW}⚠️  Unrecognized format. Skipping remote setup.${NC}"
+                echo -e "${YELLOW}[WARN] Unrecognized format. Skipping remote setup.${NC}"
                 repoUrl=""
             fi
 
@@ -130,9 +130,9 @@ fi
 
 # Check 3: GitHub CLI (optional - can install later)
 if command -v gh &> /dev/null; then
-    echo -e "${GREEN}✓ GitHub CLI (gh) detected${NC}"
+    echo -e "${GREEN}[OK] GitHub CLI (gh) detected${NC}"
 else
-    echo -e "${YELLOW}⚠️  GitHub CLI (gh) not found${NC}"
+    echo -e "${YELLOW}[WARN] GitHub CLI (gh) not found${NC}"
     echo ""
     echo -e "\033[90mGitHub CLI is recommended for the Issue-First Workflow.${NC}"
     echo ""
@@ -164,13 +164,13 @@ else
             echo -e "${YELLOW}Using yum...${NC}"
             sudo yum install -y gh
         else
-            echo -e "${YELLOW}⚠️  No supported package manager found. Install manually from: https://cli.github.com/${NC}"
+            echo -e "${YELLOW}[WARN] No supported package manager found. Install manually from: https://cli.github.com/${NC}"
         fi
         
         if command -v gh &> /dev/null; then
-            echo -e "${GREEN}✓ GitHub CLI installed! Restart your terminal after installation completes.${NC}"
+            echo -e "${GREEN}[OK] GitHub CLI installed! Restart your terminal after installation completes.${NC}"
         else
-            echo -e "${YELLOW}⚠️  Installation failed. Install manually from: https://cli.github.com/${NC}"
+            echo -e "${YELLOW}[WARN] Installation failed. Install manually from: https://cli.github.com/${NC}"
         fi
     elif [[ ! $REPLY =~ ^[2]$ ]]; then
         echo -e "${YELLOW}Installation cancelled.${NC}"
@@ -216,16 +216,16 @@ if [[ $REPLY == "1" ]]; then
                 projectNumber=$(echo "$result" | grep -oP '"number":\K[0-9]+')
                 
                 if [[ -n $projectNumber ]]; then
-                    echo -e "${GREEN}✓ Project created! Number: #$projectNumber${NC}"
+                    echo -e "${GREEN}[OK] Project created! Number: #$projectNumber${NC}"
                     echo -e "${CYAN}Visit: https://github.com/$repo/projects/$projectNumber${NC}"
                     echo ""
-                    echo -e "${YELLOW}⚠️  Manual step required: Add Status field with these values:${NC}"
+                    echo -e "${YELLOW}[INFO] Manual step required: Add Status field with these values:${NC}"
                     echo -e "${CYAN}     Backlog, In Progress, In Review, Ready, Done${NC}"
                 else
-                    echo -e "${YELLOW}⚠️  Auto-creation failed. Set up manually: https://docs.github.com/en/issues/planning-and-tracking-with-projects${NC}"
+                    echo -e "${YELLOW}[WARN] Auto-creation failed. Set up manually: https://docs.github.com/en/issues/planning-and-tracking-with-projects${NC}"
                 fi
             else
-                echo -e "${YELLOW}⚠️  Could not access repository. Set up manually: https://docs.github.com/en/issues/planning-and-tracking-with-projects${NC}"
+                echo -e "${YELLOW}[WARN] Could not access repository. Set up manually: https://docs.github.com/en/issues/planning-and-tracking-with-projects${NC}"
             fi
         fi
     else

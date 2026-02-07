@@ -24,16 +24,16 @@ boundaries:
     - "docs/ux/** (UX designs)"
     - "tests/** (test code)"
 handoffs:
-  - label: "🎨 Hand off to UX"
+  - label: "Hand off to UX"
     agent: ux-designer
-    prompt: "Design user interface and flows for PRD issue #${issue_number}"
+    prompt: "Query backlog for highest priority issue with Status=Ready and needs:ux label. Design user interface and flows for that issue. If no matching issues, report 'No UX work pending'."
     send: false
     context: "After PRD complete, if UI/UX work needed"
-  - label: "🏗️ Hand off to Architect"
+  - label: "Hand off to Architect"
     agent: architect
-    prompt: "Design architecture and create technical spec for issue #${issue_number}"
+    prompt: "Query backlog for highest priority issue with Status=Ready and PRD complete. Design architecture and create technical spec for that issue. If no matching issues, report 'No architecture work pending'."
     send: false
-    context: "After PRD complete, if no UX needed"
+    context: "After PRD complete"
 tools:
   ['vscode', 'execute', 'read', 'edit', 'search', 'web', 'agent', 'github/*', 'ms-azuretools.vscode-azure-github-copilot/azure_recommend_custom_modes', 'ms-azuretools.vscode-azure-github-copilot/azure_query_azure_resource_graph', 'ms-azuretools.vscode-azure-github-copilot/azure_get_auth_context', 'ms-azuretools.vscode-azure-github-copilot/azure_set_auth_context', 'ms-azuretools.vscode-azure-github-copilot/azure_get_dotnet_template_tags', 'ms-azuretools.vscode-azure-github-copilot/azure_get_dotnet_templates_for_tag', 'ms-windows-ai-studio.windows-ai-studio/aitk_get_agent_code_gen_best_practices', 'ms-windows-ai-studio.windows-ai-studio/aitk_get_ai_model_guidance', 'ms-windows-ai-studio.windows-ai-studio/aitk_get_agent_model_code_sample', 'ms-windows-ai-studio.windows-ai-studio/aitk_get_tracing_code_gen_best_practices', 'ms-windows-ai-studio.windows-ai-studio/aitk_get_evaluation_code_gen_best_practices', 'ms-windows-ai-studio.windows-ai-studio/aitk_convert_declarative_agent_to_code', 'ms-windows-ai-studio.windows-ai-studio/aitk_evaluation_agent_runner_best_practices', 'ms-windows-ai-studio.windows-ai-studio/aitk_evaluation_planner', 'todo']
 ---

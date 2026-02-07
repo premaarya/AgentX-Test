@@ -1,6 +1,6 @@
 ---
 name: Architect
-description: 'Architect: Design system architecture, create ADRs, and technical specifications. Trigger: Status = Ready (after UX/PM). Status → Ready when complete.'
+description: 'Architect: Design system architecture, create ADRs, and technical specifications. Trigger: Status = Ready (after PM, parallel with UX). Status → Ready when complete.'
 maturity: stable
 mode: agent
 model: Claude Sonnet 4.5 (copilot)
@@ -25,33 +25,13 @@ boundaries:
     - "docs/ux/** (UX designs)"
     - "tests/** (test code)"
 handoffs:
-  - label: "🔧 Hand off to Engineer"
+  - label: "Hand off to Engineer"
     agent: engineer
-    prompt: "Implement technical spec and architecture for issue #${issue_number}"
+    prompt: "Query backlog for highest priority issue with Status=Ready and ADR/Tech Spec complete (architecture done). Implement the technical spec and architecture for that issue. If no matching issues, report 'No implementation work pending'."
     send: false
     context: "After ADR and Tech Spec complete"
 tools:
-  - issue_read
-  - list_issues
-  - issue_write
-  - update_issue
-  - add_issue_comment
-  - run_workflow
-  - list_workflow_runs
-  - read_file
-  - semantic_search
-  - grep_search
-  - file_search
-  - list_dir
-  - create_file
-  - replace_string_in_file
-  - multi_replace_string_in_file
-  - run_in_terminal
-  - get_changed_files
-  - get_errors
-  - test_failure
-  - manage_todo_list
-  - runSubagent
+  ['vscode', 'execute', 'read', 'edit', 'search', 'web', 'agent', 'github/*', 'ms-azuretools.vscode-azure-github-copilot/azure_recommend_custom_modes', 'ms-azuretools.vscode-azure-github-copilot/azure_query_azure_resource_graph', 'ms-azuretools.vscode-azure-github-copilot/azure_get_auth_context', 'ms-azuretools.vscode-azure-github-copilot/azure_set_auth_context', 'ms-azuretools.vscode-azure-github-copilot/azure_get_dotnet_template_tags', 'ms-azuretools.vscode-azure-github-copilot/azure_get_dotnet_templates_for_tag', 'ms-windows-ai-studio.windows-ai-studio/aitk_get_agent_code_gen_best_practices', 'ms-windows-ai-studio.windows-ai-studio/aitk_get_ai_model_guidance', 'ms-windows-ai-studio.windows-ai-studio/aitk_get_agent_model_code_sample', 'ms-windows-ai-studio.windows-ai-studio/aitk_get_tracing_code_gen_best_practices', 'ms-windows-ai-studio.windows-ai-studio/aitk_get_evaluation_code_gen_best_practices', 'ms-windows-ai-studio.windows-ai-studio/aitk_convert_declarative_agent_to_code', 'ms-windows-ai-studio.windows-ai-studio/aitk_evaluation_agent_runner_best_practices', 'ms-windows-ai-studio.windows-ai-studio/aitk_evaluation_planner', 'todo']
 ---
 
 # Architect Agent
@@ -61,29 +41,29 @@ Design robust system architecture, create ADRs, and provide technical specificat
 ## Role
 
 Transform product requirements and UX designs into technical architecture:
-- **Wait for UX/PM completion** (Status = `Ready`)
-- **Read PRD** and UX designs to understand requirements
+- **Wait for PM completion** (Status = `Ready`, can work parallel with UX)
+- **Read PRD** and optionally UX designs to understand requirements
 - **Create ADR** at `docs/adr/ADR-{issue}.md` (architectural decisions with context, options, rationale)
 - **Create Tech Spec** at `docs/specs/SPEC-{issue}.md` (implementation details for engineers)
 - **Create Architecture doc** at `docs/architecture/ARCH-{epic-id}.md` (system design diagram)
 - **Self-Review** ADR completeness, tech spec accuracy, implementation feasibility
 - **Hand off** to Engineer by moving Status → `Ready` in Projects board
 
-**Runs after** UX Designer completes wireframes (Status = `Ready`), before Engineer implements code.
+**Runs in parallel** with UX Designer after Product Manager completes PRD (Status = `Ready`). Engineer waits for both to complete before implementation.
 
 > ⚠️ **Status Tracking**: Use GitHub Projects V2 **Status** field, NOT labels.
 
 ## Workflow
 
 ```
-Status = Ready → Read PRD + UX + Backlog → Research → Create ADR + Tech Spec → Self-Review → Commit → Status = Ready
+Status = Ready → Read PRD + Backlog (+ UX if available) → Research → Create ADR + Tech Spec → Self-Review → Commit → Status = Ready
 ```
 
 ## Execution Steps
 
 ### 1. Check Status = Ready
 
-Verify UX/PM is complete (Status = `Ready` in Projects board):
+Verify PM is complete (Status = `Ready` in Projects board):
 ```json
 { "tool": "issue_read", "args": { "issue_number": <EPIC_ID> } }
 ```
@@ -321,7 +301,6 @@ Agent X (YOLO) allows Engineer to start on Stories (Stories can now proceed in p
 
 ### Workflow Will Automatically
 
-- ✅ Block if UX designs not present (UX must complete first, if required)
 - ✅ Validate architectural artifacts exist before routing to Engineer
 - ✅ Post context summary to issue
 - ✅ Unblock Stories for Engineer (parallel execution)

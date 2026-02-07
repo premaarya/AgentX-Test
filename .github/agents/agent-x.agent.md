@@ -25,27 +25,27 @@ boundaries:
 tools:
   ['execute', 'read', 'edit', 'search', 'web', 'agent', 'github/*', 'ms-azuretools.vscode-azure-github-copilot/azure_recommend_custom_modes', 'ms-azuretools.vscode-azure-github-copilot/azure_query_azure_resource_graph', 'ms-azuretools.vscode-azure-github-copilot/azure_get_auth_context', 'ms-azuretools.vscode-azure-github-copilot/azure_set_auth_context', 'ms-azuretools.vscode-azure-github-copilot/azure_get_dotnet_template_tags', 'ms-azuretools.vscode-azure-github-copilot/azure_get_dotnet_templates_for_tag', 'ms-windows-ai-studio.windows-ai-studio/aitk_get_agent_code_gen_best_practices', 'ms-windows-ai-studio.windows-ai-studio/aitk_get_ai_model_guidance', 'ms-windows-ai-studio.windows-ai-studio/aitk_get_agent_model_code_sample', 'ms-windows-ai-studio.windows-ai-studio/aitk_get_tracing_code_gen_best_practices', 'ms-windows-ai-studio.windows-ai-studio/aitk_get_evaluation_code_gen_best_practices', 'ms-windows-ai-studio.windows-ai-studio/aitk_convert_declarative_agent_to_code', 'ms-windows-ai-studio.windows-ai-studio/aitk_evaluation_agent_runner_best_practices', 'ms-windows-ai-studio.windows-ai-studio/aitk_evaluation_planner', 'todo']
 handoffs:
-  - label: "📋 Product Roadmap"
+  - label: "Product Roadmap"
     agent: product-manager
     prompt: "Define product vision, create PRD, and break Epic into Features and Stories for issue #${issue_number}"
     send: false
     context: "Triggered for type:epic labels"
-  - label: "🏗️ Architecture Design"
+  - label: "Architecture Design"
     agent: architect
     prompt: "Design system architecture, create ADR and technical specifications for issue #${issue_number}"
     send: false
-    context: "Triggered after UX/PM completion when Status=Ready"
-  - label: "🎨 UX Design"
+    context: "Triggered after PM completion when Status=Ready (parallel with UX)"
+  - label: "UX Design"
     agent: ux-designer
     prompt: "Design user interface, create wireframes and user flows for issue #${issue_number}"
     send: false
     context: "Triggered for needs:ux label after PM completion"
-  - label: "🔧 Implementation"
+  - label: "Implementation"
     agent: engineer
     prompt: "Implement code, write tests (≥80% coverage), and update documentation for issue #${issue_number}"
     send: false
     context: "Triggered when Status=Ready after Architect completion"
-  - label: "🔍 Quality Review"
+  - label: "Quality Review"
     agent: reviewer
     prompt: "Review code quality, verify security, and ensure standards compliance for issue #${issue_number}"
     send: false
@@ -101,8 +101,8 @@ Automatic routing for simple tasks. Invoked via `@agent-x-auto` or when requeste
 | Agent | Trigger | Deliverable | Status Transition |
 |-------|---------|-------------|-------------------|
 | **Product Manager** | `type:epic` | PRD + backlog at `docs/prd/PRD-{id}.md` | → `Ready` |
-| **UX Designer** | Status = `Ready` + `needs:ux` | Wireframes + flows at `docs/ux/UX-{id}.md` | → `Ready` |
-| **Architect** | Status = `Ready` (after UX/PM) | ADR + Specs at `docs/adr/`, `docs/specs/` | → `Ready` |
+| **UX Designer** | Status = `Ready` + `needs:ux` | Wireframes + flows + **HTML/CSS prototypes (MANDATORY)** at `docs/ux/` | → `Ready` |
+| **Architect** | Status = `Ready` (after PM, parallel with UX) | ADR + Specs at `docs/adr/`, `docs/specs/` | → `Ready` |
 | **Engineer** | Status = `Ready` (spec complete) | Code + tests + docs | → `In Progress` → `In Review` |
 | **Reviewer** | Status = `In Review` | Review at `docs/reviews/REVIEW-{id}.md` | → `Done` + Close |
 
@@ -141,7 +141,7 @@ async function routeIssue(issue_number) {
   }
   else if (status === 'Ready' && !await hasArchitecture(issue_number)) {
     nextAgent = 'architect';
-    reason = 'Issue ready for architecture design';
+    reason = 'Issue ready for architecture design (parallel with UX)';
   }
   else if (status === 'Ready' && await hasArchitecture(issue_number)) {
     nextAgent = 'engineer';
@@ -217,15 +217,8 @@ async function checkPrerequisites(issue_number, agent) {
       break;
       
     case 'architect':
-      // UX is optional, only check if needs:ux label exists
-      const issue = await issue_read({ issue_number });
-      if (issue.labels.some(l => l.name === 'needs:ux')) {
-        const ux = await hasUXDesign(issue_number);
-        if (!ux) {
-          missing.push('UX design document (UX Designer must complete first)');
-          resolution = 'Wait for UX Designer to create wireframes';
-        }
-      }
+      // Architect can work in parallel with UX - no prerequisite check needed
+      // PRD is implicit since Status=Ready means PM is complete
       break;
       
     case 'engineer':

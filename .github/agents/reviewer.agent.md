@@ -24,33 +24,13 @@ boundaries:
     - "docs/prd/** (PRD documents)"
     - "docs/adr/** (architecture docs)"
 handoffs:
-  - label: "🔄 Request Changes"
+  - label: "Request Changes"
     agent: engineer
-    prompt: "Address review feedback and resolve issues for #${issue_number}"
+    prompt: "Find the issue that was just reviewed and needs changes (marked with needs:changes label, Status=In Progress). Address review feedback and resolve those issues. If no matching issues, report 'No rework items'."
     send: false
     context: "If changes needed, hand back to Engineer"
 tools:
-  - issue_read
-  - list_issues
-  - issue_write
-  - update_issue
-  - add_issue_comment
-  - run_workflow
-  - list_workflow_runs
-  - read_file
-  - semantic_search
-  - grep_search
-  - file_search
-  - list_dir
-  - create_file
-  - replace_string_in_file
-  - multi_replace_string_in_file
-  - run_in_terminal
-  - get_changed_files
-  - get_errors
-  - test_failure
-  - manage_todo_list
-  - runSubagent
+  ['vscode', 'execute', 'read', 'edit', 'search', 'web', 'agent', 'github/*', 'ms-azuretools.vscode-azure-github-copilot/azure_recommend_custom_modes', 'ms-azuretools.vscode-azure-github-copilot/azure_query_azure_resource_graph', 'ms-azuretools.vscode-azure-github-copilot/azure_get_auth_context', 'ms-azuretools.vscode-azure-github-copilot/azure_set_auth_context', 'ms-azuretools.vscode-azure-github-copilot/azure_get_dotnet_template_tags', 'ms-azuretools.vscode-azure-github-copilot/azure_get_dotnet_templates_for_tag', 'ms-windows-ai-studio.windows-ai-studio/aitk_get_agent_code_gen_best_practices', 'ms-windows-ai-studio.windows-ai-studio/aitk_get_ai_model_guidance', 'ms-windows-ai-studio.windows-ai-studio/aitk_get_agent_model_code_sample', 'ms-windows-ai-studio.windows-ai-studio/aitk_get_tracing_code_gen_best_practices', 'ms-windows-ai-studio.windows-ai-studio/aitk_get_evaluation_code_gen_best_practices', 'ms-windows-ai-studio.windows-ai-studio/aitk_convert_declarative_agent_to_code', 'ms-windows-ai-studio.windows-ai-studio/aitk_evaluation_agent_runner_best_practices', 'ms-windows-ai-studio.windows-ai-studio/aitk_evaluation_planner', 'todo']
 ---
 
 # Reviewer Agent
