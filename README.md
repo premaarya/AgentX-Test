@@ -40,88 +40,110 @@ AgentX is a **multi-agent orchestration framework** that enables AI coding assis
 
 ---
 
-## 🆕 What's New in v2.2
+## 🆕 What's New in v3.0
 
 <table>
 <tr>
 <td width="50%">
 
-### 📝 Session Persistence
-- **Progress logs** for long-running tasks
-- **Auto-resume** across context windows
-- **Three-tier persistence** (Issues, Logs, Git)
-- Continuity for >200K token workflows
+### 📊 Agent Analytics
+- **Metrics collection** scripts (bash + PowerShell)
+- **Weekly reports** with commit/issue/rework stats
+- **Mermaid charts** for visual analysis
+- Track rework rates, session counts, handoff times
 
 </td>
 <td width="50%">
 
-### 🔒 Defense-in-Depth Security
-- **4-layer security model** (Sandbox → Filesystem → Allowlist → Audit)
-- **Command allowlist** (`.github/security/allowed-commands.json`)
-- **Blocked commands** (`rm -rf`, `DROP TABLE`, etc.)
-- **Pre-commit validation** for destructive operations
-
-</td>
-</tr>
-<tr>
-<td width="50%">
-
-### ✅ Feature Checklists
-- **Acceptance criteria** in SPEC templates
-- **Checkbox tracking** for implementation progress
-- **Spec-to-test mapping** for verification
-- Engineer updates as features complete
-
-</td>
-<td width="50%">
-
-### 🧪 Verification Tests
-- **Regression testing** before new work
-- **Baseline verification** (existing tests must pass)
-- **Prevents cascading failures**
-- Engineer constraints enforce testing
+### 🔍 Auto-Fix Reviewer (Preview)
+- **Safe auto-fixes** (formatting, imports, naming)
+- **Risky changes flagged** for human approval
+- **Tests run automatically** before committing fixes
+- Human approval required before merge
 
 </td>
 </tr>
 <tr>
 <td width="50%">
 
-### 📄 Document Conversion
-- **Pandoc integration** (industry standard)
-- **Markdown → DOCX/PDF** conversion
-- Batch conversion scripts included
-- Works offline, no external services
+### 🧠 Prompt Engineering Skill
+- **Best practices** for AI prompts & guardrails
+- **Structured output** patterns (JSON, XML)
+- **Chain-of-thought** and few-shot templates
+- Prompt testing and refinement workflows
 
 </td>
 <td width="50%">
 
-### ⚙️ DevOps Agent (NEW)
+### 🏠 Local Mode
+- **Filesystem-based** issue tracking without GitHub
+- **PowerShell + Bash** issue managers
+- **Offline-capable** agent coordination
+- Seamless switch between GitHub and Local modes
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+### 🌐 Cross-Repo Orchestration
+- **Monorepo** and **multi-repo** support
+- Shared skill libraries across repositories
+- Centralized agent coordination
+- Cross-repo issue linking
+
+</td>
+<td width="50%">
+
+### ⚙️ DevOps Agent
 - **CI/CD pipeline** generation
 - **GitHub Actions** workflow automation
 - **Release management** support
-- Infrastructure as Code patterns
+- **Deployment scaffolding** with security checklists
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+### 🧠 Agent Memory
+- **Long-term learning** and personalization
+- **Session persistence** across context windows
+- **Progress logs** for multi-session work
+- Three-tier persistence (Issues, Logs, Git)
+
+</td>
+<td width="50%">
+
+### 📊 Visualization
+- **Workflow diagrams** and debug mode
+- **Mermaid integration** for architecture docs
+- **Status flow** visualization
+- Agent handoff tracking
 
 </td>
 </tr>
 </table>
 
+Also includes all v2.x features: session persistence, defense-in-depth security, feature checklists, verification tests, document conversion, constraint-based design, adaptive routing, and input variables.
+
 [View full changelog →](CHANGELOG.md)
 
 ---
 
-## 🗺️ Roadmap (v3.0)
+## ✅ v3.0 Shipped Features
 
 > **Epic**: [#118](https://github.com/jnPiyush/AgentX/issues/118) | **PRD**: [docs/prd/PRD-118.md](docs/prd/PRD-118.md)
 
-| Priority | Feature | Description |
-|----------|---------|-------------|
-| **P0** | [Analytics Dashboard](https://github.com/jnPiyush/AgentX/issues/119) | Track agent performance, handoff times, rework rates |
-| **P0** | [Auto-Fix Reviewer](https://github.com/jnPiyush/AgentX/issues/120) | Apply review fixes automatically (with approval) |
-| **P0** | [Prompt Engineering](https://github.com/jnPiyush/AgentX/issues/121) | Best practices for AI prompts and guardrails |
-| **P1** | [Cross-Repo](https://github.com/jnPiyush/AgentX/issues/122) | Monorepo and multi-repo orchestration |
-| **P1** | [CLI & Web](https://github.com/jnPiyush/AgentX/issues/123) | Headless CLI and web dashboard |
-| **P1** | [Agent Memory](https://github.com/jnPiyush/AgentX/issues/124) | Long-term learning and personalization |
-| **P1** | [Visualization](https://github.com/jnPiyush/AgentX/issues/125) | Workflow diagrams and debug mode |
+| Status | Feature | Description |
+|--------|---------|-------------|
+| ✅ | [Analytics Dashboard](https://github.com/jnPiyush/AgentX/issues/119) | Track agent performance, handoff times, rework rates |
+| ✅ | [Auto-Fix Reviewer](https://github.com/jnPiyush/AgentX/issues/120) | Apply review fixes automatically (with approval) |
+| ✅ | [Prompt Engineering](https://github.com/jnPiyush/AgentX/issues/121) | Best practices for AI prompts and guardrails |
+| ✅ | [Cross-Repo](https://github.com/jnPiyush/AgentX/issues/122) | Monorepo and multi-repo orchestration |
+| ✅ | [CLI & Web](https://github.com/jnPiyush/AgentX/issues/123) | Headless CLI specification |
+| ✅ | [Agent Memory](https://github.com/jnPiyush/AgentX/issues/124) | Long-term learning and personalization |
+| ✅ | [Visualization](https://github.com/jnPiyush/AgentX/issues/125) | Workflow diagrams and debug mode |
 
 ---
 
@@ -176,33 +198,6 @@ AgentX is a **multi-agent orchestration framework** that enables AI coding assis
 </td>
 </tr>
 </table>
-
-</td>
-</tr>
-</table>
-
----
-
-## 🆕 What's New in v2.1
-
-### Enhanced Agent Coordination
-- **Maturity Levels**: All agents marked stable (production-ready)
-- **Constraint-Based Design**: Agents explicitly declare what they CAN and CANNOT do
-- **Enhanced Handoff Buttons**: Visual transitions with 📋🎨🏗️🔧🔍 icons and context
-
-### Smarter Workflows
-- **Adaptive Routing**: Auto-detects complexity, routes simple tasks directly to Engineer
-- **Context Clearing**: Prevent assumption contamination between phases
-- **Input Variables**: Dynamic templates with `${variable_name}` syntax
-
-### Better Documentation
-- [Template Input Variables Guide](docs/template-input-variables.md)
-- [Agent X Autonomous Mode](.github/agents/agent-x-auto.agent.md)
-- [New Features Summary](docs/NEW-FEATURES-v2.1.md)
-
-**[See What's New →](docs/NEW-FEATURES-v2.1.md)**
-
-**[Roadmap v3.0 →](#%EF%B8%8F-roadmap-v30)**
 
 ---
 
@@ -344,17 +339,24 @@ AgentX/
 ├── 📁 .github/
 │   ├── 📁 agents/            # 8 agent definitions
 │   ├── 📁 hooks/             # Pre-commit validation
+│   ├── 📁 scripts/           # Validation & metrics scripts
+│   ├── 📁 security/          # Command allowlist
 │   ├── 📁 templates/         # PRD, ADR, Spec, UX, Progress templates
 │   ├── 📁 prompts/           # 10 reusable prompts
-│   ├── 📁 workflows/         # GitHub Actions
+│   ├── 📁 workflows/         # GitHub Actions (CI/CD, scanning)
 │   ├── 📁 skills/            # 36 skill documents
 │   └── 📁 instructions/      # Language-specific guides
+│
+├── 📁 .agentx/               # Local Mode (filesystem issue tracking)
 │
 ├── 📁 .vscode/
 │   └── 📄 mcp.json           # MCP Server config (GitHub)
 │
+├── 📁 scripts/               # Install, convert, deploy scripts
+│
 └── 📁 docs/
     ├── 📁 adr/               # Architecture Decision Records
+    ├── 📁 analytics/         # Agent performance metrics
     ├── 📁 prd/               # Product Requirements Docs
     ├── 📁 specs/             # Technical Specifications
     ├── 📁 ux/                # UX Design Documents
@@ -371,9 +373,17 @@ AgentX/
 | [AGENTS.md](AGENTS.md) | Complete workflow, agent roles, handoff rules |
 | [Skills.md](Skills.md) | 36 production skills with guidelines |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute to AgentX |
+| [Local Mode](docs/local-mode.md) | Filesystem-based issue tracking without GitHub |
+| [Agent Memory](docs/agent-memory.md) | Long-term learning & session persistence |
+| [Analytics](docs/analytics/METRICS.md) | Agent performance metrics & dashboards |
+| [CLI Specification](docs/cli-specification.md) | Headless CLI for automation |
+| [Multi-Repo](docs/multi-repo.md) | Cross-repository orchestration |
+| [Visualization](docs/visualization.md) | Workflow diagrams & debug mode |
+| [Session Persistence](docs/session-persistence.md) | Progress logs for long-running tasks |
 | [MCP Integration](docs/mcp-integration.md) | GitHub MCP Server integration |
 | [Markdown Conversion](docs/markdown-to-doc-conversion.md) | Convert MD to DOCX using Pandoc |
 | [Project Setup](docs/project-setup.md) | GitHub Projects V2 configuration |
+| [Template Variables](docs/template-input-variables.md) | Dynamic template input variables |
 | [Troubleshooting](docs/troubleshooting.md) | Common issues and solutions |
 
 ---
