@@ -485,23 +485,10 @@ done
 
 # Documentation
 echo -e "${CYAN}  Documentation...${NC}"
-download_file "docs/mcp-integration.md" "docs/mcp-integration.md"
-download_file "docs/troubleshooting.md" "docs/troubleshooting.md"
-download_file "docs/project-setup.md" "docs/project-setup.md"
-download_file "docs/markdown-to-doc-conversion.md" "docs/markdown-to-doc-conversion.md"
-download_file "docs/NEW-FEATURES-v2.1.md" "docs/NEW-FEATURES-v2.1.md"
+download_file "docs/FEATURES.md" "docs/FEATURES.md"
+download_file "docs/SETUP.md" "docs/SETUP.md"
+download_file "docs/TROUBLESHOOTING.md" "docs/TROUBLESHOOTING.md"
 download_file "docs/assets/agentx-logo.svg" "docs/assets/agentx-logo.svg"
-
-# v3.0 Documentation
-echo -e "${CYAN}  v3.0 feature documentation...${NC}"
-download_file "docs/analytics/METRICS.md" "docs/analytics/METRICS.md"
-download_file "docs/multi-repo.md" "docs/multi-repo.md"
-download_file "docs/cli-specification.md" "docs/cli-specification.md"
-download_file "docs/agent-memory.md" "docs/agent-memory.md"
-download_file "docs/visualization.md" "docs/visualization.md"
-download_file "docs/local-mode.md" "docs/local-mode.md"
-download_file "docs/template-input-variables.md" "docs/template-input-variables.md"
-download_file "docs/session-persistence.md" "docs/session-persistence.md"
 download_file "LICENSE" "LICENSE"
 
 # VS Code configuration
@@ -517,14 +504,6 @@ for dir in docs/prd docs/adr docs/specs docs/ux docs/reviews docs/progress; do
         echo -e "${GREEN}✓ Created: $dir/${NC}"
     fi
 done
-
-# Example documents (help users understand output formats)
-echo -e "${CYAN}  Example documents...${NC}"
-download_file "docs/prd/PRD-EXAMPLE.md" "docs/prd/PRD-EXAMPLE.md"
-download_file "docs/adr/ADR-EXAMPLE.md" "docs/adr/ADR-EXAMPLE.md"
-download_file "docs/specs/SPEC-EXAMPLE.md" "docs/specs/SPEC-EXAMPLE.md"
-download_file "docs/reviews/REVIEW-EXAMPLE.md" "docs/reviews/REVIEW-EXAMPLE.md"
-download_file "docs/ux/UX-EXAMPLE.md" "docs/ux/UX-EXAMPLE.md"
 
 # Local Mode support (when user chose Local Mode)
 if [ "$USE_LOCAL_MODE" = "true" ]; then
@@ -661,7 +640,7 @@ else
     echo '     gh label create "needs:changes" --color "FBCA04"'
     echo '     gh label create "needs:help" --color "D73A4A"'
     echo ""
-    echo "  4. Set up GitHub Project with Status field (see docs/project-setup.md)"
+    echo "  4. Set up GitHub Project with Status field (see docs/SETUP.md)"
     echo ""
     echo -e "${YELLOW}  ⚠️  IMPORTANT: Git hooks are now active!${NC}"
     echo "  Your commits will be validated for workflow compliance."

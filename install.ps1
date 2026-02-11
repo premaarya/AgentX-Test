@@ -503,23 +503,10 @@ Get-FileDownload ".vscode/settings.json" ".vscode/settings.json"
 
 # Documentation
 Write-Info "Documentation..."
-Get-FileDownload "docs/mcp-integration.md" "docs/mcp-integration.md"
-Get-FileDownload "docs/project-setup.md" "docs/project-setup.md"
-Get-FileDownload "docs/troubleshooting.md" "docs/troubleshooting.md"
-Get-FileDownload "docs/markdown-to-doc-conversion.md" "docs/markdown-to-doc-conversion.md"
-Get-FileDownload "docs/NEW-FEATURES-v2.1.md" "docs/NEW-FEATURES-v2.1.md"
+Get-FileDownload "docs/FEATURES.md" "docs/FEATURES.md"
+Get-FileDownload "docs/SETUP.md" "docs/SETUP.md"
+Get-FileDownload "docs/TROUBLESHOOTING.md" "docs/TROUBLESHOOTING.md"
 Get-FileDownload "docs/assets/agentx-logo.svg" "docs/assets/agentx-logo.svg"
-
-# v3.0 Documentation
-Write-Info "v3.0 feature documentation..."
-Get-FileDownload "docs/analytics/METRICS.md" "docs/analytics/METRICS.md"
-Get-FileDownload "docs/multi-repo.md" "docs/multi-repo.md"
-Get-FileDownload "docs/cli-specification.md" "docs/cli-specification.md"
-Get-FileDownload "docs/agent-memory.md" "docs/agent-memory.md"
-Get-FileDownload "docs/visualization.md" "docs/visualization.md"
-Get-FileDownload "docs/local-mode.md" "docs/local-mode.md"
-Get-FileDownload "docs/template-input-variables.md" "docs/template-input-variables.md"
-Get-FileDownload "docs/session-persistence.md" "docs/session-persistence.md"
 Get-FileDownload "LICENSE" "LICENSE"
 
 # Create output directories
@@ -531,14 +518,6 @@ foreach ($dir in $dirs) {
         Write-Success "Created: $dir/"
     }
 }
-
-# Example documents (help users understand output formats)
-Write-Info "Example documents..."
-Get-FileDownload "docs/prd/PRD-EXAMPLE.md" "docs/prd/PRD-EXAMPLE.md"
-Get-FileDownload "docs/adr/ADR-EXAMPLE.md" "docs/adr/ADR-EXAMPLE.md"
-Get-FileDownload "docs/specs/SPEC-EXAMPLE.md" "docs/specs/SPEC-EXAMPLE.md"
-Get-FileDownload "docs/reviews/REVIEW-EXAMPLE.md" "docs/reviews/REVIEW-EXAMPLE.md"
-Get-FileDownload "docs/ux/UX-EXAMPLE.md" "docs/ux/UX-EXAMPLE.md"
 
 # Initialize Local Mode if enabled
 if ($useLocalMode) {
@@ -709,7 +688,7 @@ if ($useLocalMode) {
     Write-Host '     gh label create "needs:changes" --color "FBCA04"'
     Write-Host '     gh label create "needs:help" --color "D73A4A"'
     Write-Host ""
-    Write-Host "  4. Set up GitHub Project with Status field (see docs/project-setup.md)"
+    Write-Host "  4. Set up GitHub Project with Status field (see docs/SETUP.md)"
     Write-Host ""
     Write-Host "  ⚠️  IMPORTANT: Git hooks are now active!" -ForegroundColor Yellow
     Write-Host "  Your commits will be validated for workflow compliance."
