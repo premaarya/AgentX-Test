@@ -246,6 +246,13 @@ obj/
 - **bind-mounting in production**: Use volumes or copy files into the image
 - **Ignoring .dockerignore**: Huge build contexts slow down builds
 
+## Scripts
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| [`generate-dockerfile.ps1`](scripts/generate-dockerfile.ps1) | Generate production Dockerfile (multi-stage, non-root) | `./scripts/generate-dockerfile.ps1 [-Port 8080]` |
+| [`generate-compose.ps1`](scripts/generate-compose.ps1) | Scaffold docker-compose.yml with common services | `./scripts/generate-compose.ps1 -Services postgres,redis` |
+
 ## Quick Commands
 
 | Task | Command |

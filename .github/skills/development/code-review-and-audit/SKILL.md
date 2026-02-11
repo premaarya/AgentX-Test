@@ -185,6 +185,12 @@ reportgenerator -reports:"**/coverage.cobertura.xml" -targetdir:"coverage"
 **Last Updated**: January 13, 2026
 
 
+## Scripts
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| [`run-checklist.ps1`](scripts/run-checklist.ps1) | Automated code review checklist (large files, TODOs, secrets, tests) | `./scripts/run-checklist.ps1 [-Path ./src]` |
+
 ## Troubleshooting
 
 | Issue | Solution |

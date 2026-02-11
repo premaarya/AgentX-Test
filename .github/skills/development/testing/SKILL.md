@@ -209,6 +209,15 @@ for each testCase in testCases:
 **Last Updated**: January 27, 2026
 
 
+## Scripts
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| [`check-coverage.ps1`](scripts/check-coverage.ps1) | Check test coverage against threshold (80% default) | `./scripts/check-coverage.ps1 [-Threshold 90]` |
+| [`check-coverage.sh`](scripts/check-coverage.sh) | Cross-platform coverage checker (bash) | `./scripts/check-coverage.sh --threshold 80` |
+| [`check-test-pyramid.ps1`](scripts/check-test-pyramid.ps1) | Verify test distribution matches pyramid ratios | `./scripts/check-test-pyramid.ps1` |
+| [`scaffold-playwright.py`](scripts/scaffold-playwright.py) | Generate Playwright e2e test scaffold (TS or Python) | `python scripts/scaffold-playwright.py --lang typescript --url http://localhost:3000` |
+
 ## Troubleshooting
 
 | Issue | Solution |

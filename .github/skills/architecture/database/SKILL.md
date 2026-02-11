@@ -129,6 +129,12 @@ SELECT * FROM users WHERE email = 'test@example.com';
 **Last Updated**: January 27, 2026
 
 
+## Scripts
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| [`scaffold-migration.py`](scripts/scaffold-migration.py) | Generate migration scaffold (SQL/EF Core/Alembic) | `python scripts/scaffold-migration.py --type sql --name add_users_table` |
+
 ## Troubleshooting
 
 | Issue | Solution |

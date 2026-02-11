@@ -239,6 +239,12 @@ Response: 204 No Content
 **Last Updated**: January 27, 2026
 
 
+## Scripts
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| [`scaffold-openapi.py`](scripts/scaffold-openapi.py) | Generate OpenAPI 3.1 spec from endpoint definitions | `python scripts/scaffold-openapi.py --name "My API" --endpoints "GET /users, POST /users"` |
+
 ## Troubleshooting
 
 | Issue | Solution |

@@ -5,6 +5,34 @@ All notable changes to AgentX will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.0] - 2026-02-12
+
+### ✨ Added
+
+**Executable Scripts** (Anthropic Skills Pattern):
+- **22 scripts** across **14 skills** — deterministic, executable tooling bundled inside skill folders
+- Scripts in PowerShell (.ps1), Python (.py), and Bash (.sh) for cross-platform support
+- Each SKILL.md updated with `## Scripts` table (name, purpose, usage)
+
+**New Scripts by Skill**:
+- **testing** (4): `check-coverage.ps1`, `check-coverage.sh`, `check-test-pyramid.ps1`, `scaffold-playwright.py` (Playwright e2e scaffolding with Page Object Model)
+- **security** (3): `scan-secrets.ps1`, `scan-secrets.sh`, `scan-security.ps1`
+- **containerization** (2): `generate-dockerfile.ps1` (multi-stage, non-root), `generate-compose.ps1`
+- **release-management** (2): `version-bump.ps1`, `generate-changelog.ps1`
+- **api-design** (1): `scaffold-openapi.py` (OpenAPI 3.1 spec generator)
+- **python** (1): `scaffold-project.py` (pyproject.toml + ruff + mypy + pre-commit)
+- **csharp** (1): `scaffold-solution.ps1` (.NET solution with API/Core/Infrastructure layers)
+- **code-review-and-audit** (1): `run-checklist.ps1` (automated review checklist)
+- **dependency-management** (1): `audit-deps.ps1` (outdated + vulnerability scanning)
+- **version-control** (1): `setup-hooks.ps1` (Git hooks for pre-commit + commit-msg)
+- **database** (1): `scaffold-migration.py` (SQL/EF Core/Alembic migration scaffold)
+- **documentation** (1): `generate-readme.py` (auto-detect project, generate README)
+- **performance** (1): `run-benchmark.ps1` (.NET/Python/Node benchmarks with baseline comparison)
+- **github-actions-workflows** (1): `validate-workflows.ps1` (lint + auto-fix workflow YAML)
+- **skill-creator** (1): `init-skill.ps1` (skill initialization scaffold)
+
+---
+
 ## [5.0.0] - 2026-02-11
 
 ### ✨ Added

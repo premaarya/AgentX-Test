@@ -126,6 +126,12 @@ Examples by Language:
 **See Also**: [Security](../../architecture/security/SKILL.md) • [C# Development](../csharp/SKILL.md) • [Python Development](../python/SKILL.md)
 
 
+## Scripts
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| [`audit-deps.ps1`](scripts/audit-deps.ps1) | Audit for outdated/vulnerable dependencies (.NET/Python/Node) | `./scripts/audit-deps.ps1 [-FailOnVulnerability]` |
+
 ## Troubleshooting
 
 | Issue | Solution |

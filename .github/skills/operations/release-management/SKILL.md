@@ -375,6 +375,13 @@ Validate Tag → Build → Test → Create Release → Deploy Staging
 **Last Updated**: February 10, 2026
 
 
+## Scripts
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| [`version-bump.ps1`](scripts/version-bump.ps1) | Bump semantic version (major/minor/patch) | `./scripts/version-bump.ps1 -BumpType minor` |
+| [`generate-changelog.ps1`](scripts/generate-changelog.ps1) | Generate changelog from conventional commits | `./scripts/generate-changelog.ps1 [-Version 2.0.0]` |
+
 ## Troubleshooting
 
 | Issue | Solution |

@@ -106,6 +106,14 @@ Security concern?
 **Last Updated**: January 27, 2026
 
 
+## Scripts
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| [`scan-secrets.ps1`](scripts/scan-secrets.ps1) | Scan repo for hardcoded secrets, API keys, credentials | `./scripts/scan-secrets.ps1 [-Path ./src]` |
+| [`scan-secrets.sh`](scripts/scan-secrets.sh) | Cross-platform secrets scanner (bash) | `./scripts/scan-secrets.sh --path ./src` |
+| [`scan-security.ps1`](scripts/scan-security.ps1) | Scan dependencies for known vulnerabilities | `./scripts/scan-security.ps1 [-FailOn critical]` |
+
 ## Troubleshooting
 
 | Issue | Solution |

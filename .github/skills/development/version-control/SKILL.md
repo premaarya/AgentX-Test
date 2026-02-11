@@ -152,6 +152,12 @@ git push origin main --tags
 ---
 
 
+## Scripts
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| [`setup-hooks.ps1`](scripts/setup-hooks.ps1) | Install Git hooks (pre-commit, commit-msg) for quality enforcement | `./scripts/setup-hooks.ps1 [-Mode native]` |
+
 ## Troubleshooting
 
 | Issue | Solution |

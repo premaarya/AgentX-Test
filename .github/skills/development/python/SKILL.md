@@ -258,6 +258,12 @@ my_project/
 **Last Updated**: January 27, 2026
 
 
+## Scripts
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| [`scaffold-project.py`](scripts/scaffold-project.py) | Generate Python project with pyproject.toml, ruff, mypy, pre-commit | `python scripts/scaffold-project.py --name myapp [--fastapi]` |
+
 ## Troubleshooting
 
 | Issue | Solution |

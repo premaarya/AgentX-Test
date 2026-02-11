@@ -117,6 +117,12 @@ Performance concern?
 **Last Updated**: January 27, 2026
 
 
+## Scripts
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| [`run-benchmark.ps1`](scripts/run-benchmark.ps1) | Run benchmarks (.NET/Python/Node) with baseline comparison | `./scripts/run-benchmark.ps1 [-Baseline baseline.json]` |
+
 ## Troubleshooting
 
 | Issue | Solution |

@@ -445,8 +445,19 @@ Types: `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `chore`
 | Issue Digests | `.agentx/digests/` |
 | CLI Utilities | `.agentx/agentx.ps1`, `.agentx/agentx.sh` |
 
-### New Features (v5.0)
+### New Features (v5.1)
 
+| Feature | Documentation | Status |
+|---------|---------------|--------|
+| **Executable Scripts** | 22 scripts across 14 skills (Anthropic pattern) | ✅ Stable |
+| **Playwright E2E Scaffold** | `scaffold-playwright.py` in testing skill | ✅ Stable |
+
+### Shipped Features (v2.1–v5.0)
+
+<details>
+<summary>Click to expand v5.0 features</summary>
+
+**v5.0**:
 | Feature | Documentation | Status |
 |---------|---------------|--------|
 | **100% agentskills.io Compliance** | All 40 skill SKILL.md files | ✅ Stable |
@@ -454,6 +465,8 @@ Types: `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `chore`
 | **Standardized Descriptions** | WHAT + WHEN + KEYWORDS format (234–314 chars) | ✅ Stable |
 | **Anthropic Guide Compliance** | Validated against Claude skills guide | ✅ Stable |
 | **Solution Cleanup** | Stale templates removed, .gitignore improved | ✅ Stable |
+
+</details>
 
 ### Shipped Features (v2.1–v4.0)
 

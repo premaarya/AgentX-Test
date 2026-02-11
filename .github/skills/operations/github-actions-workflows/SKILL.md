@@ -320,6 +320,12 @@ actionlint .github/workflows/*.yml   # local syntax validation
 
 ---
 
+## Scripts
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| [`validate-workflows.ps1`](scripts/validate-workflows.ps1) | Validate workflow files for deprecated actions, security issues | `./scripts/validate-workflows.ps1 [-Fix]` |
+
 **Related Skills**:
 - [YAML Pipelines](../yaml-pipelines/SKILL.md)
 - [Release Management](../release-management/SKILL.md)

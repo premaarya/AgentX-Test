@@ -122,6 +122,12 @@ Classes:
 **See Also**: [API Design](../../architecture/api-design/SKILL.md) • [C# Development](../csharp/SKILL.md) • [Python Development](../python/SKILL.md)
 
 
+## Scripts
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| [`generate-readme.py`](scripts/generate-readme.py) | Auto-generate README.md from project metadata | `python scripts/generate-readme.py [--output README.md]` |
+
 ## Troubleshooting
 
 | Issue | Solution |

@@ -121,6 +121,12 @@ string GetStatus(Order order) => order switch
 **Last Updated**: January 27, 2026
 
 
+## Scripts
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| [`scaffold-solution.ps1`](scripts/scaffold-solution.ps1) | Create .NET solution with API/Core/Infrastructure + xUnit tests | `./scripts/scaffold-solution.ps1 -Name MyApp [-Framework net9.0]` |
+
 ## Troubleshooting
 
 | Issue | Solution |
