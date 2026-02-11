@@ -31,7 +31,8 @@ $ErrorActionPreference = "Stop"
 function Write-Header { param([string]$Text); Write-Host "`n=== $Text ===" -ForegroundColor Cyan }
 function Write-Info { param([string]$Text); Write-Host "  INFO: $Text" -ForegroundColor Yellow }
 
-$PreCommitHook = @'
+function Get-PreCommitHook {
+    @'
 #!/bin/sh
 # Pre-commit hook: lint staged files and check for secrets
 
@@ -62,8 +63,10 @@ fi
 
 echo "  Pre-commit checks passed"
 '@
+}
 
-$CommitMsgHook = @'
+function Get-CommitMsgHook {
+    @'
 #!/bin/sh
 # Commit-msg hook: enforce conventional commit format
 # Format: type(scope): description (#issue)
@@ -87,6 +90,7 @@ if ! echo "$MSG" | grep -qE "$PATTERN"; then
     exit 1
 fi
 '@
+}
 
 Write-Header "Git Hook Setup ($Mode)"
 
@@ -99,13 +103,13 @@ if ($Mode -eq "native") {
 
     # Pre-commit hook
     $preCommitPath = Join-Path $hooksDir "pre-commit"
-    $PreCommitHook | Set-Content -Path $preCommitPath -Encoding UTF8 -NoNewline
+    (Get-PreCommitHook) | Set-Content -Path $preCommitPath -Encoding UTF8 -NoNewline
     if ($IsLinux -or $IsMacOS) { chmod +x $preCommitPath }
     Write-Host "  Installed: pre-commit hook" -ForegroundColor Green
 
     # Commit-msg hook
     $commitMsgPath = Join-Path $hooksDir "commit-msg"
-    $CommitMsgHook | Set-Content -Path $commitMsgPath -Encoding UTF8 -NoNewline
+    (Get-CommitMsgHook) | Set-Content -Path $commitMsgPath -Encoding UTF8 -NoNewline
     if ($IsLinux -or $IsMacOS) { chmod +x $commitMsgPath }
     Write-Host "  Installed: commit-msg hook" -ForegroundColor Green
 
@@ -116,8 +120,8 @@ if ($Mode -eq "native") {
         & npm install husky --save-dev 2>&1 | Out-Null
         & npx husky init 2>&1 | Out-Null
         
-        $PreCommitHook | Set-Content -Path ".husky/pre-commit" -Encoding UTF8
-        $CommitMsgHook | Set-Content -Path ".husky/commit-msg" -Encoding UTF8
+        (Get-PreCommitHook) | Set-Content -Path ".husky/pre-commit" -Encoding UTF8
+        (Get-CommitMsgHook) | Set-Content -Path ".husky/commit-msg" -Encoding UTF8
         Write-Host "  Installed: Husky hooks" -ForegroundColor Green
     } finally { Pop-Location }
 
