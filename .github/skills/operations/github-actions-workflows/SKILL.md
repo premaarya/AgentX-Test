@@ -1,6 +1,6 @@
 ---
 name: "github-actions-workflows"
-description: "Best practices for creating GitHub Actions workflows, reusable workflows, custom actions, and workflow automation."
+description: 'Create GitHub Actions workflows, reusable workflows, custom actions, and workflow automation. Use when setting up CI/CD with GitHub Actions, creating reusable workflow templates, configuring workflow triggers, implementing matrix builds, or securing GitHub Actions secrets.'
 metadata:
   author: "AgentX"
   version: "2.0.0"
@@ -16,6 +16,19 @@ compatibility:
 > Detailed YAML examples live in `references/` — this file covers decisions, patterns, and guardrails.
 
 ---
+
+## When to Use This Skill
+
+- Creating GitHub Actions CI/CD workflows
+- Building reusable workflow templates
+- Configuring matrix builds and parallel jobs
+- Implementing security best practices for GitHub Actions
+- Troubleshooting failed workflow runs
+
+## Prerequisites
+
+- GitHub repository with admin access
+- YAML syntax knowledge
 
 ## Table of Contents
 

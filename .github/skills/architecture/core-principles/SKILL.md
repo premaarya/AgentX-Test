@@ -1,6 +1,6 @@
 ---
 name: "core-principles"
-description: "Fundamental coding principles for production development including SOLID, DRY, KISS, and common design patterns with C# examples."
+description: 'Apply fundamental coding principles including SOLID, DRY, KISS, and common design patterns. Use when refactoring code for maintainability, reviewing design pattern usage, teaching SOLID principles, or evaluating code quality against engineering standards.'
 metadata:
   author: "AgentX"
   version: "1.0.0"
@@ -16,6 +16,17 @@ compatibility:
 > **Focus**: SOLID, DRY, KISS, design patterns.
 
 ---
+
+## When to Use This Skill
+
+- Reviewing code for SOLID principle compliance
+- Refactoring code for maintainability
+- Choosing appropriate design patterns
+- Teaching or evaluating engineering standards
+
+## Prerequisites
+
+- Basic OOP programming knowledge
 
 ## SOLID Principles
 
@@ -196,68 +207,6 @@ Don't build features "just in case". Build what's needed now.
 
 ---
 
-## Design Patterns (Common)
-
-### Repository Pattern
-
-```csharp
-public interface IRepository<T>
-{
-    Task<T?> GetByIdAsync(int id);
-    Task<IEnumerable<T>> GetAllAsync();
-    Task AddAsync(T entity);
-}
-
-public class UserRepository : IRepository<User>
-{
-    private readonly AppDbContext _context;
-    public UserRepository(AppDbContext context) => _context = context;
-    
-    public async Task<User?> GetByIdAsync(int id) => 
-        await _context.Users.FindAsync(id);
-}
-```
-
-### Factory Pattern
-
-```csharp
-public interface IPaymentProcessorFactory
-{
-    IPaymentProcessor Create(string type);
-}
-
-public class PaymentProcessorFactory : IPaymentProcessorFactory
-{
-    public IPaymentProcessor Create(string type) => type switch
-    {
-        "credit_card" => new CreditCardProcessor(),
-        "paypal" => new PayPalProcessor(),
-        _ => throw new ArgumentException("Invalid payment type")
-    };
-}
-```
-
-### Strategy Pattern
-
-```csharp
-public interface IPricingStrategy
-{
-    decimal CalculatePrice(decimal basePrice);
-}
-
-public class RegularPricing : IPricingStrategy
-{
-    public decimal CalculatePrice(decimal basePrice) => basePrice;
-}
-
-public class DiscountPricing : IPricingStrategy
-{
-    public decimal CalculatePrice(decimal basePrice) => basePrice * 0.9m;
-}
-```
-
----
-
 ## Best Practices
 
 ### ✅ DO
@@ -285,3 +234,14 @@ public class DiscountPricing : IPricingStrategy
 
 **Last Updated**: January 13, 2026
 
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| Over-engineering with patterns | Apply YAGNI - only use patterns when complexity warrants them |
+| DRY violation detected | Extract shared logic into a utility method or base class |
+
+## References
+
+- [Design Patterns](references/design-patterns.md)

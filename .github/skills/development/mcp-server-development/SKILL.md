@@ -1,6 +1,6 @@
 ---
 name: "mcp-server-development"
-description: "Build Model Context Protocol (MCP) servers that expose tools, resources, and prompts to AI agents following the open MCP specification."
+description: 'Build Model Context Protocol (MCP) servers that expose tools, resources, and prompts to AI agents. Use when creating MCP servers in TypeScript or Python, defining MCP tools, implementing resource providers, or integrating MCP servers with AI agent workflows.'
 metadata:
   author: "AgentX"
   version: "1.0.0"

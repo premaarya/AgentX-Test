@@ -1,6 +1,6 @@
 ---
 name: "fabric-analytics"
-description: "Microsoft Fabric platform capabilities for data engineering and analytics — Lakehouse, Warehouse, Spark notebooks, data pipelines, semantic models, and OneLake storage."
+description: 'Build data engineering and analytics solutions on Microsoft Fabric — Lakehouse, Warehouse, Spark notebooks, data pipelines, and semantic models. Use when creating Fabric Lakehouses, writing PySpark notebooks, building data pipelines, designing semantic models, or querying OneLake storage.'
 metadata:
   author: "AgentX"
   version: "1.0.0"

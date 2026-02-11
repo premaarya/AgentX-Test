@@ -1,6 +1,6 @@
 ---
 name: "go"
-description: "Go programming language best practices, patterns, and standards for building reliable, efficient software."
+description: 'Write reliable, efficient Go code following idiomatic patterns and best practices. Use when building Go applications, implementing error handling with error wrapping, writing concurrent code with goroutines, designing Go interfaces, or structuring Go project layouts.'
 metadata:
   author: "AgentX"
   version: "1.0.0"
@@ -16,6 +16,19 @@ compatibility:
 > **Purpose**: Best practices for Go development including project structure, concurrency, error handling, and testing.
 
 ---
+
+## When to Use This Skill
+
+- Building Go applications and microservices
+- Implementing error handling with wrapping and sentinel errors
+- Writing concurrent code with goroutines and channels
+- Designing Go interfaces for testability
+- Structuring Go project layouts
+
+## Prerequisites
+
+- Go 1.21+ installed
+- Go modules enabled
 
 ## Table of Contents
 
@@ -137,356 +150,6 @@ x++ // increment x - BAD
 
 ---
 
-## Error Handling
-
-### Error Creation
-
-```go
-// Use errors.New for simple errors
-var ErrNotFound = errors.New("user not found")
-
-// Use fmt.Errorf for contextual errors
-func GetUser(id string) (*User, error) {
-    user, err := repo.FindByID(id)
-    if err != nil {
-        return nil, fmt.Errorf("get user %s: %w", id, err)
-    }
-    return user, nil
-}
-
-// Custom error types for structured errors
-type ValidationError struct {
-    Field   string
-    Message string
-}
-
-func (e *ValidationError) Error() string {
-    return fmt.Sprintf("validation failed: %s - %s", e.Field, e.Message)
-}
-```
-
-### Error Handling Patterns
-
-```go
-// Always handle errors
-result, err := doSomething()
-if err != nil {
-    return fmt.Errorf("do something: %w", err)
-}
-
-// Don't ignore errors
-_ = file.Close() // Bad - error ignored
-if err := file.Close(); err != nil {
-    log.Printf("close file: %v", err)
-}
-
-// Check error types
-if errors.Is(err, ErrNotFound) {
-    // Handle not found
-}
-
-var validationErr *ValidationError
-if errors.As(err, &validationErr) {
-    // Handle validation error
-}
-```
-
----
-
-## Concurrency
-
-### Goroutines
-
-```go
-// Use goroutines for concurrent work
-func processItems(items []Item) {
-    var wg sync.WaitGroup
-
-    for _, item := range items {
-        wg.Add(1)
-        go func(item Item) {
-            defer wg.Done()
-            process(item)
-        }(item) // Pass item as parameter to avoid closure issues
-    }
-
-    wg.Wait()
-}
-```
-
-### Channels
-
-```go
-// Use channels for communication
-func worker(jobs <-chan Job, results chan<- Result) {
-    for job := range jobs {
-        results <- process(job)
-    }
-}
-
-// Always close channels from the sender side
-func producer(ch chan<- int) {
-    defer close(ch)
-    for i := 0; i < 10; i++ {
-        ch <- i
-    }
-}
-
-// Use select for multiple channel operations
-select {
-case result := <-resultCh:
-    handleResult(result)
-case <-ctx.Done():
-    return ctx.Err()
-case <-time.After(5 * time.Second):
-    return errors.New("timeout")
-}
-```
-
-### Context
-
-```go
-// Always pass context as first parameter
-func GetUser(ctx context.Context, id string) (*User, error) {
-    // Check for cancellation
-    select {
-    case <-ctx.Done():
-        return nil, ctx.Err()
-    default:
-    }
-
-    // Use context for timeouts
-    ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-    defer cancel()
-
-    return repo.FindByID(ctx, id)
-}
-```
-
-### Mutex
-
-```go
-type Counter struct {
-    mu    sync.Mutex
-    value int
-}
-
-func (c *Counter) Increment() {
-    c.mu.Lock()
-    defer c.mu.Unlock()
-    c.value++
-}
-
-// Use RWMutex for read-heavy workloads
-type Cache struct {
-    mu    sync.RWMutex
-    items map[string]Item
-}
-
-func (c *Cache) Get(key string) (Item, bool) {
-    c.mu.RLock()
-    defer c.mu.RUnlock()
-    item, ok := c.items[key]
-    return item, ok
-}
-```
-
----
-
-## Testing
-
-### Test Structure
-
-```go
-// File: user_test.go
-package user
-
-import (
-    "testing"
-
-    "github.com/stretchr/testify/assert"
-    "github.com/stretchr/testify/require"
-)
-
-func TestGetUser(t *testing.T) {
-    // Arrange
-    repo := NewMockRepository()
-    service := NewService(repo)
-
-    // Act
-    user, err := service.GetUser(context.Background(), "123")
-
-    // Assert
-    require.NoError(t, err)
-    assert.Equal(t, "John", user.Name)
-}
-```
-
-### Table-Driven Tests
-
-```go
-func TestValidateEmail(t *testing.T) {
-    tests := []struct {
-        name    string
-        email   string
-        wantErr bool
-    }{
-        {"valid email", "test@example.com", false},
-        {"missing @", "testexample.com", true},
-        {"empty", "", true},
-    }
-
-    for _, tt := range tests {
-        t.Run(tt.name, func(t *testing.T) {
-            err := ValidateEmail(tt.email)
-            if tt.wantErr {
-                assert.Error(t, err)
-            } else {
-                assert.NoError(t, err)
-            }
-        })
-    }
-}
-```
-
-### Benchmarks
-
-```go
-func BenchmarkProcess(b *testing.B) {
-    data := generateTestData()
-
-    b.ResetTimer()
-    for i := 0; i < b.N; i++ {
-        Process(data)
-    }
-}
-```
-
----
-
-## Interfaces
-
-### Interface Design
-
-```go
-// Keep interfaces small (1-3 methods)
-type Reader interface {
-    Read(p []byte) (n int, err error)
-}
-
-// Define interfaces where they're used, not implemented
-// consumer.go
-type UserRepository interface {
-    GetByID(ctx context.Context, id string) (*User, error)
-}
-
-type UserService struct {
-    repo UserRepository // Accept interface
-}
-```
-
-### Interface Composition
-
-```go
-type Reader interface {
-    Read(p []byte) (n int, err error)
-}
-
-type Writer interface {
-    Write(p []byte) (n int, err error)
-}
-
-type ReadWriter interface {
-    Reader
-    Writer
-}
-```
-
----
-
-## Performance
-
-### Memory Allocation
-
-```go
-// Preallocate slices when size is known
-users := make([]User, 0, expectedCount)
-
-// Use sync.Pool for frequent allocations
-var bufferPool = sync.Pool{
-    New: func() interface{} {
-        return make([]byte, 1024)
-    },
-}
-
-func process() {
-    buf := bufferPool.Get().([]byte)
-    defer bufferPool.Put(buf)
-    // Use buffer
-}
-```
-
-### Strings
-
-```go
-// Use strings.Builder for concatenation
-var builder strings.Builder
-for _, s := range items {
-    builder.WriteString(s)
-}
-result := builder.String()
-
-// Avoid string to []byte conversion in loops
-data := []byte(s) // Do once outside loop
-```
-
----
-
-## Security
-
-### Input Validation
-
-```go
-func CreateUser(input UserInput) error {
-    // Validate all input
-    if len(input.Name) == 0 || len(input.Name) > 100 {
-        return &ValidationError{Field: "name"}
-    }
-
-    if !emailRegex.MatchString(input.Email) {
-        return &ValidationError{Field: "email"}
-    }
-
-    return nil
-}
-```
-
-### SQL Injection Prevention
-
-```go
-// Always use parameterized queries
-row := db.QueryRow("SELECT * FROM users WHERE id = $1", userID)
-
-// Never concatenate user input
-// query := "SELECT * FROM users WHERE id = " + userID // NEVER DO THIS
-```
-
-### Secrets Handling
-
-```go
-// Use environment variables
-apiKey := os.Getenv("API_KEY")
-
-// Clear sensitive data after use
-defer func() {
-    for i := range password {
-        password[i] = 0
-    }
-}()
-```
-
----
-
 ## Best Practices
 
 ### ✅ DO
@@ -521,3 +184,12 @@ defer func() {
 
 **Version**: 1.0
 **Last Updated**: February 5, 2026
+
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| Goroutine leak | Use context.Context for cancellation, ensure goroutines have exit conditions |
+| Race condition detected | Run go test -race, use mutexes or channels for shared state |
+| Import cycle | Extract shared types into a separate package, use interfaces to break dependencies |

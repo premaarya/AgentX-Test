@@ -1,6 +1,6 @@
 ---
 name: "yaml-pipelines"
-description: "Concise guide for YAML-based CI/CD pipelines across Azure Pipelines and GitLab CI, with progressive disclosure to reference files."
+description: 'Build YAML-based CI/CD pipelines across Azure Pipelines and GitLab CI with progressive disclosure. Use when creating Azure DevOps YAML pipelines, configuring GitLab CI/CD, designing multi-stage pipelines, implementing pipeline templates, or managing pipeline secrets and variables.'
 metadata:
   author: "AgentX"
   version: "2.0.0"
@@ -15,6 +15,20 @@ compatibility:
 > **Purpose**: Quick-reference guide for YAML-based CI/CD pipelines. Start here for platform selection, core patterns, and best practices. Dive into reference files for full examples.
 
 ---
+
+## When to Use This Skill
+
+- Creating Azure DevOps YAML pipelines
+- Configuring GitLab CI/CD pipelines
+- Designing multi-stage deployment pipelines
+- Implementing pipeline templates and variable groups
+- Managing pipeline secrets and caching
+
+## Prerequisites
+
+- Azure DevOps or GitLab project access
+- YAML syntax knowledge
+- CI/CD concepts understanding
 
 ## Platform Comparison — Start Here
 
@@ -325,3 +339,11 @@ Multi-stage pipelines split CI and CD into discrete, gated stages.
 **Version**: 2.0.0
 **Author**: AgentX
 **Last Updated**: February 10, 2026
+
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| Pipeline YAML validation error | Use the pipeline editor validation feature, check indentation and syntax |
+| Secret not available in pipeline | Check variable group is linked, verify secret scope matches stage/job |

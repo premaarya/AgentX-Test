@@ -1,6 +1,6 @@
 ---
 name: "data-analysis"
-description: "Data analysis patterns for exploring, transforming, validating, and visualizing structured data across CSV, JSON, SQL, and DataFrame workflows."
+description: 'Analyze structured data across CSV, JSON, SQL, and DataFrame workflows with exploration, transformation, and visualization. Use when exploring datasets with pandas/polars, running SQL queries on files with DuckDB, transforming data pipelines, or generating data visualizations.'
 metadata:
   author: "AgentX"
   version: "1.0.0"
@@ -15,6 +15,10 @@ compatibility:
 # Data Analysis
 
 > Patterns for exploring, transforming, validating, and visualizing structured data.
+
+## Prerequisites
+
+- Python 3.9+ with pandas, polars, or DuckDB installed
 
 ## When to Use
 
@@ -206,3 +210,11 @@ plt.savefig("chart.png", dpi=150)
 - **Loading entire dataset when you need 5 columns**: Use `usecols=` parameter
 - **No data validation**: Trusting input data blindly → always validate schema + nulls
 - **String concatenation for SQL**: SQL injection risk → use parameterized queries
+
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| pandas MemoryError on large files | Use dtype optimization, chunksize parameter, or switch to polars/DuckDB |
+| DuckDB file lock error | Close other connections, use read_only=True for concurrent reads |

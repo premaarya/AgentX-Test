@@ -1,6 +1,6 @@
 ---
 name: "release-management"
-description: "Best practices for release management, versioning strategies, deployment strategies, rollback procedures, and release automation."
+description: 'Implement release management with versioning strategies, deployment strategies, rollback procedures, and release automation. Use when planning release pipelines, choosing deployment strategies (blue-green, canary, rolling), automating releases, or designing rollback procedures.'
 metadata:
   author: "AgentX"
   version: "2.0.0"
@@ -14,6 +14,19 @@ metadata:
 > For full YAML examples and runbook templates, see the [references/](references/) directory.
 
 ---
+
+## When to Use This Skill
+
+- Planning release pipelines and strategies
+- Choosing deployment strategies (blue-green, canary, rolling)
+- Implementing automated release workflows
+- Designing rollback procedures
+- Setting up versioning with SemVer or CalVer
+
+## Prerequisites
+
+- CI/CD pipeline infrastructure
+- Version control system (Git)
 
 ## Quick-Start: Deployment Strategy Selection
 
@@ -360,3 +373,11 @@ Validate Tag → Build → Test → Create Release → Deploy Staging
 **Version**: 2.0.0
 **Author**: AgentX
 **Last Updated**: February 10, 2026
+
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| Failed deployment with no rollback | Always deploy with rollback plan, use blue-green or canary for zero-downtime |
+| Version conflicts between environments | Use immutable artifacts (Docker images, versioned packages) across all stages |

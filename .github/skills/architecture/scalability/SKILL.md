@@ -1,6 +1,6 @@
 ---
 name: "scalability"
-description: "Design scalable systems with horizontal scaling, load balancing, caching, message queues, and stateless service architecture."
+description: 'Design scalable systems with horizontal scaling, load balancing, caching, message queues, and stateless services. Use when planning system capacity, implementing load balancers, adding message queues for async processing, or designing stateless microservices architecture.'
 metadata:
   author: "AgentX"
   version: "1.0.0"
@@ -14,6 +14,19 @@ metadata:
 > **Approaches**: Horizontal scaling, load balancing, caching, async processing, stateless services.
 
 ---
+
+## When to Use This Skill
+
+- Planning system capacity and scaling strategy
+- Implementing load balancing or auto-scaling
+- Adding message queues for async processing
+- Designing stateless microservices
+- Configuring database read replicas or sharding
+
+## Prerequisites
+
+- Basic understanding of distributed systems
+- Cloud platform access
 
 ## Decision Tree
 
@@ -346,3 +359,11 @@ spec:
 
 **Last Updated**: January 13, 2026
 
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| Session state lost after scaling | Use distributed cache (Redis) or JWT tokens for stateless sessions |
+| Message queue backlog growing | Add consumer instances, implement dead-letter queues for poison messages |
+| Database bottleneck with read replicas | Ensure read queries route to replicas and write queries to primary |

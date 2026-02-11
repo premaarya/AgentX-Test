@@ -1,6 +1,6 @@
 ---
 name: "fabric-forecasting"
-description: "Time-series forecasting pipelines on Microsoft Fabric — data preparation, profiling, clustering, feature engineering, and model training with LightGBM/Prophet."
+description: 'Build time-series forecasting pipelines on Microsoft Fabric — data preparation, profiling, clustering, feature engineering, and model training. Use when implementing demand forecasting, training LightGBM/Prophet models, engineering time-series features, or deploying prediction pipelines on Fabric.'
 metadata:
   author: "AgentX"
   version: "1.0.0"

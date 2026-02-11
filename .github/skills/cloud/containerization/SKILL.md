@@ -1,6 +1,6 @@
 ---
 name: "containerization"
-description: "Container and orchestration best practices with Docker, Docker Compose, and Kubernetes for building, shipping, and running applications."
+description: 'Apply container and orchestration best practices with Docker, Docker Compose, and Kubernetes. Use when writing Dockerfiles, creating docker-compose configurations, deploying to Kubernetes, optimizing container images, or troubleshooting container networking.'
 metadata:
   author: "AgentX"
   version: "1.0.0"

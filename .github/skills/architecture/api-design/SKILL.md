@@ -1,6 +1,6 @@
 ---
 name: "api-design"
-description: "Language-agnostic REST API design with proper versioning, pagination, error handling, rate limiting, and documentation best practices."
+description: 'Design robust REST APIs with proper versioning, pagination, error handling, rate limiting, and documentation. Use when creating new API endpoints, designing resource naming conventions, implementing pagination or filtering, adding rate limiting, or documenting APIs with OpenAPI/Swagger.'
 metadata:
   author: "AgentX"
   version: "1.0.0"
@@ -15,6 +15,19 @@ metadata:
 > **Note**: Language-agnostic patterns applicable to any tech stack.
 
 ---
+
+## When to Use This Skill
+
+- Designing new REST API endpoints
+- Implementing pagination, filtering, or sorting
+- Adding rate limiting or CORS configuration
+- Documenting APIs with OpenAPI/Swagger
+- Designing webhook notification systems
+
+## Prerequisites
+
+- HTTP protocol fundamentals
+- JSON data format understanding
 
 ## Decision Tree
 
@@ -159,413 +172,6 @@ Response: 204 No Content
 
 ---
 
-## Response Format
-
-### Success Response
-
-```json
-{
-  "status": "success",
-  "data": {
-    "id": 123,
-    "email": "user@example.com",
-    "name": "John Doe"
-  },
-  "metadata": {
-    "timestamp": "2026-01-27T12:00:00Z",
-    "version": "1.0.0"
-  }
-}
-```
-
-### Error Response
-
-```json
-{
-  "status": "error",
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Invalid input data",
-    "details": [
-      {
-        "field": "email",
-        "message": "Email is required"
-      },
-      {
-        "field": "age",
-        "message": "Must be between 18 and 120"
-      }
-    ]
-  },
-  "metadata": {
-    "requestId": "abc-123-xyz",
-    "timestamp": "2026-01-27T12:00:00Z"
-  }
-}
-```
-
-### Collection Response
-
-```json
-{
-  "status": "success",
-  "data": [
-    {"id": 1, "name": "User 1"},
-    {"id": 2, "name": "User 2"}
-  ],
-  "pagination": {
-    "page": 1,
-    "pageSize": 20,
-    "totalPages": 5,
-    "totalItems": 100,
-    "hasNext": true,
-    "hasPrevious": false
-  }
-}
-```
-
----
-
-## API Versioning
-
-### URL Versioning (Recommended)
-
-```
-GET /api/v1/users
-GET /api/v2/users  # New version
-```
-
-**Pros:**
-- Clear and explicit
-- Easy to route
-- Browser-friendly
-- Cacheable
-
-### Header Versioning
-
-```
-GET /api/users
-Accept: application/vnd.myapi.v1+json
-```
-
-**Pros:**
-- Clean URLs
-- More RESTful
-- Supports multiple versions
-
-### Versioning Strategy
-
-```
-Version Lifecycle:
-  v1 (Stable)     → Fully supported
-  v2 (Current)    → Recommended, default
-  v3 (Preview)    → Beta, may change
-  
-Deprecation:
-  1. Announce deprecation (6-12 months notice)
-  2. Add deprecation warning header
-  3. Document migration guide
-  4. Sunset old version
-```
-
----
-
-## Pagination
-
-### Offset-Based Pagination
-
-```
-GET /api/v1/users?page=2&pageSize=20
-
-Response:
-{
-  "data": [...],
-  "pagination": {
-    "page": 2,
-    "pageSize": 20,
-    "totalPages": 5,
-    "totalItems": 100
-  }
-}
-```
-
-**Pros**: Simple, intuitive  
-**Cons**: Slow for large offsets, inconsistent results if data changes
-
-### Cursor-Based Pagination
-
-```
-GET /api/v1/users?limit=20&cursor=abc123
-
-Response:
-{
-  "data": [...],
-  "pagination": {
-    "nextCursor": "xyz789",
-    "hasMore": true
-  }
-}
-```
-
-**Pros**: Fast for large datasets, consistent results  
-**Cons**: Can't jump to specific page
-
----
-
-## Filtering, Sorting, Searching
-
-### Filtering
-
-```
-GET /api/v1/users?status=active&role=admin
-GET /api/v1/products?minPrice=10&maxPrice=100
-GET /api/v1/orders?createdAfter=2024-01-01
-```
-
-### Sorting
-
-```
-GET /api/v1/users?sort=createdAt:desc
-GET /api/v1/products?sort=price:asc,name:asc  # Multi-column
-```
-
-### Searching
-
-```
-GET /api/v1/users?q=john
-GET /api/v1/products?search=laptop&category=electronics
-```
-
-### Field Selection (Sparse Fieldsets)
-
-```
-GET /api/v1/users?fields=id,email,name
-# Only returns specified fields
-```
-
----
-
-## Rate Limiting
-
-### Rate Limit Headers
-
-```
-HTTP Response Headers:
-  X-RateLimit-Limit: 1000       # Total requests allowed
-  X-RateLimit-Remaining: 500    # Requests remaining
-  X-RateLimit-Reset: 1642531200 # Unix timestamp when limit resets
-  Retry-After: 3600             # Seconds until retry allowed (on 429)
-```
-
-### Rate Limit Strategy
-
-```
-Rate Limiting Tiers:
-  Anonymous:    100 requests/hour
-  Authenticated: 1000 requests/hour
-  Premium:      10000 requests/hour
-```
-
----
-
-## CORS Configuration
-
-### CORS Headers
-
-```
-Access-Control-Allow-Origin: https://example.com
-Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
-Access-Control-Allow-Headers: Content-Type, Authorization
-Access-Control-Max-Age: 86400  # Cache preflight for 24 hours
-```
-
-### Preflight Request Handling
-
-```
-OPTIONS /api/v1/users
-Response: 204 No Content
-Access-Control-Allow-Origin: https://example.com
-Access-Control-Allow-Methods: GET, POST, PUT, DELETE
-```
-
----
-
-## Authentication & Authorization
-
-### Bearer Token Authentication
-
-```
-Request:
-POST /api/v1/users
-Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
-```
-
-### API Key Authentication
-
-```
-Request:
-GET /api/v1/users
-X-API-Key: abc123xyz789
-```
-
-### Authorization Patterns
-
-```
-# Check permissions in request
-if not user.hasPermission("users:write"):
-    return 403 Forbidden
-    
-# Resource ownership check
-if resource.ownerId != currentUser.id and not currentUser.isAdmin():
-    return 403 Forbidden
-```
-
----
-
-## Idempotency
-
-### Idempotency Keys
-
-```
-POST /api/v1/payments
-Idempotency-Key: unique-key-123
-Body: {"amount": 100, "currency": "USD"}
-
-# If same key sent again, returns original response
-# Prevents duplicate charges
-```
-
-### Safe Retry Pattern
-
-```
-Client retries on network failure:
-  1. Include Idempotency-Key in request
-  2. Server stores key + response
-  3. If key seen again, return stored response
-  4. Prevents duplicate operations
-```
-
----
-
-## API Documentation
-
-### OpenAPI/Swagger Specification
-
-```yaml
-openapi: 3.0.0
-info:
-  title: User API
-  version: 1.0.0
-paths:
-  /users:
-    get:
-      summary: List all users
-      parameters:
-        - name: page
-          in: query
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/User'
-components:
-  schemas:
-    User:
-      type: object
-      properties:
-        id:
-          type: integer
-        email:
-          type: string
-        name:
-          type: string
-```
-
-### Documentation Best Practices
-
-- ✅ Document all endpoints
-- ✅ Include request/response examples
-- ✅ Document error responses
-- ✅ Provide authentication details
-- ✅ Include rate limiting info
-- ✅ Link to SDK/client libraries
-- ✅ Keep docs up-to-date
-
----
-
-## Content Negotiation
-
-### Request Format
-
-```
-POST /api/v1/users
-Content-Type: application/json
-Body: {"email": "user@example.com"}
-```
-
-### Response Format
-
-```
-GET /api/v1/users
-Accept: application/json
-
-Response:
-Content-Type: application/json
-Body: [{"id": 1, "email": "..."}]
-```
-
-### Multiple Formats
-
-```
-Accept: application/json       → JSON response
-Accept: application/xml        → XML response
-Accept: text/csv              → CSV response
-```
-
----
-
-## Webhooks
-
-### Webhook Pattern
-
-```
-1. Client registers webhook URL
-   POST /api/v1/webhooks
-   Body: {"url": "https://client.com/webhook", "events": ["user.created"]}
-
-2. Event occurs (user created)
-
-3. Server sends HTTP POST to webhook URL
-   POST https://client.com/webhook
-   Body: {
-     "event": "user.created",
-     "data": {"id": 123, "email": "..."},
-     "timestamp": "2026-01-27T12:00:00Z"
-   }
-
-4. Client responds with 200 OK
-```
-
-### Webhook Security
-
-```
-# Include signature in header
-X-Webhook-Signature: sha256=abc123...
-
-# Client verifies signature
-signature = HMAC-SHA256(secret, requestBody)
-if signature != headerSignature:
-    return 401 Unauthorized
-```
-
----
-
 ## API Best Practices
 
 ### Security
@@ -631,3 +237,18 @@ if signature != headerSignature:
 **See Also**: [Skills.md](../../../../Skills.md) • [AGENTS.md](../../../../AGENTS.md)
 
 **Last Updated**: January 27, 2026
+
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| CORS errors in browser | Configure Access-Control-Allow-Origin header with specific origins, not wildcards |
+| Pagination inconsistency | Use cursor-based pagination for mutable datasets, offset for static |
+| Rate limit bypass attempts | Implement per-user rate limiting with token bucket algorithm |
+
+## References
+
+- [Api Response Patterns](references/api-response-patterns.md)
+- [Api Security Patterns](references/api-security-patterns.md)
+- [Api Docs Webhooks](references/api-docs-webhooks.md)

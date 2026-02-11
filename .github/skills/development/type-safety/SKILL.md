@@ -1,6 +1,6 @@
 ---
 name: "type-safety"
-description: "Language-agnostic type safety patterns including nullable types, validation, static analysis, and strong typing strategies."
+description: 'Apply type safety patterns including nullable types, validation, static analysis, and strong typing. Use when adding type annotations, implementing nullable reference types, validating inputs with value objects, configuring static analysis tools, or designing type-safe APIs.'
 metadata:
   author: "AgentX"
   version: "1.0.0"
@@ -15,6 +15,18 @@ metadata:
 > **Note**: For implementation, see [C# Development](../csharp/SKILL.md) or [Python Development](../python/SKILL.md).
 
 ---
+
+## When to Use This Skill
+
+- Adding type annotations to existing code
+- Implementing nullable reference types
+- Building type-safe APIs with value objects
+- Configuring static analysis tools
+- Designing strongly-typed data transfer objects
+
+## Prerequisites
+
+- Language with type system support
 
 ## Why Type Safety Matters
 
@@ -125,252 +137,6 @@ Custom Types:
 
 ---
 
-## Value Objects & DTOs
-
-### Strongly-Typed IDs
-
-```
-Problem: Primitive Obsession
-  function getUser(userId: int): User
-  function getOrder(orderId: int): Order
-  
-  # Easy to mix up!
-  getUser(orderId)  # Compiles but wrong!
-
-Solution: Type-Safe IDs
-  type UserId = NewType(int)
-  type OrderId = NewType(int)
-  
-  function getUser(userId: UserId): User
-  function getOrder(orderId: OrderId): Order
-  
-  getUser(orderId)  # ❌ Type error!
-```
-
-### Data Transfer Objects
-
-```
-DTO Pattern:
-
-  class CreateUserRequest:
-    email: string (required)
-    name: string (required)
-    age: int? (optional)
-
-  class UserResponse:
-    id: int
-    email: string
-    name: string
-    createdAt: datetime
-
-Benefits:
-  - Clear API contracts
-  - Validation rules
-  - Serialization/deserialization
-  - Separate from domain models
-```
-
----
-
-## Enums and Union Types
-
-### Enums for Fixed Values
-
-```
-Enum Definition:
-  enum OrderStatus:
-    PENDING
-    PROCESSING
-    SHIPPED
-    DELIVERED
-    CANCELLED
-
-Usage:
-  order.status = OrderStatus.SHIPPED
-  
-  match order.status:
-    PENDING -> "Waiting for payment"
-    PROCESSING -> "Being prepared"
-    SHIPPED -> "On the way"
-    ...
-
-Benefits:
-  - No magic strings
-  - Compiler validates all cases handled
-  - Refactor-safe
-```
-
-### Union Types / Discriminated Unions
-
-```
-Result Type:
-  type Result<T> = Success<T> | Failure
-
-  class Success<T>:
-    value: T
-
-  class Failure:
-    error: string
-
-Usage:
-  function validateUser(email: string) -> Result<User>:
-    if not isValidEmail(email):
-      return Failure("Invalid email format")
-    
-    user = findUser(email)
-    if user == null:
-      return Failure("User not found")
-    
-    return Success(user)
-
-Handling:
-  result = validateUser(email)
-  match result:
-    Success(user) -> processUser(user)
-    Failure(error) -> showError(error)
-```
-
----
-
-## Validation
-
-### Validation at Boundaries
-
-```
-Validation Points:
-  
-  External Input → [VALIDATE] → Internal Processing
-  
-  1. API Request validation
-  2. Configuration validation
-  3. Database result validation
-  4. External service response validation
-```
-
-### Validation Patterns
-
-```
-Pattern 1: Declarative Validation
-  class CreateUserRequest:
-    @Required
-    @Email
-    email: string
-    
-    @Required
-    @Length(min=2, max=100)
-    name: string
-    
-    @Range(min=0, max=150)
-    age: int?
-
-Pattern 2: Validation Function
-  function validate(request: CreateUserRequest) -> List<Error>:
-    errors = []
-    
-    if not isValidEmail(request.email):
-      errors.add("Invalid email format")
-    
-    if request.name.length < 2:
-      errors.add("Name must be at least 2 characters")
-    
-    return errors
-
-Pattern 3: Parse, Don't Validate
-  # Instead of validating a string is an email
-  # Parse it into an Email type that can only be valid
-  
-  class Email:
-    private value: string
-    
-    static function parse(input: string) -> Email | Error:
-      if not isValidEmail(input):
-        return Error("Invalid email")
-      return Email(input)
-```
-
----
-
-## Static Analysis
-
-### What Static Analysis Catches
-
-```
-Type Errors:
-  string name = 123        # Type mismatch
-  user.email               # Null reference (user might be null)
-  
-Dead Code:
-  if false:
-    doSomething()          # Unreachable
-  
-Unused Variables:
-  user = getUser()         # Never used
-
-Security Issues:
-  query = "SELECT * FROM users WHERE id = " + userInput  # SQL injection
-```
-
-### Configuration
-
-```
-Static Analysis Rules:
-
-Errors (Must Fix):
-  - Null dereference without check
-  - Type mismatches
-  - Unreachable code
-  - SQL injection patterns
-
-Warnings (Should Fix):
-  - Unused variables
-  - Deprecated API usage
-  - Missing documentation
-  - Complex methods (cyclomatic complexity)
-
-Info (Consider):
-  - Naming conventions
-  - Code style
-```
-
----
-
-## Generics
-
-### Generic Functions
-
-```
-Without Generics:
-  function first(items: List<int>) -> int
-  function first(items: List<string>) -> string
-  function first(items: List<User>) -> User
-  # Duplication!
-
-With Generics:
-  function first<T>(items: List<T>) -> T | null:
-    if items.isEmpty():
-      return null
-    return items[0]
-
-Usage:
-  first([1, 2, 3])           # Returns int
-  first(["a", "b", "c"])     # Returns string
-  first([user1, user2])      # Returns User
-```
-
-### Generic Constraints
-
-```
-Unconstrained:
-  function process<T>(item: T)     # T can be anything
-
-Constrained:
-  function process<T: Serializable>(item: T)  # T must be Serializable
-  function compare<T: Comparable>(a: T, b: T) # T must be Comparable
-  function save<T: Entity>(item: T)           # T must extend Entity
-```
-
----
-
 ## Best Practices
 
 | Practice | Description |
@@ -400,3 +166,16 @@ Constrained:
 
 **See Also**: [Testing](../testing/SKILL.md) • [C# Development](../csharp/SKILL.md) • [Python Development](../python/SKILL.md)
 
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| Too many any/Object types | Replace with specific types or generics, enable strict mode incrementally |
+| Generic type inference fails | Add explicit type parameters at call site, check constraint compatibility |
+| Static analysis too noisy | Configure severity levels, suppress false positives with inline comments, fix incrementally |
+
+## References
+
+- [Value Objects Enums Validation](references/value-objects-enums-validation.md)
+- [Static Analysis Generics](references/static-analysis-generics.md)

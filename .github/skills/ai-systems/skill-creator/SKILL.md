@@ -1,6 +1,6 @@
 ---
 name: "skill-creator"
-description: "Meta-skill for creating, validating, and maintaining AgentX skills following the agentskills.io specification."
+description: 'Create, validate, and maintain AgentX skills following the agentskills.io specification. Use when scaffolding a new skill, auditing skill compliance, restructuring for progressive disclosure, or adding scripts/references/assets to an existing skill.'
 metadata:
   author: "AgentX"
   version: "1.0.0"
@@ -94,7 +94,7 @@ This creates:
 ```yaml
 ---
 name: "skill-name"
-description: "Concise description of what this skill teaches."
+description: 'Create, validate, and maintain AgentX skills following the agentskills.io specification. Use when scaffolding a new skill, auditing skill compliance, restructuring for progressive disclosure, or adding scripts/references/assets to an existing skill.'
 metadata:
   author: "AgentX"
   version: "1.0.0"
