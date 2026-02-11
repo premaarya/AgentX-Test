@@ -409,6 +409,7 @@ Types: `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `chore`
 | Templates | `.github/templates/` |
 | Skills | `.github/skills/` |
 | Instructions | `.github/instructions/` |
+| Workflow Scenarios | `.github/SCENARIOS.md` |
 
 ### New Features (v2.1)
 
@@ -443,4 +444,4 @@ Types: `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `chore`
 
 ---
 
-**See Also**: [Skills.md](Skills.md) for production code standards
+**See Also**: [Skills.md](Skills.md) for production code standards | [SCENARIOS.md](.github/SCENARIOS.md) for multi-skill workflow chains

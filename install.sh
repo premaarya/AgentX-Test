@@ -315,6 +315,9 @@ download_file "CHANGELOG.md" "CHANGELOG.md"
 download_file "README.md" "README.md"
 download_file ".gitignore" ".gitignore"
 
+# Workflow scenarios
+download_file ".github/SCENARIOS.md" ".github/SCENARIOS.md"
+
 # GitHub configuration
 echo -e "${CYAN}  GitHub configuration...${NC}"
 download_file ".github/copilot-instructions.md" ".github/copilot-instructions.md"

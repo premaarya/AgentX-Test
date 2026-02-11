@@ -361,6 +361,9 @@ Get-FileDownload "CHANGELOG.md" "CHANGELOG.md"
 Get-FileDownload "README.md" "README.md"
 Get-FileDownload ".gitignore" ".gitignore"
 
+# Workflow scenarios
+Get-FileDownload ".github/SCENARIOS.md" ".github/SCENARIOS.md"
+
 # GitHub configuration
 Write-Info "GitHub configuration..."
 Get-FileDownload ".github/copilot-instructions.md" ".github/copilot-instructions.md"
