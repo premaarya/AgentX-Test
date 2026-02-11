@@ -215,6 +215,13 @@ result = await workflow.run(query="Write about AI agents")
 **Last Updated**: January 17, 2026
 
 
+## Scripts
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| [`scaffold-agent.py`](scripts/scaffold-agent.py) | Scaffold AI agent project (Python/.NET) with tracing & eval | `python scripts/scaffold-agent.py --name my-agent [--pattern multi-agent] [--with-eval]` |
+| [`validate-agent-checklist.ps1`](scripts/validate-agent-checklist.ps1) | Validate agent project against production checklist | `./scripts/validate-agent-checklist.ps1 [-Path ./my-agent] [-Strict]` |
+
 ## Troubleshooting
 
 | Issue | Solution |

@@ -10,11 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### ✨ Added
 
 **Executable Scripts** (Anthropic Skills Pattern):
-- **22 scripts** across **14 skills** — deterministic, executable tooling bundled inside skill folders
+- **25 scripts** across **16 skills** — deterministic, executable tooling bundled inside skill folders
 - Scripts in PowerShell (.ps1), Python (.py), and Bash (.sh) for cross-platform support
 - Each SKILL.md updated with `## Scripts` table (name, purpose, usage)
 
 **New Scripts by Skill**:
+- **ai-agent-development** (2): `scaffold-agent.py` (full project scaffold with tracing, eval, MCP), `validate-agent-checklist.ps1` (production readiness validator)
+- **prompt-engineering** (1): `scaffold-prompt.py` (structured prompt template with evaluation checklist)
 - **testing** (4): `check-coverage.ps1`, `check-coverage.sh`, `check-test-pyramid.ps1`, `scaffold-playwright.py` (Playwright e2e scaffolding with Page Object Model)
 - **security** (3): `scan-secrets.ps1`, `scan-secrets.sh`, `scan-security.ps1`
 - **containerization** (2): `generate-dockerfile.ps1` (multi-stage, non-root), `generate-compose.ps1`

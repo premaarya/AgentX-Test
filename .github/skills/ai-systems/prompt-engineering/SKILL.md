@@ -163,6 +163,12 @@ Rate your prompt before using it:
 **Last Updated**: February 7, 2026
 
 
+## Scripts
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| [`scaffold-prompt.py`](scripts/scaffold-prompt.py) | Generate structured prompt template (ROLE/CONTEXT/TASK/CONSTRAINTS) | `python scripts/scaffold-prompt.py --name code-reviewer [--pattern cot] [--with-examples 3]` |
+
 ## Troubleshooting
 
 | Issue | Solution |
