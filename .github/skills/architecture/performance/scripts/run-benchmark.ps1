@@ -39,8 +39,6 @@ Write-Header "Performance Benchmark Runner"
 # Ensure output directory
 New-Item -ItemType Directory -Path $Output -Force | Out-Null
 
-$exitCode = 0
-
 # .NET — BenchmarkDotNet
 $benchProj = Get-ChildItem -Path $Path -Filter "*Benchmark*.csproj" -Recurse -ErrorAction SilentlyContinue |
     Select-Object -First 1

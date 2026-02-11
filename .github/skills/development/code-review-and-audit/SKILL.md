@@ -180,7 +180,7 @@ reportgenerator -reports:"**/coverage.cobertura.xml" -targetdir:"coverage"
 
 ---
 
-**See Also**: [AGENTS.md](../AGENTS.md) • [02-testing.md](02-testing.md) • [04-security.md](04-security.md) • [16-remote-git-operations.md](16-remote-git-operations.md)
+**See Also**: [AGENTS.md](../../../../AGENTS.md) • [Testing](../testing/SKILL.md) • [Security](../../architecture/security/SKILL.md) • [Remote Git Ops](../../operations/remote-git-operations/SKILL.md)
 
 **Last Updated**: January 13, 2026
 

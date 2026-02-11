@@ -71,7 +71,6 @@ $fixCount = 0
 foreach ($file in $workflowFiles) {
     Write-Host "`n  --- $($file.Name) ---" -ForegroundColor White
     $content = Get-Content $file.FullName -Raw
-    $lines = Get-Content $file.FullName
     $issues = 0
     $warnings = 0
 
@@ -125,7 +124,6 @@ foreach ($file in $workflowFiles) {
     }
 
     # Check 6: Missing timeout-minutes
-    $jobMatches = [regex]::Matches($content, "^\s{2}\w+:.*\n", [System.Text.RegularExpressions.RegexOptions]::Multiline)
     if ($content -notmatch "timeout-minutes:") {
         Write-Warn "No 'timeout-minutes' set on any job — prevents hung workflows"
         $warnings++

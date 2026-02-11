@@ -164,7 +164,6 @@ Write-OK "Version 5.1.0 recorded"
 # Agent status
 $statusFile = ".agentx/state/agent-status.json"
 if (-not (Test-Path $statusFile) -or $Force) {
-    $ts = Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ"
     [ordered]@{
         "product-manager" = @{ status="idle"; issue=$null; lastActivity=$null }
         "ux-designer"     = @{ status="idle"; issue=$null; lastActivity=$null }

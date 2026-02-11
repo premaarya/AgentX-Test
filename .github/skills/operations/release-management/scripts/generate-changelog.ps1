@@ -87,8 +87,9 @@ foreach ($line in ($rawCommits -split "`n")) {
 
     $hash = $parts[0].Substring(0, 7)
     $message = $parts[1].Trim()
-    $author = $parts[2].Trim()
-    $date = $parts[3].Trim().Substring(0, 10)
+    # $author and $date available for extended reports
+    # $author = $parts[2].Trim()
+    # $date = $parts[3].Trim().Substring(0, 10)
 
     # Check for breaking change
     $isBreaking = $message -match "^.*!:" -or $message -match "BREAKING CHANGE"
