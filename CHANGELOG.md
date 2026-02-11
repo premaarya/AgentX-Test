@@ -5,6 +5,67 @@ All notable changes to AgentX will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.0] - 2026-02-11
+
+### ✨ Added
+
+**100% agentskills.io Specification Compliance**:
+- All **40 skills** validated and certified compliant with [agentskills.io specification](https://agentskills.io/specification)
+- Descriptions standardized to single-quoted `WHAT + WHEN + KEYWORDS` format
+- All descriptions within **234–314 characters** (well under 1024 char limit)
+- Zero compliance violations across the entire skill library
+
+**Progressive Disclosure Architecture**:
+- **112 reference files** created across 40 skills for 3-tier loading
+- **Tier 1**: SKILL.md core files (all under 500 lines, range 95–383)
+- **Tier 2**: Inline details loaded on demand within SKILL.md
+- **Tier 3**: Dedicated reference files for deep-dive content
+- Optimized for AI assistant token budgets (~20K tokens per task limit)
+
+**Standardized Skill Descriptions**:
+- All **40 skill descriptions** rewritten to consistent format
+- Format: `'WHAT the skill does. WHEN to use it. KEYWORDS.'`
+- No angle brackets, no multi-line, no markdown in descriptions
+- All kebab-case folder names validated
+
+**Anthropic Guide Compliance**:
+- Validated against "The Complete Guide to Building Skills for Claude" (33 pages)
+- No README.md in skill folders (0 found — correct per spec)
+- No XML angle brackets in descriptions
+- Progressive disclosure pattern matches Anthropic best practices
+- No critical gaps identified
+
+**Skill Categories** (40 skills across 6 categories):
+- `ai-systems` (3): ai-agent-development, prompt-engineering, skill-creator
+- `architecture` (7): api-design, code-organization, core-principles, database, performance, scalability, security
+- `cloud` (5): azure, containerization, fabric-analytics, fabric-data-agent, fabric-forecasting
+- `design` (1): ux-ui-design
+- `development` (20): blazor, code-review-and-audit, configuration, csharp, data-analysis, dependency-management, documentation, error-handling, frontend-ui, go, logging-monitoring, mcp-server-development, postgresql, python, react, rust, sql-server, testing, type-safety, version-control
+- `operations` (4): github-actions-workflows, release-management, remote-git-operations, yaml-pipelines
+
+### 🧹 Cleaned
+
+- Removed stale `.github/ISSUE_TEMPLATE/feature-local-mode.md` (superseded by `.yml` form template)
+- Purged local-mode runtime artifacts from version control (issues/*.json, digests/*.md, state/*.json, config.json)
+- Added `.venv/`, `venv/`, `env/` to `.gitignore`
+- Clean working tree with zero untracked files
+
+### 📊 Framework Totals
+
+| Asset | Count |
+|-------|-------|
+| Skills | 40 |
+| Reference Files | 112 |
+| Agent Definitions | 8 (7 stable + 1 preview) |
+| Instruction Files | 8 |
+| Prompt Files | 11 |
+| Template Files | 7 (6 templates + 1 README) |
+| TOML Workflows | 7 |
+| GitHub Issue Templates | 8 |
+| GitHub Actions Workflows | 3 |
+
+---
+
 ## [4.0.0] - 2026-02-15
 
 ### ✨ Added
@@ -95,25 +156,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `copilot-instructions.md` rewritten as thin router (~2K chars, down from ~6K) — conditional loading rules instead of mandatory gate
 - Added Context Budget section to `Skills.md` with loading order, layer sizes, and 3-4 skill per task limit
 - AGENTS.md loading made conditional: only for workflow/coordination tasks, skipped for simple code edits
-
----
-
-## [Unreleased] - v3.0.0 Roadmap
-
-> **Epic**: [#118](https://github.com/jnPiyush/AgentX/issues/118) | **PRD**: [docs/prd/PRD-118.md](docs/prd/PRD-118.md)
-
-### 🎯 Planned Features
-
-**High Priority (P0)**:
-- **Agent Analytics Dashboard** ([#119](https://github.com/jnPiyush/AgentX/issues/119)) - Track handoff times, throughput, rework rates, token consumption
-- **Auto-Fix Reviewer** ([#120](https://github.com/jnPiyush/AgentX/issues/120)) - Reviewer agent that applies safe fixes (with human approval)
-- **Prompt Engineering Skill** ([#121](https://github.com/jnPiyush/AgentX/issues/121)) - Guide for system prompts, CoT, few-shot, guardrails
-
-**Medium Priority (P1)**:
-- **Cross-Repo Orchestration** ([#122](https://github.com/jnPiyush/AgentX/issues/122)) - Monorepo and multi-repo workflow support
-- **CLI & Web Interface** ([#123](https://github.com/jnPiyush/AgentX/issues/123)) - Headless `agentx` CLI and web dashboard
-- **Agent Memory System** ([#124](https://github.com/jnPiyush/AgentX/issues/124)) - Long-term memory for patterns and preferences
-- **Workflow Visualization** ([#125](https://github.com/jnPiyush/AgentX/issues/125)) - Mermaid diagrams and debug mode
 
 ---
 

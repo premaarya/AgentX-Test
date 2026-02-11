@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/jnPiyush/AgentX/releases/tag/v4.0.0"><img src="https://img.shields.io/badge/Version-4.0.0-0EA5E9?style=for-the-badge" alt="Version 4.0.0"></a>
+  <a href="https://github.com/jnPiyush/AgentX/releases/tag/v5.0.0"><img src="https://img.shields.io/badge/Version-5.0.0-0EA5E9?style=for-the-badge" alt="Version 5.0.0"></a>
   <a href="https://github.com/github/awesome-copilot"><img src="https://img.shields.io/badge/Standard-awesome--copilot-7C3AED?style=for-the-badge&logo=github" alt="Awesome Copilot"></a>
   <a href="https://agentskills.io/specification"><img src="https://img.shields.io/badge/Skills-agentskills.io-F97316?style=for-the-badge" alt="Skills Spec"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-22C55E?style=for-the-badge" alt="MIT License"></a>
@@ -40,179 +40,121 @@ AgentX is a **multi-agent orchestration framework** that enables AI coding assis
 
 ---
 
-## 🆕 What's New in v4.0
+## 🆕 What's New in v5.0
 
 <table>
 <tr>
 <td width="50%">
 
-### 📄 Declarative Workflows
-- **TOML-based** workflow templates
-- **7 workflow types** (feature, epic, story, bug, spike, devops, docs)
-- **Step definitions** with agent assignments
-- Machine-readable orchestration rules
+### ✅ 100% agentskills.io Compliance
+- **All 40 skills** validated against [agentskills.io](https://agentskills.io/specification)
+- Single-quoted **WHAT + WHEN + KEYWORDS** description format
+- Every description **234–314 chars** (well under 1024 limit)
+- Zero compliance violations across the entire skill library
 
 </td>
 <td width="50%">
 
-### 📊 Smart Ready Queue
-- **Priority-sorted** work queue (`agentx ready`)
-- **Dual-mode** support (local + GitHub)
-- Automatic issue filtering by status and labels
-- Role-based work discovery for each agent
-
-</td>
-</tr>
-<tr>
-<td width="50%">
-
-### 🔄 Agent State Tracking
-- **Real-time** agent status in `agent-status.json`
-- **6 agent roles** tracked (PM, UX, Architect, Engineer, Reviewer, DevOps)
-- Lifecycle hooks for start/finish transitions
-- Status: idle, working, blocked
-
-</td>
-<td width="50%">
-
-### 🔗 Dependency Management
-- **Issue dependency** checking (`agentx deps`)
-- **Blocked-by / Blocks** conventions in issue bodies
-- Automatic dependency validation before work starts
-- Smart blocker detection
+### 📦 Progressive Disclosure Architecture
+- **112 reference files** across 40 skills for 3-tier loading
+- **Tier 1**: SKILL.md core (<500 lines each, range 95–383)
+- **Tier 2**: Inline details loaded on demand
+- **Tier 3**: Reference files for deep-dive content
+- Optimized for AI token budgets
 
 </td>
 </tr>
 <tr>
 <td width="50%">
 
-### 📝 Issue Digests
-- **Weekly digest** generation (`agentx digest`)
-- Summary of open, closed, and blocked issues
-- Priority breakdown and agent state overview
-- Markdown reports in `.agentx/digests/`
+### 📝 Standardized Skill Descriptions
+- All **40 descriptions** rewritten to agentskills.io spec
+- Consistent format: `'WHAT the skill does. WHEN to use it. KEYWORDS.'`
+- No angle brackets, no multi-line, no markdown in descriptions
+- All kebab-case folder names validated
 
 </td>
 <td width="50%">
 
-### ⚙️ Dual-Mode CLI
-- **PowerShell + Bash** CLI scripts
-- **Auto-detects** mode from `.agentx/config.json`
-- **10 subcommands**: ready, state, deps, digest, workflow, hook, version, upgrade, run, help
-- Works seamlessly in both Local and GitHub modes
+### 🧪 Anthropic Guide Compliance
+- Validated against **"The Complete Guide to Building Skills for Claude"**
+- No README.md in skill folders (0 found — correct)
+- No XML angle brackets in descriptions
+- Progressive disclosure pattern matches Anthropic best practices
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+### 🧹 Solution Cleanup
+- Removed stale issue templates and runtime artifacts
+- Added `.venv/`, `venv/`, `env/` to `.gitignore`
+- Purged local-mode artifacts from version control
+- Clean working tree with zero untracked files
+
+</td>
+<td width="50%">
+
+### 📊 Framework Totals
+- **40 skills** across 6 categories
+- **112 reference files** for progressive disclosure
+- **8 agent definitions** (7 stable + 1 preview)
+- **8 instruction files**, **11 prompts**, **7 templates**
+- **7 TOML workflow** templates
 
 </td>
 </tr>
 </table>
 
-Also includes all v3.0 features: analytics, auto-fix reviewer, prompt engineering, cross-repo, agent memory, visualization.
+Also includes all v4.0 features: declarative workflows, smart ready queue, agent state tracking, dependency management, issue digests, dual-mode CLI.
 
 [View full changelog →](CHANGELOG.md)
 
 ---
 
-## 🆙 v3.0 Features
+## 🆙 Previous Versions
 
-<table>
-<tr>
-<td width="50%">
+<details>
+<summary><strong>v4.0 — Declarative Workflows & CLI</strong></summary>
 
-### 📊 Agent Analytics
-- **Metrics collection** scripts (bash + PowerShell)
-- **Weekly reports** with commit/issue/rework stats
-- **Mermaid charts** for visual analysis
-- Track rework rates, session counts, handoff times
+- TOML-based workflow templates (7 types: feature, epic, story, bug, spike, devops, docs)
+- Smart Ready Queue with priority-sorted work discovery
+- Agent State Tracking with lifecycle hooks
+- Dependency Management (`Blocked-by` / `Blocks` conventions)
+- Issue Digests — weekly summaries
+- Dual-Mode CLI (PowerShell + Bash, 10 subcommands)
+- Version tracking & smart upgrade
+- AI-First Intent Pipeline across all agents
+- 64-assertion framework self-tests
 
-</td>
-<td width="50%">
+</details>
 
-### 🔍 Auto-Fix Reviewer (Preview)
-- **Safe auto-fixes** (formatting, imports, naming)
-- **Risky changes flagged** for human approval
-- **Tests run automatically** before committing fixes
-- Human approval required before merge
+<details>
+<summary><strong>v3.0 — Analytics, Memory & Cross-Repo</strong></summary>
 
-</td>
-</tr>
-<tr>
-<td width="50%">
+- Agent Analytics Dashboard — metrics collection, weekly reports, Mermaid charts
+- Auto-Fix Reviewer (Preview) — safe auto-fixes with human approval
+- Prompt Engineering Skill — best practices, structured outputs, CoT templates
+- Local Mode — filesystem-based issue tracking, offline-capable
+- Cross-Repo Orchestration — monorepo/multi-repo support
+- DevOps Agent — CI/CD pipeline generation, release automation
+- Agent Memory — long-term learning, session persistence, three-tier model
+- Visualization — workflow diagrams, Mermaid integration, debug mode
 
-### 🧠 Prompt Engineering Skill
-- **Best practices** for AI prompts & guardrails
-- **Structured output** patterns (JSON, XML)
-- **Chain-of-thought** and few-shot templates
-- Prompt testing and refinement workflows
+</details>
 
-</td>
-<td width="50%">
+<details>
+<summary><strong>v2.x — Session Persistence & Security</strong></summary>
 
-### 🏠 Local Mode
-- **Filesystem-based** issue tracking without GitHub
-- **PowerShell + Bash** issue managers
-- **Offline-capable** agent coordination
-- Seamless switch between GitHub and Local modes
+- Session persistence with progress logs and auto-resume
+- Defense-in-depth security (4-layer architecture, command allowlist)
+- Feature checklists and verification test patterns
+- Constraint-based agent design with maturity levels
+- Template input variables and Agent X adaptive mode
+- Hub-and-spoke architecture with pre-handoff validation
 
-</td>
-</tr>
-<tr>
-<td width="50%">
-
-### 🌐 Cross-Repo Orchestration
-- **Monorepo** and **multi-repo** support
-- Shared skill libraries across repositories
-- Centralized agent coordination
-- Cross-repo issue linking
-
-</td>
-<td width="50%">
-
-### ⚙️ DevOps Agent
-- **CI/CD pipeline** generation
-- **GitHub Actions** workflow automation
-- **Release management** support
-- **Deployment scaffolding** with security checklists
-
-</td>
-</tr>
-<tr>
-<td width="50%">
-
-### 🧠 Agent Memory
-- **Long-term learning** and personalization
-- **Session persistence** across context windows
-- **Progress logs** for multi-session work
-- Three-tier persistence (Issues, Logs, Git)
-
-</td>
-<td width="50%">
-
-### 📊 Visualization
-- **Workflow diagrams** and debug mode
-- **Mermaid integration** for architecture docs
-- **Status flow** visualization
-- Agent handoff tracking
-
-</td>
-</tr>
-</table>
-
-Also includes all v2.x features: session persistence, defense-in-depth security, feature checklists, verification tests, document conversion, constraint-based design, adaptive routing, and input variables.
-
----
-
-## ✅ v3.0 Shipped Features
-
-> **Epic**: [#118](https://github.com/jnPiyush/AgentX/issues/118)
-
-| Status | Feature | Description |
-|--------|---------|-------------|
-| ✅ | [Analytics Dashboard](https://github.com/jnPiyush/AgentX/issues/119) | Track agent performance, handoff times, rework rates |
-| ✅ | [Auto-Fix Reviewer](https://github.com/jnPiyush/AgentX/issues/120) | Apply review fixes automatically (with approval) |
-| ✅ | [Prompt Engineering](https://github.com/jnPiyush/AgentX/issues/121) | Best practices for AI prompts and guardrails |
-| ✅ | [Cross-Repo](https://github.com/jnPiyush/AgentX/issues/122) | Monorepo and multi-repo orchestration |
-| ✅ | [CLI & Web](https://github.com/jnPiyush/AgentX/issues/123) | Headless CLI specification |
-| ✅ | [Agent Memory](https://github.com/jnPiyush/AgentX/issues/124) | Long-term learning and personalization |
-| ✅ | [Visualization](https://github.com/jnPiyush/AgentX/issues/125) | Workflow diagrams and debug mode |
+</details>
 
 ---
 

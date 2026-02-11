@@ -445,19 +445,31 @@ Types: `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `chore`
 | Issue Digests | `.agentx/digests/` |
 | CLI Utilities | `.agentx/agentx.ps1`, `.agentx/agentx.sh` |
 
-### New Features (v2.1)
+### New Features (v5.0)
 
 | Feature | Documentation | Status |
 |---------|---------------|--------|
-| **Maturity Levels** | See [Agent Roles](#agent-roles) | ✅ Stable |
-| **Constraint-Based Design** | All agent `.agent.md` files | ✅ Stable |
-| **Handoff Buttons** | Agent frontmatter `handoffs:` field | ✅ Stable |
-| **Input Variables** | [Template Input Variables](docs/FEATURES.md#template-input-variables) | ✅ Stable |
-| **Context Clearing** | [Context Management](#context-management) | ✅ Stable |
-| **Agent X Adaptive Mode** | [.github/agents/agent-x.agent.md](.github/agents/agent-x.agent.md) | ✅ Stable |
+| **100% agentskills.io Compliance** | All 40 skill SKILL.md files | ✅ Stable |
+| **Progressive Disclosure** | 112 reference files across skills | ✅ Stable |
+| **Standardized Descriptions** | WHAT + WHEN + KEYWORDS format (234–314 chars) | ✅ Stable |
+| **Anthropic Guide Compliance** | Validated against Claude skills guide | ✅ Stable |
+| **Solution Cleanup** | Stale templates removed, .gitignore improved | ✅ Stable |
 
-### New Features (v3.0 Roadmap)
+### Shipped Features (v2.1–v4.0)
 
+<details>
+<summary>Click to expand previous version features</summary>
+
+**v4.0**:
+| Feature | Documentation | Status |
+|---------|---------------|--------|
+| **Declarative Workflows** | [docs/FEATURES.md](docs/FEATURES.md#declarative-workflows) | ✅ Implemented |
+| **Smart Ready Queue** | [docs/FEATURES.md](docs/FEATURES.md#smart-ready-queue) | ✅ Implemented |
+| **Agent State Tracking** | [docs/FEATURES.md](docs/FEATURES.md#agent-state-tracking) | ✅ Implemented |
+| **Dependency Management** | [docs/FEATURES.md](docs/FEATURES.md#dependency-management) | ✅ Implemented |
+| **Issue Digests** | [docs/FEATURES.md](docs/FEATURES.md#issue-digests) | ✅ Implemented |
+
+**v3.0**:
 | Feature | Documentation | Status |
 |---------|---------------|--------|
 | **Agent Analytics** | [docs/FEATURES.md](docs/FEATURES.md#agent-analytics) | ✅ Implemented |
@@ -468,15 +480,17 @@ Types: `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `chore`
 | **Agent Memory** | [docs/FEATURES.md](docs/FEATURES.md#agent-memory-system) | ✅ Implemented |
 | **Visualization** | [docs/FEATURES.md](docs/FEATURES.md#visualization--debugging) | ✅ Implemented |
 
-### New Features (v4.0)
-
+**v2.1**:
 | Feature | Documentation | Status |
 |---------|---------------|--------|
-| **Declarative Workflows** | [docs/FEATURES.md](docs/FEATURES.md#declarative-workflows) | ✅ Implemented |
-| **Smart Ready Queue** | [docs/FEATURES.md](docs/FEATURES.md#smart-ready-queue) | ✅ Implemented |
-| **Agent State Tracking** | [docs/FEATURES.md](docs/FEATURES.md#agent-state-tracking) | ✅ Implemented |
-| **Dependency Management** | [docs/FEATURES.md](docs/FEATURES.md#dependency-management) | ✅ Implemented |
-| **Issue Digests** | [docs/FEATURES.md](docs/FEATURES.md#issue-digests) | ✅ Implemented |
+| **Maturity Levels** | See [Agent Roles](#agent-roles) | ✅ Stable |
+| **Constraint-Based Design** | All agent `.agent.md` files | ✅ Stable |
+| **Handoff Buttons** | Agent frontmatter `handoffs:` field | ✅ Stable |
+| **Input Variables** | [Template Input Variables](docs/FEATURES.md#template-input-variables) | ✅ Stable |
+| **Context Clearing** | [Context Management](#context-management) | ✅ Stable |
+| **Agent X Adaptive Mode** | [.github/agents/agent-x.agent.md](.github/agents/agent-x.agent.md) | ✅ Stable |
+
+</details>
 
 ### Labels
 
