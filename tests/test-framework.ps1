@@ -108,7 +108,13 @@ Assert-True ($skillCount -ge 35) "At least 35 skills exist (found: $skillCount)"
 Assert-FileExists ".github/skills/ai-systems/ai-agent-development/SKILL.md" "AI Agent Development skill"
 
 # Verify Skills.md count matches
-Assert-FileContains "Skills.md" "Covers $skillCount skills" "Skills.md count matches actual ($skillCount)"
+Assert-FileContains "Skills.md" "Covers $skillCount skills" "Skills.md description count matches actual ($skillCount)"
+
+# Verify new skills and instructions
+Assert-FileExists ".github/skills/ai-systems/cognitive-architecture/SKILL.md" "Cognitive Architecture skill"
+Assert-FileExists ".github/skills/ai-systems/cognitive-architecture/scripts/scaffold-cognitive.py" "Cognitive scaffold script"
+Assert-FileExists ".github/instructions/typescript.instructions.md" "TypeScript instruction file"
+Assert-FileExists ".github/instructions/java.instructions.md" "Java instruction file"
 
 # ─── 7. AI-First Intent Preservation ────────────────────────────────
 Write-Host ""
@@ -156,6 +162,9 @@ Write-Host "  10. Documentation Consistency" -ForegroundColor White
 
 Assert-FileContains "AGENTS.md" "Single source of truth" "AGENTS.md declares single source"
 Assert-FileContains "README.md" "$skillCount production skills" "README skill count matches ($skillCount)"
+Assert-FileExists "docs/QUICKSTART.md" "5-minute Quickstart guide"
+Assert-FileExists ".github/templates/SPEC-TEMPLATE-LITE.md" "Spec Template Lite variant"
+Assert-FileContains "AGENTS.md" "QUICKSTART" "AGENTS.md links to Quickstart"
 
 # ─── Results ────────────────────────────────────────────────────────
 Write-Host ""

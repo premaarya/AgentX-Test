@@ -5,7 +5,7 @@ metadata:
   author: "AgentX"
   version: "1.0.0"
   created: "2025-01-15"
-  updated: "2025-01-15"
+  updated: "2026-02-11"
 compatibility:
   providers: ["azure"]
   platforms: ["windows", "linux"]
@@ -42,7 +42,8 @@ compatibility:
 7. [DevOps and CI/CD](#devops-and-cicd)
 8. [Monitoring and Logging](#monitoring-and-logging)
 9. [Cost Management](#cost-management)
-10. [Best Practices](#best-practices)
+10. [AI Services](#ai-services)
+11. [Best Practices](#best-practices)
 
 ---
 
@@ -81,6 +82,35 @@ az group create --name rg-myapp-prod --location eastus --tags Environment=Produc
 
 ---
 
+## AI Services
+
+### Azure OpenAI Service
+- **Purpose**: LLM hosting (GPT-4o, GPT-3.5-Turbo).
+- **Best Practice**: Use **Managed Identity** for authentication. Disable keys.
+- **Networking**: Deploy in Virtual Network with Private Endpoint.
+
+```bash
+# Create OpenAI Resource
+az cognitiveservices account create \
+  --name "ai-agentx-dev" \
+  --resource-group "rg-agentx-dev-eastus-001" \
+  --location "eastus2" \
+  --kind "OpenAI" \
+  --sku "S0"
+```
+
+### Azure AI Search
+- **Purpose**: Vector database and retrieval engine for RAG.
+- **Configuration**: Standard Tier required for Semantic Search.
+- **RBAC**: Assign `Search Index Data Contributor` to the Agent Identity.
+
+### Azure Cosmos DB (NoSQL)
+- **Purpose**: Conversation history and agent state.
+- **Feature**: Use **Vector Indexing** for memory retrieval.
+- **Consistency**: Session consistency is usually sufficient for chat.
+
+---
+
 ## Best Practices
 
 ### ✅ DO
@@ -114,8 +144,8 @@ az group create --name rg-myapp-prod --location eastus --tags Environment=Produc
 
 ---
 
-**Version**: 1.0
-**Last Updated**: February 5, 2026
+**Version**: 1.1
+**Last Updated**: February 11, 2026
 
 
 ## Troubleshooting

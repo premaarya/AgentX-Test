@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/jnPiyush/AgentX/releases/tag/v5.0.0"><img src="https://img.shields.io/badge/Version-5.0.0-0EA5E9?style=for-the-badge" alt="Version 5.0.0"></a>
+  <a href="https://github.com/jnPiyush/AgentX/releases/tag/v5.1.0"><img src="https://img.shields.io/badge/Version-5.1.0-0EA5E9?style=for-the-badge" alt="Version 5.1.0"></a>
   <a href="https://github.com/github/awesome-copilot"><img src="https://img.shields.io/badge/Standard-awesome--copilot-7C3AED?style=for-the-badge&logo=github" alt="Awesome Copilot"></a>
   <a href="https://agentskills.io/specification"><img src="https://img.shields.io/badge/Skills-agentskills.io-F97316?style=for-the-badge" alt="Skills Spec"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-22C55E?style=for-the-badge" alt="MIT License"></a>
@@ -177,7 +177,7 @@ Also includes all v4.0 features: declarative workflows, smart ready queue, agent
 </td>
 <td width="50%">
 
-### 📚 40 Production Skills
+### 📚 41 Production Skills
 - Testing (80%+ coverage)
 - Security (OWASP Top 10)
 - API Design (REST patterns)
@@ -357,7 +357,7 @@ Backlog → In Progress → In Review → Ready → Done
 ```
 AgentX/
 ├── 📄 AGENTS.md              # Workflow & orchestration rules
-├── 📄 Skills.md              # 40 production skills index
+├── 📄 Skills.md              # 41 production skills index
 ├── 📄 CONTRIBUTING.md        # Contributor guide
 │
 ├── 📁 .github/
@@ -401,7 +401,8 @@ AgentX/
 | Document | Description |
 |----------|-------------|
 | [AGENTS.md](AGENTS.md) | Complete workflow, agent roles, handoff rules |
-| [Skills.md](Skills.md) | 40 production skills with guidelines |
+| [Skills.md](Skills.md) | 41 production skills with guidelines |
+| [**Quickstart**](docs/QUICKSTART.md) | **Build your first feature in 5 minutes** |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute to AgentX |
 | [Features](docs/FEATURES.md) | Memory, CLI, cross-repo, session persistence, templates, visualization, analytics |
 | [Setup Guide](docs/SETUP.md) | GitHub Projects V2, Local Mode, MCP Server integration |

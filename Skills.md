@@ -1,5 +1,5 @@
 ---
-description: 'Production-ready guidelines for AI agents to build secure, scalable, maintainable systems. Covers 40 skills across architecture, development, operations, cloud, AI systems, and design with progressive disclosure, executable scripts, and decision trees.'
+description: 'Production-ready guidelines for AI agents to build secure, scalable, maintainable systems. Covers 41 skills across architecture, development, operations, cloud, AI systems, and design with progressive disclosure, executable scripts, and decision trees.'
 ---
 
 # Production Code Skills & Technical Guidelines
@@ -20,7 +20,7 @@ description: 'Production-ready guidelines for AI agents to build secure, scalabl
 | Layer | Size | When Loaded | Mechanism |
 |-------|------|-------------|-----------|
 | `copilot-instructions.md` | ~2K | Always (thin router) | VS Code auto-attach |
-| Instruction files (8) | 2-7K each | **Auto by `applyTo` glob** | Only matching files load |
+| Instruction files (10) | 2-7K each | **Auto by `applyTo` glob** | Only matching files load |
 | `Skills.md` (this file) | ~23K | Referenced, not auto-loaded | Read when doing implementation |
 | Skill SKILL.md files (40) | 3-10K each | **On-demand only** | Use Quick Reference below to pick |
 | Agent definitions (8) | 10-22K each | **Only active agent** | Agent system loads 1 at a time |
@@ -149,11 +149,13 @@ description: 'Production-ready guidelines for AI agents to build secure, scalabl
 
 **When**: Building AI agents, LLM integration, orchestration
 
-**Load These Skills** (Total: ~12K tokens):
+**Load These Skills** (Total: ~18K tokens):
 - [#17 AI Agent Development](.github/skills/ai-systems/ai-agent-development/SKILL.md) - Foundry, Agent Framework, tracing (8K)
+- [#41 Cognitive Architecture](.github/skills/ai-systems/cognitive-architecture/SKILL.md) - RAG, Memory, State Persistence (4K)
 - [#04 Security](.github/skills/architecture/security/SKILL.md) - Prompt injection prevention, secrets (4K)
+- [#30 Prompt Engineering](.github/skills/ai-systems/prompt-engineering/SKILL.md) - System prompts, guardrails (2K)
 
-**Context Routing**: AI agent work → Load Skills #17, #04
+**Context Routing**: AI agent work → Load Skills #17, #41, #04, #30
 
 ---
 
@@ -303,6 +305,7 @@ description: 'Production-ready guidelines for AI agents to build secure, scalabl
 | 17 | [AI Agent Development](.github/skills/ai-systems/ai-agent-development/SKILL.md) | Microsoft Foundry, Agent Framework, Orchestration, Tracing, Evaluation |
 | 30 | [Prompt Engineering](.github/skills/ai-systems/prompt-engineering/SKILL.md) | System Prompts, Chain-of-Thought, Few-Shot, Guardrails, Tool Use, Agentic Patterns |
 | 37 | [Skill Creator](.github/skills/ai-systems/skill-creator/SKILL.md) | Create, Validate, Maintain Skills (meta-skill) |
+| 41 | [Cognitive Architecture](.github/skills/ai-systems/cognitive-architecture/SKILL.md) | RAG Pipelines, Memory Systems, Vector Search, Agent State Persistence |
 
 ### Design
 
@@ -342,6 +345,7 @@ Each skill follows the [agentskills.io](https://agentskills.io/specification) sp
 | `scan-secrets.ps1` | Security | Detect private keys, tokens, high-entropy strings |
 | `version-bump.ps1` | Release Management | SemVer version bump for Node/.NET/Python projects |
 | `init-skill.ps1` | Skill Creator | Scaffold new skill with proper frontmatter and structure |
+| `scaffold-cognitive.py` | Cognitive Architecture | Generate RAG pipeline and Memory system modules with tests |
 
 **Creating New Skills**: Use `init-skill.ps1` or see [#37 Skill Creator](.github/skills/ai-systems/skill-creator/SKILL.md).
 
@@ -476,7 +480,7 @@ builder.Host.ConfigureHostOptions(opts => opts.ShutdownTimeout = TimeSpan.FromSe
 
 **Skills Specification**: [agentskills.io/specification](https://agentskills.io/specification)
 
-**Total Skills**: 39 (Architecture: 7, Development: 19, Operations: 4, Cloud: 5, AI Systems: 3, Design: 1)
+**Total Skills**: 41 (Architecture: 7, Development: 20, Operations: 4, Cloud: 5, AI Systems: 4, Design: 1)
 
 **Last Updated**: January 15, 2025
 

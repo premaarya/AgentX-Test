@@ -451,6 +451,9 @@ Types: `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `chore`
 |---------|---------------|--------|
 | **Executable Scripts** | 27 scripts across 16 skills (Anthropic pattern) | ✅ Stable |
 | **Playwright E2E Scaffold** | `scaffold-playwright.py` in testing skill | ✅ Stable |
+| **Cognitive Architecture** | RAG pipeline + Memory system patterns + scaffold script | ✅ Stable |
+| **TypeScript Instructions** | `typescript.instructions.md` for Node.js/TS backend | ✅ Stable |
+| **5-Minute Quickstart** | [docs/QUICKSTART.md](docs/QUICKSTART.md) | ✅ Stable |
 
 ### Shipped Features (v2.1–v5.0)
 
@@ -515,4 +518,4 @@ Types: `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `chore`
 
 ---
 
-**See Also**: [Skills.md](Skills.md) for production code standards | [SCENARIOS.md](.github/SCENARIOS.md) for multi-skill workflow chains
+**See Also**: [Skills.md](Skills.md) for production code standards | [SCENARIOS.md](.github/SCENARIOS.md) for multi-skill workflow chains | [Quickstart](docs/QUICKSTART.md) for 5-minute onboarding

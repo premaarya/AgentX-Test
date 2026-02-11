@@ -50,6 +50,8 @@ These load automatically when editing matching files — no manual action needed
 | `ai.instructions.md` | `*agent*`, `*llm*`, `*model*`, `*workflow*`, `agents/` |
 | `python.instructions.md` | `*.py`, `*.pyx` |
 | `csharp.instructions.md` | `*.cs`, `*.csx` |
+| `typescript.instructions.md` | `*.ts` (backend/server TypeScript) |
+| `java.instructions.md` | `*.java` (Spring Boot backend) |
 | `react.instructions.md` | `*.tsx`, `*.jsx`, `components/`, `hooks/` |
 | `blazor.instructions.md` | `*.razor`, `*.razor.cs` |
 | `api.instructions.md` | `Controllers/`, `api/`, `endpoints/` |

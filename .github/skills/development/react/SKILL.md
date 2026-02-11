@@ -169,6 +169,22 @@ class UserCard extends React.Component {
 | Stale closure in useCallback | Add all referenced variables to dependency array, or use useRef |
 | Component not updating | Ensure state is updated immutably (spread operator or structuredClone) |
 
+## Internationalization (i18n)
+
+| Library | When to Use |
+|---------|-------------|
+| `react-intl` | Full ICU support, plurals, dates, mature ecosystem |
+| `next-intl` | Next.js App Router with server components |
+| `react-i18next` | Lightweight, good DX, namespace support |
+
+**Best Practices**:
+- Extract all user-facing strings (never hardcode in JSX)
+- Use ICU message format for plurals: `{count, plural, one {# item} other {# items}}`
+- Co-locate translations: `src/locales/{lang}/common.json`
+- Use `<FormattedMessage>` or `useIntl()` hook
+- Set `lang` attribute on `<html>` element
+- Test with pseudo-localization to catch layout issues early
+
 ## References
 
 - [Hooks Perf State](references/hooks-perf-state.md)
