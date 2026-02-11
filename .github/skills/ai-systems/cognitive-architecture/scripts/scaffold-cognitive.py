@@ -110,6 +110,8 @@ def chunk_text(text: str, chunk_size: int = CHUNK_SIZE, overlap: int = CHUNK_OVE
     Returns:
         List of text chunks.
     """
+    if not text:
+        return [""]
     chunks: list[str] = []
     start = 0
     while start < len(text):
@@ -600,7 +602,7 @@ def scaffold(name: str, component: str, vector_store: str) -> None:
         print(f"Error: Directory '{name}' already exists.", file=sys.stderr)
         sys.exit(1)
 
-    print(f"\n🧠 Scaffolding cognitive architecture for '{name}'")
+    print(f"\nScaffolding cognitive architecture for '{name}'")
     print(f"   Component: {component}")
     print(f"   Vector store: {vector_store}")
     print(f"   Output: ./{name}/\n")
@@ -628,7 +630,7 @@ def scaffold(name: str, component: str, vector_store: str) -> None:
 
     # Summary
     files_created = sum(1 for _ in root.rglob("*") if _.is_file())
-    print(f"\n✅ Scaffolded {files_created} files in ./{name}/")
+    print(f"\n[OK] Scaffolded {files_created} files in ./{name}/")
     print(f"\nNext steps:")
     print(f"  1. cp {name}/.env.template {name}/.env  (fill in keys)")
     if compose:

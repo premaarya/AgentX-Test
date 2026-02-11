@@ -805,13 +805,13 @@ function Run-Workflow-Steps {
         }
 
         if ($step.optional -and -not $conditionMet) {
-            Write-Host "    ○ $stepId: $title [$agent] — skipped (optional, condition not met)" -ForegroundColor DarkGray
+            Write-Host "    ○ ${stepId}: $title [$agent] — skipped (optional, condition not met)" -ForegroundColor DarkGray
             $completedSteps += $stepId
             continue
         }
 
         if ($blocked) {
-            Write-Host "    ⏳ $stepId: $title [$agent] — blocked (needs: $($step.needs -join ', '))" -ForegroundColor Yellow
+            Write-Host "    ⏳ ${stepId}: $title [$agent] — blocked (needs: $($step.needs -join ', '))" -ForegroundColor Yellow
             continue
         }
 
@@ -843,7 +843,7 @@ function Run-Workflow-Steps {
             }
         }
 
-        Write-Host "    ▶ $stepId: $title" -ForegroundColor White
+        Write-Host "    ▶ ${stepId}: $title" -ForegroundColor White
         Write-Host "      Agent: @$agent | Status: $($step.status_on_start) → $($step.status_on_complete)" -ForegroundColor DarkGray
 
         $completedSteps += $stepId
