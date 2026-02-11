@@ -21,7 +21,7 @@ allowed-tools: "create_file create_directory read_file run_in_terminal"
 - Creating a new skill from scratch
 - Auditing existing skills for spec compliance
 - Restructuring a skill for progressive disclosure
-- Adding scripts/ or references/ to an existing skill
+- Adding scripts/, references/, or assets/ to an existing skill
 
 ## Decision Tree
 
@@ -41,7 +41,7 @@ Need to work on a skill?
 └─ Adding capability to existing skill?
     ├─ Executable automation → scripts/
     ├─ Extended docs/examples → references/
-    └─ Static assets → assets/
+    └─ Templates, starter code, sample data → assets/
 ```
 
 ## Quick Start: Create a New Skill
@@ -61,8 +61,10 @@ This creates:
 ├── SKILL.md              # Main skill document
 ├── scripts/
 │   └── example.ps1       # Starter script
-└── references/
-    └── reference-guide.md # Extended content
+├── references/
+│   └── reference-guide.md # Extended content
+└── assets/               # (with -WithAssets)
+    └── .gitkeep           # Templates, starter code, sample data
 ```
 
 ## Core Rules (Frontmatter)
@@ -85,6 +87,7 @@ This creates:
 | `compatibility.languages` | Language scope | `["csharp", "python"]` |
 | `compatibility.frameworks` | Framework scope | `["dotnet", "flask"]` |
 | `compatibility.platforms` | OS scope | `["windows", "linux"]` |
+| `prerequisites` | Required tools, MCP servers, env | `["Node.js 18+", "Docker"]` |
 | `allowed-tools` | Space-delimited tool names | `"read_file run_in_terminal"` |
 
 ### Frontmatter Template
@@ -102,6 +105,7 @@ compatibility:
   languages: ["lang1", "lang2"]
   frameworks: ["framework1"]
   platforms: ["windows", "linux", "macos"]
+prerequisites: ["tool or runtime required"]
 allowed-tools: "tool1 tool2 tool3"
 ---
 ```
@@ -119,9 +123,19 @@ Skills load in 3 tiers to manage context window tokens:
 ### Structure Rules
 
 1. **SKILL.md** (< 500 lines, ideal < 350): Decision tree, quick start, core rules, pattern summaries
-2. **references/**: Detailed examples, templates, code samples, edge cases
+2. **references/**: Detailed examples, extended documentation, edge cases
 3. **scripts/**: Executable automation (scanners, scaffolders, validators)
-4. **assets/**: Static resources (images, diagrams, sample data)
+4. **assets/**: Reusable templates, starter code, sample data, report templates
+
+### Assets Directory Convention
+
+| Content Type | Example | When to Use |
+|-------------|---------|-------------|
+| Code templates | `pyspark_transforms.py` | Reusable starter code for the skill domain |
+| Report templates | `completion_report_template.md` | Structured output documents |
+| Config templates | `pipeline-templates.json` | Pre-built configurations |
+| Sample data | `sample-input.csv` | Test/demo data for the skill |
+| Prompt templates | `system-prompt.md` | AI prompt patterns for the skill |
 
 ## Skill Quality Checklist
 
@@ -134,6 +148,8 @@ Skills load in 3 tiers to manage context window tokens:
 - [ ] Has "Anti-Patterns" section
 - [ ] Large examples are in references/ (not inline)
 - [ ] Executable tools are in scripts/ (not just documented)
+- [ ] Reusable templates/starter code in assets/ (not inline)
+- [ ] `prerequisites` listed if skill requires external tools
 - [ ] Added to Skills.md master index
 
 ## Anti-Patterns

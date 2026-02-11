@@ -21,7 +21,54 @@ inputs:
 # Progress Log: #${issue_number} - ${issue_title}
 
 > **Purpose**: Track agent sessions, decisions, and continuity across context windows.  
-> **Pattern**: Each agent appends session notes before handoff or context refresh.
+> **Pattern**: Each agent appends session notes before handoff or context refresh.  
+> **See Also**: [Checkpoint Protocol](../SCENARIOS.md#checkpoint-protocol)
+
+---
+
+## Status
+
+| Field | Value |
+|-------|-------|
+| Issue | #${issue_number} |
+| Type | <!-- type:story / type:bug / type:feature --> |
+| Agent | ${agent_role} |
+| Status | <!-- In Progress / In Review / Done --> |
+| Started | ${session_date} |
+| Last Updated | ${session_date} |
+
+### Phase Checklist
+
+- [ ] Research & planning
+- [ ] Implementation
+- [ ] Testing (≥80% coverage)
+- [ ] Documentation
+- [ ] Review ready
+
+---
+
+## Checkpoint Log
+
+<!-- Record each checkpoint stop as a structured entry.
+     See SCENARIOS.md § Checkpoint Protocol for when to use checkpoints. -->
+
+### CP-001
+
+| Field | Value |
+|-------|-------|
+| Status | ⏳ Pending <!-- ⏳ Pending / ✅ Completed --> |
+| Phase | <!-- e.g., Implementation --> |
+| Skill | <!-- e.g., react, testing --> |
+| Files Changed | <!-- count --> |
+
+**Summary:**
+> <!-- What was completed before this checkpoint -->
+
+**Decision Needed:**
+1. <!-- Question or option for user -->
+
+**User Response:**
+<!-- Fill after user responds -->
 
 ---
 
@@ -83,13 +130,22 @@ inputs:
 
 **Final Status**: [In Progress / Ready for Review / Completed]  
 **Total Sessions**: [Number]  
+**Total Checkpoints**: [Number]  
 **Overall Coverage**: [Percentage]  
 **Ready for Handoff**: [Yes/No]
 
-**Key Achievements**:
+### Key Achievements
 - 
 - 
 
-**Outstanding Items**:
+### Outstanding Items
 - 
 - 
+
+### Artifacts Produced
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| <!-- e.g., Component --> | <!-- src/... --> | <!-- Brief description --> |
+| <!-- e.g., Tests --> | <!-- tests/... --> | <!-- Brief description --> |
+| <!-- e.g., Docs --> | <!-- docs/... --> | <!-- Brief description --> |

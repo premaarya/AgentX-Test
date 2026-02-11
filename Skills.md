@@ -7,7 +7,7 @@ description: 'Production-ready guidelines for AI agents to build secure, scalabl
 > **Purpose**: Production-ready guidelines for agents to build secure, scalable, maintainable systems.  
 > **Usage**: Index for detailed skill documents. Read relevant skills before implementation.  
 > **Standard**: Follows [github/awesome-copilot](https://github.com/github/awesome-copilot) skills specification from [agentskills.io](https://agentskills.io/specification).  
-> **Structure**: Each skill uses progressive disclosure — metadata (~100 tokens) → SKILL.md body (<5K) → references/ (on demand).
+> **Structure**: Each skill uses progressive disclosure — metadata (~100 tokens) → SKILL.md body (<5K) → references/ (on demand) → assets/ (templates, starter code).
 
 ---
 

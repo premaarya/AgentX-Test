@@ -3,7 +3,7 @@
 .SYNOPSIS
     Scaffolds a new skill directory following the AgentX skill specification.
 .DESCRIPTION
-    Creates a SKILL.md with proper frontmatter, references/ and scripts/ directories,
+    Creates a SKILL.md with proper frontmatter, references/, scripts/, and assets/ directories,
     and optional starter files. Validates name against the agentskills.io spec.
 .PARAMETER Name
     Skill name (lowercase, hyphens only, 1-64 chars). E.g., "mcp-server-development"
@@ -17,7 +17,7 @@
     Create a references/ directory with a placeholder reference
 .EXAMPLE
     ./init-skill.ps1 -Name "mcp-server-development" -Category "development" -Description "Build MCP servers"
-    ./init-skill.ps1 -Name "docker-k8s" -Category "cloud" -Description "Container orchestration" -WithScripts -WithReferences
+    ./init-skill.ps1 -Name "docker-k8s" -Category "cloud" -Description "Container orchestration" -WithScripts -WithReferences -WithAssets
 #>
 param(
     [Parameter(Mandatory = $true)]
@@ -33,7 +33,8 @@ param(
     [string]$Description,
 
     [switch]$WithScripts,
-    [switch]$WithReferences
+    [switch]$WithReferences,
+    [switch]$WithAssets
 )
 
 $ErrorActionPreference = "Stop"
@@ -127,6 +128,14 @@ $(if ($WithReferences) {
 "- None yet. Add references/ directory for extended content."
 })
 
+## Assets
+
+$(if ($WithAssets) {
+"- ``assets/`` - Templates, starter code, and sample data"
+} else {
+"- None yet. Add assets/ directory for reusable templates and starter code."
+})
+
 ## Scripts
 
 $(if ($WithScripts) {
@@ -183,6 +192,13 @@ if ($WithReferences) {
     Write-Host "  Created: references/reference-guide.md" -ForegroundColor Green
 }
 
+if ($WithAssets) {
+    $assetsDir = Join-Path $skillDir "assets"
+    New-Item -Path $assetsDir -ItemType Directory -Force | Out-Null
+    Set-Content -Path (Join-Path $assetsDir ".gitkeep") -Value ""
+    Write-Host "  Created: assets/ (add templates, starter code, sample data)" -ForegroundColor Green
+}
+
 # Summary
 Write-Host "`n=== Skill Created ===" -ForegroundColor Cyan
 Write-Host "  Location: $skillDir" -ForegroundColor White
@@ -190,6 +206,7 @@ Write-Host "  Files:" -ForegroundColor White
 Write-Host "    - SKILL.md (frontmatter + template)" -ForegroundColor Gray
 if ($WithScripts) { Write-Host "    - scripts/example.ps1 (starter)" -ForegroundColor Gray }
 if ($WithReferences) { Write-Host "    - references/reference-guide.md (starter)" -ForegroundColor Gray }
+if ($WithAssets) { Write-Host "    - assets/ (templates, starter code)" -ForegroundColor Gray }
 Write-Host "`n  Next steps:" -ForegroundColor Yellow
 Write-Host "    1. Edit SKILL.md to fill in content" -ForegroundColor Gray
 Write-Host "    2. Add the skill to Skills.md master index" -ForegroundColor Gray

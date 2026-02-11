@@ -292,5 +292,65 @@ What are you building?
 
 ---
 
-**Version**: 1.0  
+## Checkpoint Protocol
+
+When executing a scenario chain with 5+ skills, or when a single skill involves multi-phase work (>3 files changed), use checkpoints to prevent context rot and catch issues early.
+
+### When to Use Checkpoints
+
+| Condition | Use Checkpoints? |
+|-----------|-----------------|
+| Scenario chain ≤ 3 skills | ❌ Optional |
+| Scenario chain 4-6 skills | ✅ At each skill boundary |
+| Scenario chain 7+ skills | ✅ At each skill boundary + mid-skill |
+| Single skill, ≤ 3 files changed | ❌ Not needed |
+| Single skill, 4-10 files changed | ✅ After each major file group |
+| Single skill, 10+ files changed | ✅ Every 3-5 files |
+
+### Checkpoint Behavior
+
+When a checkpoint is reached:
+
+1. **Commit** current work (atomic, with issue reference)
+2. **Summarize** what was completed and what remains
+3. **Verify** tests pass, no regressions
+4. **Present** status to user with options:
+   - Continue to next skill/phase
+   - Review current work before proceeding
+   - Adjust plan based on findings
+5. **Log** checkpoint in progress log (if issue has one)
+6. **Wait** for user confirmation before proceeding
+
+### Checkpoint Format
+
+```markdown
+## Checkpoint: [Skill Name] Complete
+
+**Completed:**
+- [List of deliverables produced]
+- [Files created/modified]
+- [Tests passing: X/Y]
+
+**Next Up:** [Next skill in chain]
+**Estimated Work:** [Brief scope description]
+
+**Options:**
+A) Continue to [next skill]
+B) Review current changes first
+C) Adjust plan
+```
+
+### Risk-Based Autonomy
+
+Not all operations need user approval. Classify each step:
+
+| Risk Level | Agent Behavior | Examples |
+|------------|---------------|----------|
+| **Low** | Apply autonomously | Formatting, imports, renaming, adding types |
+| **Medium** | Apply + notify user | New files, test additions, config changes |
+| **High** | Propose + wait for approval | Architecture changes, API contract changes, deletions |
+
+---
+
+**Version**: 1.1  
 **Last Updated**: February 10, 2026
