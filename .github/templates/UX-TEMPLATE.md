@@ -432,10 +432,13 @@ inputs:
 
 ## 10. Interactive Prototypes
 
+> **⚠️ MANDATORY**: HTML/CSS prototypes are REQUIRED per AGENTS.md. Output to `docs/ux/prototypes/`.
+> Prototypes must be production-ready HTML/CSS that engineers can reference for implementation.
+
 ### Prototype Links
-- [Figma Prototype](https://figma.com/...)
-- [HTML Mockup](./prototypes/feature-name.html)
-- [Interactive Demo](https://demo.example.com/feature-name)
+- [HTML/CSS Prototype](../prototypes/{feature-name}/index.html) **(MANDATORY)**
+- [Figma Prototype](https://figma.com/...) _(optional)_
+- [Interactive Demo](https://demo.example.com/feature-name) _(optional)_
 
 ### Prototype Scope
 - ✅ Primary user flow (happy path)

@@ -39,8 +39,6 @@ inputs:
 
 ---
 
----
-
 ## Acceptance Criteria
 
 > **Purpose**: Engineer uses this checklist to track implementation progress. Mark items complete as verified.

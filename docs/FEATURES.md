@@ -427,13 +427,13 @@ inputs:
 - `epic_title` (required), `issue_number` (required), `priority`, `author`, `date`
 
 **ADR Template** (`.github/templates/ADR-TEMPLATE.md`):
-- `decision_id` (required), `decision_title` (required), `issue_number` (required), `epic_id`, `date`, `status`
+- `decision_id` (required), `decision_title` (required), `issue_number` (required), `epic_id`, `date`, `status`, `author`
 
 **UX Template** (`.github/templates/UX-TEMPLATE.md`):
 - `feature_name` (required), `issue_number` (required), `epic_id`, `designer`, `date`
 
 **Spec Template** (`.github/templates/SPEC-TEMPLATE.md`):
-- `feature_name` (required), `issue_number` (required), `epic_id`, `author`, `date`
+- `feature_name` (required), `issue_number` (required), `epic_id`, `author`, `date`, `acceptance_criteria` (required, array)
 
 **Review Template** (`.github/templates/REVIEW-TEMPLATE.md`):
 - `story_title` (required), `issue_number` (required), `engineer` (required), `commit_sha` (required), `feature_id`, `epic_id`, `reviewer`, `date`
