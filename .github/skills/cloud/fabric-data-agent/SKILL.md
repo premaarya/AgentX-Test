@@ -15,7 +15,6 @@ prerequisites:
   - "Fabric MCP Server (ms-fabric-mcp-server)"
   - "fabric-data-agent-sdk (pre-installed in Fabric environment)"
   - "Lakehouse with populated Delta tables"
-allowed-tools: "read_file run_in_terminal semantic_search create_file"
 ---
 
 # Fabric Data Agent

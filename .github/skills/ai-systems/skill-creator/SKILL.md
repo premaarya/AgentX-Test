@@ -9,7 +9,6 @@ metadata:
 compatibility:
   frameworks: ["agentx"]
   platforms: ["windows", "linux", "macos"]
-allowed-tools: "create_file create_directory read_file run_in_terminal"
 ---
 
 # Skill Creator

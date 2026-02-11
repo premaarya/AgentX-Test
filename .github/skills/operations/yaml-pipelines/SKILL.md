@@ -8,7 +8,6 @@ metadata:
   updated: "2025-01-15"
 compatibility:
   platforms: ["azure-devops", "gitlab"]
-allowed-tools: "semantic_search grep_search file_search read_file create_file replace_string_in_file run_in_terminal get_errors"
 ---
 
 # YAML Pipelines & CI/CD Configuration

@@ -8,7 +8,6 @@ metadata:
   updated: "2025-01-15"
 compatibility:
   platforms: ["windows", "linux", "macos"]
-allowed-tools: "read_file semantic_search grep_search file_search create_file replace_string_in_file run_in_terminal get_errors"
 ---
 
 # Containerization & Orchestration

@@ -6,7 +6,6 @@ metadata:
   version: "1.0.0"
   created: "2025-01-15"
   updated: "2025-01-15"
-allowed-tools: "read_file semantic_search grep_search file_search"
 ---
 
 # Scalability
@@ -343,7 +342,7 @@ spec:
 
 ---
 
-**See Also**: [05-performance.md](05-performance.md) • [06-database.md](06-database.md) • [15-logging-monitoring.md](15-logging-monitoring.md)
+**See Also**: [Performance](../performance/SKILL.md) • [Database](../database/SKILL.md) • [Logging & Monitoring](../../development/logging-monitoring/SKILL.md)
 
 **Last Updated**: January 13, 2026
 

@@ -6,7 +6,6 @@ metadata:
   version: "1.0.0"
   created: "2025-01-15"
   updated: "2025-01-15"
-allowed-tools: "read_file semantic_search grep_search file_search run_in_terminal"
 ---
 
 # Dependency Management
@@ -372,5 +371,5 @@ Benefits:
 
 ---
 
-**See Also**: [Security](.github/skills/architecture/security/SKILL.md) • [C# Development](../csharp/SKILL.md) • [Python Development](../python/SKILL.md)
+**See Also**: [Security](../../architecture/security/SKILL.md) • [C# Development](../csharp/SKILL.md) • [Python Development](../python/SKILL.md)
 

@@ -10,7 +10,6 @@ compatibility:
   languages: ["python", "sql", "typescript"]
   frameworks: ["pandas", "polars", "duckdb"]
   platforms: ["windows", "linux", "macos"]
-allowed-tools: "read_file semantic_search grep_search file_search create_file replace_string_in_file run_in_terminal run_notebook_cell"
 ---
 
 # Data Analysis

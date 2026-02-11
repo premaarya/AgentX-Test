@@ -6,7 +6,6 @@ metadata:
   version: "1.0.0"
   created: "2025-01-15"
   updated: "2025-01-15"
-allowed-tools: "read_file semantic_search grep_search file_search run_in_terminal get_changed_files"
 ---
 
 # Version Control
@@ -354,6 +353,6 @@ git checkout tags/v1.2.3 -b version-1.2.3
 ---
 
 **Related Skills**:
-- [Code Organization](08-code-organization.md)
-- [Documentation](11-documentation.md)
+- [Code Organization](../../architecture/code-organization/SKILL.md)
+- [Documentation](../documentation/SKILL.md)
 

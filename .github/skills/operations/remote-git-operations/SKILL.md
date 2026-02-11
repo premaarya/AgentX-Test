@@ -8,7 +8,6 @@ metadata:
   updated: "2025-01-15"
 compatibility:
   platforms: ["github", "azure-devops"]
-allowed-tools: "read_file semantic_search grep_search file_search run_in_terminal get_changed_files"
 ---
 
 # Remote Git Repository Operations
@@ -775,7 +774,7 @@ git config --global protocol.version 2
 ---
 
 **Related Skills**:
-- [Version Control](12-version-control.md)
-- [Security](04-security.md)
-- [Code Organization](08-code-organization.md)
+- [Version Control](../../development/version-control/SKILL.md)
+- [Security](../../architecture/security/SKILL.md)
+- [Code Organization](../../architecture/code-organization/SKILL.md)
 

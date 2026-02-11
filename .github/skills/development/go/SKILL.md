@@ -9,7 +9,6 @@ metadata:
 compatibility:
   languages: ["go"]
   platforms: ["windows", "linux", "macos"]
-allowed-tools: "read_file semantic_search grep_search file_search replace_string_in_file create_file run_in_terminal get_errors"
 ---
 
 # Go Development

@@ -6,14 +6,13 @@ metadata:
   version: "1.0.0"
   created: "2025-01-15"
   updated: "2025-01-15"
-allowed-tools: "read_file semantic_search grep_search file_search replace_string_in_file create_file run_in_terminal"
 ---
 
 # Database
 
 > **Purpose**: Efficient, reliable database operations with migrations, indexes, and transactions.  
 > **Focus**: ORM patterns, query optimization, data integrity.  
-> **Note**: For database-specific details, see [PostgreSQL](../../architecture/postgresql/SKILL.md) or [SQL Server](../../architecture/sql-server/SKILL.md).
+> **Note**: For database-specific details, see [PostgreSQL](../../development/postgresql/SKILL.md) or [SQL Server](../../development/sql-server/SKILL.md).
 
 ---
 
@@ -484,6 +483,6 @@ SELECT * FROM users WHERE email = 'test@example.com';
 
 ---
 
-**See Also**: [Skills.md](../../../../Skills.md) • [AGENTS.md](../../../../AGENTS.md) • [PostgreSQL](../postgresql/SKILL.md) • [SQL Server](../sql-server/SKILL.md)
+**See Also**: [Skills.md](../../../../Skills.md) • [AGENTS.md](../../../../AGENTS.md) • [PostgreSQL](../../development/postgresql/SKILL.md) • [SQL Server](../../development/sql-server/SKILL.md)
 
 **Last Updated**: January 27, 2026

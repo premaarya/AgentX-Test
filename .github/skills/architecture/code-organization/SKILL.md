@@ -6,7 +6,6 @@ metadata:
   version: "1.0.0"
   created: "2025-01-15"
   updated: "2025-01-15"
-allowed-tools: "read_file semantic_search grep_search file_search create_file replace_string_in_file"
 ---
 
 # Code Organization
@@ -489,6 +488,6 @@ namespace MyProject.Api.Controllers
 ---
 
 **Related Skills**:
-- [Core Principles](01-core-principles.md)
-- [Scalability](07-scalability.md)
+- [Core Principles](../core-principles/SKILL.md)
+- [Scalability](../scalability/SKILL.md)
 

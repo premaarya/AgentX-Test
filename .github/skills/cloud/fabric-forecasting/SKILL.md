@@ -15,7 +15,6 @@ prerequisites:
   - "Fabric MCP Server (ms-fabric-mcp-server)"
   - "Lakehouse with historical time-series data (12+ months recommended)"
   - "Python libraries: lightgbm, prophet, optuna, scikit-learn, plotly"
-allowed-tools: "read_file run_in_terminal semantic_search create_file"
 ---
 
 # Fabric Forecasting

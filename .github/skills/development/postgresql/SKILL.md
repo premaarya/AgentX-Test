@@ -9,7 +9,6 @@ metadata:
 compatibility:
   languages: ["sql", "plpgsql"]
   platforms: ["windows", "linux", "macos"]
-allowed-tools: "read_file semantic_search grep_search file_search replace_string_in_file create_file run_in_terminal get_errors"
 ---
 
 # PostgreSQL Database Development
@@ -554,6 +553,6 @@ SET app.user_id = '123';
 
 ---
 
-**See Also**: [Skills.md](../../../../Skills.md) • [AGENTS.md](../../../../AGENTS.md) • [Database Skill](.github/skills/architecture/database/SKILL.md)
+**See Also**: [Skills.md](../../../../Skills.md) • [AGENTS.md](../../../../AGENTS.md) • [Database Skill](../../architecture/database/SKILL.md)
 
 **Last Updated**: January 27, 2026

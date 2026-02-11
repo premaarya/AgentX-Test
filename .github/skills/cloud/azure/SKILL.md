@@ -9,7 +9,6 @@ metadata:
 compatibility:
   providers: ["azure"]
   platforms: ["windows", "linux"]
-allowed-tools: "read_file semantic_search grep_search file_search create_file replace_string_in_file run_in_terminal get_errors"
 ---
 
 # Azure Cloud Development

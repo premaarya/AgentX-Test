@@ -6,7 +6,6 @@ metadata:
   version: "1.0.0"
   created: "2025-01-15"
   updated: "2025-01-15"
-allowed-tools: "read_file semantic_search grep_search file_search create_file replace_string_in_file"
 ---
 
 # Documentation
@@ -268,11 +267,11 @@ Link to API documentation or brief overview.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md)
+See [CONTRIBUTING.md](../../../../CONTRIBUTING.md)
 
 ## License
 
-MIT License - see [LICENSE](LICENSE)
+MIT License - see [LICENSE](../../../../LICENSE)
 ```
 
 ### README Best Practices
@@ -431,4 +430,4 @@ Write ADR For:
 
 ---
 
-**See Also**: [API Design](.github/skills/architecture/api-design/SKILL.md) • [C# Development](../csharp/SKILL.md) • [Python Development](../python/SKILL.md)
+**See Also**: [API Design](../../architecture/api-design/SKILL.md) • [C# Development](../csharp/SKILL.md) • [Python Development](../python/SKILL.md)

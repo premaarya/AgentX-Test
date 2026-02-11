@@ -10,7 +10,6 @@ compatibility:
   agents: ["ux-designer", "agent-x"]
   frameworks: ["html-css", "figma", "tailwind", "bootstrap"]
   output-formats: ["html", "css", "markdown", "mermaid"]
-allowed-tools: "read_file create_file run_in_terminal semantic_search grep_search file_search"
 ---
 
 # UX/UI Design & Prototyping

@@ -6,7 +6,6 @@ metadata:
   version: "2.0.0"
   created: "2025-01-15"
   updated: "2025-01-15"
-allowed-tools: "semantic_search grep_search file_search read_file replace_string_in_file create_file run_in_terminal get_errors get_changed_files"
 ---
 
 # Release Management & Deployment Strategies

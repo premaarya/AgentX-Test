@@ -8,7 +8,6 @@ metadata:
   updated: "2025-01-15"
 compatibility:
   platforms: ["github"]
-allowed-tools: "create_file replace_string_in_file read_file run_in_terminal grep_search file_search semantic_search get_errors"
 ---
 
 # GitHub Actions & Workflows
@@ -309,7 +308,7 @@ actionlint .github/workflows/*.yml   # local syntax validation
 ---
 
 **Related Skills**:
-- [CI/CD Pipelines](../ci-cd-pipelines/SKILL.md)
+- [YAML Pipelines](../yaml-pipelines/SKILL.md)
 - [Release Management](../release-management/SKILL.md)
 - [Security](../../architecture/security/SKILL.md)
 

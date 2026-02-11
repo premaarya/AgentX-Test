@@ -8,7 +8,6 @@ metadata:
   updated: "2025-01-15"
 compatibility:
   languages: ["csharp"]
-allowed-tools: "read_file semantic_search grep_search file_search"
 ---
 
 # Core Principles
@@ -282,7 +281,7 @@ public class DiscountPricing : IPricingStrategy
 
 ---
 
-**See Also**: [08-code-organization.md](08-code-organization.md) • [02-testing.md](02-testing.md)
+**See Also**: [Code Organization](../code-organization/SKILL.md) • [Testing](../../development/testing/SKILL.md)
 
 **Last Updated**: January 13, 2026
 

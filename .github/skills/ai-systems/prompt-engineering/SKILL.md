@@ -8,7 +8,6 @@ metadata:
   updated: "2025-01-15"
 compatibility:
   frameworks: ["agentx", "copilot", "openai", "anthropic"]
-allowed-tools: "read_file semantic_search grep_search file_search create_file replace_string_in_file"
 ---
 
 # Prompt Engineering

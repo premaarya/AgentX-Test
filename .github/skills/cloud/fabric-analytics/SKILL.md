@@ -14,7 +14,6 @@ prerequisites:
   - "Microsoft Fabric workspace with active capacity"
   - "Fabric MCP Server (ms-fabric-mcp-server) for tool-based workflows"
   - "PySpark / Python 3.11+ for notebook development"
-allowed-tools: "read_file run_in_terminal semantic_search create_file"
 ---
 
 # Fabric Analytics
