@@ -170,7 +170,7 @@ if (-not (Test-Path $configFile) -or $Force) {
             ConvertTo-Json | Set-Content $configFile
         Write-OK "Local Mode configured"
     } else {
-        @{ mode="github"; created=(Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ") } |
+        @{ mode="github"; repo=$null; project=$null; created=(Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ") } |
             ConvertTo-Json | Set-Content $configFile
         Write-OK "GitHub Mode configured"
     }
@@ -222,6 +222,77 @@ if (-not $NoSetup) {
             }
         }
         Write-OK "Username: $username"
+    }
+
+    # GitHub repo & project (GitHub mode only)
+    if (-not $Local) {
+        Write-Host ""
+        Write-Host "  GitHub Repository & Project" -ForegroundColor Cyan
+
+        # Auto-detect repo from git remote
+        $repoSlug = $null
+        if (Get-Command git -ErrorAction SilentlyContinue) {
+            try {
+                $remoteUrl = git remote get-url origin 2>$null
+                if ($remoteUrl -match 'github\.com[:/]([^/]+/[^/.]+)') {
+                    $repoSlug = $Matches[1] -replace '\.git$', ''
+                }
+            } catch {}
+        }
+        if (-not $repoSlug -and (Get-Command gh -ErrorAction SilentlyContinue)) {
+            try { $repoSlug = gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>$null } catch {}
+        }
+
+        if ($repoSlug) {
+            Write-Host "  Detected repo: $repoSlug" -ForegroundColor DarkGray
+            $confirmRepo = Read-Host "  Use this repo? [Y/n]"
+            if ($confirmRepo -eq 'n' -or $confirmRepo -eq 'N') {
+                $repoSlug = Read-Host "  Enter GitHub repo (owner/repo)"
+            }
+        } else {
+            $repoSlug = Read-Host "  Enter GitHub repo (owner/repo, e.g. myorg/myproject)"
+        }
+
+        # Auto-detect project number
+        $projectNum = $null
+        if ($repoSlug -and (Get-Command gh -ErrorAction SilentlyContinue)) {
+            try {
+                $owner = ($repoSlug -split '/')[0]
+                $projects = gh project list --owner $owner --format json --limit 10 2>$null
+                if ($LASTEXITCODE -eq 0 -and $projects) {
+                    $projectList = $projects | ConvertFrom-Json
+                    if ($projectList.projects.Count -eq 1) {
+                        $projectNum = $projectList.projects[0].number
+                        Write-Host "  Detected project: #$projectNum ($($projectList.projects[0].title))" -ForegroundColor DarkGray
+                        $confirmProj = Read-Host "  Use this project? [Y/n]"
+                        if ($confirmProj -eq 'n' -or $confirmProj -eq 'N') { $projectNum = $null }
+                    } elseif ($projectList.projects.Count -gt 1) {
+                        Write-Host "  Available projects:" -ForegroundColor DarkGray
+                        for ($i = 0; $i -lt $projectList.projects.Count; $i++) {
+                            Write-Host "    [$($i+1)] #$($projectList.projects[$i].number) - $($projectList.projects[$i].title)" -ForegroundColor White
+                        }
+                        $projChoice = Read-Host "  Choose [1-$($projectList.projects.Count), or Enter to skip]"
+                        if ($projChoice -match '^\d+$' -and [int]$projChoice -ge 1 -and [int]$projChoice -le $projectList.projects.Count) {
+                            $projectNum = $projectList.projects[[int]$projChoice - 1].number
+                        }
+                    }
+                }
+            } catch {}
+        }
+        if (-not $projectNum) {
+            $projectNumInput = Read-Host "  GitHub Project number (Enter to skip)"
+            if ($projectNumInput) { $projectNum = [int]$projectNumInput }
+        }
+
+        # Update config.json with repo and project
+        if (Test-Path $configFile) {
+            $cfg = Get-Content $configFile -Raw | ConvertFrom-Json
+            if ($repoSlug) { $cfg.repo = $repoSlug }
+            if ($projectNum) { $cfg.project = $projectNum }
+            $cfg | ConvertTo-Json | Set-Content $configFile
+        }
+        if ($repoSlug) { Write-OK "Repo: $repoSlug" }
+        if ($projectNum) { Write-OK "Project: #$projectNum" }
     }
 } else {
     Write-Skip "Setup skipped (-NoSetup)"

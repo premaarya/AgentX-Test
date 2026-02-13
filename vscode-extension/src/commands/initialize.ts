@@ -47,6 +47,60 @@ export function registerInitializeCommand(
         );
         if (!mode) { return; }
 
+        // GitHub mode: ask for repo and project
+        let repoSlug: string | undefined;
+        let projectNum: number | undefined;
+
+        if (mode.label === 'github') {
+            // Try to auto-detect repo from git remote
+            let detectedRepo: string | undefined;
+            try {
+                const { execShell: exec } = await import('../utils/shell');
+                const shell = process.platform === 'win32' ? 'pwsh' : 'bash';
+                const remoteUrl = await exec('git remote get-url origin', root, shell);
+                const match = remoteUrl.trim().match(/github\.com[:/]([^/]+\/[^/.]+)/);
+                if (match) {
+                    detectedRepo = match[1].replace(/\.git$/, '');
+                }
+            } catch { /* no git remote */ }
+
+            if (detectedRepo) {
+                const useDetected = await vscode.window.showQuickPick(
+                    [
+                        { label: detectedRepo, description: 'Detected from git remote' },
+                        { label: 'Enter manually...', description: 'Type a different owner/repo' },
+                    ],
+                    { placeHolder: 'GitHub repository (owner/repo)', title: 'AgentX — GitHub Repo' }
+                );
+                if (useDetected?.label === 'Enter manually...') {
+                    repoSlug = await vscode.window.showInputBox({
+                        prompt: 'GitHub repository (owner/repo)',
+                        placeHolder: 'myorg/myproject',
+                    });
+                } else if (useDetected) {
+                    repoSlug = useDetected.label;
+                }
+            } else {
+                repoSlug = await vscode.window.showInputBox({
+                    prompt: 'GitHub repository (owner/repo)',
+                    placeHolder: 'myorg/myproject',
+                });
+            }
+
+            // Ask for project number
+            const projectInput = await vscode.window.showInputBox({
+                prompt: 'GitHub Project number (leave empty to skip)',
+                placeHolder: '1',
+                validateInput: (v) => {
+                    if (v && !/^\d+$/.test(v)) { return 'Must be a number'; }
+                    return undefined;
+                },
+            });
+            if (projectInput) {
+                projectNum = parseInt(projectInput, 10);
+            }
+        }
+
         // Save to settings
         const config = vscode.workspace.getConfiguration('agentx');
         await config.update('mode', mode.label, vscode.ConfigurationTarget.Workspace);
@@ -113,13 +167,22 @@ export function registerInitializeCommand(
                     // Clean up tmp
                     fs.rmSync(tmpDir, { recursive: true, force: true });
 
-                    // Local mode setup
+                    // Mode-specific config
+                    const configDir = path.join(root, '.agentx');
+                    const configFile = path.join(configDir, 'config.json');
                     if (mode.label === 'local') {
-                        const configDir = path.join(root, '.agentx');
-                        const configFile = path.join(configDir, 'config.json');
                         const configData = {
                             mode: 'local',
                             version: '5.1.0',
+                            installedAt: new Date().toISOString(),
+                        };
+                        fs.writeFileSync(configFile, JSON.stringify(configData, null, 2));
+                    } else {
+                        const configData: Record<string, unknown> = {
+                            mode: 'github',
+                            version: '5.1.0',
+                            repo: repoSlug || null,
+                            project: projectNum || null,
                             installedAt: new Date().toISOString(),
                         };
                         fs.writeFileSync(configFile, JSON.stringify(configData, null, 2));

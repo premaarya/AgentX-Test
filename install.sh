@@ -149,7 +149,7 @@ if [ ! -f "$CONFIG" ] || [ "$FORCE" = "true" ]; then
         echo "{ \"mode\": \"local\", \"nextIssueNumber\": 1, \"created\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\" }" > "$CONFIG"
         ok "Local Mode configured"
     else
-        echo "{ \"mode\": \"github\", \"created\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\" }" > "$CONFIG"
+        echo "{ \"mode\": \"github\", \"repo\": null, \"project\": null, \"created\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\" }" > "$CONFIG"
         ok "GitHub Mode configured"
     fi
 fi
@@ -188,6 +188,80 @@ if [ "$NO_SETUP" != "true" ]; then
                             sed -i '' "s/<YOUR_GITHUB_USERNAME>/$USERNAME/g" "$f" 2>/dev/null || true)
         done
         ok "Username: $USERNAME"
+    fi
+
+    # GitHub repo & project (GitHub mode only)
+    if [ "$LOCAL" != "true" ]; then
+        echo ""
+        echo -e "${C}  GitHub Repository & Project${N}"
+
+        # Auto-detect repo from git remote
+        REPO_SLUG=""
+        if command -v git &>/dev/null; then
+            REMOTE_URL=$(git remote get-url origin 2>/dev/null || true)
+            if [[ "$REMOTE_URL" =~ github\.com[:/]([^/]+/[^/.]+) ]]; then
+                REPO_SLUG="${BASH_REMATCH[1]}"
+                REPO_SLUG="${REPO_SLUG%.git}"
+            fi
+        fi
+        if [ -z "$REPO_SLUG" ] && command -v gh &>/dev/null; then
+            REPO_SLUG=$(gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null || true)
+        fi
+
+        if [ -n "$REPO_SLUG" ]; then
+            echo -e "${D}  Detected repo: $REPO_SLUG${N}"
+            read -rp "  Use this repo? [Y/n]: " cr
+            if [[ "$cr" == "n" || "$cr" == "N" ]]; then
+                read -rp "  Enter GitHub repo (owner/repo): " REPO_SLUG
+            fi
+        else
+            read -rp "  Enter GitHub repo (owner/repo, e.g. myorg/myproject): " REPO_SLUG
+        fi
+
+        # Auto-detect project number
+        PROJECT_NUM=""
+        if [ -n "$REPO_SLUG" ] && command -v gh &>/dev/null; then
+            OWNER="${REPO_SLUG%%/*}"
+            PROJECTS_JSON=$(gh project list --owner "$OWNER" --format json --limit 10 2>/dev/null || true)
+            if [ -n "$PROJECTS_JSON" ]; then
+                PROJ_COUNT=$(echo "$PROJECTS_JSON" | python3 -c "import sys,json; print(len(json.load(sys.stdin).get('projects',[])))" 2>/dev/null || echo "0")
+                if [ "$PROJ_COUNT" = "1" ]; then
+                    PROJECT_NUM=$(echo "$PROJECTS_JSON" | python3 -c "import sys,json; p=json.load(sys.stdin)['projects'][0]; print(p['number'])" 2>/dev/null || true)
+                    PROJ_TITLE=$(echo "$PROJECTS_JSON" | python3 -c "import sys,json; p=json.load(sys.stdin)['projects'][0]; print(p['title'])" 2>/dev/null || true)
+                    echo -e "${D}  Detected project: #$PROJECT_NUM ($PROJ_TITLE)${N}"
+                    read -rp "  Use this project? [Y/n]: " cp
+                    if [[ "$cp" == "n" || "$cp" == "N" ]]; then PROJECT_NUM=""; fi
+                elif [ "$PROJ_COUNT" -gt 1 ] 2>/dev/null; then
+                    echo -e "${D}  Available projects:${N}"
+                    echo "$PROJECTS_JSON" | python3 -c "
+import sys, json
+projects = json.load(sys.stdin).get('projects', [])
+for i, p in enumerate(projects):
+    print(f'    [{i+1}] #{p["number"]} - {p["title"]}')
+" 2>/dev/null || true
+                    read -rp "  Choose [1-$PROJ_COUNT, or Enter to skip]: " pc
+                    if [[ "$pc" =~ ^[0-9]+$ ]] && [ "$pc" -ge 1 ] && [ "$pc" -le "$PROJ_COUNT" ]; then
+                        PROJECT_NUM=$(echo "$PROJECTS_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin)['projects'][$((pc-1))]['number'])" 2>/dev/null || true)
+                    fi
+                fi
+            fi
+        fi
+        if [ -z "$PROJECT_NUM" ]; then
+            read -rp "  GitHub Project number (Enter to skip): " PROJECT_NUM
+        fi
+
+        # Update config.json with repo and project
+        if [ -f "$CONFIG" ] && command -v python3 &>/dev/null; then
+            python3 -c "
+import json
+with open('$CONFIG') as f: cfg = json.load(f)
+if '$REPO_SLUG': cfg['repo'] = '$REPO_SLUG'
+if '$PROJECT_NUM': cfg['project'] = int('$PROJECT_NUM') if '$PROJECT_NUM'.isdigit() else None
+with open('$CONFIG', 'w') as f: json.dump(cfg, f, indent=2)
+" 2>/dev/null || true
+        fi
+        [ -n "$REPO_SLUG" ] && ok "Repo: $REPO_SLUG"
+        [ -n "$PROJECT_NUM" ] && ok "Project: #$PROJECT_NUM"
     fi
 else
     skip "Setup skipped (--no-setup)"
