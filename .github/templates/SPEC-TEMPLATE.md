@@ -20,11 +20,6 @@ inputs:
     description: "Specification date (YYYY-MM-DD)"
     required: false
     default: "${current_date}"
-  acceptance_criteria:
-    description: "List of testable acceptance criteria (one per line)"
-    required: true
-    type: "array"
-    default: []
 ---
 
 # Technical Specification: ${feature_name}
@@ -37,27 +32,7 @@ inputs:
 **Related ADR**: [ADR-${epic_id}.md](../adr/ADR-${epic_id}.md)
 **Related UX**: [UX-${issue_number}.md](../ux/UX-${issue_number}.md)
 
----
-
-## Acceptance Criteria
-
-> **Purpose**: Engineer uses this checklist to track implementation progress. Mark items complete as verified.
-
-- [ ] **AC1**: ${acceptance_criteria[0] || "Describe first acceptance criterion with specific, testable behavior"}
-- [ ] **AC2**: ${acceptance_criteria[1] || "Describe second acceptance criterion"}
-- [ ] **AC3**: ${acceptance_criteria[2] || "Describe third acceptance criterion"}
-- [ ] **AC4**: ${acceptance_criteria[3] || "Add more criteria as needed"}
-
-**Instructions for Architect**:
-- Each criterion must be testable (can verify pass/fail)
-- Include both functional and non-functional requirements
-- Specify success metrics where applicable
-- Minimum 3-10 criteria per feature
-
-**Instructions for Engineer**:
-- Check off criteria as you verify them (manual or automated tests)
-- Update progress log with test results
-- Do not mark complete without verification
+> **Acceptance Criteria**: Defined in the PRD user stories — see [PRD-${epic_id}.md](../prd/PRD-${epic_id}.md#5-user-stories--features). Engineers should track AC completion against the originating Story issue.
 
 ---
 
@@ -96,65 +71,55 @@ inputs:
 
 ### 2.1 High-Level System Architecture
 
-```
-+==============================================================================+
-|                              SYSTEM ARCHITECTURE                              |
-+==============================================================================+
-|                                                                               |
-|  +-------------------------------------------------------------------------+ |
-|  |                           CLIENT LAYER                                   | |
-|  |  +-----------+   +-----------+   +-----------+   +-----------+         | |
-|  |  | Web App   |   |Mobile App |   |Desktop App|   |Third-Party|         | |
-|  |  | (Browser) |   |(iOS/Andr.)|   | (Electron)|   |  Clients  |         | |
-|  |  +-----+-----+   +-----+-----+   +-----+-----+   +-----+-----+         | |
-|  +---------|-----------------|-----------------|-----------------+---------+ |
-|            |                 |                 |                 |           |
-|            +--------+--------+---------+-------+---------+-------+           |
-|                     |                                                        |
-|                     v  HTTPS                                                 |
-|  +-------------------------------------------------------------------------+ |
-|  |                         API GATEWAY LAYER                                | |
-|  |  +-------------------------------------------------------------------+  | |
-|  |  | * Load Balancing    * Rate Limiting    * Authentication           |  | |
-|  |  | * SSL Termination   * Request Routing  * API Versioning           |  | |
-|  |  +-------------------------------------------------------------------+  | |
-|  +----------------------------------+--------------------------------------+ |
-|                                     |                                        |
-|                                     v                                        |
-|  +-------------------------------------------------------------------------+ |
-|  |                        APPLICATION LAYER                                 | |
-|  |   +--------------+    +--------------+    +--------------+              | |
-|  |   |  Controller  |    |  Controller  |    |  Controller  |              | |
-|  |   |    (REST)    |    |  (GraphQL)   |    |  (WebSocket) |              | |
-|  |   +------+-------+    +------+-------+    +------+-------+              | |
-|  |          +-------------------+-------------------+                       | |
-|  |                              v                                           | |
-|  |   +--------------------------------------------------------------+      | |
-|  |   |                    SERVICE LAYER                              |      | |
-|  |   |  +----------+  +----------+  +----------+  +-----------+     |      | |
-|  |   |  |Service A |  |Service B |  |Service C |  | Service D |     |      | |
-|  |   |  |(Business)|  | (Domain) |  |(Workflow)|  |(Integratn)|     |      | |
-|  |   |  +----+-----+  +----+-----+  +----+-----+  +-----+-----+     |      | |
-|  |   +-------+-------------+-------------+---------------+----------+      | |
-|  +-----------|-------------|-------------|---------------|----------------+ |
-|              v             v             v               v                   |
-|  +-------------------------------------------------------------------------+ |
-|  |                         DATA ACCESS LAYER                                | |
-|  |  +----------+  +----------+  +----------+  +-------------------+        | |
-|  |  |Repository|  |Repository|  |Repository|  | External Client   |        | |
-|  |  |  (ORM)   |  | (Cache)  |  | (Search) |  |   (HTTP/gRPC)     |        | |
-|  |  +----+-----+  +----+-----+  +----+-----+  +---------+---------+        | |
-|  +-------|-------------|-------------|-------------------|----------------+ |
-|          v             v             v                   v                  |
-|  +-------------------------------------------------------------------------+ |
-|  |                        INFRASTRUCTURE LAYER                              | |
-|  |  +--------+  +--------+  +--------+  +--------+  +--------+             | |
-|  |  |Database|  | Cache  |  | Search |  | Queue  |  |External|             | |
-|  |  |(SQL/   |  |(Redis/ |  |(Elastic|  |(Rabbit/|  | APIs   |             | |
-|  |  | NoSQL) |  |Memcache|  | /Solr) |  | Kafka) |  |        |             | |
-|  |  +--------+  +--------+  +--------+  +--------+  +--------+             | |
-|  +-------------------------------------------------------------------------+ |
-+===============================================================================+
+```mermaid
+graph TD
+    subgraph CL["🖥️ Client Layer"]
+        C1["Web App<br/>(Browser)"]
+        C2["Mobile App<br/>(iOS/Android)"]
+        C3["Desktop App<br/>(Electron)"]
+        C4["Third-Party<br/>Clients"]
+    end
+
+    subgraph GW["🔒 API Gateway Layer"]
+        G1["Load Balancing · Rate Limiting · Authentication<br/>SSL Termination · Request Routing · API Versioning"]
+    end
+
+    subgraph AL["⚙️ Application Layer"]
+        A1["REST<br/>Controller"]
+        A2["GraphQL<br/>Controller"]
+        A3["WebSocket<br/>Controller"]
+    end
+
+    subgraph SL["🧩 Service Layer"]
+        S1["Service A<br/>(Business)"]
+        S2["Service B<br/>(Domain)"]
+        S3["Service C<br/>(Workflow)"]
+        S4["Service D<br/>(Integration)"]
+    end
+
+    subgraph DL["📦 Data Access Layer"]
+        D1["Repository<br/>(ORM)"]
+        D2["Repository<br/>(Cache)"]
+        D3["Repository<br/>(Search)"]
+        D4["External Client<br/>(HTTP/gRPC)"]
+    end
+
+    subgraph IL["🏗️ Infrastructure Layer"]
+        I1[("Database<br/>SQL/NoSQL")]
+        I2[("Cache<br/>Redis/Memcache")]
+        I3[("Search<br/>Elastic/Solr")]
+        I4[("Queue<br/>Rabbit/Kafka")]
+        I5["External<br/>APIs"]
+    end
+
+    CL -->|HTTPS| GW
+    GW --> AL
+    AL --> SL
+    SL --> DL
+    D1 --> I1
+    D2 --> I2
+    D3 --> I3
+    D4 --> I5
 ```
 
 **Component Responsibilities:**
@@ -171,262 +136,228 @@ inputs:
 
 ### 2.2 Sequence Diagram: User Authentication
 
-```
-+-----------------------------------------------------------------------------+
-|                        AUTHENTICATION SEQUENCE                               |
-+-----------------------------------------------------------------------------+
-|                                                                              |
-|  User        Client       Gateway      AuthService    UserStore    TokenStore|
-|   |            |            |              |             |            |      |
-|   |--Login---->|            |              |             |            |      |
-|   |  (creds)   |            |              |             |            |      |
-|   |            |            |              |             |            |      |
-|   |            |--POST /auth/login-------->|             |            |      |
-|   |            |   {email, password}       |             |            |      |
-|   |            |            |              |             |            |      |
-|   |            |            |--------------|-Validate--->|            |      |
-|   |            |            |              |  Creds      |            |      |
-|   |            |            |              |             |            |      |
-|   |            |            |              |<--User------|            |      |
-|   |            |            |              |   Data      |            |      |
-|   |            |            |              |             |            |      |
-|   |            |            |              |--Generate---------------->|      |
-|   |            |            |              |  Tokens                  |      |
-|   |            |            |              |                          |      |
-|   |            |            |              |<--Access + Refresh-------|      |
-|   |            |            |              |   Tokens                 |      |
-|   |            |            |              |             |            |      |
-|   |            |<-200 OK + Tokens----------|             |            |      |
-|   |            |   {accessToken,          |             |            |      |
-|   |            |    refreshToken,         |             |            |      |
-|   |            |    expiresIn}            |             |            |      |
-|   |            |            |              |             |            |      |
-|   |<-Success---|            |              |             |            |      |
-|   |  (redirect)|            |              |             |            |      |
-|                                                                              |
-+------------------------------------------------------------------------------+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Client
+    participant Gateway
+    participant AuthService as Auth Service
+    participant UserStore as User Store
+    participant TokenStore as Token Store
+
+    User->>Client: Login (credentials)
+    Client->>AuthService: POST /auth/login {email, password}
+    AuthService->>UserStore: Validate Credentials
+    UserStore-->>AuthService: User Data
+    AuthService->>TokenStore: Generate Tokens
+    TokenStore-->>AuthService: Access + Refresh Tokens
+    AuthService-->>Client: 200 OK {accessToken, refreshToken, expiresIn}
+    Client-->>User: Success (redirect)
 ```
 
 ---
 
 ### 2.3 Sequence Diagram: CRUD Operations
 
-```
-+-----------------------------------------------------------------------------+
-|                          CRUD OPERATIONS SEQUENCE                            |
-+-----------------------------------------------------------------------------+
-|                                                                              |
-|  Client      Controller     Service      Repository     Cache     Database   |
-|    |             |            |              |            |          |       |
-|    |============ CREATE =====================================================|
-|    |             |            |              |            |          |       |
-|    |--POST------>|            |              |            |          |       |
-|    |   {data}    |            |              |            |          |       |
-|    |             |--Create--->|              |            |          |       |
-|    |             |            |--Validate--->|            |          |       |
-|    |             |            |              |--INSERT-------------->|       |
-|    |             |            |              |<-Entity---------------|       |
-|    |             |            |              |--Invalidate->         |       |
-|    |             |            |<-Entity------|            |          |       |
-|    |             |<-201-------|              |            |          |       |
-|    |<-Created----|            |              |            |          |       |
-|    |             |            |              |            |          |       |
-|    |============ READ =======================================================|
-|    |             |            |              |            |          |       |
-|    |--GET------->|            |              |            |          |       |
-|    |   /{id}     |            |              |            |          |       |
-|    |             |--GetById-->|              |            |          |       |
-|    |             |            |--Get-------->|            |          |       |
-|    |             |            |              |--Check---->|          |       |
-|    |             |            |              |<-Hit/Miss--|          |       |
-|    |             |            |              |--(if miss)----------->|       |
-|    |             |            |              |<-Data-----------------|       |
-|    |             |            |              |--Update--->|          |       |
-|    |             |            |<-Entity------|            |          |       |
-|    |             |<-200-------|              |            |          |       |
-|    |<-Entity-----|            |              |            |          |       |
-|    |             |            |              |            |          |       |
-|    |============ UPDATE =====================================================|
-|    |             |            |              |            |          |       |
-|    |--PUT------->|            |              |            |          |       |
-|    |   {data}    |            |              |            |          |       |
-|    |             |--Update--->|              |            |          |       |
-|    |             |            |--Validate--->|            |          |       |
-|    |             |            |              |--UPDATE-------------->|       |
-|    |             |            |              |<-Entity---------------|       |
-|    |             |            |              |--Invalidate->         |       |
-|    |             |            |<-Entity------|            |          |       |
-|    |             |<-200-------|              |            |          |       |
-|    |<-Updated----|            |              |            |          |       |
-|    |             |            |              |            |          |       |
-|    |============ DELETE =====================================================|
-|    |             |            |              |            |          |       |
-|    |--DELETE---->|            |              |            |          |       |
-|    |   /{id}     |            |              |            |          |       |
-|    |             |--Delete--->|              |            |          |       |
-|    |             |            |--Remove----->|            |          |       |
-|    |             |            |              |--DELETE-------------->|       |
-|    |             |            |              |<-Success--------------|       |
-|    |             |            |              |--Invalidate->         |       |
-|    |             |            |<-Success-----|            |          |       |
-|    |             |<-204-------|              |            |          |       |
-|    |<-NoContent--|            |              |            |          |       |
-|                                                                              |
-+------------------------------------------------------------------------------+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Controller
+    participant Service
+    participant Repository
+    participant Cache
+    participant Database
+
+    rect rgb(230, 245, 255)
+        Note over Client,Database: CREATE
+        Client->>Controller: POST {data}
+        Controller->>Service: create(dto)
+        Service->>Repository: validate + save
+        Repository->>Database: INSERT
+        Database-->>Repository: Entity
+        Repository->>Cache: Invalidate
+        Repository-->>Service: Entity
+        Service-->>Controller: 201 Created
+        Controller-->>Client: Created Entity
+    end
+
+    rect rgb(230, 255, 230)
+        Note over Client,Database: READ
+        Client->>Controller: GET /{id}
+        Controller->>Service: getById(id)
+        Service->>Repository: get(id)
+        Repository->>Cache: Check
+        alt Cache Hit
+            Cache-->>Repository: Entity
+        else Cache Miss
+            Repository->>Database: SELECT
+            Database-->>Repository: Data
+            Repository->>Cache: Update
+        end
+        Repository-->>Service: Entity
+        Service-->>Controller: 200 OK
+        Controller-->>Client: Entity
+    end
+
+    rect rgb(255, 245, 230)
+        Note over Client,Database: UPDATE
+        Client->>Controller: PUT {data}
+        Controller->>Service: update(id, dto)
+        Service->>Repository: validate + update
+        Repository->>Database: UPDATE
+        Database-->>Repository: Entity
+        Repository->>Cache: Invalidate
+        Repository-->>Service: Entity
+        Service-->>Controller: 200 OK
+        Controller-->>Client: Updated Entity
+    end
+
+    rect rgb(255, 230, 230)
+        Note over Client,Database: DELETE
+        Client->>Controller: DELETE /{id}
+        Controller->>Service: delete(id)
+        Service->>Repository: remove(id)
+        Repository->>Database: DELETE
+        Database-->>Repository: Success
+        Repository->>Cache: Invalidate
+        Repository-->>Service: Success
+        Service-->>Controller: 204 No Content
+        Controller-->>Client: No Content
+    end
 ```
 
 ---
 
 ### 2.4 Class/Interface Diagram: Domain Model
 
-```
-+-----------------------------------------------------------------------------+
-|                              DOMAIN MODEL                                    |
-+-----------------------------------------------------------------------------+
-|                                                                              |
-|   +-------------------------+                                                |
-|   |    <<abstract>>         |                                                |
-|   |      BaseEntity         |                                                |
-|   +-------------------------+                                                |
-|   | - id: UUID              |                                                |
-|   | - createdAt: DateTime   |                                                |
-|   | - updatedAt: DateTime   |                                                |
-|   | - version: Integer      |                                                |
-|   +-------------------------+                                                |
-|   | + getId(): UUID         |                                                |
-|   | + getCreatedAt()        |                                                |
-|   | + getUpdatedAt()        |                                                |
-|   +-----------+-------------+                                                |
-|               |                                                              |
-|               | extends                                                      |
-|               v                                                              |
-|   +-----------+-------------+         +-------------------------+            |
-|   |        Entity           |         |     RelatedEntity       |            |
-|   +-------------------------+         +-------------------------+            |
-|   | - name: String          |<------->| - entityId: UUID        |            |
-|   | - description: String   | 1    *  | - type: String          |            |
-|   | - status: Status        |         | - value: Any            |            |
-|   | - metadata: Map         |         | - order: Integer        |            |
-|   +-------------------------+         +-------------------------+            |
-|   | + validate(): Boolean   |         | + getEntity(): Entity   |            |
-|   | + activate(): void      |         | + getValue(): Any       |            |
-|   | + deactivate(): void    |         +-------------------------+            |
-|   | + addRelated(r): void   |                                                |
-|   | + removeRelated(r): void|                                                |
-|   +-------------------------+                                                |
-|                                                                              |
-|   +-------------------------+                                                |
-|   |     <<enumeration>>     |                                                |
-|   |        Status           |                                                |
-|   +-------------------------+                                                |
-|   | DRAFT                   |                                                |
-|   | ACTIVE                  |                                                |
-|   | INACTIVE                |                                                |
-|   | ARCHIVED                |                                                |
-|   +-------------------------+                                                |
-|                                                                              |
-+------------------------------------------------------------------------------+
+```mermaid
+classDiagram
+    class BaseEntity {
+        <<abstract>>
+        -id: UUID
+        -createdAt: DateTime
+        -updatedAt: DateTime
+        -version: Integer
+        +getId() UUID
+        +getCreatedAt() DateTime
+        +getUpdatedAt() DateTime
+    }
+
+    class Entity {
+        -name: String
+        -description: String
+        -status: Status
+        -metadata: Map
+        +validate() Boolean
+        +activate() void
+        +deactivate() void
+        +addRelated(r) void
+        +removeRelated(r) void
+    }
+
+    class RelatedEntity {
+        -entityId: UUID
+        -type: String
+        -value: Any
+        -order: Integer
+        +getEntity() Entity
+        +getValue() Any
+    }
+
+    class Status {
+        <<enumeration>>
+        DRAFT
+        ACTIVE
+        INACTIVE
+        ARCHIVED
+    }
+
+    BaseEntity <|-- Entity : extends
+    Entity "1" <--> "*" RelatedEntity
+    Entity --> Status
 ```
 
 ---
 
 ### 2.5 Class/Interface Diagram: Service Layer
 
-```
-+-----------------------------------------------------------------------------+
-|                           SERVICE LAYER                                      |
-+-----------------------------------------------------------------------------+
-|                                                                              |
-|   +-------------------------------+                                          |
-|   |       <<interface>>           |                                          |
-|   |       IEntityService          |                                          |
-|   +-------------------------------+                                          |
-|   | + getAll(filter): List<Entity>|                                          |
-|   | + getById(id): Entity         |                                          |
-|   | + create(dto): Entity         |                                          |
-|   | + update(id, dto): Entity     |                                          |
-|   | + delete(id): Boolean         |                                          |
-|   | + search(query): List<Entity> |                                          |
-|   +---------------+---------------+                                          |
-|                   |                                                          |
-|                   | implements                                               |
-|                   v                                                          |
-|   +---------------+---------------+       +-------------------------+        |
-|   |       EntityService           |       |    <<interface>>        |        |
-|   +-------------------------------+       |    IEntityRepository    |        |
-|   | - repository: IEntityRepository       +-------------------------+        |
-|   | - cache: ICacheService        |------>| + findAll(): List      |        |
-|   | - validator: IValidator       |       | + findById(id): Entity |        |
-|   | - logger: ILogger             |       | + save(entity): Entity |        |
-|   +-------------------------------+       | + update(entity): Entity|       |
-|   | + getAll(filter): List<Entity>|       | + delete(id): Boolean  |        |
-|   | + getById(id): Entity         |       +-------------------------+        |
-|   | + create(dto): Entity         |                                          |
-|   | + update(id, dto): Entity     |       +-------------------------+        |
-|   | + delete(id): Boolean         |       |    <<interface>>        |        |
-|   | + search(query): List<Entity> |       |    ICacheService        |        |
-|   | - validateEntity(dto): void   |------>+-------------------------+        |
-|   | - invalidateCache(id): void   |       | + get(key): Any        |        |
-|   +-------------------------------+       | + set(key, value, ttl) |        |
-|                                           | + delete(key): Boolean |        |
-|                                           | + invalidate(pattern)  |        |
-|                                           +-------------------------+        |
-|                                                                              |
-+------------------------------------------------------------------------------+
+```mermaid
+classDiagram
+    class IEntityService {
+        <<interface>>
+        +getAll(filter) List~Entity~
+        +getById(id) Entity
+        +create(dto) Entity
+        +update(id, dto) Entity
+        +delete(id) Boolean
+        +search(query) List~Entity~
+    }
+
+    class EntityService {
+        -repository: IEntityRepository
+        -cache: ICacheService
+        -validator: IValidator
+        -logger: ILogger
+        +getAll(filter) List~Entity~
+        +getById(id) Entity
+        +create(dto) Entity
+        +update(id, dto) Entity
+        +delete(id) Boolean
+        +search(query) List~Entity~
+        -validateEntity(dto) void
+        -invalidateCache(id) void
+    }
+
+    class IEntityRepository {
+        <<interface>>
+        +findAll() List
+        +findById(id) Entity
+        +save(entity) Entity
+        +update(entity) Entity
+        +delete(id) Boolean
+    }
+
+    class ICacheService {
+        <<interface>>
+        +get(key) Any
+        +set(key, value, ttl) void
+        +delete(key) Boolean
+        +invalidate(pattern) void
+    }
+
+    IEntityService <|.. EntityService : implements
+    EntityService --> IEntityRepository : uses
+    EntityService --> ICacheService : uses
 ```
 
 ---
 
 ### 2.6 Dependency Injection Diagram
 
-```
-+-----------------------------------------------------------------------------+
-|                      DEPENDENCY INJECTION CONTAINER                          |
-+-----------------------------------------------------------------------------+
-|                                                                              |
-|  +-----------------------------------------------------------------------+  |
-|  |                        SCOPED (Per Request)                           |  |
-|  |  +----------------------------------------------------------------+   |  |
-|  |  |                                                                 |   |  |
-|  |  |   Controller -----> IEntityService -----> IEntityRepository    |   |  |
-|  |  |        |                    |                       |           |   |  |
-|  |  |        v                    v                       v           |   |  |
-|  |  |   EntityController    EntityService         EntityRepository   |   |  |
-|  |  |                                                     |           |   |  |
-|  |  |                                                     v           |   |  |
-|  |  |                                              DbContext          |   |  |
-|  |  |                                                                 |   |  |
-|  |  +----------------------------------------------------------------+   |  |
-|  +-----------------------------------------------------------------------+  |
-|                                                                              |
-|  +-----------------------------------------------------------------------+  |
-|  |                     SINGLETON (Application Lifetime)                  |  |
-|  |  +----------------------------------------------------------------+   |  |
-|  |  |                                                                 |   |  |
-|  |  |   ICacheService -----> RedisCacheService                       |   |  |
-|  |  |                              |                                  |   |  |
-|  |  |                              v                                  |   |  |
-|  |  |                       RedisConnection                          |   |  |
-|  |  |                                                                 |   |  |
-|  |  |   ILogger<T> --------> Logger (Structured Logging)             |   |  |
-|  |  |                                                                 |   |  |
-|  |  |   IConfiguration ----> ConfigurationRoot                       |   |  |
-|  |  |                                                                 |   |  |
-|  |  +----------------------------------------------------------------+   |  |
-|  +-----------------------------------------------------------------------+  |
-|                                                                              |
-|  +-----------------------------------------------------------------------+  |
-|  |                      TRANSIENT (New Instance Each Time)               |  |
-|  |  +----------------------------------------------------------------+   |  |
-|  |  |                                                                 |   |  |
-|  |  |   IValidator<T> -----> EntityValidator                         |   |  |
-|  |  |                                                                 |   |  |
-|  |  |   IHttpClientFactory -> HttpClient (per external service)      |   |  |
-|  |  |                                                                 |   |  |
-|  |  +----------------------------------------------------------------+   |  |
-|  +-----------------------------------------------------------------------+  |
-|                                                                              |
-+------------------------------------------------------------------------------+
+```mermaid
+graph TD
+    subgraph Scoped["🔄 SCOPED — Per Request"]
+        EC[EntityController] --> IES["IEntityService\n«interface»"]
+        IES -.->|resolves to| ES[EntityService]
+        ES --> IER["IEntityRepository\n«interface»"]
+        IER -.->|resolves to| ER[EntityRepository]
+        ER --> DC[DbContext]
+    end
+
+    subgraph Singleton["🏠 SINGLETON — App Lifetime"]
+        ICS["ICacheService\n«interface»"] -.->|resolves to| RCS[RedisCacheService]
+        RCS --> RC[RedisConnection]
+        IL["ILogger‹T›"] -.->|resolves to| LOG["Logger\n(Structured Logging)"]
+        ICfg[IConfiguration] -.->|resolves to| CR[ConfigurationRoot]
+    end
+
+    subgraph Transient["⚡ TRANSIENT — New Each Time"]
+        IV["IValidator‹T›"] -.->|resolves to| EV[EntityValidator]
+        IHF[IHttpClientFactory] -.->|resolves to| HC["HttpClient\n(per external service)"]
+    end
+
+    ES --> ICS
+    ES --> IV
 ```
 
 
@@ -530,36 +461,34 @@ X-Request-ID: {uuid}
 
 ### 4.1 Entity Relationship Diagram (ERD)
 
+```mermaid
+erDiagram
+    entities {
+        UUID id PK "NOT NULL"
+        VARCHAR_255 name "NOT NULL"
+        TEXT description "NULLABLE"
+        VARCHAR_20 status "NOT NULL, DEFAULT 'DRAFT'"
+        JSONB metadata "NULLABLE"
+        TIMESTAMP created_at "NOT NULL, DEFAULT NOW()"
+        TIMESTAMP updated_at "NOT NULL"
+        INTEGER version "NOT NULL, DEFAULT 1"
+    }
+
+    related_entities {
+        UUID id PK "NOT NULL"
+        UUID entity_id FK "NOT NULL"
+        VARCHAR_50 type "NOT NULL"
+        JSONB value "NULLABLE"
+        INTEGER sort_order "NULLABLE"
+        TIMESTAMP created_at "NOT NULL"
+    }
+
+    entities ||--o{ related_entities : "has many"
 ```
-+-----------------------------------------------------------------------------+
-|                          DATABASE SCHEMA (ERD)                               |
-+-----------------------------------------------------------------------------+
-|                                                                              |
-|  +-------------------------+          +---------------------------+          |
-|  |      entities           |          |    related_entities       |          |
-|  +-------------------------+          +---------------------------+          |
-|  | PK  id (UUID)           |<-------->| FK  entity_id (UUID)      |          |
-|  |     name (VARCHAR 255)  | 1      * | PK  id (UUID)             |          |
-|  |     description (TEXT)  |          |     type (VARCHAR 50)     |          |
-|  |     status (VARCHAR 20) |          |     value (JSONB)         |          |
-|  |     metadata (JSONB)    |          |     sort_order (INTEGER)  |          |
-|  |     created_at (TIMESTAMP)         |     created_at (TIMESTAMP)|          |
-|  |     updated_at (TIMESTAMP)         +---------------------------+          |
-|  |     version (INTEGER)   |                                                 |
-|  +-------------------------+                                                 |
-|                                                                              |
-|  INDEXES:                                                                    |
-|  - idx_entities_status ON entities(status)                                   |
-|  - idx_entities_created_at ON entities(created_at DESC)                      |
-|  - idx_entities_name ON entities(name) [for search]                          |
-|  - idx_related_entity_id ON related_entities(entity_id)                      |
-|                                                                              |
-|  CONSTRAINTS:                                                                |
-|  - fk_related_entity FOREIGN KEY (entity_id) REFERENCES entities(id)        |
-|  - chk_status CHECK (status IN ('DRAFT','ACTIVE','INACTIVE','ARCHIVED'))    |
-|                                                                              |
-+------------------------------------------------------------------------------+
-```
+
+> **Indexes**: `idx_entities_status`, `idx_entities_created_at DESC`, `idx_entities_name`, `idx_related_entity_id`
+>
+> **Constraints**: `fk_related_entity FOREIGN KEY (entity_id) REFERENCES entities(id)`, `chk_status CHECK (status IN ('DRAFT','ACTIVE','INACTIVE','ARCHIVED'))`
 
 ### 4.2 Database Schema Table
 
@@ -581,63 +510,27 @@ X-Request-ID: {uuid}
 
 ### 5.1 Service Architecture
 
-```
-+-----------------------------------------------------------------------------+
-|                         SERVICE LAYER ARCHITECTURE                           |
-+-----------------------------------------------------------------------------+
-|                                                                              |
-|  +-----------------------------------------------------------------------+  |
-|  |                         CONTROLLER LAYER                              |  |
-|  |  +-------------------+                                                |  |
-|  |  | EntityController  |                                                |  |
-|  |  | - Handles HTTP    |                                                |  |
-|  |  | - Maps DTOs       |                                                |  |
-|  |  | - Returns responses                                                |  |
-|  |  +--------+----------+                                                |  |
-|  +-----------|-----------------------------------------------------------+  |
-|              | calls                                                        |
-|              v                                                              |
-|  +-----------------------------------------------------------------------+  |
-|  |                         SERVICE LAYER                                 |  |
-|  |  +-------------------+                                                |  |
-|  |  | IEntityService    | <<interface>>                                  |  |
-|  |  | - getAll()        |                                                |  |
-|  |  | - getById(id)     |                                                |  |
-|  |  | - create(dto)     |                                                |  |
-|  |  | - update(id, dto) |                                                |  |
-|  |  | - delete(id)      |                                                |  |
-|  |  +--------+----------+                                                |  |
-|  |           |                                                           |  |
-|  |           | implements                                                |  |
-|  |           v                                                           |  |
-|  |  +-------------------+                                                |  |
-|  |  | EntityService     |                                                |  |
-|  |  | - Business logic  |                                                |  |
-|  |  | - Validation      |                                                |  |
-|  |  | - Caching         |                                                |  |
-|  |  | - Error handling  |                                                |  |
-|  |  +--------+----------+                                                |  |
-|  +-----------|-----------------------------------------------------------+  |
-|              | calls                                                        |
-|              v                                                              |
-|  +-----------------------------------------------------------------------+  |
-|  |                        REPOSITORY LAYER                               |  |
-|  |  +-------------------+                                                |  |
-|  |  | IEntityRepository | <<interface>>                                  |  |
-|  |  | - findAll()       |                                                |  |
-|  |  | - findById(id)    |                                                |  |
-|  |  | - save(entity)    |                                                |  |
-|  |  | - update(entity)  |                                                |  |
-|  |  | - delete(id)      |                                                |  |
-|  |  +--------+----------+                                                |  |
-|  +-----------|-----------------------------------------------------------+  |
-|              | queries                                                      |
-|              v                                                              |
-|  +-----------------------------------------------------------------------+  |
-|  |                           DATABASE                                    |  |
-|  +-----------------------------------------------------------------------+  |
-|                                                                              |
-+------------------------------------------------------------------------------+
+```mermaid
+graph TD
+    subgraph Controller["📡 CONTROLLER LAYER"]
+        EC["EntityController<br/>Handles HTTP · Maps DTOs · Returns responses"]
+    end
+
+    subgraph Service["⚙️ SERVICE LAYER"]
+        IS["IEntityService «interface»<br/>getAll() · getById() · create() · update() · delete()"]
+        ES["EntityService<br/>Business logic · Validation · Caching · Error handling"]
+        IS -.->|implements| ES
+    end
+
+    subgraph Repo["📦 REPOSITORY LAYER"]
+        IR["IEntityRepository «interface»<br/>findAll() · findById() · save() · update() · delete()"]
+    end
+
+    DB[("🗄️ DATABASE")]
+
+    EC -->|calls| IS
+    ES -->|calls| IR
+    IR -->|queries| DB
 ```
 
 ---
@@ -646,136 +539,84 @@ X-Request-ID: {uuid}
 
 ### 6.1 Authentication Flow
 
-```
-+-----------------------------------------------------------------------------+
-|                          JWT AUTHENTICATION FLOW                             |
-+-----------------------------------------------------------------------------+
-|                                                                              |
-|  STEP 1: Login Request                                                       |
-|  +------+  POST /auth/login   +------------+                                |
-|  |Client|-------------------->|Auth Service|                                |
-|  +------+  {email, password}  +-----+------+                                |
-|                                     |                                        |
-|                                     | Validate credentials                   |
-|                                     v                                        |
-|                               +----------+                                  |
-|                               | Database |                                  |
-|                               +-----+----+                                  |
-|                                     |                                        |
-|                                     | User found                             |
-|                                     v                                        |
-|  +------+  200 OK + JWT Token +------------+                                |
-|  |Client|<--------------------|Auth Service|                                |
-|  +------+                      +------------+                                |
-|                                                                              |
-|  STEP 2: Authenticated Request                                               |
-|  +------+  GET /api/resource  +---------------+                             |
-|  |Client|------------------->| JWT Middleware |                             |
-|  +------+  Authorization:     +-------+-------+                             |
-|            Bearer {token}             |                                      |
-|                                       | Validate token                       |
-|                                       | Extract claims                       |
-|                                       v                                      |
-|                                +--------------+                              |
-|                                |  Controller  |                              |
-|                                |  (Authorized)|                              |
-|                                +--------------+                              |
-|                                                                              |
-+------------------------------------------------------------------------------+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant AuthService as Auth Service
+    participant DB as Database
+
+    rect rgb(230, 245, 255)
+        Note over Client,DB: Step 1 — Login Request
+        Client->>AuthService: POST /auth/login {email, password}
+        AuthService->>DB: Validate credentials
+        DB-->>AuthService: User found
+        AuthService-->>Client: 200 OK + JWT Token
+    end
+
+    rect rgb(230, 255, 230)
+        Note over Client,DB: Step 2 — Authenticated Request
+        Client->>AuthService: GET /api/resource (Authorization: Bearer token)
+        Note right of AuthService: JWT Middleware validates token<br/>and extracts claims
+        AuthService-->>Client: 200 OK (Authorized Response)
+    end
 ```
 
 ### 6.2 Authorization Model (RBAC)
 
-```
-+-----------------------------------------------------------------------------+
-|                    ROLE-BASED ACCESS CONTROL (RBAC)                          |
-+-----------------------------------------------------------------------------+
-|                                                                              |
-|                         +----------+                                         |
-|                         |   User   |                                         |
-|                         +----+-----+                                         |
-|                              |                                               |
-|                              | has role                                      |
-|                              v                                               |
-|                    +--------------------+                                    |
-|                    |       Role         |                                    |
-|                    +--------------------+                                    |
-|                    | * Admin ---> Full access                               |
-|                    | * User  ---> Read/Write own data                       |
-|                    | * Guest ---> Read only                                 |
-|                    +----+---------------+                                    |
-|                         |                                                    |
-|                         | has permissions                                    |
-|                         v                                                    |
-|              +-------------------------+                                     |
-|              |      Permissions        |                                     |
-|              +-------------------------+                                     |
-|              | Admin:                  |                                     |
-|              |  * entities:read        |                                     |
-|              |  * entities:write       |                                     |
-|              |  * entities:delete      |                                     |
-|              |  * users:manage         |                                     |
-|              |                         |                                     |
-|              | User:                   |                                     |
-|              |  * entities:read (own)  |                                     |
-|              |  * entities:write (own) |                                     |
-|              |                         |                                     |
-|              | Guest:                  |                                     |
-|              |  * entities:read        |                                     |
-|              +-------------------------+                                     |
-|                                                                              |
-+------------------------------------------------------------------------------+
+```mermaid
+graph TD
+    U["👤 User"] -->|has role| R["🎭 Role"]
+    R -->|has permissions| P["🔑 Permissions"]
+
+    subgraph Roles["Role Definitions"]
+        R1["Admin → Full access"]
+        R2["User → Read/Write own data"]
+        R3["Guest → Read only"]
+    end
+
+    subgraph AdminPerms["Admin Permissions"]
+        AP1["entities:read"]
+        AP2["entities:write"]
+        AP3["entities:delete"]
+        AP4["users:manage"]
+    end
+
+    subgraph UserPerms["User Permissions"]
+        UP1["entities:read (own)"]
+        UP2["entities:write (own)"]
+    end
+
+    subgraph GuestPerms["Guest Permissions"]
+        GP1["entities:read"]
+    end
+
+    R --> Roles
+    R1 --> AdminPerms
+    R2 --> UserPerms
+    R3 --> GuestPerms
 ```
 
 ### 6.3 Defense in Depth
 
-```
-+-----------------------------------------------------------------------------+
-|                        DEFENSE IN DEPTH STRATEGY                             |
-+-----------------------------------------------------------------------------+
-|                                                                              |
-|  Layer 1: Network Security                                                   |
-|  +-----------------------------------------------------------------------+  |
-|  | * HTTPS only (TLS 1.3)    * Firewall rules    * DDoS protection      |  |
-|  +-----------------------------------------------------------------------+  |
-|                                   |                                          |
-|                                   v                                          |
-|  Layer 2: Application Gateway                                                |
-|  +-----------------------------------------------------------------------+  |
-|  | * Rate limiting    * CORS policy    * Security headers               |  |
-|  +-----------------------------------------------------------------------+  |
-|                                   |                                          |
-|                                   v                                          |
-|  Layer 3: Authentication                                                     |
-|  +-----------------------------------------------------------------------+  |
-|  | * JWT validation    * Token expiration    * MFA (optional)           |  |
-|  +-----------------------------------------------------------------------+  |
-|                                   |                                          |
-|                                   v                                          |
-|  Layer 4: Authorization                                                      |
-|  +-----------------------------------------------------------------------+  |
-|  | * Role-based access    * Resource ownership    * Permission checks   |  |
-|  +-----------------------------------------------------------------------+  |
-|                                   |                                          |
-|                                   v                                          |
-|  Layer 5: Input Validation                                                   |
-|  +-----------------------------------------------------------------------+  |
-|  | * Schema validation    * Data sanitization    * Type checking        |  |
-|  +-----------------------------------------------------------------------+  |
-|                                   |                                          |
-|                                   v                                          |
-|  Layer 6: Data Access                                                        |
-|  +-----------------------------------------------------------------------+  |
-|  | * Parameterized queries    * ORM    * SQL injection prevention       |  |
-|  +-----------------------------------------------------------------------+  |
-|                                   |                                          |
-|                                   v                                          |
-|  Layer 7: Data Storage                                                       |
-|  +-----------------------------------------------------------------------+  |
-|  | * Encryption at rest    * Access controls    * Backup encryption     |  |
-|  +-----------------------------------------------------------------------+  |
-|                                                                              |
-+------------------------------------------------------------------------------+
+```mermaid
+graph TD
+    L1["🌐 Layer 1: Network Security<br/>HTTPS (TLS 1.3) · Firewall rules · DDoS protection"]
+    L2["🚪 Layer 2: Application Gateway<br/>Rate limiting · CORS policy · Security headers"]
+    L3["🔑 Layer 3: Authentication<br/>JWT validation · Token expiration · MFA (optional)"]
+    L4["🛡️ Layer 4: Authorization<br/>Role-based access · Resource ownership · Permission checks"]
+    L5["✅ Layer 5: Input Validation<br/>Schema validation · Data sanitization · Type checking"]
+    L6["💾 Layer 6: Data Access<br/>Parameterized queries · ORM · SQL injection prevention"]
+    L7["🔒 Layer 7: Data Storage<br/>Encryption at rest · Access controls · Backup encryption"]
+
+    L1 --> L2 --> L3 --> L4 --> L5 --> L6 --> L7
+
+    style L1 fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
+    style L2 fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20
+    style L3 fill:#FFF3E0,stroke:#E65100,color:#BF360C
+    style L4 fill:#FCE4EC,stroke:#C62828,color:#B71C1C
+    style L5 fill:#F3E5F5,stroke:#6A1B9A,color:#4A148C
+    style L6 fill:#E0F7FA,stroke:#00838F,color:#006064
+    style L7 fill:#EFEBE9,stroke:#4E342E,color:#3E2723
 ```
 
 
@@ -785,29 +626,21 @@ X-Request-ID: {uuid}
 
 ### 7.1 Caching Strategy
 
-```
-+-----------------------------------------------------------------------------+
-|                            CACHING STRATEGY                                  |
-+-----------------------------------------------------------------------------+
-|                                                                              |
-|  Cache Layer: Distributed Cache (Redis/Memcached)                            |
-|                                                                              |
-|  +------------------+     +------------------+     +------------------+      |
-|  |   Single Entity  |     |   List/Query     |     |   Session/Auth   |      |
-|  +------------------+     +------------------+     +------------------+      |
-|  | Key: {type}:{id} |     | Key: {type}:list:|     | Key: session:{id}|      |
-|  | TTL: 1 hour      |     |      {hash}      |     | TTL: 24 hours    |      |
-|  | Invalidate: on   |     | TTL: 5 minutes   |     | Invalidate: on   |      |
-|  |   update/delete  |     | Invalidate: on   |     |   logout         |      |
-|  +------------------+     |   any write      |     +------------------+      |
-|                           +------------------+                               |
-|                                                                              |
-|  Cache Invalidation Patterns:                                                |
-|  * Write-through: Update cache on every write                               |
-|  * Write-behind: Async cache update (eventual consistency)                  |
-|  * Cache-aside: App manages cache (check cache -> miss -> load -> store)   |
-|                                                                              |
-+------------------------------------------------------------------------------+
+```mermaid
+graph LR
+    subgraph CacheLayer["Distributed Cache (Redis/Memcached)"]
+        SE["🗂️ Single Entity<br/>Key: type:id<br/>TTL: 1 hour<br/>Invalidate: on update/delete"]
+        LQ["📋 List / Query<br/>Key: type:list:hash<br/>TTL: 5 minutes<br/>Invalidate: on any write"]
+        SA["🔐 Session / Auth<br/>Key: session:id<br/>TTL: 24 hours<br/>Invalidate: on logout"]
+    end
+
+    subgraph Patterns["Invalidation Patterns"]
+        WT["Write-through<br/>Update cache on every write"]
+        WB["Write-behind<br/>Async update (eventual consistency)"]
+        CA["Cache-aside<br/>Check → miss → load → store"]
+    end
+
+    Patterns -.-> CacheLayer
 ```
 
 ### 7.2 Performance Requirements
@@ -835,29 +668,19 @@ X-Request-ID: {uuid}
 
 ### 8.1 Test Pyramid
 
-```
-+-----------------------------------------------------------------------------+
-|                              TEST PYRAMID                                    |
-+-----------------------------------------------------------------------------+
-|                                                                              |
-|                              /\                                              |
-|                             /  \                                             |
-|                            /    \                                            |
-|                           / E2E  \    10% - Full user flows                 |
-|                          /  Tests \   (Playwright/Selenium)                 |
-|                         /----------\                                         |
-|                        /            \                                        |
-|                       / Integration  \  20% - API endpoints, DB             |
-|                      /    Tests       \ (WebApplicationFactory)             |
-|                     /------------------\                                     |
-|                    /                    \                                    |
-|                   /     Unit Tests       \ 70% - Services, Controllers      |
-|                  /                        \ (xUnit/Jest/pytest)             |
-|                 /--------------------------\                                 |
-|                                                                              |
-|  Coverage Target: >= 80%                                                    |
-|                                                                              |
-+------------------------------------------------------------------------------+
+```mermaid
+graph TD
+    E2E["🌐 E2E Tests · 10%<br/>Full user flows (Playwright/Selenium)"]
+    INT["🔗 Integration Tests · 20%<br/>API endpoints, DB (WebApplicationFactory)"]
+    UNIT["🧪 Unit Tests · 70%<br/>Services, Controllers (xUnit/Jest/pytest)"]
+    COV["📊 Coverage Target: ≥ 80%"]
+
+    E2E --- INT --- UNIT --- COV
+
+    style E2E fill:#F44336,color:#fff,stroke:#D32F2F
+    style INT fill:#FF9800,color:#fff,stroke:#F57C00
+    style UNIT fill:#4CAF50,color:#fff,stroke:#388E3C
+    style COV fill:#2196F3,color:#fff,stroke:#1565C0
 ```
 
 ### 8.2 Test Types
@@ -966,24 +789,30 @@ tests/
 
 ### 12.1 Metrics Dashboard
 
-```
-+-----------------------------------------------------------------------------+
-|                         MONITORING DASHBOARD                                 |
-+-----------------------------------------------------------------------------+
-|                                                                              |
-|  +-------------------+  +-------------------+  +-------------------+         |
-|  |  Request Rate     |  |  Error Rate       |  |  Response Time    |         |
-|  |  [=========>    ] |  |  [=>            ] |  |  [======>       ] |         |
-|  |  450 req/sec      |  |  0.5%             |  |  p95: 230ms      |         |
-|  +-------------------+  +-------------------+  +-------------------+         |
-|                                                                              |
-|  +-------------------+  +-------------------+  +-------------------+         |
-|  |  Cache Hit Rate   |  |  DB Query Time    |  |  Active Users     |         |
-|  |  [============> ] |  |  [===>          ] |  |  [========>     ] |         |
-|  |  92%              |  |  avg: 15ms       |  |  1,250            |         |
-|  +-------------------+  +-------------------+  +-------------------+         |
-|                                                                              |
-+------------------------------------------------------------------------------+
+```mermaid
+graph LR
+    subgraph Dashboard["📈 Monitoring Dashboard"]
+        direction TB
+        subgraph Row1["Real-time Metrics"]
+            direction LR
+            RR["📊 Request Rate<br/>450 req/sec"]
+            ER["⚠️ Error Rate<br/>0.5%"]
+            RT["⏱️ Response Time<br/>p95: 230ms"]
+        end
+        subgraph Row2["System Health"]
+            direction LR
+            CH["💾 Cache Hit Rate<br/>92%"]
+            DQ["🗄️ DB Query Time<br/>avg: 15ms"]
+            AU["👥 Active Users<br/>1,250"]
+        end
+    end
+
+    style RR fill:#E8F5E9,stroke:#2E7D32
+    style ER fill:#FFEBEE,stroke:#C62828
+    style RT fill:#E3F2FD,stroke:#1565C0
+    style CH fill:#E8F5E9,stroke:#2E7D32
+    style DQ fill:#FFF3E0,stroke:#E65100
+    style AU fill:#F3E5F5,stroke:#6A1B9A
 ```
 
 ### 12.2 Alerts
@@ -1034,13 +863,18 @@ tests/
 
 ### 13.3 Inference Pipeline
 
-```
-+----------+     +-------------+     +----------------+     +------------+     +----------+
-|  Request |---->| Preprocess  |---->| Model / Agent  |---->| Postprocess|---->| Response |
-|          |     | - Validate  |     | - System prompt|     | - Parse    |     |          |
-|          |     | - Sanitize  |     | - Tools/RAG    |     | - Validate |     |          |
-|          |     | - Context   |     | - Inference    |     | - Format   |     |          |
-+----------+     +-------------+     +----------------+     +------------+     +----------+
+```mermaid
+graph LR
+    A["📥 Request"] --> B["⚙️ Preprocess<br/>Validate · Sanitize · Context"]
+    B --> C["🧠 Model / Agent<br/>System prompt · Tools/RAG · Inference"]
+    C --> D["📤 Postprocess<br/>Parse · Validate · Format"]
+    D --> E["✅ Response"]
+
+    style A fill:#E3F2FD,stroke:#1565C0
+    style B fill:#FFF3E0,stroke:#E65100
+    style C fill:#F3E5F5,stroke:#6A1B9A
+    style D fill:#E8F5E9,stroke:#2E7D32
+    style E fill:#E3F2FD,stroke:#1565C0
 ```
 
 **Stage Details:**
@@ -1086,40 +920,30 @@ tests/
 
 ## Cross-Cutting Concerns Diagram
 
-```
-+-----------------------------------------------------------------------------+
-|                        CROSS-CUTTING CONCERNS                                |
-+-----------------------------------------------------------------------------+
-|                                                                              |
-|   +--------------------------------------------------------------------+    |
-|   |                       MIDDLEWARE PIPELINE                          |    |
-|   +--------------------------------------------------------------------+    |
-|   |                                                                     |    |
-|   |   Request --> [Logging] --> [Auth] --> [RateLimit] --> [Controller]|    |
-|   |                                                                     |    |
-|   |   Response <-- [Formatting] <-- [ErrorHandler] <-- [Controller]    |    |
-|   |                                                                     |    |
-|   +--------------------------------------------------------------------+    |
-|                                                                              |
-|   +------------------+  +------------------+  +------------------+           |
-|   |    LOGGING       |  |   MONITORING     |  |    TRACING       |           |
-|   +------------------+  +------------------+  +------------------+           |
-|   | * Structured logs|  | * Health checks  |  | * Correlation IDs|           |
-|   | * Log levels     |  | * Metrics        |  | * Distributed    |           |
-|   | * Context data   |  | * Dashboards     |  |   tracing        |           |
-|   | * Sensitive mask |  | * Alerting       |  | * Request timing |           |
-|   +------------------+  +------------------+  +------------------+           |
-|                                                                              |
-|   +------------------+  +------------------+  +------------------+           |
-|   |   VALIDATION     |  | ERROR HANDLING   |  |    CACHING       |           |
-|   +------------------+  +------------------+  +------------------+           |
-|   | * Input validation| * Global handler  |  | * Response cache |           |
-|   | * Schema check   |  | * Error responses|  | * Distributed    |           |
-|   | * Business rules |  | * Retry policies |  | * Invalidation   |           |
-|   | * Sanitization   |  | * Circuit breaker|  | * TTL management |           |
-|   +------------------+  +------------------+  +------------------+           |
-|                                                                              |
-+------------------------------------------------------------------------------+
+```mermaid
+graph TD
+    subgraph Pipeline["🔄 Middleware Pipeline"]
+        direction LR
+        REQ[Request] --> LOG[Logging] --> AUTH[Auth] --> RL[RateLimit] --> CTRL[Controller]
+        CTRL --> EH[ErrorHandler] --> FMT[Formatting] --> RES[Response]
+    end
+
+    subgraph Row1[" "]
+        direction LR
+        L["📋 LOGGING<br/>Structured logs · Log levels<br/>Context data · Sensitive mask"]
+        M["📊 MONITORING<br/>Health checks · Metrics<br/>Dashboards · Alerting"]
+        T["🔍 TRACING<br/>Correlation IDs · Distributed<br/>tracing · Request timing"]
+    end
+
+    subgraph Row2[" "]
+        direction LR
+        V["✅ VALIDATION<br/>Input validation · Schema check<br/>Business rules · Sanitization"]
+        E["⚠️ ERROR HANDLING<br/>Global handler · Error responses<br/>Retry policies · Circuit breaker"]
+        C["💾 CACHING<br/>Response cache · Distributed<br/>Invalidation · TTL management"]
+    end
+
+    Pipeline --- Row1
+    Row1 --- Row2
 ```
 
 ---

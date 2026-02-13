@@ -96,20 +96,21 @@ inputs:
 **Preconditions**: {Required state - e.g., User is logged out}
 
 **Flow Diagram**:
-```
-[Start: Landing Page]
-        ↓
-[User clicks "Sign Up"]
-        ↓
-[Registration Form]
-        ↓
-    ┌───┴───┐
-    ↓       ↓
-[Valid]  [Invalid]
-    ↓       ↓
-[Success] [Error Message]
-    ↓       ↓
-[Dashboard] [Re-enter Data]
+```mermaid
+flowchart TD
+    A["🏠 Start: Landing Page"] --> B["User clicks 'Sign Up'"]
+    B --> C["📝 Registration Form"]
+    C --> D{Validation}
+    D -->|Valid| E["✅ Success"]
+    D -->|Invalid| F["❌ Error Message"]
+    E --> G["📊 Dashboard"]
+    F --> H["Re-enter Data"]
+    H --> C
+
+    style A fill:#E3F2FD,stroke:#1565C0
+    style E fill:#E8F5E9,stroke:#2E7D32
+    style F fill:#FFEBEE,stroke:#C62828
+    style G fill:#E8F5E9,stroke:#2E7D32
 ```
 
 **Detailed Steps**:

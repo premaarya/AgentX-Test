@@ -215,8 +215,18 @@ We chose **Option X** because:
 
 ### Inference Pipeline
 
-```
-Request → [Preprocessing] → [Context/RAG] → [Model Invocation] → [Output Parsing] → [Validation] → Response
+```mermaid
+graph LR
+    A["📥 Request"] --> B["⚙️ Preprocessing"]
+    B --> C["📚 Context / RAG"]
+    C --> D["🧠 Model Invocation"]
+    D --> E["📤 Output Parsing"]
+    E --> F["✅ Validation"]
+    F --> G["📨 Response"]
+
+    style A fill:#E3F2FD,stroke:#1565C0
+    style D fill:#F3E5F5,stroke:#6A1B9A
+    style G fill:#E8F5E9,stroke:#2E7D32
 ```
 
 {Describe each stage with specific implementation decisions}

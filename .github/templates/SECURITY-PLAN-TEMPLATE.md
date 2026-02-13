@@ -58,16 +58,31 @@ inputs:
 
 ### Trust Boundaries
 
-```
-┌─────────────────────────────────────────────────┐
-│              Internet / Public                   │
-├──────────────────────┬──────────────────────────┤
-│    API Gateway       │    CDN / WAF             │
-├──────────────────────┼──────────────────────────┤
-│    Application Tier  │    Background Services   │
-├──────────────────────┼──────────────────────────┤
-│    Database Tier     │    Cache Tier            │
-└──────────────────────┴──────────────────────────┘
+```mermaid
+graph TD
+    subgraph Public["🌐 Internet / Public"]
+        direction LR
+        GW["API Gateway"]
+        CDN["CDN / WAF"]
+    end
+
+    subgraph Internal["🔒 Internal Network"]
+        direction LR
+        APP["Application Tier"]
+        BG["Background Services"]
+    end
+
+    subgraph Data["🗄️ Data Tier"]
+        direction LR
+        DB["Database Tier"]
+        CACHE["Cache Tier"]
+    end
+
+    Public --> Internal --> Data
+
+    style Public fill:#FFEBEE,stroke:#C62828
+    style Internal fill:#FFF3E0,stroke:#E65100
+    style Data fill:#E8F5E9,stroke:#2E7D32
 ```
 
 ---

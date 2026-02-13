@@ -48,10 +48,11 @@ cp .github/templates/ADR-TEMPLATE.md docs/adr/ADR-71.md
 
 **Key Features**:
 - Language-agnostic (no specific tech stack assumed)
-- 25+ visual ASCII diagrams for architecture, flows, and security
+- 16+ Mermaid diagrams for architecture, flows, and security (GitHub-native rendering)
 - Sequence diagrams for authentication and CRUD operations
 - Class/interface diagrams for domain and service layers
-- Defense-in-depth security visualization
+- ER diagrams for database schema
+- Defense-in-depth security visualization with color-coded layers
 
 **Note**: Handoff checklist is in architect.agent.md (60+ items organized in 6 categories).
 
@@ -255,4 +256,4 @@ git commit -m "arch: add tech spec for Feature #50"
 
 ---
 
-**Last Updated**: February 11, 2026
+**Last Updated**: February 13, 2026

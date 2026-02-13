@@ -20,11 +20,6 @@ inputs:
     description: "Specification date (YYYY-MM-DD)"
     required: false
     default: "${current_date}"
-  acceptance_criteria:
-    description: "List of testable acceptance criteria (one per line)"
-    required: true
-    type: "array"
-    default: []
 ---
 
 # Technical Specification (Lite): ${feature_name}
@@ -38,13 +33,7 @@ inputs:
 > **When to use Lite**: Stories ≤3 files, clear scope, no new services or data models.  
 > **When to use Full**: New APIs, new database tables, cross-service changes, security-sensitive features. Use [SPEC-TEMPLATE.md](SPEC-TEMPLATE.md) instead.
 
----
-
-## Acceptance Criteria
-
-- [ ] **AC1**: ${acceptance_criteria[0] || "Describe first testable criterion"}
-- [ ] **AC2**: ${acceptance_criteria[1] || "Describe second testable criterion"}
-- [ ] **AC3**: ${acceptance_criteria[2] || "Describe third testable criterion"}
+> **Acceptance Criteria**: Defined in the PRD user stories — see [PRD-${epic_id}.md](../prd/PRD-${epic_id}.md#5-user-stories--features). Engineers should track AC completion against the originating Story issue.
 
 ---
 
