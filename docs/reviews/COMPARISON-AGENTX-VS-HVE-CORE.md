@@ -1,6 +1,6 @@
 # AgentX vs HVE Core — Comparison Report
 
-**Date**: February 11, 2026  
+**Date**: February 13, 2026  
 **AgentX Version**: v5.1.0 | **HVE Core Version**: v2.2.0  
 **Purpose**: Side-by-side comparison of two GitHub Copilot prompt engineering frameworks
 
@@ -121,15 +121,17 @@ Both frameworks extend GitHub Copilot with structured agents, instructions, and 
 
 | Aspect | AgentX | HVE Core |
 |--------|--------|----------|
-| **Primary method** | `install.ps1/sh` with profile selection | VS Code Extension (Marketplace) |
-| **Profiles** | full, minimal, python, dotnet, react | N/A (extension includes everything) |
-| **Zero-config** | No (runs installer script) | Yes (install extension, done) |
-| **Installation methods** | Script install (2 variants) | Extension, Multi-root, Submodule, Peer clone, Git-ignored, Mounted, Codespaces (7 methods) |
+| **Primary method** | `install.ps1/sh` (one-liner) | VS Code Extension (Marketplace) |
+| **Default mode** | Local (zero prompts, no GitHub required) | N/A (extension includes everything) |
+| **Zero-config** | Yes — `irm .../install.ps1 \| iex` (zero prompts) | Yes (install extension, done) |
+| **GitHub mode** | Opt-in via `-Mode github` (asks repo/project) | N/A |
+| **Installation methods** | Script install (2 OS variants), env var overrides | Extension, Multi-root, Submodule, Peer clone, Git-ignored, Mounted, Codespaces (7 methods) |
 | **Installer agent** | No | `hve-core-installer` agent |
 | **Extension channels** | No | Stable + Pre-release |
+| **Offline/local support** | Yes — local mode works without GitHub | No |
 | **File embedding** | Copies into project | References via VS Code settings paths |
 
-**Analysis**: HVE Core has a significantly more polished distribution model. The VS Code extension is **zero-config** — install and agents/instructions/prompts are immediately available. AgentX requires running an installer script. However, AgentX's profile system means teams can pick exactly what they need (e.g., Python-only or React-only).
+**Analysis**: Both now offer **zero-config** installation. AgentX's one-liner (`irm .../install.ps1 | iex`) defaults to local mode with zero prompts — no questions asked. GitHub mode is opt-in via `-Mode github`. HVE Core's VS Code extension is equally frictionless. HVE Core still has more installation methods (Codespaces, devcontainer, submodule, etc.), but AgentX's local-first default gives it an edge for solo developers and offline use.
 
 ### 7. Templates & Documentation
 
@@ -155,13 +157,13 @@ Both frameworks extend GitHub Copilot with structured agents, instructions, and 
 | **Instruction Coverage** | 9 | 9 | Tie — different focus (app vs infrastructure). |
 | **Workflow Tooling** | 10 | 5 | AgentX: CLI, TOML, status tracking. HVE Core: none. |
 | **Security & Quality** | 9 | 8 | AgentX: code-level. HVE Core: supply-chain. |
-| **Distribution** | 6 | 10 | HVE Core: VS Code extension, 7 methods. AgentX: script only. |
+| **Distribution** | 8 | 10 | HVE Core: VS Code extension, 7 methods. AgentX: zero-prompt one-liner + local-first. |
 | **Documentation** | 8 | 9 | HVE Core: deeper contributing guides, RPI methodology. |
 | **Process Discipline** | 10 | 7 | AgentX: enforced via CLI/hooks. HVE Core: documentation-driven. |
 | **Enterprise Credibility** | 7 | 10 | HVE Core: Microsoft, OpenSSF, 19 contributors. |
 | **AI-Specific Features** | 10 | 4 | AgentX: RAG, Memory, model drift, evaluation, scaffolding. |
 | **Template Library** | 9 | 6 | AgentX: 8 templates. HVE Core: 3 templates. |
-| **Overall** | **8.7/10** | **7.2/10** | AgentX stronger on tooling; HVE Core stronger on polish. |
+| **Overall** | **8.9/10** | **7.2/10** | AgentX stronger on tooling; HVE Core stronger on polish. |
 
 ---
 
@@ -177,10 +179,11 @@ Both frameworks extend GitHub Copilot with structured agents, instructions, and 
 6. **Quality enforcement** — Test coverage, test pyramid, security scans
 7. **Process discipline** — TOML workflows, status machine, dependency tracking
 8. **Template library** — PRD, ADR, Spec (2 variants), UX, Review, Progress
+9. **Zero-prompt install** — Local mode default with one-liner, no questions asked
 
 ### HVE Core Wins On
 
-1. **VS Code Extension** — Zero-config marketplace distribution
+1. **VS Code Extension** — Marketplace distribution with multiple install methods
 2. **RPI Methodology** — Formally documented constraint-based psychology
 3. **Contributing documentation** — 6 specialized authoring guides
 4. **Installation flexibility** — 7 methods (Codespaces, devcontainer, submodule, etc.)
@@ -224,11 +227,12 @@ A team could theoretically **use both**: HVE Core's RPI methodology for task exe
 | ~~OpenSSF Scorecard~~ | **Done** — workflow + badge | Enterprise credibility |
 | ~~RFC 2119 directives~~ | **Done** — documented in router | Formal quality standard |
 | ~~Terraform/Bicep/YAML instructions~~ | **Done** — 3 new instruction files | IaC coverage parity |
-| VS Code Extension packaging | **Backlog** | Zero-config distribution |
+| ~~Zero-prompt install~~ | **Done** — local default, no prompts | Frictionless onboarding |
+| VS Code Extension packaging | **Backlog** | Marketplace distribution |
 | CodeQL workflow | **Backlog** | Supply-chain security |
 | More installation methods (Codespaces) | **Backlog** | Developer experience |
 | Contributing authoring guides | **Backlog** | Contributor onboarding |
 
 ---
 
-*Report generated February 11, 2026. AgentX v5.1.0 vs HVE Core v2.2.0.*
+*Report generated February 13, 2026. AgentX v5.1.0 vs HVE Core v2.2.0.*
