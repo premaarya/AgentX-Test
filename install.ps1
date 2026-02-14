@@ -57,6 +57,16 @@ $ARCHIVE = "https://github.com/jnPiyush/AgentX/archive/refs/heads/$BRANCH.zip"
 function Write-OK($m)   { Write-Host "[OK] $m" -ForegroundColor Green }
 function Write-Skip($m)  { Write-Host "[--] $m" -ForegroundColor DarkGray }
 
+# ── Cleanup helper (guaranteed on exit, error, or Ctrl+C) ──
+function Invoke-InstallCleanup {
+    foreach ($p in @($TMP, $TMPRAW)) {
+        if (Test-Path $p) { Remove-Item $p -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+    if (Test-Path $ZIPFILE) { Remove-Item $ZIPFILE -Force -ErrorAction SilentlyContinue }
+}
+
+try {
+
 # ── Banner ──────────────────────────────────────────────
 Write-Host ""
 Write-Host "╔═══════════════════════════════════════════════════╗" -ForegroundColor Cyan
@@ -115,8 +125,8 @@ foreach ($f in $neededFiles) {
     if (Test-Path $src) { Copy-Item $src (Join-Path $TMP $f) -Force }
 }
 
-Remove-Item $TMPRAW -Recurse -Force
-Remove-Item $ZIPFILE -Force
+Remove-Item $TMPRAW -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item $ZIPFILE -Force -ErrorAction SilentlyContinue
 if (-not (Test-Path "$TMP/AGENTS.md")) { Write-Error "Download failed. Check network connection." }
 Write-OK "AgentX downloaded (essential files only)"
 
@@ -306,12 +316,7 @@ if (-not $NoSetup) {
     Write-Skip "Setup skipped (-NoSetup)"
 }
 
-# ── Cleanup ─────────────────────────────────────────────
-Remove-Item $TMP -Recurse -Force -ErrorAction SilentlyContinue
-Remove-Item $TMPRAW -Recurse -Force -ErrorAction SilentlyContinue
-Remove-Item $ZIPFILE -Force -ErrorAction SilentlyContinue
-
-# ── Done ────────────────────────────────────────────────
+# ── Done ────────────────────────────────────────────
 Write-Host ""
 Write-Host "═══════════════════════════════════════════════════" -ForegroundColor Green
 Write-Host "  AgentX v5.1.0 installed!  [$displayMode]" -ForegroundColor Green
@@ -323,4 +328,13 @@ if ($Local) {
     Write-Host "  Issue: .\.agentx\local-issue-manager.ps1 -Action create -Title '[Story] Task' -Labels 'type:story'" -ForegroundColor DarkGray
 }
 Write-Host ""
+
+} catch {
+    Write-Host "✖ Installation failed: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "  Temp files will be cleaned up automatically." -ForegroundColor DarkGray
+    throw
+} finally {
+    # Guaranteed cleanup — runs on success, error, or Ctrl+C
+    Invoke-InstallCleanup
+}
 
