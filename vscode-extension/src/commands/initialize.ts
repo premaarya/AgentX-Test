@@ -155,9 +155,9 @@ export function registerInitializeCommand(
                         }
                     }
 
-                    // Clean up raw download
-                    fs.rmSync(rawDir, { recursive: true, force: true });
-                    fs.unlinkSync(zipFile);
+                    // Clean up raw download (best-effort; finally block guarantees cleanup)
+                    try { fs.rmSync(rawDir, { recursive: true, force: true }); } catch { /* finally will retry */ }
+                    try { fs.unlinkSync(zipFile); } catch { /* finally will retry */ }
 
                     progress.report({ message: 'Copying files...', increment: 30 });
 
@@ -167,28 +167,84 @@ export function registerInitializeCommand(
                     // Clean up tmp
                     fs.rmSync(tmpDir, { recursive: true, force: true });
 
-                    // Mode-specific config
+                    progress.report({ message: 'Configuring runtime...', increment: 20 });
+
+                    // Create runtime directories
+                    const runtimeDirs = [
+                        '.agentx/state', '.agentx/digests',
+                        'docs/prd', 'docs/adr', 'docs/specs',
+                        'docs/ux', 'docs/reviews', 'docs/progress',
+                    ];
+                    if (mode.label === 'local') {
+                        runtimeDirs.push('.agentx/issues');
+                    }
+                    for (const dir of runtimeDirs) {
+                        fs.mkdirSync(path.join(root, dir), { recursive: true });
+                    }
+
+                    // Version tracking
+                    const versionFile = path.join(root, '.agentx', 'version.json');
+                    fs.writeFileSync(versionFile, JSON.stringify({
+                        version: '5.1.0',
+                        mode: mode.label,
+                        installedAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                    }, null, 2));
+
+                    // Agent status
+                    const statusFile = path.join(root, '.agentx', 'state', 'agent-status.json');
+                    if (!fs.existsSync(statusFile)) {
+                        const agentStatus: Record<string, unknown> = {};
+                        for (const agent of ['product-manager', 'ux-designer', 'architect', 'engineer', 'reviewer', 'devops-engineer']) {
+                            agentStatus[agent] = { status: 'idle', issue: null, lastActivity: null };
+                        }
+                        fs.writeFileSync(statusFile, JSON.stringify(agentStatus, null, 2));
+                    }
+
+                    // Mode config
                     const configDir = path.join(root, '.agentx');
                     const configFile = path.join(configDir, 'config.json');
                     if (mode.label === 'local') {
-                        const configData = {
+                        fs.writeFileSync(configFile, JSON.stringify({
                             mode: 'local',
-                            version: '5.1.0',
-                            installedAt: new Date().toISOString(),
-                        };
-                        fs.writeFileSync(configFile, JSON.stringify(configData, null, 2));
+                            nextIssueNumber: 1,
+                            created: new Date().toISOString(),
+                        }, null, 2));
                     } else {
-                        const configData: Record<string, unknown> = {
+                        fs.writeFileSync(configFile, JSON.stringify({
                             mode: 'github',
-                            version: '5.1.0',
                             repo: repoSlug || null,
                             project: projectNum || null,
-                            installedAt: new Date().toISOString(),
-                        };
-                        fs.writeFileSync(configFile, JSON.stringify(configData, null, 2));
+                            created: new Date().toISOString(),
+                        }, null, 2));
                     }
 
-                    progress.report({ message: 'Finalizing...', increment: 30 });
+                    progress.report({ message: 'Setting up git...', increment: 10 });
+
+                    // Auto-init git + hooks (non-destructive, both modes)
+                    try {
+                        const { execShell: exec } = await import('../utils/shell');
+                        const shell = process.platform === 'win32' ? 'pwsh' : 'bash';
+                        if (!fs.existsSync(path.join(root, '.git'))) {
+                            await exec('git init --quiet', root, shell);
+                        }
+                        // Install hooks
+                        const hooksDir = path.join(root, '.git', 'hooks');
+                        for (const hook of ['pre-commit', 'commit-msg']) {
+                            const hookSrc = path.join(root, '.github', 'hooks', hook);
+                            if (fs.existsSync(hookSrc)) {
+                                fs.copyFileSync(hookSrc, path.join(hooksDir, hook));
+                            }
+                        }
+                        const preCommitPs1 = path.join(root, '.github', 'hooks', 'pre-commit.ps1');
+                        if (fs.existsSync(preCommitPs1)) {
+                            fs.copyFileSync(preCommitPs1, path.join(hooksDir, 'pre-commit.ps1'));
+                        }
+                    } catch {
+                        // Git not available — skip silently
+                    }
+
+                    progress.report({ message: 'Finalizing...', increment: 10 });
 
                     // Set context
                     vscode.commands.executeCommand('setContext', 'agentx.initialized', true);
@@ -201,14 +257,14 @@ export function registerInitializeCommand(
                     vscode.commands.executeCommand('agentx.refresh');
 
                 } catch (err: unknown) {
-                    // Clean up on failure
-                    for (const p of [tmpDir, rawDir]) {
-                        if (fs.existsSync(p)) { fs.rmSync(p, { recursive: true, force: true }); }
-                    }
-                    if (fs.existsSync(zipFile)) { fs.unlinkSync(zipFile); }
-
                     const message = err instanceof Error ? err.message : String(err);
                     vscode.window.showErrorMessage(`AgentX initialization failed: ${message}`);
+                } finally {
+                    // Guaranteed cleanup — runs on success, error, or cancellation
+                    for (const p of [tmpDir, rawDir]) {
+                        try { if (fs.existsSync(p)) { fs.rmSync(p, { recursive: true, force: true }); } } catch { /* ignore */ }
+                    }
+                    try { if (fs.existsSync(zipFile)) { fs.unlinkSync(zipFile); } } catch { /* ignore */ }
                 }
             }
         );

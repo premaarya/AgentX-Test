@@ -30,7 +30,7 @@ export class AgentXContext {
 
     /** Get the configured mode (github, local). */
     getMode(): string {
-        return vscode.workspace.getConfiguration('agentx').get<string>('mode', 'github');
+        return vscode.workspace.getConfiguration('agentx').get<string>('mode', 'local');
     }
 
     /** Get the configured shell (auto, pwsh, bash). */
