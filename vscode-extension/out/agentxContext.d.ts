@@ -35,8 +35,15 @@ export declare class AgentXContext {
     getShell(): string;
     /** Resolve the AgentX CLI command path for the current platform. */
     getCliCommand(): string;
-    /** Execute an AgentX CLI subcommand and return stdout. */
-    runCli(subcommand: string, args?: string[]): Promise<string>;
+    /**
+     * Execute an AgentX CLI subcommand and return stdout.
+     *
+     * @param subcommand - The CLI subcommand (e.g. 'workflow', 'deps').
+     * @param namedArgs  - Key-value pairs formatted as `-Key value` for PowerShell
+     *                     or as positional `value` args for bash.
+     * @param extraArgs  - Raw argument strings appended as-is (for both shells).
+     */
+    runCli(subcommand: string, namedArgs?: Record<string, string>, extraArgs?: string[]): Promise<string>;
     /** Read an agent definition file and return parsed frontmatter fields. */
     readAgentDef(agentFile: string): Promise<AgentDefinition | undefined>;
     /** List all agent definition files. */

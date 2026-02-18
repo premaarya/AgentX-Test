@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # AgentX CLI - Lightweight task orchestration utilities
-# Subcommands: ready, state, deps, digest, workflow, hook, version, upgrade
+# Subcommands: ready, state, deps, digest, workflow, run, hook, version, upgrade
 #
 # Usage:
 # ./.agentx/agentx.sh ready # Show unblocked work
@@ -9,6 +9,7 @@
 # ./.agentx/agentx.sh deps 42 # Check dependencies
 # ./.agentx/agentx.sh digest # Generate weekly digest
 # ./.agentx/agentx.sh workflow feature # Show workflow steps
+# ./.agentx/agentx.sh run feature 42 # Execute workflow for issue
 # ./.agentx/agentx.sh version # Show version info
 # ./.agentx/agentx.sh upgrade # Smart upgrade
 
@@ -745,6 +746,187 @@ EOF
  echo ""
 }
 
+# --- RUN: Execute workflow steps for an issue -------------------------
+
+cmd_run() {
+ check_jq
+ local type="${1:-}"
+ local issue_number="${2:-}"
+
+ if [[ -z "$type" ]]; then
+ echo -e "${RED}[FAIL] Type required (feature|epic|story|bug|spike|devops|docs)${NC}"
+ return 1
+ fi
+ if [[ -z "$issue_number" ]]; then
+ echo -e "${RED}[FAIL] Issue number required${NC}"
+ return 1
+ fi
+
+ local wf_file="$WORKFLOWS_DIR/$type.toml"
+ if [[ ! -f "$wf_file" ]]; then
+ echo -e "${RED}[FAIL] Workflow not found: $wf_file${NC}"
+ return 1
+ fi
+
+ # Parse TOML steps
+ local steps=()
+ local step_ids=() step_titles=() step_agents=() step_needs=()
+ local step_optionals=() step_conditions=()
+ local step_status_starts=() step_status_completes=()
+ local step_outputs=() step_templates=()
+ local idx=-1
+ local id="" title="" agent="" needs="" optional="false" condition=""
+ local status_start="" status_complete="" output="" template=""
+
+ while IFS= read -r line; do
+  line=$(echo "$line" | sed 's/^[[:space:]]*//')
+  if [[ "$line" =~ ^\[\[steps\]\] ]]; then
+   if [[ $idx -ge 0 ]]; then
+    step_ids[$idx]="$id"; step_titles[$idx]="$title"
+    step_agents[$idx]="$agent"; step_needs[$idx]="$needs"
+    step_optionals[$idx]="$optional"; step_conditions[$idx]="$condition"
+    step_status_starts[$idx]="$status_start"
+    step_status_completes[$idx]="$status_complete"
+    step_outputs[$idx]="$output"; step_templates[$idx]="$template"
+   fi
+   idx=$((idx + 1))
+   id=""; title=""; agent=""; needs=""; optional="false"; condition=""
+   status_start=""; status_complete=""; output=""; template=""
+  fi
+  [[ "$line" =~ ^id\ =\ \"(.+)\" ]] && id="${BASH_REMATCH[1]}"
+  [[ "$line" =~ ^title\ =\ \"(.+)\" ]] && title="${BASH_REMATCH[1]}"
+  [[ "$line" =~ ^agent\ =\ \"(.+)\" ]] && agent="${BASH_REMATCH[1]}"
+  [[ "$line" =~ ^needs\ =\ \[(.+)\] ]] && needs=$(echo "${BASH_REMATCH[1]}" | tr -d '"' | tr -d ' ')
+  [[ "$line" =~ ^optional\ =\ true ]] && optional="true"
+  [[ "$line" =~ ^condition\ =\ \"(.+)\" ]] && condition="${BASH_REMATCH[1]}"
+  [[ "$line" =~ ^status_on_start\ =\ \"(.+)\" ]] && status_start="${BASH_REMATCH[1]}"
+  [[ "$line" =~ ^status_on_complete\ =\ \"(.+)\" ]] && status_complete="${BASH_REMATCH[1]}"
+  [[ "$line" =~ ^output\ =\ \"(.+)\" ]] && output="${BASH_REMATCH[1]}"
+  [[ "$line" =~ ^template\ =\ \"(.+)\" ]] && template="${BASH_REMATCH[1]}"
+ done < "$wf_file"
+
+ # Save last step
+ if [[ $idx -ge 0 ]]; then
+  step_ids[$idx]="$id"; step_titles[$idx]="$title"
+  step_agents[$idx]="$agent"; step_needs[$idx]="$needs"
+  step_optionals[$idx]="$optional"; step_conditions[$idx]="$condition"
+  step_status_starts[$idx]="$status_start"
+  step_status_completes[$idx]="$status_complete"
+  step_outputs[$idx]="$output"; step_templates[$idx]="$template"
+ fi
+
+ local total=$((idx + 1))
+
+ # Interpolate variables
+ echo ""
+ echo -e " ${CYAN}* Workflow: $type (Issue #$issue_number)${NC}"
+ echo -e " ${GRAY}---------------------------------------------${NC}"
+ echo ""
+
+ local completed_steps=()
+ local completed_count=0
+
+ for i in $(seq 0 $((total - 1))); do
+  local sid="${step_ids[$i]}"
+  # Interpolate {{issue_number}} in title
+  local stitle="${step_titles[$i]//\{\{issue_number\}\}/$issue_number}"
+  stitle="${stitle//\{\{feature_name\}\}/Issue-$issue_number}"
+  local sagent="${step_agents[$i]}"
+  local sneeds="${step_needs[$i]}"
+  local soptional="${step_optionals[$i]}"
+  local scondition="${step_conditions[$i]}"
+  local sstatus_start="${step_status_starts[$i]}"
+  local sstatus_complete="${step_status_completes[$i]}"
+  local soutput="${step_outputs[$i]}"
+  local stemplate="${step_templates[$i]}"
+
+  # Check dependencies
+  local blocked=false
+  if [[ -n "$sneeds" ]]; then
+   IFS=',' read -ra dep_arr <<< "$sneeds"
+   for dep in "${dep_arr[@]}"; do
+    local found=false
+    for c in "${completed_steps[@]}"; do
+     [[ "$c" == "$dep" ]] && found=true && break
+    done
+    if [[ "$found" == "false" ]]; then
+     blocked=true
+     break
+    fi
+   done
+  fi
+
+  # Check condition (e.g., "has_label:needs:ux")
+  local condition_met=true
+  if [[ -n "$scondition" && "$scondition" =~ ^has_label:(.+)$ ]]; then
+   local required_label="${BASH_REMATCH[1]}"
+   if [[ "$MODE" == "github" ]]; then
+    local label_check
+    label_check=$(gh issue view "$issue_number" --json labels --jq '.labels[].name' 2>/dev/null || true)
+    if ! echo "$label_check" | grep -q "^${required_label}$"; then
+     condition_met=false
+    fi
+   else
+    local issue_file="$ISSUES_DIR/ISSUE-${issue_number}.json"
+    if [[ -f "$issue_file" ]]; then
+     if ! jq -e --arg l "$required_label" '.labels[] | select(. == $l)' "$issue_file" &>/dev/null; then
+      condition_met=false
+     fi
+    else
+     condition_met=false
+    fi
+   fi
+  fi
+
+  if [[ "$soptional" == "true" && "$condition_met" == "false" ]]; then
+   echo -e " ${GRAY}( ) ${sid}: $stitle [$sagent] - skipped (optional, condition not met)${NC}"
+   completed_steps+=("$sid")
+   completed_count=$((completed_count + 1))
+   continue
+  fi
+
+  if [[ "$blocked" == "true" ]]; then
+   echo -e " ${YELLOW}[WAIT] ${sid}: $stitle [$sagent] - blocked (needs: $sneeds)${NC}"
+   continue
+  fi
+
+  # Update status
+  if [[ -n "$sstatus_start" && "$MODE" == "local" ]]; then
+   local issue_file="$ISSUES_DIR/ISSUE-${issue_number}.json"
+   if [[ -f "$issue_file" ]]; then
+    jq --arg s "$sstatus_start" '.status = $s' "$issue_file" > "${issue_file}.tmp" \
+     && mv "${issue_file}.tmp" "$issue_file"
+   fi
+  fi
+
+  # Copy template if output and template defined
+  if [[ -n "$soutput" && -n "$stemplate" ]]; then
+   local out_path="${soutput//\{\{issue_number\}\}/$issue_number}"
+   out_path="${out_path//\{\{feature_name\}\}/Issue-$issue_number}"
+   if [[ ! -f "$out_path" ]]; then
+    local out_dir
+    out_dir=$(dirname "$out_path")
+    [[ -n "$out_dir" ]] && mkdir -p "$out_dir" 2>/dev/null
+    if [[ -f "$stemplate" ]]; then
+     cp "$stemplate" "$out_path"
+     echo -e "    ${GRAY}>> Created: $out_path (from template)${NC}"
+    fi
+   fi
+  fi
+
+  echo -e " ${WHITE}> ${sid}: $stitle${NC}"
+  echo -e "    ${GRAY}Agent: @$sagent | Status: $sstatus_start -> $sstatus_complete${NC}"
+
+  completed_steps+=("$sid")
+  completed_count=$((completed_count + 1))
+ done
+
+ echo ""
+ echo -e " ${GREEN}Steps prepared: ${completed_count}/${total}${NC}"
+ echo -e " ${GRAY}Next: Invoke each agent with '@agent-name' in Copilot Chat${NC}"
+ echo ""
+}
+
 # --- HELP -------------------------------------------------------------
 
 cmd_help() {
@@ -760,6 +942,7 @@ cmd_help() {
  echo " digest Generate weekly digest of closed issues"
  echo " workflow List all workflow templates"
  echo " workflow <name> Show steps for a specific workflow"
+ echo " run <type> <issue_number> Execute workflow steps for an issue"
  echo " hook start <agent> [issue] Auto-run deps + state on agent start"
  echo " hook finish <agent> [issue] Auto-run state done on agent finish"
  echo " version Show installed version info"
@@ -773,6 +956,7 @@ cmd_help() {
  echo " ./agentx.sh hook finish engineer 42"
  echo " ./agentx.sh digest"
  echo " ./agentx.sh workflow feature"
+ echo " ./agentx.sh run feature 42"
  echo ""
 }
 
@@ -787,6 +971,7 @@ case "$COMMAND" in
  deps) cmd_deps "$@" ;;
  digest) cmd_digest ;;
  workflow) cmd_workflow "$@" ;;
+ run) cmd_run "$@" ;;
  hook) cmd_hook "$@" ;;
  version) cmd_version ;;
  upgrade) cmd_upgrade ;;

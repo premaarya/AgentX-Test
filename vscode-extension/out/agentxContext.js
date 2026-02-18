@@ -192,8 +192,15 @@ class AgentXContext {
         }
         return path.join(root, '.agentx', 'agentx.ps1');
     }
-    /** Execute an AgentX CLI subcommand and return stdout. */
-    async runCli(subcommand, args = []) {
+    /**
+     * Execute an AgentX CLI subcommand and return stdout.
+     *
+     * @param subcommand - The CLI subcommand (e.g. 'workflow', 'deps').
+     * @param namedArgs  - Key-value pairs formatted as `-Key value` for PowerShell
+     *                     or as positional `value` args for bash.
+     * @param extraArgs  - Raw argument strings appended as-is (for both shells).
+     */
+    async runCli(subcommand, namedArgs = {}, extraArgs = []) {
         const root = this.workspaceRoot;
         if (!root) {
             throw new Error('No workspace open.');
@@ -201,15 +208,21 @@ class AgentXContext {
         const cliPath = this.getCliCommand();
         const shell = this.getShell();
         const isPwsh = shell === 'pwsh' || (shell === 'auto' && process.platform === 'win32');
-        let cmd;
-        if (isPwsh) {
-            const argStr = args.length > 0 ? ' ' + args.join(' ') : '';
-            cmd = `& "${cliPath}" ${subcommand}${argStr}`;
+        // Build argument string adapted to the target shell
+        const parts = [];
+        for (const [key, value] of Object.entries(namedArgs)) {
+            if (isPwsh) {
+                parts.push(`-${key} ${value}`);
+            }
+            else {
+                parts.push(value);
+            }
         }
-        else {
-            const argStr = args.length > 0 ? ' ' + args.join(' ') : '';
-            cmd = `bash "${cliPath}" ${subcommand}${argStr}`;
-        }
+        parts.push(...extraArgs);
+        const argStr = parts.length > 0 ? ' ' + parts.join(' ') : '';
+        const cmd = isPwsh
+            ? `& "${cliPath}" ${subcommand}${argStr}`
+            : `bash "${cliPath}" ${subcommand}${argStr}`;
         return (0, shell_1.execShell)(cmd, root, isPwsh ? 'pwsh' : 'bash');
     }
     /** Read an agent definition file and return parsed frontmatter fields. */
