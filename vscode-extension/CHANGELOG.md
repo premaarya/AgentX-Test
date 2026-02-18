@@ -1,6 +1,16 @@
 # Changelog
 
-## 5.1.0 — Initial Release
+## 5.2.0 - 2026-02-18
+
+- **Nested folder support**: auto-detect AgentX root up to 2 levels deep in subfolders
+- **Multi-root workspace**: searches all workspace folders, not just the first
+- **New settings**: `agentx.rootPath` (explicit override), `agentx.searchDepth` (0-5)
+- **FileSystemWatcher**: auto-discovers AgentX when `AGENTS.md` appears in subfolders
+- **Initialize**: folder picker for multi-root workspaces
+- **Refresh**: invalidates root cache and re-checks initialization state
+- **Activation events**: `workspaceContains:**/AGENTS.md` for nested detection
+
+## 5.1.0 -- Initial Release
 
 - **Initialize Project** command with 5 install profiles
 - **Agent Status** sidebar view with all 8 agents

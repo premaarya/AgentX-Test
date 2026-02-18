@@ -21,7 +21,24 @@ export function registerInitializeCommand(
  agentx: AgentXContext
 ) {
  const cmd = vscode.commands.registerCommand('agentx.initialize', async () => {
- const root = agentx.workspaceRoot;
+ // For initialization, let the user pick where to install when there are
+ // multiple workspace folders, or default to the first one.
+ let root: string | undefined;
+ const folders = vscode.workspace.workspaceFolders;
+ if (!folders || folders.length === 0) {
+ vscode.window.showErrorMessage('AgentX: Open a workspace folder first.');
+ return;
+ }
+ if (folders.length === 1) {
+ root = folders[0].uri.fsPath;
+ } else {
+ const pick = await vscode.window.showQuickPick(
+ folders.map(f => ({ label: f.name, description: f.uri.fsPath, folder: f })),
+ { placeHolder: 'Select workspace folder to initialize AgentX in', title: 'AgentX - Target Folder' }
+ );
+ if (!pick) { return; }
+ root = pick.folder.uri.fsPath;
+ }
  if (!root) {
  vscode.window.showErrorMessage('AgentX: Open a workspace folder first.');
  return;
@@ -186,7 +203,7 @@ export function registerInitializeCommand(
  // Version tracking
  const versionFile = path.join(root, '.agentx', 'version.json');
  fs.writeFileSync(versionFile, JSON.stringify({
- version: '5.1.0',
+ version: '5.2.0',
  mode: mode.label,
  installedAt: new Date().toISOString(),
  updatedAt: new Date().toISOString(),
@@ -246,6 +263,9 @@ export function registerInitializeCommand(
  }
 
  progress.report({ message: 'Finalizing...', increment: 10 });
+
+ // Invalidate cached root so auto-discovery picks up the new location
+ agentx.invalidateCache();
 
  // Set context
  vscode.commands.executeCommand('setContext', 'agentx.initialized', true);

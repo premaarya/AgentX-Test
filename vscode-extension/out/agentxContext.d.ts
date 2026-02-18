@@ -5,8 +5,27 @@ import * as vscode from 'vscode';
  */
 export declare class AgentXContext {
     readonly extensionContext: vscode.ExtensionContext;
+    /** Cached AgentX root path (invalidated on config / workspace change). */
+    private _cachedRoot;
+    private _cacheValid;
     constructor(extensionContext: vscode.ExtensionContext);
-    /** Returns the current workspace root, or undefined if none open. */
+    /** Invalidate the cached root so the next access re-discovers it. */
+    invalidateCache(): void;
+    /**
+     * Returns the first workspace folder path (used by the initialize command
+     * which always installs into the top-level workspace folder).
+     */
+    get firstWorkspaceFolder(): string | undefined;
+    /**
+     * Returns the detected AgentX project root.
+     *
+     * Resolution order:
+     * 1. Explicit `agentx.rootPath` setting (if set and valid).
+     * 2. Search every workspace folder root for AGENTS.md + .agentx/.
+     * 3. Search subdirectories of each workspace folder up to
+     *    `agentx.searchDepth` levels (default 2).
+     * 4. Fall back to the first workspace folder (legacy behaviour).
+     */
     get workspaceRoot(): string | undefined;
     /** Check if AgentX is initialized in the current workspace. */
     checkInitialized(): Promise<boolean>;

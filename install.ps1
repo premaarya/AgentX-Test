@@ -1,12 +1,17 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
- Install AgentX v5.1.0 - Download, copy, configure.
+ Install AgentX v5.2.0 - Download, copy, configure.
 
 .PARAMETER Mode
  github - Full features: GitHub Actions, PRs, Projects (asks for repo/project info)
  local - Filesystem-based issue tracking, no GitHub required (DEFAULT)
  Defaults to 'local' for zero-prompt install. Use -Mode github to enable GitHub setup.
+
+.PARAMETER Path
+ Install into a subdirectory (e.g. -Path myproject/backend). The VS Code
+ extension auto-detects AgentX up to 2 levels deep, or you can set
+ 'agentx.rootPath' in workspace settings.
 
 .PARAMETER Force
  Overwrite existing files (default: merge, keeping existing)
@@ -17,6 +22,7 @@
 .EXAMPLE
  .\install.ps1 # Local mode - no prompts
  .\install.ps1 -Mode github # GitHub mode - asks for repo/project
+ .\install.ps1 -Path myproject # Install into a subfolder
  .\install.ps1 -Force # Full reinstall (overwrite)
 
  # One-liner install (local mode, no prompts - auto-detects piped execution)
@@ -28,6 +34,7 @@
 
 param(
  [string]$Mode,
+ [string]$Path,
  [switch]$Force,
  [switch]$NoSetup,
  [switch]$Local
@@ -35,11 +42,22 @@ param(
 
 # Environment variable overrides (for irm | iex one-liner usage)
 if (-not $Mode -and $env:AGENTX_MODE) { $Mode = $env:AGENTX_MODE }
+if (-not $Path -and $env:AGENTX_PATH) { $Path = $env:AGENTX_PATH }
 # Legacy: support AGENTX_LOCAL=true -> Mode=local
 if (-not $Mode -and $env:AGENTX_LOCAL -eq "true") { $Mode = "local" }
 if (-not $PSBoundParameters.ContainsKey('NoSetup') -and $env:AGENTX_NOSETUP -eq "true") { $NoSetup = [switch]$true }
 # -Local switch -> Mode=local shorthand
 if ($Local -and -not $Mode) { $Mode = "local" }
+
+# -Path: install into a subdirectory
+if ($Path) {
+ $Path = $Path.TrimEnd('\', '/')
+ if (-not (Test-Path $Path)) {
+  New-Item -ItemType Directory -Path $Path -Force | Out-Null
+ }
+ Push-Location $Path
+ Write-Host " Target: $Path" -ForegroundColor DarkGray
+}
 
 # Manual validation (replaces [ValidateSet] for irm | iex compatibility)
 if ($Mode -and $Mode -notin @("github", "local")) {
@@ -73,7 +91,7 @@ try {
 # -- Banner ----------------------------------------------
 Write-Host ""
 Write-Host "+===================================================+" -ForegroundColor Cyan
-Write-Host "| AgentX v5.1.0 - AI Agent Orchestration |" -ForegroundColor Cyan
+Write-Host "| AgentX v5.2.0 - AI Agent Orchestration |" -ForegroundColor Cyan
 Write-Host "+===================================================+" -ForegroundColor Cyan
 Write-Host ""
 
@@ -161,12 +179,12 @@ Write-Host "[3] Configuring runtime..." -ForegroundColor Cyan
 # Version tracking
 $versionFile = ".agentx/version.json"
 @{
- version = "5.1.0"
+ version = "5.2.0"
  mode = $Mode
  installedAt = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
  updatedAt = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
 } | ConvertTo-Json | Set-Content $versionFile
-Write-OK "Version 5.1.0 recorded"
+Write-OK "Version 5.2.0 recorded"
 
 # Agent status
 $statusFile = ".agentx/state/agent-status.json"
@@ -322,13 +340,19 @@ if (-not $NoSetup) {
 # -- Done --------------------------------------------
 Write-Host ""
 Write-Host "===================================================" -ForegroundColor Green
-Write-Host " AgentX v5.1.0 installed! [$displayMode]" -ForegroundColor Green
+Write-Host " AgentX v5.2.0 installed! [$displayMode]" -ForegroundColor Green
 Write-Host "===================================================" -ForegroundColor Green
 Write-Host ""
 Write-Host " CLI: .\.agentx\agentx.ps1 help" -ForegroundColor White
 Write-Host " Docs: AGENTS.md | Skills.md | docs/SETUP.md" -ForegroundColor White
 if ($Local) {
  Write-Host " Issue: .\.agentx\local-issue-manager.ps1 -Action create -Title '[Story] Task' -Labels 'type:story'" -ForegroundColor DarkGray
+}
+if ($Path) {
+ Write-Host "" -ForegroundColor White
+ Write-Host " [TIP] VS Code nested folder:" -ForegroundColor Yellow
+ Write-Host "  Set 'agentx.rootPath' in .vscode/settings.json to '$((Resolve-Path .).Path)'" -ForegroundColor DarkGray
+ Write-Host "  or the extension will auto-detect up to 2 levels deep." -ForegroundColor DarkGray
 }
 Write-Host ""
 
@@ -339,5 +363,7 @@ Write-Host ""
 } finally {
  # Guaranteed cleanup - runs on success, error, or Ctrl+C
  Invoke-InstallCleanup
+ # Pop back to original directory if -Path was used
+ if ($Path) { Pop-Location }
 }
 

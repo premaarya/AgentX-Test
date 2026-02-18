@@ -5,6 +5,28 @@ All notable changes to AgentX will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.2.0] - 2026-02-18
+
+### Added
+
+**Nested Folder Support**:
+- Auto-detection of AgentX root in subfolders up to configurable depth (default: 2 levels)
+- New `agentx.rootPath` setting for explicit override of the project root
+- New `agentx.searchDepth` setting to control subfolder search depth (0-5)
+- Multi-root workspace support -- searches all workspace folders, not just the first
+- FileSystemWatcher auto-discovers AgentX when initialized in nested paths mid-session
+- `workspaceContains:**/AGENTS.md` activation event for nested folder detection
+
+**Install Script Enhancements**:
+- New `-Path` / `--path` parameter to install AgentX into a subfolder
+- Post-install tip printed when using `--path` about VS Code `agentx.rootPath` setting
+- `AGENTX_PATH` environment variable support for one-liner installs
+
+**VS Code Extension Improvements**:
+- Initialize command supports multi-root workspaces with folder picker
+- Refresh command invalidates root cache and re-checks initialization state
+- Root path cached with automatic invalidation on config/workspace changes
+
 ## [5.1.0] - 2026-02-12
 
 ### ✨ Added

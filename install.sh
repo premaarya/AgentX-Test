@@ -1,11 +1,12 @@
 #!/bin/bash
-# AgentX v5.1.0 Installer - Download, copy, configure.
+# AgentX v5.2.0 Installer - Download, copy, configure.
 #
 # Modes: local (default), github
 #
 # Usage:
 # ./install.sh # Local mode - no prompts
 # ./install.sh --mode github # GitHub mode - asks for repo/project
+# ./install.sh --path myproject # Install into a subfolder
 # ./install.sh --force # Full reinstall (overwrite)
 #
 # # One-liner install (local mode, no prompts)
@@ -19,13 +20,18 @@ set -e
 MODE="${MODE:-}"
 FORCE="${FORCE:-false}"
 NO_SETUP="${NO_SETUP:-false}"
+INSTALL_PATH="${AGENTX_PATH:-}"
 BRANCH="master"
 TMP=".agentx-install-tmp"
 TMPARCHIVE="$TMP.tar.gz"
 ARCHIVE_URL="https://github.com/jnPiyush/AgentX/archive/refs/heads/$BRANCH.tar.gz"
 
 # -- Guaranteed cleanup (runs on success, error, or Ctrl+C) --
-cleanup() { rm -rf "$TMP" "$TMPARCHIVE"; }
+cleanup() {
+ rm -rf "$TMP" "$TMPARCHIVE"
+ # Return to original dir if --path was used
+ [ -n "$INSTALL_PATH" ] && cd - >/dev/null 2>&1 || true
+}
 trap cleanup EXIT
 # -- Error handler - display message before cleanup --
 on_error() {
@@ -40,12 +46,21 @@ PREFIX="AgentX-$BRANCH"
 while [[ $# -gt 0 ]]; do
  case $1 in
  --mode) MODE="$2"; shift 2 ;;
+ --path) INSTALL_PATH="$2"; shift 2 ;;
  --force) FORCE=true; shift ;;
  --local) MODE="local"; shift ;;
  --no-setup) NO_SETUP=true; shift ;;
  *) shift ;;
  esac
 done
+
+# --path: install into a subdirectory
+if [ -n "$INSTALL_PATH" ]; then
+ INSTALL_PATH="${INSTALL_PATH%/}"
+ mkdir -p "$INSTALL_PATH"
+ cd "$INSTALL_PATH"
+ echo -e "${D} Target: $INSTALL_PATH${N}"
+fi
 
 # Auto-detect piped execution (curl | bash) - used to skip interactive prompts
 IS_PIPED=false
@@ -58,7 +73,7 @@ skip() { echo -e "${D}[--] $1${N}"; }
 # -- Banner ----------------------------------------------
 echo ""
 echo -e "${C}+===================================================+${N}"
-echo -e "${C}| AgentX v5.1.0 - AI Agent Orchestration |${N}"
+echo -e "${C}| AgentX v5.2.0 - AI Agent Orchestration |${N}"
 echo -e "${C}+===================================================+${N}"
 echo ""
 
@@ -127,8 +142,8 @@ mkdir -p .agentx/state .agentx/digests docs/{prd,adr,specs,ux,reviews,progress}
 
 # Version tracking
 VERSION_FILE=".agentx/version.json"
-echo "{ \"version\": \"5.1.0\", \"mode\": \"$MODE\", \"installedAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\", \"updatedAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\" }" > "$VERSION_FILE"
-ok "Version 5.1.0 recorded"
+echo "{ \"version\": \"5.2.0\", \"mode\": \"$MODE\", \"installedAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\", \"updatedAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\" }" > "$VERSION_FILE"
+ok "Version 5.2.0 recorded"
 
 # Agent status
 STATUS=".agentx/state/agent-status.json"
@@ -279,10 +294,16 @@ fi
 # -- Done ------------------------------------------------
 echo ""
 echo -e "${G}===================================================${N}"
-echo -e "${G} AgentX v5.1.0 installed! [$DISPLAY_MODE]${N}"
+echo -e "${G} AgentX v5.2.0 installed! [$DISPLAY_MODE]${N}"
 echo -e "${G}===================================================${N}"
 echo ""
 echo " CLI: ./.agentx/agentx.sh help"
 echo " Docs: AGENTS.md | Skills.md | docs/SETUP.md"
 [ "$LOCAL" = "true" ] && echo -e "${D} Issue: ./.agentx/local-issue-manager.sh create \"[Story] Task\" \"\" \"type:story\"${N}"
+if [ -n "$INSTALL_PATH" ]; then
+ echo ""
+ echo -e "${Y} [TIP] VS Code nested folder:${N}"
+ echo -e "${D}  Set 'agentx.rootPath' in .vscode/settings.json to '$(pwd)'${N}"
+ echo -e "${D}  or the extension will auto-detect up to 2 levels deep.${N}"
+fi
 echo ""

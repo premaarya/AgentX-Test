@@ -2,7 +2,7 @@
  "name": "agentx",
  "displayName": "AgentX - Multi-Agent Orchestration",
  "description": "AI-powered multi-agent orchestration framework for GitHub Copilot. Coordinate PM, UX, Architect, Engineer, and Reviewer agents in a structured software development workflow.",
- "version": "5.1.0",
+ "version": "5.2.0",
  "publisher": "jnPiyush",
  "author": {
  "name": "Piyush Jain"
@@ -43,7 +43,9 @@
  ],
  "activationEvents": [
  "workspaceContains:AGENTS.md",
+ "workspaceContains:**/AGENTS.md",
  "workspaceContains:.agentx/agentx.ps1",
+ "workspaceContains:**/.agentx/agentx.ps1",
  "onChatParticipant:agentx.chat"
  ],
  "main": "./out/extension.js",
@@ -226,6 +228,18 @@
  "bash"
  ],
  "description": "Shell to use for AgentX CLI commands."
+ },
+ "agentx.rootPath": {
+ "type": "string",
+ "default": "",
+ "description": "Explicit path to the AgentX project root (folder containing AGENTS.md and .agentx/). Leave empty for auto-detection. Useful when AgentX is initialized in a subfolder or non-first workspace folder."
+ },
+ "agentx.searchDepth": {
+ "type": "number",
+ "default": 2,
+ "minimum": 0,
+ "maximum": 5,
+ "description": "How many subfolder levels to search when auto-detecting the AgentX root. Set to 0 to only check workspace folder roots."
  }
  }
  }

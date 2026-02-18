@@ -72,16 +72,39 @@ function activate(context) {
     }
     // Refresh command
     context.subscriptions.push(vscode.commands.registerCommand('agentx.refresh', () => {
+        agentxContext.invalidateCache();
         agentTreeProvider.refresh();
         readyQueueProvider.refresh();
         workflowProvider.refresh();
         (0, agentContextLoader_1.clearInstructionCache)();
+        // Re-check initialization state after cache clear
+        agentxContext.checkInitialized().then((initialized) => {
+            vscode.commands.executeCommand('setContext', 'agentx.initialized', initialized);
+        });
         vscode.window.showInformationMessage('AgentX: Refreshed all views.');
     }));
     // Set initialized context for menu visibility
     agentxContext.checkInitialized().then((initialized) => {
         vscode.commands.executeCommand('setContext', 'agentx.initialized', initialized);
     });
+    // Watch for AGENTS.md appearing/disappearing in subfolders so the
+    // extension auto-discovers AgentX when initialized in a nested path.
+    const agentsWatcher = vscode.workspace.createFileSystemWatcher('**/AGENTS.md');
+    const onAgentsChange = () => {
+        agentxContext.invalidateCache();
+        (0, agentContextLoader_1.clearInstructionCache)();
+        agentxContext.checkInitialized().then((initialized) => {
+            vscode.commands.executeCommand('setContext', 'agentx.initialized', initialized);
+            if (initialized) {
+                agentTreeProvider.refresh();
+                readyQueueProvider.refresh();
+                workflowProvider.refresh();
+            }
+        });
+    };
+    agentsWatcher.onDidCreate(onAgentsChange);
+    agentsWatcher.onDidDelete(onAgentsChange);
+    context.subscriptions.push(agentsWatcher);
     // Status bar item
     const statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 50);
     statusBar.text = '$(organization) AgentX';
