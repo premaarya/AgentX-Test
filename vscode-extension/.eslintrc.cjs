@@ -15,6 +15,10 @@ module.exports = {
       'warn',
       { selector: 'import', format: ['camelCase', 'PascalCase'] },
     ],
+    '@typescript-eslint/no-unused-vars': [
+      'error',
+      { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+    ],
     semi: 'warn',
     curly: 'warn',
     eqeqeq: 'warn',

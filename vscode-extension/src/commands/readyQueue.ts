@@ -19,7 +19,8 @@ export function registerReadyQueueCommand(
 
  try {
  const output = await agentx.runCli('ready');
- if (!output || output.includes('No ')) {
+ const isEmpty = !output.trim() || /no\s+(ready|issues|unblocked)/i.test(output);
+ if (isEmpty) {
  vscode.window.showInformationMessage('AgentX: No unblocked work in the ready queue.');
  } else {
  // Show in output channel

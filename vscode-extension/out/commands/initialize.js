@@ -38,6 +38,7 @@ const vscode = __importStar(require("vscode"));
 const path = __importStar(require("path"));
 const fs = __importStar(require("fs"));
 const https = __importStar(require("https"));
+const http = __importStar(require("http"));
 const BRANCH = 'master';
 const ARCHIVE_URL = `https://github.com/jnPiyush/AgentX/archive/refs/heads/${BRANCH}.zip`;
 /** Essential directories and files to extract (everything else is skipped). */
@@ -289,7 +290,12 @@ function registerInitializeCommand(context, agentx) {
     });
     context.subscriptions.push(cmd);
 }
-/** Recursively copy directory contents, merging into destination. */
+/**
+ * Recursively copy directory contents into dest, merging without overwriting.
+ * Existing files are intentionally preserved so that user-customized files
+ * (e.g. AGENTS.md, agent definitions, workflow TOML files) survive a reinstall.
+ * Only files that do not yet exist at the destination are copied.
+ */
 function copyDirRecursive(src, dest) {
     if (!fs.existsSync(src)) {
         return;
@@ -304,7 +310,6 @@ function copyDirRecursive(src, dest) {
             copyDirRecursive(srcPath, destPath);
         }
         else {
-            // Don't overwrite existing files (merge mode)
             if (!fs.existsSync(destPath)) {
                 fs.copyFileSync(srcPath, destPath);
             }
@@ -320,7 +325,7 @@ function downloadFile(url, dest) {
                 reject(new Error('Too many redirects'));
                 return;
             }
-            const mod = reqUrl.startsWith('https') ? https : require('http');
+            const mod = reqUrl.startsWith('https') ? https : http;
             mod.get(reqUrl, (res) => {
                 if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
                     res.resume();

@@ -10,8 +10,6 @@ export declare class AgentXContext {
     get workspaceRoot(): string | undefined;
     /** Check if AgentX is initialized in the current workspace. */
     checkInitialized(): Promise<boolean>;
-    /** Get the configured profile (full, minimal, python, dotnet, react). */
-    getProfile(): string;
     /** Get the configured mode (github, local). */
     getMode(): string;
     /** Get the configured shell (auto, pwsh, bash). */

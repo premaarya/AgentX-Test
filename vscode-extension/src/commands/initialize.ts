@@ -3,6 +3,7 @@ import { AgentXContext } from '../agentxContext';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as https from 'https';
+import * as http from 'http';
 
 const BRANCH = 'master';
 const ARCHIVE_URL = `https://github.com/jnPiyush/AgentX/archive/refs/heads/${BRANCH}.zip`;
@@ -273,19 +274,23 @@ export function registerInitializeCommand(
  context.subscriptions.push(cmd);
 }
 
-/** Recursively copy directory contents, merging into destination. */
+/**
+ * Recursively copy directory contents into dest, merging without overwriting.
+ * Existing files are intentionally preserved so that user-customized files
+ * (e.g. AGENTS.md, agent definitions, workflow TOML files) survive a reinstall.
+ * Only files that do not yet exist at the destination are copied.
+ */
 function copyDirRecursive(src: string, dest: string): void {
- if (!fs.existsSync(src)) { return; }
- if (!fs.existsSync(dest)) { fs.mkdirSync(dest, { recursive: true }); }
+  if (!fs.existsSync(src)) { return; }
+  if (!fs.existsSync(dest)) { fs.mkdirSync(dest, { recursive: true }); }
 
- for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
- const srcPath = path.join(src, entry.name);
- const destPath = path.join(dest, entry.name);
+  for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
 
- if (entry.isDirectory()) {
- copyDirRecursive(srcPath, destPath);
- } else {
- // Don't overwrite existing files (merge mode)
+    if (entry.isDirectory()) {
+      copyDirRecursive(srcPath, destPath);
+    } else {
  if (!fs.existsSync(destPath)) {
  fs.copyFileSync(srcPath, destPath);
  }
@@ -302,7 +307,7 @@ function downloadFile(url: string, dest: string): Promise<void> {
  reject(new Error('Too many redirects'));
  return;
  }
- const mod = reqUrl.startsWith('https') ? https : require('http');
+ const mod = reqUrl.startsWith('https') ? https : http;
  mod.get(reqUrl, (res: { statusCode?: number; headers: { location?: string }; pipe: (s: fs.WriteStream) => void; resume: () => void }) => {
  if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
  res.resume();

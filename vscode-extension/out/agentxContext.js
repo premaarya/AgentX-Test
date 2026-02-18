@@ -60,10 +60,6 @@ class AgentXContext {
         return fs.existsSync(path.join(root, 'AGENTS.md'))
             && fs.existsSync(path.join(root, '.agentx'));
     }
-    /** Get the configured profile (full, minimal, python, dotnet, react). */
-    getProfile() {
-        return vscode.workspace.getConfiguration('agentx').get('profile', 'full');
-    }
     /** Get the configured mode (github, local). */
     getMode() {
         return vscode.workspace.getConfiguration('agentx').get('mode', 'local');

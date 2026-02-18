@@ -34,7 +34,8 @@ export class ReadyQueueTreeProvider implements vscode.TreeDataProvider<ReadyItem
 
  try {
  const output = await this.agentx.runCli('ready');
- if (!output || output.includes('No ')) {
+ const isEmpty = !output.trim() || /no\s+(ready|issues|unblocked)/i.test(output);
+ if (isEmpty) {
  return [new ReadyItem('No unblocked work', '', 'info')];
  }
 

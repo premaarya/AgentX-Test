@@ -23,11 +23,6 @@ export class AgentXContext {
  && fs.existsSync(path.join(root, '.agentx'));
  }
 
- /** Get the configured profile (full, minimal, python, dotnet, react). */
- getProfile(): string {
- return vscode.workspace.getConfiguration('agentx').get<string>('profile', 'full');
- }
-
  /** Get the configured mode (github, local). */
  getMode(): string {
  return vscode.workspace.getConfiguration('agentx').get<string>('mode', 'local');
