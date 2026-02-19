@@ -1,5 +1,7 @@
 # Changelog
 
+## 5.2.6 - 2026-02-19
+
 ## 5.2.5 - 2026-02-18
 
 - **Fix**: Cross-platform CLI argument formatting -- bash receives positional args, PowerShell receives named params

@@ -64,18 +64,20 @@ function registerChatParticipant(context, agentx) {
 }
 function handleNotInitialized(response) {
     response.markdown('**AgentX is not initialized in this workspace.**\n\n'
-        + 'To get started, run the initialization command:\n\n');
+        + 'Click below to open the setup wizard:\n\n');
     response.button({
         command: 'agentx.initialize',
-        title: 'Initialize AgentX',
+        title: '$(rocket) Open Setup Wizard',
     });
-    response.markdown('\nOnce initialized, you can:\n'
+    response.markdown('\nThe wizard will guide you through:\n'
+        + '1. Choosing **Local** or **GitHub** mode\n'
+        + '2. Configuring your repository (GitHub mode)\n'
+        + '3. Installing the AgentX framework files\n\n'
+        + 'Once initialized, you can:\n'
         + '- Ask me to route work to the right agent\n'
         + '- Use `/ready` to see unblocked work\n'
         + '- Use `/workflow feature` to run a workflow\n'
-        + '- Use `/status` to check agent states\n'
-        + '- Use `/deps 42` to check issue dependencies\n'
-        + '- Use `/digest` to generate a weekly digest\n');
+        + '- Use `/status` to check agent states\n');
     return { metadata: { initialized: false } };
 }
 //# sourceMappingURL=chatParticipant.js.map

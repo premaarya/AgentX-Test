@@ -2,7 +2,8 @@ import * as vscode from 'vscode';
 import { AgentXContext } from '../agentxContext';
 /**
  * Register the AgentX: Initialize Project command.
- * Downloads a zip archive, extracts only essential files, and copies framework files.
+ * Opens a WebView wizard for guided setup, or falls back to the legacy
+ * quick-pick flow when launched with `{ legacy: true }` argument.
  */
 export declare function registerInitializeCommand(context: vscode.ExtensionContext, agentx: AgentXContext): void;
 //# sourceMappingURL=initialize.d.ts.map

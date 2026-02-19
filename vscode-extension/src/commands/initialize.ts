@@ -4,6 +4,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as https from 'https';
 import * as http from 'http';
+import { InitWizardPanel } from '../views/initWizardPanel';
 
 const BRANCH = 'master';
 const ARCHIVE_URL = `https://github.com/jnPiyush/AgentX/archive/refs/heads/${BRANCH}.zip`;
@@ -14,15 +15,26 @@ const ESSENTIAL_FILES = ['AGENTS.md', 'Skills.md', '.gitignore'];
 
 /**
  * Register the AgentX: Initialize Project command.
- * Downloads a zip archive, extracts only essential files, and copies framework files.
+ * Opens a WebView wizard for guided setup, or falls back to the legacy
+ * quick-pick flow when launched with `{ legacy: true }` argument.
  */
 export function registerInitializeCommand(
  context: vscode.ExtensionContext,
  agentx: AgentXContext
 ) {
- const cmd = vscode.commands.registerCommand('agentx.initialize', async () => {
- // For initialization, let the user pick where to install when there are
- // multiple workspace folders, or default to the first one.
+ const cmd = vscode.commands.registerCommand('agentx.initialize', async (opts?: { legacy?: boolean }) => {
+ // Default: open the WebView wizard
+ if (!opts?.legacy) {
+ const folders = vscode.workspace.workspaceFolders;
+ if (!folders || folders.length === 0) {
+ vscode.window.showErrorMessage('AgentX: Open a workspace folder first.');
+ return;
+ }
+ InitWizardPanel.createOrShow(context.extensionUri, agentx);
+ return;
+ }
+
+ // ----------- Legacy quick-pick flow (kept for CLI / test usage) -----------
  let root: string | undefined;
  const folders = vscode.workspace.workspaceFolders;
  if (!folders || folders.length === 0) {
@@ -203,7 +215,7 @@ export function registerInitializeCommand(
  // Version tracking
  const versionFile = path.join(root, '.agentx', 'version.json');
  fs.writeFileSync(versionFile, JSON.stringify({
- version: '5.2.5',
+ version: '5.2.6',
  mode: mode.label,
  installedAt: new Date().toISOString(),
  updatedAt: new Date().toISOString(),

@@ -39,6 +39,7 @@ const path = __importStar(require("path"));
 const fs = __importStar(require("fs"));
 const https = __importStar(require("https"));
 const http = __importStar(require("http"));
+const initWizardPanel_1 = require("../views/initWizardPanel");
 const BRANCH = 'master';
 const ARCHIVE_URL = `https://github.com/jnPiyush/AgentX/archive/refs/heads/${BRANCH}.zip`;
 /** Essential directories and files to extract (everything else is skipped). */
@@ -46,12 +47,22 @@ const ESSENTIAL_DIRS = ['.agentx', '.github', '.vscode', 'scripts'];
 const ESSENTIAL_FILES = ['AGENTS.md', 'Skills.md', '.gitignore'];
 /**
  * Register the AgentX: Initialize Project command.
- * Downloads a zip archive, extracts only essential files, and copies framework files.
+ * Opens a WebView wizard for guided setup, or falls back to the legacy
+ * quick-pick flow when launched with `{ legacy: true }` argument.
  */
 function registerInitializeCommand(context, agentx) {
-    const cmd = vscode.commands.registerCommand('agentx.initialize', async () => {
-        // For initialization, let the user pick where to install when there are
-        // multiple workspace folders, or default to the first one.
+    const cmd = vscode.commands.registerCommand('agentx.initialize', async (opts) => {
+        // Default: open the WebView wizard
+        if (!opts?.legacy) {
+            const folders = vscode.workspace.workspaceFolders;
+            if (!folders || folders.length === 0) {
+                vscode.window.showErrorMessage('AgentX: Open a workspace folder first.');
+                return;
+            }
+            initWizardPanel_1.InitWizardPanel.createOrShow(context.extensionUri, agentx);
+            return;
+        }
+        // ----------- Legacy quick-pick flow (kept for CLI / test usage) -----------
         let root;
         const folders = vscode.workspace.workspaceFolders;
         if (!folders || folders.length === 0) {
@@ -219,7 +230,7 @@ function registerInitializeCommand(context, agentx) {
                 // Version tracking
                 const versionFile = path.join(root, '.agentx', 'version.json');
                 fs.writeFileSync(versionFile, JSON.stringify({
-                    version: '5.2.5',
+                    version: '5.2.6',
                     mode: mode.label,
                     installedAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString(),
