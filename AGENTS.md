@@ -347,6 +347,21 @@ All AgentX core agents are currently **stable** (production-ready).
 - **Autonomous Triggers**: `type:bug`, `type:docs`, simple `type:story` (3 files, clear acceptance criteria)
 - **Full Workflow Triggers**: `type:epic`, `type:feature`, `needs:ux`, complex stories (>3 files)
 
+### Customer Coach
+- **Maturity**: Stable
+- **Trigger**: Consulting research requests, topic preparation, client engagement prep
+- **Output**: Research briefs at `docs/coaching/`, presentation outlines at `docs/presentations/`
+- **Status**: Creates deliverables standalone (not part of SDLC pipeline)
+- **Tools**: All tools available (web search, semantic_search, read_file, create_file, etc.)
+- **Constraints**:
+ - [PASS] CAN research any topic, create briefs, comparison matrices, FAQ docs
+ - [PASS] CAN create presentation outlines and executive summaries
+ - [FAIL] CANNOT provide legal, medical, or financial advice
+ - [FAIL] CANNOT fabricate statistics or case studies
+- **Boundaries**:
+ - Can modify: `docs/coaching/**`, `docs/presentations/**`, GitHub Issues
+ - Cannot modify: `src/**`, `docs/prd/**`, `docs/adr/**`, `docs/ux/**`
+
 ---
 
 ## Handoff Flow
@@ -497,8 +512,26 @@ Types: `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `chore`
 | Agent State | `.agentx/state/` |
 | Issue Digests | `.agentx/digests/` |
 | CLI Utilities | `.agentx/agentx.ps1`, `.agentx/agentx.sh` |
+| Shared Modules | `scripts/modules/` |
+| Collections | `collections/` |
+| Subagent Protocol | `.github/agents/subagent-protocol.md` |
 
-### New Features (v5.1)
+### New Features (v5.3)
+
+| Feature | Documentation | Status |
+|---------|---------------|--------|
+| **Customer Coach Agent** | `.github/agents/customer-coach.agent.md` | [PASS] Stable |
+| **Design Thinking Instructions** | `.github/instructions/design-thinking.instructions.md` | [PASS] Stable |
+| **Release Automation** | `.github/workflows/release-please.yml` | [PASS] Stable |
+| **Copilot Coding Agent Setup** | `.github/workflows/copilot-setup-steps.yml` | [PASS] Stable |
+| **Shared PowerShell Modules** | `scripts/modules/CIHelpers.psm1`, `SecurityHelpers.psm1` | [PASS] Stable |
+| **Subagent Delegation Protocol** | `.github/agents/subagent-protocol.md` | [PASS] Stable |
+| **Collection Bundle System** | `collections/agentx-core/manifest.json` | [PASS] Stable |
+
+### Shipped Features (v5.1-v5.2)
+
+<details>
+<summary>Click to expand v5.1-v5.2 features</summary>
 
 | Feature | Documentation | Status |
 |---------|---------------|--------|
@@ -508,10 +541,7 @@ Types: `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `chore`
 | **TypeScript Instructions** | `typescript.instructions.md` for Node.js/TS backend | [PASS] Stable |
 | **5-Minute Quickstart** | [docs/QUICKSTART.md](docs/QUICKSTART.md) | [PASS] Stable |
 
-### Shipped Features (v2.1-v5.0)
-
-<details>
-<summary>Click to expand v5.0 features</summary>
+</details>
 
 **v5.0**:
 | Feature | Documentation | Status |

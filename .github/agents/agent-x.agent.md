@@ -64,11 +64,11 @@ handoffs:
  prompt: "Review code quality, verify security, and ensure standards compliance for issue #${issue_number}"
  send: false
  context: "Triggered when Status=In Review after Engineer completion"
----
-
-# Agent X
-
-**Adaptive coordinator for AgentX's multi-agent workflow**. Automatically detects issue complexity and routes intelligently: simple bugs/docs go direct to Engineer, complex work flows through the full PM -> UX -> Architect -> Engineer -> Reviewer pipeline.
+ - label: "Customer Research"
+   agent: customer-coach
+   prompt: "Research and prepare materials on the requested topic for consulting engagement"
+   send: false
+   context: "Triggered for consulting research and topic preparation requests"
 
 ## Maturity: Stable
 

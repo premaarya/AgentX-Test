@@ -41,6 +41,11 @@ const ROUTE_RULES: RouteRule[] = [
     description: 'Routing to Product Manager -- product planning/requirements',
   },
   {
+    agentFile: 'customer-coach',
+    keywords: /\b(research|consult|prepare|brief|presentation|coaching|topic|client|engagement|compare|vendor|trade-?off|executive summary|faq)\b/i,
+    description: 'Routing to Customer Coach -- research and consulting preparation',
+  },
+  {
     agentFile: 'engineer',
     keywords: /\b(implement|code|build|fix|bug|test|develop|refactor|feature|function|class|api|endpoint|database|migration)\b/i,
     description: 'Routing to Engineer -- implementation work',

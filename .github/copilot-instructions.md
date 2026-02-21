@@ -59,6 +59,7 @@ These load automatically when editing matching files - no manual action needed:
 | `sql.instructions.md` | `*.sql`, `migrations/` |
 | `yaml.instructions.md` | `*.yml`, `*.yaml` (config, K8s, compose) |
 | `devops.instructions.md` | `*.yml`, `*.yaml`, `workflows/` |
+| `design-thinking.instructions.md` | `**/ux/**`, `**/UX-*`, `**/prototypes/**` |
 
 ---
 

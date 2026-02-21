@@ -5,6 +5,59 @@ All notable changes to AgentX will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.3.0] - 2026-02-21
+
+### Added
+
+**New Agent: Customer Coach**:
+- Standalone consulting research agent for topic preparation, client engagement prep
+- Creates research briefs, comparison matrices, FAQ docs, presentation outlines
+- Outputs at `docs/coaching/` and `docs/presentations/`
+- Integrated into VS Code extension agent router
+
+**Design Thinking Methodology for UX Agent**:
+- 5-phase DT framework: Empathize, Define, Ideate, Prototype, Validate
+- New `design-thinking.instructions.md` auto-loaded for UX file patterns
+- Session persistence for interrupted design work
+- Phase transition protocol with context management
+
+**Release Automation (release-please)**:
+- `release-please.yml` workflow for automated semantic versioning
+- CHANGELOG auto-generation from conventional commits
+- Post-release VSIX packaging and GitHub Release upload
+- `release-please-config.json` and `.release-please-manifest.json`
+
+**Copilot Coding Agent Setup**:
+- `copilot-setup-steps.yml` for GitHub Copilot Coding Agent environment
+- Auto-verifies AgentX installation and compiles extension
+
+**Shared PowerShell Modules**:
+- `scripts/modules/CIHelpers.psm1` -- CI platform abstraction (GitHub Actions, local)
+- `scripts/modules/SecurityHelpers.psm1` -- reusable security scan functions
+- Write-CIOutput, Write-CIAnnotation, Write-CISummary, Set-CIGroup
+- Find-HardcodedSecrets, Test-BlockedCommand, Get-ViolationSummary
+
+**Subagent Delegation Protocol**:
+- Formal subagent-protocol.md with invocation patterns
+- Predefined subagent tasks: accessibility audit, security scan, coverage check
+- Response contract and error handling guidelines
+
+**Collection Bundle System**:
+- `collections/` directory with manifest-based artifact distribution
+- `collection-manifest.schema.json` for validation
+- `agentx-core` collection manifest bundling all core artifacts
+- Supports dependencies between collections
+
+### Changed
+
+- UX Designer agent now follows Design Thinking methodology phases
+- Agent router includes Customer Coach for consulting-related queries
+- Status bar icon changed from `$(organization)` to `$(hubot)`
+
+### Removed
+
+- Removed external comparison documents from `docs/reviews/`
+
 ## [5.2.6] - 2026-02-19
 
 ## [5.2.5] - 2026-02-18
