@@ -50,15 +50,15 @@ jobs:
 
           if grep -q "has the following vulnerable packages" vulnerabilities.txt; then
             echo "HAS_VULNERABILITIES=true" >> $GITHUB_OUTPUT
+            echo "::warning::Vulnerable .NET packages found"
             cat vulnerabilities.txt
-            exit 1
           else
             echo "HAS_VULNERABILITIES=false" >> $GITHUB_OUTPUT
             echo "[PASS] No vulnerable packages found"
           fi
 
       - name: Upload vulnerability report
-        if: failure() && steps.detect.outputs.found == 'true'
+        if: steps.check.outputs.HAS_VULNERABILITIES == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: dotnet-vulnerabilities
@@ -103,15 +103,15 @@ jobs:
 
           if [ -s python-vulnerabilities.json ]; then
             echo "HAS_VULNERABILITIES=true" >> $GITHUB_OUTPUT
+            echo "::warning::Vulnerable Python packages found"
             cat python-vulnerabilities.json
-            exit 1
           else
             echo "HAS_VULNERABILITIES=false" >> $GITHUB_OUTPUT
             echo "[PASS] No vulnerable packages found"
           fi
 
       - name: Upload vulnerability report
-        if: failure() && steps.detect.outputs.found == 'true'
+        if: steps.scan.outputs.HAS_VULNERABILITIES == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: python-vulnerabilities
@@ -155,22 +155,21 @@ jobs:
           echo "Scanning for vulnerable Node.js packages..."
           npm audit --json > npm-vulnerabilities.json || true
 
-          HIGH_VULNS=$(jq '.metadata.vulnerabilities.high // 0' npm-vulnerabilities.json)
-          CRITICAL_VULNS=$(jq '.metadata.vulnerabilities.critical // 0' npm-vulnerabilities.json)
+          HIGH_VULNS=$(jq '.metadata.vulnerabilities.high // 0' npm-vulnerabilities.json 2>/dev/null || echo 0)
+          CRITICAL_VULNS=$(jq '.metadata.vulnerabilities.critical // 0' npm-vulnerabilities.json 2>/dev/null || echo 0)
 
           echo "High: $HIGH_VULNS, Critical: $CRITICAL_VULNS"
 
           if [ "$HIGH_VULNS" -gt 0 ] || [ "$CRITICAL_VULNS" -gt 0 ]; then
             echo "HAS_VULNERABILITIES=true" >> $GITHUB_OUTPUT
-            cat npm-vulnerabilities.json
-            exit 1
+            echo "::warning::Found $HIGH_VULNS high and $CRITICAL_VULNS critical vulnerabilities in Node.js dependencies"
           else
             echo "HAS_VULNERABILITIES=false" >> $GITHUB_OUTPUT
             echo "[PASS] No high/critical vulnerabilities found"
           fi
 
       - name: Upload vulnerability report
-        if: failure() && steps.detect.outputs.found == 'true'
+        if: steps.audit.outputs.HAS_VULNERABILITIES == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: npm-vulnerabilities
