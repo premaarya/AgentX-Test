@@ -1,20 +1,20 @@
-# AgentX Collections
+# AgentX Packs
 
-Collections are distributable bundles of AgentX artifacts (agents, instructions, skills, templates, workflows) that can be selectively installed into any project.
+Packs are distributable bundles of AgentX artifacts (agents, instructions, skills, templates, workflows) that can be selectively installed into any project.
 
-## What is a Collection?
+## What is a Pack?
 
-A collection is a `manifest.json` file that declares which artifacts belong together. Collections enable:
+A pack is a `manifest.json` file that declares which artifacts belong together. Packs enable:
 
 - **Modular distribution** -- install only what you need
-- **Versioned bundles** -- track which version of each collection is installed
-- **Dependency management** -- collections can depend on other collections
-- **Selective updates** -- update one collection without affecting others
+- **Versioned bundles** -- track which version of each pack is installed
+- **Dependency management** -- packs can depend on other packs
+- **Selective updates** -- update one pack without affecting others
 
-## Collection Structure
+## Pack Structure
 
 ```
-collections/
+packs/
   agentx-core/
     manifest.json     # Core SDLC agents + instructions + workflows
   agentx-ai/
@@ -25,7 +25,7 @@ collections/
 
 ## Manifest Schema
 
-Each collection has a `manifest.json` validated against `.github/schemas/collection-manifest.schema.json`.
+Each pack has a `manifest.json` validated against `.github/schemas/pack-manifest.schema.json`.
 
 ```json
 {
@@ -54,16 +54,16 @@ Each collection has a `manifest.json` validated against `.github/schemas/collect
 | `experimental` | Early development, may change |
 | `deprecated` | Scheduled for removal |
 
-## Available Collections
+## Available Packs
 
-| Collection | Description | Maturity |
-|------------|-------------|----------|
+| Pack | Description | Maturity |
+|------|-------------|----------|
 | `agentx-core` | Full SDLC agents, workflow engine, instructions | stable |
 
-## Future Collections (Planned)
+## Future Packs (Planned)
 
-| Collection | Description | Status |
-|------------|-------------|--------|
+| Pack | Description | Status |
+|------|-------------|--------|
 | `agentx-ai` | AI agent development, RAG, evaluation skills | Planned |
 | `agentx-cloud` | Azure/AWS/GCP infrastructure skills | Planned |
 | `agentx-security` | Security scanning and compliance skills | Planned |

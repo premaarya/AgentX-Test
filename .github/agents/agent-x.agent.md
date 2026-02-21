@@ -491,7 +491,7 @@ Issue #${issue_number} started in autonomous mode but requires additional work:
 The Engineer will resume after ${next_agent} completes.
 ```
 
-## Design Thinking Gates
+## UX Design Gates
 
 | IDEO Phase | Agent | Gate Check |
 |------------|-------|------------|

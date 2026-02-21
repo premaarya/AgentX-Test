@@ -1,15 +1,15 @@
 ---
-description: 'AgentX Design Thinking methodology -- structured user-centered design phases for the UX Designer agent.'
+description: 'AgentX UX methodology -- structured user-centered design phases for the UX Designer agent.'
 applyTo: '**/ux/**,**/UX-*,**/prototypes/**,**/wireframe*'
 ---
 
-# AgentX Design Thinking Instructions
+# AgentX UX Methodology
 
-AgentX uses a **5-phase Design Thinking methodology** (Empathize, Define, Ideate, Prototype, Validate) to guide the UX Designer agent through structured, user-centered design work.
+AgentX uses a **5-phase UX methodology** (Empathize, Define, Ideate, Prototype, Validate) to guide the UX Designer agent through structured, user-centered design work.
 
 ---
 
-## Design Thinking Phases
+## UX Design Phases
 
 ### Phase 1: Empathize (Research)
 

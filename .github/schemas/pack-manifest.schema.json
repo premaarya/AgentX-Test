@@ -1,23 +1,23 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "AgentX Collection Manifest",
-  "description": "Defines a distributable collection of AgentX artifacts (agents, skills, instructions, templates).",
+  "title": "AgentX Pack Manifest",
+  "description": "Defines a distributable pack of AgentX artifacts (agents, skills, instructions, templates).",
   "type": "object",
   "required": ["name", "version", "description", "artifacts"],
   "properties": {
     "name": {
       "type": "string",
-      "description": "Collection identifier (kebab-case).",
+      "description": "Pack identifier (kebab-case).",
       "pattern": "^[a-z][a-z0-9-]*$"
     },
     "version": {
       "type": "string",
-      "description": "Semantic version of the collection.",
+      "description": "Semantic version of the pack.",
       "pattern": "^\\d+\\.\\d+\\.\\d+$"
     },
     "description": {
       "type": "string",
-      "description": "Human-readable description of what this collection provides.",
+      "description": "Human-readable description of what this pack provides.",
       "maxLength": 300
     },
     "maturity": {
@@ -77,7 +77,7 @@
           "version": { "type": "string" }
         }
       },
-      "description": "Other collections this collection depends on."
+      "description": "Other packs this pack depends on."
     }
   },
   "additionalProperties": false

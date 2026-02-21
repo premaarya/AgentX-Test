@@ -1,7 +1,7 @@
 {
   "name": "agentx-core",
   "version": "5.3.0",
-  "description": "Core AgentX collection -- full SDLC agents, workflow engine, and essential instructions for multi-agent orchestration.",
+  "description": "Core AgentX pack -- full SDLC agents, workflow engine, and essential instructions for multi-agent orchestration.",
   "maturity": "stable",
   "tags": ["sdlc", "orchestration", "multi-agent", "copilot", "workflow"],
   "artifacts": {
@@ -29,7 +29,7 @@
       ".github/instructions/yaml.instructions.md",
       ".github/instructions/devops.instructions.md",
       ".github/instructions/sql.instructions.md",
-      ".github/instructions/design-thinking.instructions.md"
+      ".github/instructions/ux-methodology.instructions.md"
     ],
     "templates": [
       ".github/templates/PRD-TEMPLATE.md",

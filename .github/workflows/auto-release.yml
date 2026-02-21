@@ -20,7 +20,7 @@
 #   chore:    -> no release
 # ------------------------------------------------------------------
 
-name: Release Please
+name: AgentX Auto Release
 
 on:
   push:
@@ -32,7 +32,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  release-please:
+  create-release:
     runs-on: ubuntu-latest
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
@@ -57,8 +57,8 @@ jobs:
 
   # Package VSIX after a release is created
   package-vsix:
-    needs: release-please
-    if: needs.release-please.outputs.release_created == 'true'
+    needs: create-release
+    if: needs.create-release.outputs.release_created == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -82,4 +82,4 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VSIX_FILE=$(ls vscode-extension/*.vsix)
-          gh release upload "${{ needs.release-please.outputs.tag_name }}" "$VSIX_FILE"
+          gh release upload "${{ needs.create-release.outputs.tag_name }}" "$VSIX_FILE"

@@ -1,10 +1,10 @@
 # ------------------------------------------------------------------
-# AgentX Subagent Delegation Protocol
+# AgentX Agent Delegation Protocol
 # ------------------------------------------------------------------
 # Defines the standard pattern for agents to delegate tool-heavy or
 # specialized work to subagents via the runSubagent tool.
 #
-# Subagent files live alongside agent files and define focused tasks
+# Delegation files live alongside agent files and define focused tasks
 # that a parent agent can invoke without losing its primary context.
 # ------------------------------------------------------------------
 

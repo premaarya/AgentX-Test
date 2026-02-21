@@ -513,20 +513,20 @@ Types: `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `chore`
 | Issue Digests | `.agentx/digests/` |
 | CLI Utilities | `.agentx/agentx.ps1`, `.agentx/agentx.sh` |
 | Shared Modules | `scripts/modules/` |
-| Collections | `collections/` |
-| Subagent Protocol | `.github/agents/subagent-protocol.md` |
+| Packs | `packs/` |
+| Agent Delegation | `.github/agents/agent-delegation.md` |
 
 ### New Features (v5.3)
 
 | Feature | Documentation | Status |
 |---------|---------------|--------|
 | **Customer Coach Agent** | `.github/agents/customer-coach.agent.md` | [PASS] Stable |
-| **Design Thinking Instructions** | `.github/instructions/design-thinking.instructions.md` | [PASS] Stable |
-| **Release Automation** | `.github/workflows/release-please.yml` | [PASS] Stable |
+| **UX Methodology Instructions** | `.github/instructions/ux-methodology.instructions.md` | [PASS] Stable |
+| **Release Automation** | `.github/workflows/auto-release.yml` | [PASS] Stable |
 | **Copilot Coding Agent Setup** | `.github/workflows/copilot-setup-steps.yml` | [PASS] Stable |
 | **Shared PowerShell Modules** | `scripts/modules/CIHelpers.psm1`, `SecurityHelpers.psm1` | [PASS] Stable |
-| **Subagent Delegation Protocol** | `.github/agents/subagent-protocol.md` | [PASS] Stable |
-| **Collection Bundle System** | `collections/agentx-core/manifest.json` | [PASS] Stable |
+| **Agent Delegation Protocol** | `.github/agents/agent-delegation.md` | [PASS] Stable |
+| **Pack Bundle System** | `packs/agentx-core/manifest.json` | [PASS] Stable |
 
 ### Shipped Features (v5.1-v5.2)
 

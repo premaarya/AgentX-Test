@@ -42,7 +42,7 @@ Design user interfaces, create wireframes, and define user flows for exceptional
 
 ## Role
 
-Transform product requirements into user-centered designs using the **AgentX Design Thinking methodology** (Empathize, Define, Ideate, Prototype, Validate):
+Transform product requirements into user-centered designs using the **AgentX UX methodology** (Empathize, Define, Ideate, Prototype, Validate):
 - **Wait for PM completion** (Status = `Ready`)
 - **Read PRD** to understand user needs and flows
 - **Empathize**: Research users, create personas, map current journeys
@@ -53,7 +53,7 @@ Transform product requirements into user-centered designs using the **AgentX Des
 - **Create UX spec** at `docs/ux/UX-{issue}.md` (design guide for engineers)
 - **Hand off** to Architect by moving Status -> `Ready` in Projects board
 
-**Design Thinking Instructions**: See [design-thinking.instructions.md](../instructions/design-thinking.instructions.md) for detailed phase guidance.
+**UX Methodology Instructions**: See [ux-methodology.instructions.md](../instructions/ux-methodology.instructions.md) for detailed phase guidance.
 
 **Runs after** Product Manager completes PRD (Status = `Ready`), before Architect designs technical implementation.
 
