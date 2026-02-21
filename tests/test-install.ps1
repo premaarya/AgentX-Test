@@ -40,7 +40,7 @@ function Assert-JsonField($file, $field, $expected, $label) {
  }
 }
 
-function Report-Test($testName, $results) {
+function Write-TestReport($testName, $results) {
  $pass = ($results | Where-Object { $_.Pass }).Count
  $fail = ($results | Where-Object { -not $_.Pass }).Count
  $total = $results.Count
@@ -105,7 +105,7 @@ try {
  # JSON content
  $r += Assert-JsonField ".agentx/config.json" "mode" "local" "config.mode=local"
  $r += Assert-JsonField ".agentx/config.json" "nextIssueNumber" "1" "config.nextIssueNumber=1"
- $r += Assert-JsonField ".agentx/version.json" "version" "5.3.0" "version=5.3.0"
+ $r += Assert-JsonField ".agentx/version.json" "version" "5.3.1" "version=5.3.1"
  $r += Assert-JsonField ".agentx/version.json" "mode" "local" "version.mode=local"
  # Agent status check
  try {
@@ -119,7 +119,7 @@ try {
  # No temp files
  foreach ($t in $TEMP_FILES) { $r += Assert-PathNotExists $t "no-temp: $t" }
 
- Report-Test "Local mode via iex" $r
+ Write-TestReport "Local mode via iex" $r
 } catch {
  Write-Host " CRASH: $($_.Exception.Message)" -ForegroundColor Red
  $global:TestResults += @{ Name="Local mode via iex"; Pass=0; Fail=1; Total=1; Details=@() }
@@ -141,10 +141,10 @@ try {
  foreach ($f in $RUNTIME_FILES) { $r += Assert-PathExists $f "runtime: $f" }
  foreach ($g in $GIT_ARTIFACTS) { $r += Assert-PathExists $g "git: $g" }
  $r += Assert-JsonField ".agentx/config.json" "mode" "local" "config.mode=local"
- $r += Assert-JsonField ".agentx/version.json" "version" "5.3.0" "version=5.3.0"
+ $r += Assert-JsonField ".agentx/version.json" "version" "5.3.1" "version=5.3.1"
  foreach ($t in $TEMP_FILES) { $r += Assert-PathNotExists $t "no-temp: $t" }
 
- Report-Test "Local mode via direct file" $r
+ Write-TestReport "Local mode via direct file" $r
 } catch {
  Write-Host " CRASH: $($_.Exception.Message)" -ForegroundColor Red
  $global:TestResults += @{ Name="Local mode via direct file"; Pass=0; Fail=1; Total=1; Details=@() }
@@ -174,7 +174,7 @@ try {
  $r += Assert-PathNotExists ".git" "nosetup: no .git (expected)"
  foreach ($t in $TEMP_FILES) { $r += Assert-PathNotExists $t "no-temp: $t" }
 
- Report-Test "GitHub mode -NoSetup" $r
+ Write-TestReport "GitHub mode -NoSetup" $r
 } catch {
  Write-Host " CRASH: $($_.Exception.Message)" -ForegroundColor Red
  $global:TestResults += @{ Name="GitHub mode -NoSetup"; Pass=0; Fail=1; Total=1; Details=@() }
@@ -196,7 +196,7 @@ try {
  $r += Assert-JsonField ".agentx/config.json" "mode" "github" "config.mode=github"
  foreach ($t in $TEMP_FILES) { $r += Assert-PathNotExists $t "no-temp: $t" }
 
- Report-Test "GitHub mode with git init" $r
+ Write-TestReport "GitHub mode with git init" $r
 } catch {
  Write-Host " CRASH: $($_.Exception.Message)" -ForegroundColor Red
  $global:TestResults += @{ Name="GitHub mode with git init"; Pass=0; Fail=1; Total=1; Details=@() }
@@ -219,7 +219,7 @@ try {
  $r += Assert-PathNotExists ".git" "nosetup: no .git"
  foreach ($t in $TEMP_FILES) { $r += Assert-PathNotExists $t "no-temp: $t" }
 
- Report-Test "GitHub mode direct -NoSetup" $r
+ Write-TestReport "GitHub mode direct -NoSetup" $r
 } catch {
  Write-Host " CRASH: $($_.Exception.Message)" -ForegroundColor Red
  $global:TestResults += @{ Name="GitHub mode direct -NoSetup"; Pass=0; Fail=1; Total=1; Details=@() }
@@ -240,10 +240,10 @@ try {
 
  $r = @()
  $r += Assert-JsonField ".agentx/config.json" "mode" "local" "force: config.mode restored to local"
- $r += Assert-JsonField ".agentx/version.json" "version" "5.3.0" "force: version restored"
+ $r += Assert-JsonField ".agentx/version.json" "version" "5.3.1" "force: version restored"
  foreach ($t in $TEMP_FILES) { $r += Assert-PathNotExists $t "no-temp: $t" }
 
- Report-Test "Force reinstall" $r
+ Write-TestReport "Force reinstall" $r
 } catch {
  Write-Host " CRASH: $($_.Exception.Message)" -ForegroundColor Red
  $global:TestResults += @{ Name="Force reinstall"; Pass=0; Fail=1; Total=1; Details=@() }
@@ -272,7 +272,7 @@ try {
  $r += Assert-PathNotExists ".agentx" "invalid: no .agentx created"
  foreach ($t in $TEMP_FILES) { $r += Assert-PathNotExists $t "no-temp: $t" }
 
- Report-Test "Invalid mode validation" $r
+ Write-TestReport "Invalid mode validation" $r
 } catch {
  # Write-Error with ErrorActionPreference=Stop throws -- handle as expected behavior
  $r = @()
@@ -284,7 +284,7 @@ try {
  $r += Assert-PathNotExists "AGENTS.md" "invalid: no AGENTS.md created"
  $r += Assert-PathNotExists ".agentx" "invalid: no .agentx created"
  foreach ($t in $TEMP_FILES) { $r += Assert-PathNotExists $t "no-temp: $t" }
- Report-Test "Invalid mode validation" $r
+ Write-TestReport "Invalid mode validation" $r
 }
 Pop-Location
 
@@ -300,7 +300,7 @@ try {
  $r = @()
  foreach ($t in $TEMP_FILES) { $r += Assert-PathNotExists $t "cleanup: $t" }
 
- Report-Test "Failure cleanup (bad URL)" $r
+ Write-TestReport "Failure cleanup (bad URL)" $r
 } catch {
  Write-Host " CRASH: $($_.Exception.Message)" -ForegroundColor Red
  $global:TestResults += @{ Name="Failure cleanup"; Pass=0; Fail=1; Total=1; Details=@() }
@@ -327,7 +327,7 @@ try {
  $r += Assert-PathExists "AGENTS.md" "install succeeded despite leftovers"
  $r += Assert-JsonField ".agentx/config.json" "mode" "local" "config correct"
 
- Report-Test "Leftover temp cleanup" $r
+ Write-TestReport "Leftover temp cleanup" $r
 } catch {
  Write-Host " CRASH: $($_.Exception.Message)" -ForegroundColor Red
  $global:TestResults += @{ Name="Leftover temp cleanup"; Pass=0; Fail=1; Total=1; Details=@() }
@@ -358,7 +358,7 @@ try {
  }
  foreach ($t in $TEMP_FILES) { $r += Assert-PathNotExists $t "no-temp: $t" }
 
- Report-Test "Merge mode (re-run)" $r
+ Write-TestReport "Merge mode (re-run)" $r
 } catch {
  Write-Host " CRASH: $($_.Exception.Message)" -ForegroundColor Red
  $global:TestResults += @{ Name="Merge mode"; Pass=0; Fail=1; Total=1; Details=@() }
@@ -380,7 +380,7 @@ try {
  $r += Assert-PathNotExists ".git" "nosetup: no .git"
  foreach ($t in $TEMP_FILES) { $r += Assert-PathNotExists $t "no-temp: $t" }
 
- Report-Test "AGENTX_NOSETUP env var" $r
+ Write-TestReport "AGENTX_NOSETUP env var" $r
 } catch {
  Write-Host " CRASH: $($_.Exception.Message)" -ForegroundColor Red
  $global:TestResults += @{ Name="AGENTX_NOSETUP env var"; Pass=0; Fail=1; Total=1; Details=@() }

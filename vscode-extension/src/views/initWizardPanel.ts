@@ -248,7 +248,7 @@ export class InitWizardPanel {
       // Version tracking
       const versionFile = path.join(root, '.agentx', 'version.json');
       fs.writeFileSync(versionFile, JSON.stringify({
-        version: '5.3.0',
+        version: '5.3.1',
         mode: msg.mode,
         installedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
