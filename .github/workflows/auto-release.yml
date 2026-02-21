@@ -43,17 +43,6 @@ jobs:
         id: release
         with:
           release-type: node
-          package-name: agentx
-          changelog-types: >
-            [
-              {"type":"feat","section":"Features","hidden":false},
-              {"type":"fix","section":"Bug Fixes","hidden":false},
-              {"type":"docs","section":"Documentation","hidden":false},
-              {"type":"test","section":"Tests","hidden":false},
-              {"type":"refactor","section":"Refactoring","hidden":false},
-              {"type":"perf","section":"Performance","hidden":false},
-              {"type":"chore","section":"Maintenance","hidden":true}
-            ]
 
   # Package VSIX after a release is created
   package-vsix:

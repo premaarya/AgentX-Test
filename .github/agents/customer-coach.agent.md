@@ -37,7 +37,15 @@ handoffs:
    send: false
    context: "When coaching produces technical findings"
 tools:
- ['vscode', 'execute', 'read', 'edit', 'search', 'web', 'agent', 'github/*', 'todo']
+  - vscode
+  - execute
+  - read
+  - edit
+  - search
+  - web
+  - agent
+  - 'github/*'
+  - todo
 ---
 
 # Customer Coach Agent

@@ -578,3 +578,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 **Full Changelog**: https://github.com/jnPiyush/AgentX/compare/v1.0.0...v2.0.0
+
+[5.3.0]: https://github.com/jnPiyush/AgentX/compare/v5.2.6...v5.3.0
+[5.2.6]: https://github.com/jnPiyush/AgentX/compare/v5.2.5...v5.2.6
+[5.2.5]: https://github.com/jnPiyush/AgentX/compare/v5.2.0...v5.2.5
+[5.2.0]: https://github.com/jnPiyush/AgentX/compare/v5.1.0...v5.2.0
+[5.1.0]: https://github.com/jnPiyush/AgentX/compare/v5.0.0...v5.1.0
+[5.0.0]: https://github.com/jnPiyush/AgentX/compare/v4.0.0...v5.0.0
+[4.0.0]: https://github.com/jnPiyush/AgentX/compare/v2.2.0...v4.0.0
+[2.2.0]: https://github.com/jnPiyush/AgentX/compare/v2.1.0...v2.2.0
+[2.1.0]: https://github.com/jnPiyush/AgentX/compare/v2.0.0...v2.1.0
+[2.0.0]: https://github.com/jnPiyush/AgentX/compare/v1.0.0...v2.0.0
+[1.0.0]: https://github.com/jnPiyush/AgentX/releases/tag/v1.0.0
