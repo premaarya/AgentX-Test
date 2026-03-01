@@ -54,6 +54,7 @@ build/
 .agentx/issues/
 .agentx/digests/
 .agentx/state/
+.agentx/sessions/
 .agentx/memory/
 
 # Cross-process file lock files (created by JsonFileLock / Lock-JsonFile)

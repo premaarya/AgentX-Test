@@ -11,6 +11,7 @@
 #   pwsh .agentx/agentx-cli.ps1 deps 42
 #   pwsh .agentx/agentx-cli.ps1 workflow feature
 #   pwsh .agentx/agentx-cli.ps1 loop start -p "Fix tests" -m 20
+#   pwsh .agentx/agentx-cli.ps1 run engineer "Fix the failing tests"
 #   pwsh .agentx/agentx-cli.ps1 validate 42 engineer
 #   pwsh .agentx/agentx-cli.ps1 hooks install
 #   pwsh .agentx/agentx-cli.ps1 digest

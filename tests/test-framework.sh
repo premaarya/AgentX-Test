@@ -75,7 +75,7 @@ assert_file_exists "LICENSE"     "LICENSE"
 echo ""
 echo -e "  \033[1;37m2. Agent Definitions\033[0m"
 
-for agent in agent-x product-manager architect engineer reviewer ux-designer devops reviewer-auto; do
+for agent in agent-x product-manager architect engineer reviewer ux-designer devops reviewer-auto data-scientist tester customer-coach; do
   assert_file_exists ".github/agents/$agent.agent.md" "Agent: $agent"
 done
 
@@ -83,7 +83,7 @@ done
 echo ""
 echo -e "  \033[1;37m3. Templates\033[0m"
 
-for tpl in PRD-TEMPLATE.md ADR-TEMPLATE.md SPEC-TEMPLATE.md UX-TEMPLATE.md REVIEW-TEMPLATE.md PROGRESS-TEMPLATE.md; do
+for tpl in PRD-TEMPLATE.md ADR-TEMPLATE.md SPEC-TEMPLATE.md UX-TEMPLATE.md REVIEW-TEMPLATE.md PROGRESS-TEMPLATE.md SECURITY-PLAN-TEMPLATE.md; do
   assert_file_exists ".github/templates/$tpl" "Template: $tpl"
 done
 
@@ -102,20 +102,24 @@ done
 assert_file_contains ".agentx/workflows/feature.toml" '\[\[steps\]\]' "feature.toml has steps"
 assert_file_contains ".agentx/workflows/feature.toml" 'agent\s*='     "feature.toml has agent assignments"
 
-# --- 5. CLI (agentx.sh) ----------------------------------------------------
+# --- 5. CLI (agentx.sh + agentx-cli.ps1) -----------------------------------
 echo ""
-echo -e "  \033[1;37m5. CLI (agentx.sh)\033[0m"
+echo -e "  \033[1;37m5. CLI\033[0m"
 
-assert_file_exists ".agentx/agentx.sh" "CLI script exists"
-assert_file_contains ".agentx/agentx.sh" "cmd_ready"    "CLI implements: ready"
-assert_file_contains ".agentx/agentx.sh" "cmd_state"    "CLI implements: state"
-assert_file_contains ".agentx/agentx.sh" "cmd_deps"     "CLI implements: deps"
-assert_file_contains ".agentx/agentx.sh" "cmd_digest"   "CLI implements: digest"
-assert_file_contains ".agentx/agentx.sh" "cmd_workflow"  "CLI implements: workflow"
-assert_file_contains ".agentx/agentx.sh" "cmd_hook"     "CLI implements: hook"
-assert_file_contains ".agentx/agentx.sh" "cmd_version"  "CLI implements: version"
-assert_file_contains ".agentx/agentx.sh" "cmd_upgrade"  "CLI implements: upgrade"
-assert_file_contains ".agentx/agentx.sh" "cmd_run"      "CLI implements: run"
+assert_file_exists ".agentx/agentx.sh" "Bash CLI launcher exists"
+assert_file_exists ".agentx/agentx.ps1" "PowerShell CLI launcher exists"
+assert_file_exists ".agentx/agentx-cli.ps1" "CLI implementation exists"
+assert_file_exists ".agentx/agentic-runner.ps1" "CLI agentic loop runner exists"
+
+# Test CLI commands exist in the implementation
+for cmd in ready state deps digest workflow hook version run clarify loop validate config issue; do
+  assert_file_contains ".agentx/agentx-cli.ps1" "'$cmd'" "CLI supports: $cmd"
+done
+
+# Agentic runner checks
+assert_file_contains ".agentx/agentic-runner.ps1" "Invoke-AgenticLoop" "Agentic runner has main loop function"
+assert_file_contains ".agentx/agentic-runner.ps1" "file_read" "Agentic runner has file_read tool"
+assert_file_contains ".agentx/agentic-runner.ps1" "Copilot" "Agentic runner supports Copilot API"
 
 # --- 6. Skills ---------------------------------------------------------------
 echo ""

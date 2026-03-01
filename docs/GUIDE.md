@@ -418,8 +418,10 @@ function issue { .\.agentx\local-issue-manager.ps1 @args }
 ```
 .agentx/
   config.json                    # Mode configuration (local or github)
-  agentx.ps1                     # PowerShell CLI (10 subcommands)
-  agentx.sh                      # Bash CLI (9 subcommands)
+  agentx.ps1                     # PowerShell CLI launcher
+  agentx.sh                      # Bash CLI launcher
+  agentx-cli.ps1                 # CLI implementation (all subcommands)
+  agentic-runner.ps1             # LLM-powered agentic loop runner
   issues/
     1.json                       # Issue #1 data
     2.json                       # Issue #2 data
@@ -451,6 +453,8 @@ The CLI works in both Local and GitHub modes (auto-detects from `config.json`):
 .\.agentx\agentx.ps1 digest                         # Generate weekly digest
 .\.agentx\agentx.ps1 workflow -Type feature          # Show workflow steps
 .\.agentx\agentx.ps1 hook -Phase start -Agent engineer -Issue 42
+.\.agentx\agentx.ps1 run engineer "Fix the tests"   # Run agentic loop (LLM + tools)
+.\.agentx\agentx.ps1 clarify list                   # Show active clarifications
 ```
 
 ```bash
@@ -459,6 +463,7 @@ The CLI works in both Local and GitHub modes (auto-detects from `config.json`):
 ./.agentx/agentx.sh state engineer working 42
 ./.agentx/agentx.sh deps 42
 ./.agentx/agentx.sh hook start engineer 42
+./.agentx/agentx.sh run engineer "Fix the tests"
 ```
 
 ### Issue JSON Format

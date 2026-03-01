@@ -52,7 +52,7 @@ Assert-FileExists "LICENSE" "LICENSE"
 Write-Host ""
 Write-Host " 2. Agent Definitions" -ForegroundColor White
 
-$agents = @("agent-x", "product-manager", "architect", "engineer", "reviewer", "ux-designer", "devops", "reviewer-auto")
+$agents = @("agent-x", "product-manager", "architect", "engineer", "reviewer", "ux-designer", "devops", "reviewer-auto", "data-scientist", "tester", "customer-coach")
 foreach ($agent in $agents) {
  Assert-FileExists ".github/agents/$agent.agent.md" "Agent: $agent"
 }
@@ -61,7 +61,7 @@ foreach ($agent in $agents) {
 Write-Host ""
 Write-Host " 3. Templates" -ForegroundColor White
 
-$templates = @("PRD-TEMPLATE.md", "ADR-TEMPLATE.md", "SPEC-TEMPLATE.md", "UX-TEMPLATE.md", "REVIEW-TEMPLATE.md", "PROGRESS-TEMPLATE.md")
+$templates = @("PRD-TEMPLATE.md", "ADR-TEMPLATE.md", "SPEC-TEMPLATE.md", "UX-TEMPLATE.md", "REVIEW-TEMPLATE.md", "PROGRESS-TEMPLATE.md", "SECURITY-PLAN-TEMPLATE.md")
 foreach ($tpl in $templates) {
  Assert-FileExists ".github/templates/$tpl" "Template: $tpl"
 }
@@ -86,16 +86,24 @@ Assert-FileContains ".agentx/workflows/feature.toml" "agent\s*=" "feature.toml h
 
 # --- 5. CLI -----------------------------------------------------------------------------
 Write-Host ""
-Write-Host " 5. CLI (agentx.ps1)" -ForegroundColor White
+Write-Host " 5. CLI" -ForegroundColor White
 
-Assert-FileExists ".agentx/agentx.ps1" "CLI script exists"
-Assert-FileContains ".agentx/agentx.ps1" "ValidateSet" "CLI has command validation"
+Assert-FileExists ".agentx/agentx.ps1" "CLI launcher exists"
+Assert-FileExists ".agentx/agentx-cli.ps1" "CLI implementation exists"
+Assert-FileExists ".agentx/agentx.sh" "Bash CLI launcher exists"
+Assert-FileExists ".agentx/agentic-runner.ps1" "CLI agentic loop runner exists"
 
-# Test CLI commands exist
-$cliCommands = @("ready", "state", "deps", "digest", "workflow", "hook", "version", "upgrade", "run")
+# Test CLI commands exist in the implementation file
+$cliCommands = @("ready", "state", "deps", "digest", "workflow", "hook", "version", "run", "clarify", "loop", "validate", "config", "issue")
 foreach ($cmd in $cliCommands) {
- Assert-FileContains ".agentx/agentx.ps1" "'$cmd'" "CLI supports: $cmd"
+ Assert-FileContains ".agentx/agentx-cli.ps1" "'$cmd'" "CLI supports: $cmd"
 }
+
+# Agentic runner has tool definitions
+Assert-FileContains ".agentx/agentic-runner.ps1" "Invoke-AgenticLoop" "Agentic runner has main loop function"
+Assert-FileContains ".agentx/agentic-runner.ps1" "file_read" "Agentic runner has file_read tool"
+Assert-FileContains ".agentx/agentic-runner.ps1" "terminal_exec" "Agentic runner has terminal_exec tool"
+Assert-FileContains ".agentx/agentic-runner.ps1" "Copilot" "Agentic runner supports Copilot API"
 
 # --- 6. Skills --------------------------------------------------------------------------
 Write-Host ""
