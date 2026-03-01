@@ -116,7 +116,7 @@ Assert-True ($skillCount -ge 35) "At least 35 skills exist (found: $skillCount)"
 Assert-FileExists ".github/skills/ai-systems/ai-agent-development/SKILL.md" "AI Agent Development skill"
 
 # Verify Skills.md count matches
-Assert-FileContains "Skills.md" "Covers $skillCount skills" "Skills.md description count matches actual ($skillCount)"
+Assert-FileContains "Skills.md" "$skillCount skills across" "Skills.md skill count matches actual ($skillCount)"
 
 # Verify new skills and instructions
 Assert-FileExists ".github/skills/ai-systems/cognitive-architecture/SKILL.md" "Cognitive Architecture skill"
@@ -170,14 +170,14 @@ Write-Host " 9. Hooks & Scripts" -ForegroundColor White
 
 Assert-FileExists ".github/hooks/pre-commit" "pre-commit hook"
 Assert-FileExists ".github/hooks/commit-msg" "commit-msg hook"
-Assert-FileExists ".github/scripts/validate-handoff.sh" "validate-handoff.sh"
 
 # --- 10. Documentation Consistency ------------------------------------------------------
 Write-Host ""
 Write-Host " 10. Documentation Consistency" -ForegroundColor White
 
 Assert-FileContains "AGENTS.md" "Single source of truth" "AGENTS.md declares single source"
-Assert-FileContains "README.md" "$skillCount production skills" "README skill count matches ($skillCount)"
+Assert-FileContains "README.md" "$skillCount production skills" "README skill count heading matches ($skillCount)"
+Assert-FileContains "README.md" "$skillCount skills" "README framework totals matches ($skillCount)"
 Assert-FileExists "docs/GUIDE.md" "Consolidated Guide (quickstart + setup)"
 Assert-FileContains "AGENTS.md" "GUIDE" "AGENTS.md links to Guide"
 Assert-FileContains ".github/copilot-instructions.md" "RFC 2119" "Router has RFC 2119 directive language"

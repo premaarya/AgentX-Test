@@ -66,7 +66,7 @@ AgentX is a **multi-agent orchestration framework** that enables AI coding assis
 <tr>
 <td width="50%">
 
-### 43 Production Skills
+### 56 Production Skills
 - **9 categories**: architecture, development, languages, operations, infrastructure, data, ai-systems, design, testing
 - Retrieval-led reasoning -- agents read skills before generating
 - 30 executable scripts across 17 skills
@@ -365,11 +365,11 @@ Backlog → In Progress → In Review → Ready → Done
 ```
 AgentX/
 ├── 📄 AGENTS.md              # Workflow & orchestration rules
-├── 📄 Skills.md              # 42 production skills index
+├── 📄 Skills.md              # 56 production skills index
 ├── 📄 CONTRIBUTING.md        # Contributor guide
 │
 ├── 📁 .github/
-│   ├── 📁 agents/            # 8 agent definitions
+│   ├── 📁 agents/            # 11 agent definitions
 │   ├── 📁 hooks/             # Pre-commit validation
 │   ├── 📁 scripts/           # Validation & metrics scripts
 │   ├── 📁 security/          # Command allowlist
@@ -410,7 +410,7 @@ AgentX/
 | Document | Description |
 |----------|-------------|
 | [AGENTS.md](AGENTS.md) | Complete workflow, agent roles, handoff rules |
-| [Skills.md](Skills.md) | 42 production skills across 9 categories |
+| [Skills.md](Skills.md) | 56 production skills across 9 categories |
 | [**Guide**](docs/GUIDE.md) | **Quickstart, setup, local mode, MCP server, troubleshooting** |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute to AgentX |
 

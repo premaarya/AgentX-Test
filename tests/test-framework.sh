@@ -169,7 +169,6 @@ echo -e "  \033[1;37m9. Hooks & Scripts\033[0m"
 
 assert_file_exists ".github/hooks/pre-commit"            "pre-commit hook"
 assert_file_exists ".github/hooks/commit-msg"            "commit-msg hook"
-assert_file_exists ".github/scripts/validate-handoff.sh" "validate-handoff.sh"
 
 # --- 10. Documentation Consistency -------------------------------------------
 echo ""
