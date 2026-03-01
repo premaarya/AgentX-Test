@@ -32,36 +32,65 @@ Set-StrictMode -Version Latest
 # ---------------------------------------------------------------------------
 
 $Script:GITHUB_MODELS_URL = 'https://models.inference.ai.azure.com/chat/completions'
+$Script:COPILOT_API_URL = 'https://api.githubcopilot.com/chat/completions'
+$Script:COPILOT_TOKEN_URL = 'https://api.github.com/copilot_internal/v2/token'
 $Script:DEFAULT_MODEL = 'gpt-4o'
 $Script:MAX_ITERATIONS = 30
 $Script:MAX_TOOL_RESULT_CHARS = 8000
-$Script:SESSION_DIR = $null  # Set by caller
+$Script:SESSION_DIR = $null
 
-# Model mapping from agent frontmatter names to GitHub Models API identifiers
-# Claude/Gemini models may not be available on GitHub Models --
-# the resolver falls back to gpt-4.1 (best available with tool support).
-$Script:MODEL_MAP = @{
-    'claude opus 4'     = 'gpt-4.1'       # fallback: Claude not yet on GH Models
-    'claude sonnet 4.5' = 'gpt-4.1'       # fallback
-    'claude sonnet 4.6' = 'gpt-4.1'       # fallback
-    'claude sonnet 4'   = 'gpt-4.1'       # fallback
-    'claude haiku'      = 'gpt-4.1-mini'  # fallback to smaller model
-    'gpt-5.3-codex'    = 'gpt-4.1'       # not yet available
-    'gpt-5'            = 'gpt-4.1'       # not yet available
+# Cached Copilot token (ephemeral, expires)
+$Script:CopilotToken = $null
+$Script:CopilotTokenExpiry = $null
+$Script:ApiMode = $null  # 'copilot' or 'models'
+
+# All models mapped: agent frontmatter name -> Copilot API ID -> GitHub Models fallback ID
+# When Copilot API is available, we use the native model name.
+# When only GitHub Models is available, we fall back to the best available.
+$Script:MODEL_MAP_COPILOT = @{
+    'claude opus 4'     = 'claude-opus-4'
+    'claude opus 4.6'   = 'claude-opus-4'
+    'claude sonnet 4.5' = 'claude-sonnet-4.5'
+    'claude sonnet 4.6' = 'claude-sonnet-4.5'
+    'claude sonnet 4'   = 'claude-sonnet-4'
+    'claude haiku'      = 'claude-haiku'
+    'gpt-5.3-codex'    = 'gpt-5.3-codex'
+    'gpt-5'            = 'gpt-5'
     'gpt-4o'           = 'gpt-4o'
     'gpt-4.1'          = 'gpt-4.1'
     'gpt-4.1-mini'     = 'gpt-4.1-mini'
     'gpt-4.1-nano'     = 'gpt-4.1-nano'
     'gpt-4o-mini'      = 'gpt-4o-mini'
-    'gemini 3 pro'     = 'gpt-4.1'       # fallback: Gemini not on GH Models
-    'gemini 3.1 pro'   = 'gpt-4.1'       # fallback
-    'gemini 2.5 pro'   = 'gpt-4.1'       # fallback
-    'o4-mini'          = 'gpt-4.1-mini'  # not yet available
-    'o3-mini'          = 'gpt-4.1-mini'  # not yet available
+    'gemini 3 pro'     = 'gemini-3-pro'
+    'gemini 3.1 pro'   = 'gemini-3.1-pro'
+    'gemini 2.5 pro'   = 'gemini-2.5-pro'
+    'o4-mini'          = 'o4-mini'
+    'o3-mini'          = 'o3-mini'
+}
+
+$Script:MODEL_MAP_GHMODELS = @{
+    'claude opus 4'     = 'gpt-4.1'
+    'claude opus 4.6'   = 'gpt-4.1'
+    'claude sonnet 4.5' = 'gpt-4.1'
+    'claude sonnet 4.6' = 'gpt-4.1'
+    'claude sonnet 4'   = 'gpt-4.1'
+    'claude haiku'      = 'gpt-4.1-mini'
+    'gpt-5.3-codex'    = 'gpt-4.1'
+    'gpt-5'            = 'gpt-4.1'
+    'gpt-4o'           = 'gpt-4o'
+    'gpt-4.1'          = 'gpt-4.1'
+    'gpt-4.1-mini'     = 'gpt-4.1-mini'
+    'gpt-4.1-nano'     = 'gpt-4.1-nano'
+    'gpt-4o-mini'      = 'gpt-4o-mini'
+    'gemini 3 pro'     = 'gpt-4.1'
+    'gemini 3.1 pro'   = 'gpt-4.1'
+    'gemini 2.5 pro'   = 'gpt-4.1'
+    'o4-mini'          = 'gpt-4.1-mini'
+    'o3-mini'          = 'gpt-4.1-mini'
 }
 
 # ---------------------------------------------------------------------------
-# Auth
+# Auth -- Dual mode: Copilot API (all models) or GitHub Models (limited)
 # ---------------------------------------------------------------------------
 
 function Get-GitHubToken {
@@ -72,6 +101,61 @@ function Get-GitHubToken {
     return $null
 }
 
+<#
+.SYNOPSIS
+  Attempt to exchange the gh token for a Copilot API token.
+  Requires the 'copilot' scope on the gh auth token.
+  Returns the ephemeral Copilot token or $null if unavailable.
+#>
+function Get-CopilotToken([string]$ghToken) {
+    # Return cached if still valid
+    if ($Script:CopilotToken -and $Script:CopilotTokenExpiry) {
+        if ([datetime]::UtcNow -lt $Script:CopilotTokenExpiry) {
+            return $Script:CopilotToken
+        }
+    }
+
+    try {
+        $resp = Invoke-RestMethod -Uri $Script:COPILOT_TOKEN_URL -Headers @{
+            'Authorization' = "token $ghToken"
+            'Accept'        = 'application/json'
+            'Editor-Version' = 'agentx-cli/1.0'
+        } -ErrorAction Stop
+
+        $Script:CopilotToken = $resp.token
+        if ($resp.expires_at) {
+            $Script:CopilotTokenExpiry = [datetime]::Parse($resp.expires_at).ToUniversalTime().AddMinutes(-2)
+        } else {
+            $Script:CopilotTokenExpiry = [datetime]::UtcNow.AddMinutes(25)
+        }
+        return $Script:CopilotToken
+    } catch {
+        return $null
+    }
+}
+
+<#
+.SYNOPSIS
+  Detect the best API mode and return connection info.
+  Tries Copilot API first (all models), falls back to GitHub Models (limited).
+#>
+function Initialize-ApiMode([string]$ghToken) {
+    if ($Script:ApiMode) { return }  # Already initialized
+
+    # Try Copilot token exchange
+    $copilotToken = Get-CopilotToken -ghToken $ghToken
+    if ($copilotToken) {
+        $Script:ApiMode = 'copilot'
+        Write-Host "`e[32m  [PASS] Copilot API: All models available (Claude, Gemini, GPT, o-series)`e[0m"
+        return
+    }
+
+    # Fall back to GitHub Models
+    $Script:ApiMode = 'models'
+    Write-Host "`e[33m  [WARN] Copilot API unavailable - using GitHub Models (limited catalog)`e[0m"
+    Write-Host "`e[90m  To unlock all models: gh auth refresh -s copilot`e[0m"
+}
+
 # ---------------------------------------------------------------------------
 # Model resolution
 # ---------------------------------------------------------------------------
@@ -79,9 +163,10 @@ function Get-GitHubToken {
 function Resolve-ModelId([string]$agentModel) {
     if (-not $agentModel) { return $Script:DEFAULT_MODEL }
     $lower = $agentModel.ToLower() -replace '\(copilot\)', '' | ForEach-Object { $_.Trim() }
-    foreach ($key in $Script:MODEL_MAP.Keys) {
+    $map = if ($Script:ApiMode -eq 'copilot') { $Script:MODEL_MAP_COPILOT } else { $Script:MODEL_MAP_GHMODELS }
+    foreach ($key in $map.Keys) {
         if ($lower -like "*$key*") {
-            return $Script:MODEL_MAP[$key]
+            return $map[$key]
         }
     }
     return $Script:DEFAULT_MODEL
@@ -311,7 +396,7 @@ function Invoke-Tool([string]$name, [hashtable]$params, [string]$workspaceRoot) 
 }
 
 # ---------------------------------------------------------------------------
-# GitHub Models API caller
+# LLM API caller -- routes to Copilot API or GitHub Models based on ApiMode
 # ---------------------------------------------------------------------------
 
 function Invoke-LlmChat(
@@ -333,19 +418,37 @@ function Invoke-LlmChat(
     }
 
     $json = $body | ConvertTo-Json -Depth 20 -Compress
-    $headers = @{
-        'Authorization' = "Bearer $token"
-        'Content-Type'  = 'application/json'
+
+    # Route to the correct API endpoint
+    if ($Script:ApiMode -eq 'copilot') {
+        $copilotToken = Get-CopilotToken -ghToken $token
+        if (-not $copilotToken) {
+            throw 'Copilot token expired and could not be refreshed.'
+        }
+        $headers = @{
+            'Authorization' = "Bearer $copilotToken"
+            'Content-Type'  = 'application/json'
+            'Editor-Version' = 'agentx-cli/1.0'
+            'Copilot-Integration-Id' = 'agentx-cli'
+        }
+        $url = $Script:COPILOT_API_URL
+    } else {
+        $headers = @{
+            'Authorization' = "Bearer $token"
+            'Content-Type'  = 'application/json'
+        }
+        $url = $Script:GITHUB_MODELS_URL
     }
 
     try {
-        $resp = Invoke-RestMethod -Uri $Script:GITHUB_MODELS_URL -Method Post -Headers $headers -Body $json -ErrorAction Stop
+        $resp = Invoke-RestMethod -Uri $url -Method Post -Headers $headers -Body $json -ErrorAction Stop
         return $resp
     } catch {
         $statusCode = $_.Exception.Response.StatusCode.value__
         $errBody = ''
         try { $errBody = $_.ErrorDetails.Message } catch {}
-        throw "GitHub Models API error (HTTP $statusCode): $errBody"
+        $apiName = if ($Script:ApiMode -eq 'copilot') { 'Copilot' } else { 'GitHub Models' }
+        throw "$apiName API error (HTTP $statusCode): $errBody"
     }
 }
 
@@ -544,6 +647,9 @@ function Invoke-AgenticLoop {
         return @{ sessionId = ''; iterations = 0; toolCalls = 0; finalText = 'Auth failed'; exitReason = 'error' }
     }
 
+    # Detect API mode (Copilot vs GitHub Models)
+    Initialize-ApiMode -ghToken $token
+
     # Load agent definition
     $agentDef = Read-AgentDef -agentName $Agent -root $WorkspaceRoot
     if (-not $agentDef) {
@@ -551,9 +657,9 @@ function Invoke-AgenticLoop {
         $agentDef = @{ name = $Agent; description = ''; model = ''; body = '' }
     }
 
-    # Resolve model
+    # Resolve model (uses correct map based on API mode)
     $modelId = if ($Model) { $Model } else { Resolve-ModelId $agentDef.model }
-    Write-Host "`e[36m  Agent: $($agentDef.name ?? $Agent) | Model: $modelId`e[0m"
+    Write-Host "`e[36m  Agent: $($agentDef.name ?? $Agent) | Model: $modelId ($Script:ApiMode mode)`e[0m"
 
     # Build system prompt
     $systemPrompt = Build-SystemPrompt -agentDef $agentDef -agentName $Agent

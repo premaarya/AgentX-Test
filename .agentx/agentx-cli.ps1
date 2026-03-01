@@ -1196,12 +1196,13 @@ function Invoke-RunCmd {
 
     if (-not $agent) {
         Write-Host "`n$($C.c)  AgentX Run - Agentic Loop (LLM + Tools)$($C.n)"
-        Write-Host "$($C.d)  Uses GitHub Models API via gh auth token.$($C.n)`n"
+        Write-Host "$($C.d)  Auto-detects: Copilot API (all models) or GitHub Models (GPT only).$($C.n)"
+        Write-Host "$($C.d)  To unlock Claude/Gemini/o-series: gh auth refresh -s copilot$($C.n)`n"
         Write-Host "$($C.w)  Usage:$($C.n)"
         Write-Host '  agentx run <agent> <prompt>'
         Write-Host '  agentx run -a engineer -p "Fix the failing tests"'
         Write-Host '  agentx run architect "Design the auth system" -i 42'
-        Write-Host '  agentx run engineer "Implement login" --max 20 -m openai/gpt-4.1'
+        Write-Host '  agentx run engineer "Implement login" --max 20 -m gpt-4.1'
         Write-Host "`n$($C.w)  Available agents:$($C.n)"
         $agentsDir = Join-Path $Script:ROOT '.github' 'agents'
         if (Test-Path $agentsDir) {
