@@ -14,6 +14,10 @@ complexity_escalation:
  - "type:epic -> PM required"
  - "type:feature -> Architect required"
  - "needs:ux -> UX Designer required"
+ - "type:devops -> DevOps Engineer required"
+ - "type:data-science -> Data Scientist required"
+ - "type:testing -> Tester required"
+ - "needs:testing -> Tester required (pre-release certification)"
  - "files > 3 -> Full workflow"
  - "unclear_scope -> PM required"
 constraints:
@@ -70,6 +74,21 @@ handoffs:
    prompt: "Research and prepare materials on the requested topic for consulting engagement"
    send: false
    context: "Triggered for consulting research and topic preparation requests"
+ - label: "DevOps Pipeline"
+   agent: devops
+   prompt: "Create CI/CD pipelines, GitHub Actions workflows, and deployment automation for issue #${issue_number}"
+   send: false
+   context: "Triggered for type:devops labels (skip PM/Architect for infrastructure work)"
+ - label: "Data Science"
+   agent: data-scientist
+   prompt: "Design ML pipelines, create evaluations, and implement AI/ML solutions for issue #${issue_number}"
+   send: false
+   context: "Triggered for type:data-science labels (skip PM/Architect for ML/AI work)"
+ - label: "Testing & Certification"
+   agent: tester
+   prompt: "Create test suites, run quality validation, and certify production readiness for issue #${issue_number}"
+   send: false
+   context: "Triggered for type:testing labels or In Review + needs:testing (pre-release certification)"
 
 ## Maturity: Stable
 
@@ -130,14 +149,14 @@ Agent X analyzes every issue and chooses the optimal path:
 
 ## Decision Matrix
 
-| Issue Characteristic | Autonomous * | Full Workflow |
-|---------------------|--------------|------------------|
-| **Type** | bug, docs, simple story | epic, feature |
-| **Files** | 3 | >3 |
-| **Scope** | Clear, specific | Vague, exploratory |
-| **UX** | Not needed | Needs UX label |
-| **Architecture** | No changes | Decisions required |
-| **Acceptance Criteria** | Complete | Missing/Incomplete |
+| Issue Characteristic | Autonomous * | Specialist Direct | Full Workflow |
+|---------------------|--------------|-------------------|------------------|
+| **Type** | bug, docs, simple story | devops, data-science, testing | epic, feature |
+| **Files** | 3 | any | >3 |
+| **Scope** | Clear, specific | Infrastructure/ML/QA | Vague, exploratory |
+| **UX** | Not needed | Not needed | Needs UX label |
+| **Architecture** | No changes | No (skip PM/Arch) | Decisions required |
+| **Acceptance Criteria** | Complete | Clear domain scope | Missing/Incomplete |
 
 ## How It Works
 
@@ -162,6 +181,9 @@ async function routeIssue(issue_number) {
  if (analysis.needsExtendedIteration) {
  // EXTENDED ITERATION - uses iterative-loop.toml (max 20, planning step)
  return routeToIterativeLoop(issue_number, analysis);
+ } else if (analysis.isSpecialist) {
+ // SPECIALIST DIRECT - skip PM/Architect for domain-specific work
+ return routeToSpecialist(issue_number, analysis);
  } else if (analysis.isSimple) {
  // AUTONOMOUS MODE - Direct to Engineer (with default iteration)
  return routeToEngineer(issue_number);
@@ -209,6 +231,10 @@ async function analyzeComplexity(issue) {
  const isBug = labels.includes('type:bug');
  const isDocs = labels.includes('type:docs');
  const isStory = labels.includes('type:story');
+ const isDevOps = labels.includes('type:devops');
+ const isDataScience = labels.includes('type:data-science');
+ const isTesting = labels.includes('type:testing');
+ const needsTesting = labels.includes('needs:testing');
 
  // Check requirements
  const needsUX = labels.includes('needs:ux');
@@ -222,10 +248,17 @@ async function analyzeComplexity(issue) {
  const fileMatches = body.match(/\.(ts|js|tsx|jsx|cs|py|md)/g) || [];
  const estimatedFiles = fileMatches.length;
 
+ // Specialist direct routing (skip PM/Architect per AGENTS.md)
+ const isSpecialist = isDevOps || isDataScience || isTesting || needsTesting;
+ const specialistAgent = isDevOps ? 'devops' :
+ isDataScience ? 'data-scientist' :
+ (isTesting || needsTesting) ? 'tester' : null;
+
  // Decision logic
  const isSimple = (
  !isEpic && // NOT an epic
  !isFeature && // NOT a feature
+ !isSpecialist && // NOT a specialist type
  !needsUX && // NO UX needed
  (isBug || isDocs || isStory) && // IS bug/docs/story
  estimatedFiles <= 3 && // <= 3 files
@@ -234,6 +267,8 @@ async function analyzeComplexity(issue) {
 
  return {
  isSimple,
+ isSpecialist,
+ specialistAgent,
  needsExtendedIteration,
  type: labels.find(l => l.startsWith('type:')),
  estimatedFiles,
@@ -260,6 +295,20 @@ async function routeToIterativeLoop(issue_number, analysis) {
  body: '[LOOP] **Extended Iterative Loop activated** - Engineer will iterate up to 20 times with dedicated planning step. Workflow: `iterative-loop`'
  });
  return { mode: 'iterative-loop', agent: 'engineer', issue_number };
+}
+
+// Route to specialist agent (skip PM/Architect per AGENTS.md routing rules)
+async function routeToSpecialist(issue_number, analysis) {
+ const agentNames = {
+ 'devops': 'DevOps Engineer',
+ 'data-scientist': 'Data Scientist',
+ 'tester': 'Tester'
+ };
+ const agentName = agentNames[analysis.specialistAgent] || analysis.specialistAgent;
+ await add_issue_comment({ issue_number,
+ body: `[ROUTE] **Specialist Direct** - Routing to ${agentName} (skip PM/Architect). Type: \`${analysis.type}\``
+ });
+ return { mode: 'specialist-direct', agent: analysis.specialistAgent, issue_number };
 }
 
 // PRD Contradiction Validation (runs after PM completes PRD)

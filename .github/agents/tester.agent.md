@@ -29,13 +29,14 @@ boundaries:
     - "docs/README.md (documentation)"
     - "scripts/test/** (test automation scripts)"
     - "config/test/** (test configurations)"
+    - ".github/workflows/*test* (test-specific workflow files)"
     - "GitHub Projects Status"
   cannot_modify:
     - "src/** (source code - must report defects, not fix)"
     - "docs/prd/** (PM deliverables)"
     - "docs/adr/** (Architect deliverables)"
     - "docs/ux/** (UX deliverables)"
-    - ".github/workflows/** (CI/CD pipelines - use DevOps)"
+    - ".github/workflows/** (except *test* workflows - use DevOps for non-test pipelines)"
 handoffs:
   - label: "Report Defects to Engineer"
     agent: engineer

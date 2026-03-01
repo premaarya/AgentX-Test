@@ -48,7 +48,7 @@ description: 'Compressed skill index for AI agents. 56 skills across 9 categorie
 
 ---
 
-## Skills Directory (42 skills -- pipe-delimited)
+## Skills Directory (56 skills -- pipe-delimited)
 
 > Format: `category|skill|path|keywords`
 > Read the SKILL.md at the path when the task matches keywords.
