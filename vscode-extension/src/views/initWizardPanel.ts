@@ -81,7 +81,6 @@ export class InitWizardPanel {
   public static currentPanel: InitWizardPanel | undefined;
 
   private readonly _panel: vscode.WebviewPanel;
-  private readonly _extensionUri: vscode.Uri;
   private readonly _agentx: AgentXContext;
   private _disposables: vscode.Disposable[] = [];
 
@@ -119,7 +118,6 @@ export class InitWizardPanel {
     agentx: AgentXContext,
   ) {
     this._panel = panel;
-    this._extensionUri = extensionUri;
     this._agentx = agentx;
 
     // Set HTML content

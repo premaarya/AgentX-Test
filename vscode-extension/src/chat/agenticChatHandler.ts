@@ -70,7 +70,7 @@ function getClarificationRouter(workspaceRoot: string, agentx: AgentXContext): C
     sharedClarificationRouter = new ClarificationRouter({
       workspaceRoot,
       eventBus: getEventBus(),
-      runSubagent: createSubagentRunner(workspaceRoot, agentx),
+      runSubagent: createSubagentRunner(agentx),
     });
   }
   return sharedClarificationRouter;
@@ -93,7 +93,6 @@ function getClarificationRouter(workspaceRoot: string, agentx: AgentXContext): C
  *   5. We return Agent B's response text
  */
 function createSubagentRunner(
-  workspaceRoot: string,
   agentx: AgentXContext,
 ): (agentName: string, prompt: string) => Promise<string> {
   return async (agentName: string, prompt: string): Promise<string> => {
@@ -334,7 +333,7 @@ export async function runAgenticChat(
       onLoopWarning: (detection) => {
         response.markdown(`> **[Loop Warning]** ${detection.message}\n\n`);
       },
-      onText: (text) => {
+      onText: (_text) => {
         // Final text streamed at the end
       },
     });
@@ -401,7 +400,7 @@ function parseCanClarifyList(instructions: string | undefined): string[] {
   const handoffMatch = instructions.match(/## (?:Team & )?Handoffs[^\n]*\n([\s\S]*?)(?=\n## |\n---)/);
   if (handoffMatch) {
     const agents: string[] = [];
-    const agentPattern = /\b(product-manager|architect|ux-designer|engineer|reviewer|devops-engineer|customer-coach|agent-x)\b/gi;
+    const agentPattern = /\b(product-manager|architect|ux-designer|engineer|reviewer|devops-engineer|data-scientist|tester|customer-coach|agent-x)\b/gi;
     let m;
     while ((m = agentPattern.exec(handoffMatch[1])) !== null) {
       const name = m[1].toLowerCase();
@@ -432,6 +431,9 @@ function detectTargetAgent(question: string, canClarify: string[]): string {
     'engineer': /\b(implement|code|build|test|function)/i,
     'reviewer': /\b(review|quality|approval|merge)/i,
     'devops-engineer': /\b(deploy|pipeline|ci\/cd|infrastructure)/i,
+    'data-scientist': /\b(model|ml|drift|evaluation|fine.?tun|rag|embeddings)/i,
+    'tester': /\b(e2e|integration test|test suite|certification|coverage)/i,
+    'customer-coach': /\b(research|brief|presentation|consult|engagement)/i,
   };
 
   for (const agent of canClarify) {

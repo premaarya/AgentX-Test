@@ -108,13 +108,11 @@ async function checkPowerShell(): Promise<DependencyResult> {
   }
 
   let message = '';
-  let severity: DependencySeverity = 'required';
 
   if (!found) {
     message = 'PowerShell is not installed. Required for AgentX CLI scripts (.agentx/agentx.ps1).';
   } else if (usedFallback) {
     message = `Windows PowerShell ${version} found. PowerShell 7+ (pwsh) is recommended for best compatibility.`;
-    severity = 'recommended';
   } else {
     message = `PowerShell ${version} detected.`;
   }

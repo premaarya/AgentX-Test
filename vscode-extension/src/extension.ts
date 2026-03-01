@@ -15,8 +15,6 @@ import { registerChatParticipant } from './chat/chatParticipant';
 import { clearInstructionCache } from './chat/agentContextLoader';
 import {
  runSetupWizard,
- runStartupCheck,
- runCriticalPreCheck,
  runSilentInstall,
 } from './commands/setupWizard';
 import { AgentEventBus } from './utils/eventBus';
@@ -34,6 +32,16 @@ let contextCompactor: ContextCompactor;
 let channelRouter: ChannelRouter;
 let taskScheduler: TaskScheduler;
 let pluginManager: PluginManager | undefined;
+
+function parseCommandArgs(raw: string): string[] {
+ const args: string[] = [];
+ const re = /"([^"]*)"|(\S+)/g;
+ let match: RegExpExecArray | null;
+ while ((match = re.exec(raw)) !== null) {
+  args.push(match[1] ?? match[2]);
+ }
+ return args;
+}
 
 export function activate(context: vscode.ExtensionContext) {
  console.log('AgentX extension activating...');
@@ -59,6 +67,19 @@ export function activate(context: vscode.ExtensionContext) {
  // Initialize plugin manager
  if (agentxDir) {
   pluginManager = new PluginManager(agentxDir, eventBus);
+ }
+
+ // Start scheduler when enabled tasks exist
+ if (taskScheduler.getEnabledTasks().length > 0) {
+  taskScheduler.start(async (task) => {
+   const parts = parseCommandArgs(task.command);
+   const subcommand = parts[0];
+   if (!subcommand) {
+    console.warn(`AgentX Scheduler: task '${task.id}' has no command.`);
+    return;
+   }
+   await agentxContext.runCli(subcommand, parts.slice(1));
+  });
  }
 
  // Store services on context for access by other modules
@@ -186,6 +207,78 @@ export function activate(context: vscode.ExtensionContext) {
    }
   }
   channel.show(true);
+ })
+ );
+
+ // Install plugin from local directory
+ context.subscriptions.push(
+ vscode.commands.registerCommand('agentx.installPlugin', async () => {
+  if (!pluginManager) {
+   vscode.window.showWarningMessage('AgentX: Not initialized. Plugins unavailable.');
+   return;
+  }
+
+  const picked = await vscode.window.showOpenDialog({
+   canSelectMany: false,
+   canSelectFiles: false,
+   canSelectFolders: true,
+   openLabel: 'Install Plugin from Folder',
+   title: 'Select Plugin Folder (must contain plugin.json)',
+  });
+
+  if (!picked || picked.length === 0) { return; }
+
+  try {
+   const installed = pluginManager.installFromDir(picked[0].fsPath);
+   vscode.window.showInformationMessage(
+    `AgentX: Installed plugin '${installed.manifest.name}' v${installed.manifest.version}.`
+   );
+  } catch (err: unknown) {
+   const msg = err instanceof Error ? err.message : String(err);
+   vscode.window.showErrorMessage(`AgentX Install Error: ${msg}`);
+  }
+ })
+ );
+
+ // Remove installed plugin
+ context.subscriptions.push(
+ vscode.commands.registerCommand('agentx.removePlugin', async () => {
+  if (!pluginManager) {
+   vscode.window.showWarningMessage('AgentX: Not initialized. Plugins unavailable.');
+   return;
+  }
+
+  const plugins = pluginManager.list();
+  if (plugins.length === 0) {
+   vscode.window.showInformationMessage('AgentX: No plugins installed.');
+   return;
+  }
+
+  const pick = await vscode.window.showQuickPick(
+   plugins.map((p) => ({
+    label: p.manifest.name,
+    description: `v${p.manifest.version} [${p.manifest.type}]`,
+    detail: p.manifest.description,
+    pluginName: p.manifest.name,
+   })),
+   { placeHolder: 'Select plugin to remove', title: 'AgentX - Remove Plugin' }
+  );
+
+  if (!pick) { return; }
+
+  const confirm = await vscode.window.showWarningMessage(
+   `Remove plugin '${pick.pluginName}'?`,
+   { modal: true },
+   'Remove'
+  );
+  if (confirm !== 'Remove') { return; }
+
+  const removed = pluginManager.remove(pick.pluginName);
+  if (removed) {
+   vscode.window.showInformationMessage(`AgentX: Removed plugin '${pick.pluginName}'.`);
+  } else {
+   vscode.window.showWarningMessage(`AgentX: Plugin '${pick.pluginName}' was not found.`);
+  }
  })
  );
 

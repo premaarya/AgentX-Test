@@ -47,6 +47,9 @@ export const AGENT_PRIORITY_DEFAULT = [
   'engineer',
   'reviewer',
   'devops-engineer',
+  'data-scientist',
+  'tester',
+  'customer-coach',
 ];
 
 // ---------------------------------------------------------------------------
@@ -84,12 +87,17 @@ export class ClarificationRouter {
   private readonly runSubagentFn: ((agentName: string, prompt: string) => Promise<string>) | undefined;
   private readonly eventBus: AgentEventBus | undefined;
 
-  constructor(private readonly config: ClarificationRouterConfig) {
+  constructor(config: ClarificationRouterConfig) {
     this.lockManager = new FileLockManager();
     this.clarificationsDir = path.join(config.workspaceRoot, '.agentx', 'state', 'clarifications');
     this.agentPriority = config.agentPriority ?? AGENT_PRIORITY_DEFAULT;
     this.runSubagentFn = config.runSubagent;
     this.eventBus = config.eventBus;
+
+    // Ensure clarifications directory exists for first write
+    if (!fs.existsSync(this.clarificationsDir)) {
+      fs.mkdirSync(this.clarificationsDir, { recursive: true });
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -214,7 +222,7 @@ export class ClarificationRouter {
     fromAgent: string,
     toAgent: string,
     question: string,
-    canClarifyList: string[],
+    _canClarifyList: string[],
   ): Promise<ClarificationResult> {
     const ledgerPath = this.ledgerPath(issueNumber);
 

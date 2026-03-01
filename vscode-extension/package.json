@@ -147,6 +147,18 @@
     "category": "AgentX",
     "icon": "$(extensions)"
    },
+    {
+     "command": "agentx.installPlugin",
+     "title": "Install Plugin",
+     "category": "AgentX",
+     "icon": "$(cloud-download)"
+    },
+    {
+     "command": "agentx.removePlugin",
+     "title": "Remove Plugin",
+     "category": "AgentX",
+     "icon": "$(trash)"
+    },
    {
     "command": "agentx.runPlugin",
     "title": "Run Plugin",
@@ -260,6 +272,10 @@
      {
       "name": "digest",
       "description": "Generate weekly progress digest"
+    },
+    {
+     "name": "clarify",
+     "description": "Show and manage agent clarifications"
      }
     ]
    }

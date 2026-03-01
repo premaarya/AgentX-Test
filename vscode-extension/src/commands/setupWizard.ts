@@ -32,14 +32,6 @@ function severityIcon(r: DependencyResult): string {
   }
 }
 
-function severityLabel(s: DependencySeverity): string {
-  switch (s) {
-    case 'required':    return 'Required';
-    case 'recommended': return 'Recommended';
-    default:            return 'Optional';
-  }
-}
-
 // -----------------------------------------------------------------------
 // Public API
 // -----------------------------------------------------------------------

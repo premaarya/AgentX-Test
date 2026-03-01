@@ -6,7 +6,7 @@ import { AgentXChatMetadata } from './commandHandlers';
  * Provides contextual follow-up suggestions after each chat response.
  */
 export class AgentXFollowupProvider implements vscode.ChatFollowupProvider {
-  constructor(private readonly _agentx: AgentXContext) {}
+  constructor(_agentx?: AgentXContext) {}
 
   provideFollowups(
     result: vscode.ChatResult,

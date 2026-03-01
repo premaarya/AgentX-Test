@@ -319,7 +319,7 @@ export class AgenticLoop {
         break;
       }
 
-      // If text-only response -> done
+      // If text-only response -> check for clarification need, then done
       if (response.toolCalls.length === 0) {
         finalText = response.text;
         progress?.onText?.(finalText);
@@ -329,6 +329,27 @@ export class AgenticLoop {
           content: finalText,
           timestamp: new Date().toISOString(),
         });
+
+        // Check if the LLM is requesting clarification from another agent
+        const clarifyResult = this.detectClarificationRequest(finalText);
+        if (clarifyResult && this.config.onClarificationNeeded) {
+          try {
+            const result = await this.config.onClarificationNeeded(
+              clarifyResult.topic,
+              clarifyResult.question,
+            );
+            // Feed the clarification answer back as a user message and continue the loop
+            this.sessionManager.addMessage(sessionId, {
+              role: 'user',
+              content: `[Clarification from ${clarifyResult.targetAgent}]: ${result.answer}`,
+              timestamp: new Date().toISOString(),
+            });
+            finalText = ''; // Reset -- loop continues with the clarification answer
+            continue;
+          } catch {
+            // Clarification failed -- treat as normal text response
+          }
+        }
 
         exitReason = 'text_response';
         break;
@@ -539,6 +560,27 @@ export class AgenticLoop {
           content: finalText,
           timestamp: new Date().toISOString(),
         });
+
+        // Check for clarification request in resumed session
+        const clarifyResult = this.detectClarificationRequest(finalText);
+        if (clarifyResult && this.config.onClarificationNeeded) {
+          try {
+            const result = await this.config.onClarificationNeeded(
+              clarifyResult.topic,
+              clarifyResult.question,
+            );
+            this.sessionManager.addMessage(sessionId, {
+              role: 'user',
+              content: `[Clarification from ${clarifyResult.targetAgent}]: ${result.answer}`,
+              timestamp: new Date().toISOString(),
+            });
+            finalText = '';
+            continue;
+          } catch {
+            // Clarification failed -- treat as normal text response
+          }
+        }
+
         exitReason = 'text_response';
         break;
       }
@@ -604,6 +646,32 @@ export class AgenticLoop {
     };
     progress?.onComplete?.(summary);
     return summary;
+  }
+
+  /**
+   * Detect if the LLM's text response contains a clarification request.
+   * Pattern: "I need clarification from [agent-name] about [topic]"
+   */
+  private detectClarificationRequest(
+    text: string,
+  ): { targetAgent: string; topic: string; question: string } | null {
+    if (!this.config.canClarify || this.config.canClarify.length === 0) {
+      return null;
+    }
+
+    const pattern = /I need clarification from \[?([\w-]+)\]? about \[?([^\]\n]+)\]?/i;
+    const match = text.match(pattern);
+    if (!match) { return null; }
+
+    const targetAgent = match[1].toLowerCase();
+    const topic = match[2].trim();
+
+    // Only trigger if the target agent is in the allowed list
+    if (!this.config.canClarify.includes(targetAgent)) {
+      return null;
+    }
+
+    return { targetAgent, topic, question: text };
   }
 
   private resolveWorkspaceRoot(): string {

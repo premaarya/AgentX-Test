@@ -87,7 +87,11 @@ function buildToolIntent(prompt: string): LlmResponse | undefined {
 
 export function createLocalAgenticAdapter(agentName: string, routeDescription: string): LlmAdapter {
   return {
-    async chat(messages: readonly SessionMessage[]): Promise<LlmResponse> {
+    async chat(
+      messages: readonly SessionMessage[],
+      _tools?: ReadonlyArray<{ name: string; description: string; parameters: Record<string, unknown> }>,
+      _signal?: AbortSignal,
+    ): Promise<LlmResponse> {
       const lastTool = getLastToolMessage(messages);
 
       if (lastTool) {

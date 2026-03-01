@@ -1,6 +1,6 @@
 # AgentX — Multi-Agent Orchestration for VS Code
 
-[![Version](https://img.shields.io/badge/Version-7.1.0-0EA5E9?style=for-the-badge)](https://marketplace.visualstudio.com/items?itemName=jnPiyush.agentx)
+[![Version](https://img.shields.io/badge/Version-7.2.0-0EA5E9?style=for-the-badge)](https://marketplace.visualstudio.com/items?itemName=jnPiyush.agentx)
 [![License](https://img.shields.io/badge/License-MIT-22C55E?style=for-the-badge)](LICENSE)
 
 **AgentX** brings structured multi-agent orchestration to your VS Code workspace. Coordinate AI coding assistants (GitHub Copilot, Claude, etc.) as a real software team — PM, UX Designer, Architect, Engineer, and Reviewer — each with specific roles, templates, and quality gates.
@@ -15,7 +15,7 @@ Initialize AgentX in any workspace with a single command. Defaults to **Local mo
 | **Local** | ✅ Yes | Filesystem-based issue tracking, zero prompts |
 | **GitHub** | — | Full features: GitHub Actions, PRs, Projects (asks for repo/project) |
 
-### 🤖 8 Specialized Agents
+### 🤖 11 Specialized Agents
 | Agent | Role | Model |
 |-------|------|-------|
 | 🎯 Agent X | Adaptive coordinator | Claude Opus 4.6 |
@@ -26,6 +26,9 @@ Initialize AgentX in any workspace with a single command. Defaults to **Local mo
 | 🔍 Reviewer | Code review & quality | Claude Opus 4.6 |
 | 🔧🔍 Auto-Fix Reviewer | Review + safe fixes | Claude Sonnet 4.5 |
 | ⚙️ DevOps Engineer | CI/CD pipelines | Claude Sonnet 4.5 |
+| 📊 Data Scientist | ML pipelines and evaluations | Claude Sonnet 4.5 |
+| 🧪 Tester | Test automation and certification | Claude Sonnet 4.5 |
+| 🧭 Customer Coach | Research and consulting preparation | Claude Sonnet 4.5 |
 
 ### 📊 Sidebar Views
 - **Agents** — All agent definitions with model, maturity, and status

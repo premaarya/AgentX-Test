@@ -121,7 +121,7 @@ export async function routeNaturalLanguage(
 
   // Run the full agentic chat session (real LLM + tools + clarification)
   try {
-    const result = await runAgenticChat(
+    await runAgenticChat(
       route.agentFile,
       agentDef,
       instructions,

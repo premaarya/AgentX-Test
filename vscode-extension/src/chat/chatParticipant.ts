@@ -40,7 +40,7 @@ export function registerChatParticipant(
   participant.iconPath = vscode.Uri.file(
     path.join(context.extensionPath, 'resources', 'icon.png')
   );
-  participant.followupProvider = new AgentXFollowupProvider(agentx);
+  participant.followupProvider = new AgentXFollowupProvider();
 
   context.subscriptions.push(participant);
 }
