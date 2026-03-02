@@ -1,6 +1,6 @@
 ---
-name: 7. Customer Coach
-description: 'Customer Coach: Research, prepare, and create materials for any consulting topic. Helps consultants build expertise, prepare presentations, and synthesize domain knowledge for client engagements.'
+name: 0.1 Customer Coach
+description: 'Customer Coach (standalone, not part of SDLC pipeline): Research, prepare, and create materials for any consulting topic. Helps consultants build expertise, prepare presentations, and synthesize domain knowledge for client engagements.'
 maturity: stable
 mode: agent
 model: Claude Opus 4.6 (copilot)

@@ -1,5 +1,5 @@
 ---
-name: 10. Tester
+name: 7. Tester
 description: 'Tester: Validate software quality through end-to-end testing, integration testing, test automation, performance testing, security testing, and production readiness certification. Trigger: type:testing or Status = In Review (pre-release validation).'
 maturity: stable
 mode: agent
