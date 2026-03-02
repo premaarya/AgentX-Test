@@ -9,7 +9,8 @@
 
 1. [Clarification Protocol Specification](#clarification-protocol-specification)
 2. [Memory Pipeline Specification](#memory-pipeline-specification)
-3. [Related Documents](#related-documents)
+3. [Agentic Loop Quality Framework Specification](#agentic-loop-quality-framework-specification)
+4. [Related Documents](#related-documents)
 
 ---
 
@@ -2073,9 +2074,500 @@ graph TD
 
 ---
 
+## Agentic Loop Quality Framework Specification
+
+> Date: 2026-03-05 | Epic: #30 | ADR: [ADR-AgentX.md](../adr/ADR-AgentX.md#adr-30-agentic-loop-quality-framework) | PRD: [PRD-AgentX.md](../prd/PRD-AgentX.md#feature-prd-agentic-loop-quality-framework)
+
+### 1. Overview
+
+Three lightweight, LLM-based modules that add quality assurance and inter-agent clarification to the AgentX agentic loop. Unlike the planned heavy Clarification Protocol (Spec #1), this framework operates entirely in-memory within a single agentic session -- no file-based ledgers, no file locking, no cross-process state.
+
+**Scope:**
+- In scope: Sub-agent spawning abstraction, iterative self-review loop, iterative clarification loop, VS Code Chat integration, CLI parity
+- Out of scope: Cross-session clarification (see Clarification Protocol Spec), persistent observation store (see Memory Pipeline Spec), file-based ledgers, TOML workflow extensions, EventBus events
+
+**Success Criteria:**
+- Self-review catches high/medium-impact issues before handoff
+- Clarification resolves ambiguity without human intervention >=80% of attempts
+- All 3 modules work in both VS Code Chat mode and CLI mode
+- Zero new compile errors introduced
+
+---
+
+### 2. Architecture
+
+```mermaid
+graph TD
+    subgraph Orchestrator["agenticLoop.ts"]
+        LOOP["Main Loop"]
+        SRG["Self-Review Gate"]
+        CLH["Clarification Handler"]
+    end
+
+    subgraph Modules["Quality Modules"]
+        SAS["subAgentSpawner.ts"]
+        SRL["selfReviewLoop.ts"]
+        CLL["clarificationLoop.ts"]
+    end
+
+    subgraph Wiring["Integration Layer"]
+        CCH["agenticChatHandler.ts<br/>(VS Code Chat)"]
+        CLI["agentic-runner.ps1<br/>(CLI)"]
+    end
+
+    LOOP --> SRG
+    LOOP --> CLH
+    SRG --> SRL
+    CLH --> CLL
+    SRL --> SAS
+    CLL --> SAS
+    CCH --> SAS
+    CLI --> SRL
+    CLI --> CLL
+```
+
+**Key Design Decisions:**
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| State management | In-memory only | No cross-process coordination needed; simpler, faster |
+| LLM abstraction | `LlmAdapterFactory` type | Decouples from VS Code LM API; works for Chat and CLI |
+| Agent definition loading | `AgentLoader` interface | Abstracts `.agent.md` parsing; mockable for tests |
+| Reviewer write access | Read-only by default | Prevents reviewer from modifying code it is reviewing |
+| Clarification evaluation | Pluggable `ClarificationEvaluator` | Default heuristic works; teams can inject LLM-based evaluator |
+
+---
+
+### 3. Module Specifications
+
+#### 3.1 Sub-Agent Spawner (`subAgentSpawner.ts`)
+
+**Purpose**: Foundation module that spawns lightweight sub-agents with configurable roles, tool access, and token budgets.
+
+##### Types
+
+```typescript
+interface SubAgentConfig {
+  role: string;                          // Agent role name (e.g., "reviewer", "architect")
+  maxIterations?: number;                // Default: 5
+  tokenBudget?: number;                  // Default: 20_000
+  systemPromptOverride?: string;         // Override auto-generated system prompt
+  workspaceRoot?: string;                // Workspace context
+  includeTools?: boolean;                // Default: true
+}
+
+interface SubAgentResult {
+  response: string;                      // Final agent response text
+  iterations: number;                    // Actual iterations used
+  exitReason: 'completed' | 'max-iterations' | 'token-budget' | 'error' | 'no-model';
+  toolCalls: number;                     // Total tool invocations
+  durationMs: number;                    // Wall-clock duration
+}
+
+type LlmAdapterFactory = (config: {
+  systemPrompt: string;
+  toolRegistry?: unknown;
+}) => { send(userMessage: string): Promise<string>; };
+
+interface AgentDefLike {
+  name: string;
+  description: string;
+  model?: string;
+  modelFallback?: string[];
+}
+
+interface AgentLoader {
+  loadDef(role: string): Promise<AgentDefLike | undefined>;
+  loadInstructions(role: string): Promise<string>;
+}
+```
+
+##### Functions
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `spawnSubAgent` | `(config, llmFactory, agentLoader?, tools?) -> Promise<SubAgentResult>` | Spawn a one-shot sub-agent |
+| `spawnSubAgentWithHistory` | `(config, llmFactory, history, agentLoader?, tools?) -> Promise<SubAgentResult>` | Spawn with prior conversation context |
+| `buildSubAgentSystemPrompt` | `(role, agentDef?, instructions?) -> string` | Build system prompt from .agent.md content |
+| `createMinimalToolRegistry` | `(fullRegistry) -> toolRegistry` | Strip write/edit/exec tools for read-only agents |
+| `getSubAgentDefaults` | `() -> SubAgentConfig` | Returns `SUB_AGENT_DEFAULTS` |
+
+##### Defaults
+
+```typescript
+const SUB_AGENT_DEFAULTS = {
+  maxIterations: 5,
+  tokenBudget: 20_000,
+  includeTools: true,
+};
+```
+
+##### Error Handling
+
+- **No model available**: Returns `SubAgentResult` with `exitReason: 'no-model'` and a human-readable `response` with instructions
+- **LLM call failure**: Catches, logs, returns `exitReason: 'error'`
+- **Agent def not found**: Falls back to generic system prompt for the role
+
+---
+
+#### 3.2 Self-Review Loop (`selfReviewLoop.ts`)
+
+**Purpose**: Orchestrates iterative review-fix cycles where a same-role reviewer sub-agent evaluates output and the primary agent addresses findings.
+
+##### Flow
+
+```mermaid
+sequenceDiagram
+    participant AL as AgenticLoop
+    participant SRL as selfReviewLoop
+    participant SAS as subAgentSpawner
+    participant LLM as LLM Adapter
+
+    AL->>SRL: runSelfReview(config)
+    loop Until approved or maxIterations
+        SRL->>SAS: spawnSubAgent(reviewer role)
+        SAS->>LLM: Review current output
+        LLM-->>SAS: Response with findings
+        SAS-->>SRL: SubAgentResult
+        SRL->>SRL: parseReviewResponse()
+        alt No high/medium findings
+            SRL-->>AL: SelfReviewResult(approved=true)
+        else Has findings
+            SRL->>SRL: Address findings (next iteration)
+        end
+    end
+    SRL-->>AL: SelfReviewResult(approved=false, findings)
+```
+
+##### Types
+
+```typescript
+interface SelfReviewConfig {
+  role: string;                          // Primary agent role
+  maxIterations?: number;                // Default: 15 (total review-fix cycles)
+  workspaceRoot?: string;
+  llmAdapterFactory: LlmAdapterFactory;
+  agentLoader?: AgentLoader;
+  tools?: unknown;
+  reviewerMaxIterations?: number;        // Default: 8 (per reviewer sub-agent call)
+  reviewerTokenBudget?: number;          // Default: 30_000
+  reviewerCanWrite?: boolean;            // Default: false (read-only)
+}
+
+interface ReviewFinding {
+  impact: 'high' | 'medium' | 'low';
+  description: string;
+  category: string;
+}
+
+interface ReviewResult {
+  approved: boolean;
+  findings: ReviewFinding[];
+  rawResponse: string;
+}
+
+interface SelfReviewResult {
+  approved: boolean;
+  allFindings: ReviewFinding[];
+  addressedFindings: ReviewFinding[];
+  iterations: number;
+  summary: string;
+}
+
+interface SelfReviewProgress {
+  onReviewIteration?: (iteration: number, max: number) => void;
+  onFindingsReceived?: (findings: ReviewFinding[]) => void;
+  onAddressingFindings?: (findings: ReviewFinding[]) => void;
+  onApproved?: (iteration: number) => void;
+  onMaxIterationsReached?: (allFindings: ReviewFinding[]) => void;
+}
+```
+
+##### Functions
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `runSelfReview` | `(config, progress?) -> Promise<SelfReviewResult>` | Orchestrate full review-fix cycle |
+| `parseReviewResponse` | `(rawResponse: string) -> ReviewResult` | Extract findings from ` ```review``` ` blocks |
+| `buildReviewerSystemPrompt` | `(role: string, agentDef?) -> string` | Build reviewer-specific system prompt |
+| `buildReviewPrompt` | `(output: string, priorFindings?) -> string` | Build the review request message |
+| `getDefaultSelfReviewConfig` | `() -> Partial<SelfReviewConfig>` | Returns role-specific defaults |
+
+##### Review Response Format
+
+Reviewer agent must output a fenced block:
+
+```
+\`\`\`review
+APPROVED: true/false
+FINDINGS:
+- [HIGH] category: description
+- [MEDIUM] category: description
+- [LOW] category: description
+\`\`\`
+```
+
+Only `high` and `medium` findings require addressing. `low` findings are logged but do not block approval.
+
+##### Defaults
+
+```typescript
+const SELF_REVIEW_DEFAULTS = {
+  maxIterations: 15,
+  reviewerMaxIterations: 8,
+  reviewerTokenBudget: 30_000,
+  reviewerCanWrite: false,
+};
+```
+
+---
+
+#### 3.3 Clarification Loop (`clarificationLoop.ts`)
+
+**Purpose**: Iterative Q&A between a requesting agent and a responding agent (or human) to resolve ambiguity in upstream artifacts.
+
+##### Flow
+
+```mermaid
+sequenceDiagram
+    participant AL as AgenticLoop
+    participant CLL as clarificationLoop
+    participant SAS as subAgentSpawner
+    participant HF as Human Fallback
+
+    AL->>CLL: runClarificationLoop(config)
+    loop Until resolved or maxIterations
+        CLL->>SAS: spawnSubAgent(responder role)
+        SAS-->>CLL: SubAgentResult (answer)
+        CLL->>CLL: evaluate(question, answer)
+        alt Answer resolves question
+            CLL-->>AL: ClarificationLoopResult(resolved=true)
+        else Not resolved
+            CLL->>CLL: Refine question for next iteration
+        end
+    end
+    CLL->>HF: onHumanFallback(question, exchangeHistory)
+    HF-->>CLL: Human answer
+    CLL-->>AL: ClarificationLoopResult(escalatedToHuman=true)
+```
+
+##### Types
+
+```typescript
+interface ClarificationLoopConfig {
+  question: string;                      // Initial question to resolve
+  requestingRole: string;                // Who is asking (e.g., "engineer")
+  respondingRole: string;                // Who should answer (e.g., "architect")
+  maxIterations?: number;                // Default: 6
+  workspaceRoot?: string;
+  llmAdapterFactory: LlmAdapterFactory;
+  agentLoader?: AgentLoader;
+  tools?: unknown;
+  responderMaxIterations?: number;       // Default: 5
+  responderTokenBudget?: number;         // Default: 20_000
+  onHumanFallback?: (question: string, history: ClarificationExchange[]) => Promise<string>;
+  evaluator?: ClarificationEvaluator;
+}
+
+interface ClarificationLoopResult {
+  resolved: boolean;
+  answer: string;
+  iterations: number;
+  escalatedToHuman: boolean;
+  exchangeHistory: ClarificationExchange[];
+}
+
+interface ClarificationExchange {
+  question: string;
+  response: string;
+  iteration: number;
+  respondedBy: 'sub-agent' | 'human';
+}
+
+interface ClarificationProgress {
+  onClarificationIteration?: (iteration: number, max: number) => void;
+  onSubAgentResponse?: (response: string, iteration: number) => void;
+  onHumanEscalation?: (question: string) => void;
+  onResolved?: (answer: string, iteration: number) => void;
+}
+
+type ClarificationEvaluator = (
+  question: string,
+  answer: string,
+  history: ClarificationExchange[]
+) => Promise<boolean> | boolean;
+```
+
+##### Functions
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `runClarificationLoop` | `(config, progress?) -> Promise<ClarificationLoopResult>` | Orchestrate full Q&A cycle |
+| `defaultClarificationEvaluator` | `(question, answer, history) -> boolean` | Heuristic-based resolution check |
+| `buildResponderSystemPrompt` | `(role, agentDef?) -> string` | Build responder-specific system prompt |
+| `buildClarificationPrompt` | `(question, history?) -> string` | Build the clarification request |
+| `getDefaultClarificationConfig` | `() -> Partial<ClarificationLoopConfig>` | Workspace-aware defaults |
+
+##### Defaults
+
+```typescript
+const CLARIFICATION_DEFAULTS = {
+  maxIterations: 6,
+  responderMaxIterations: 5,
+  responderTokenBudget: 20_000,
+};
+```
+
+---
+
+### 4. Integration Points
+
+#### 4.1 agenticLoop.ts
+
+The main agentic loop integrates the quality framework at two points:
+
+| Integration Point | When | What Happens |
+|-------------------|------|--------------|
+| **Self-Review Gate** | After agent completes its task (before handoff) | `runSelfReview()` called; if not approved, findings fed back for iteration |
+| **Clarification Handler** | When agent encounters ambiguity | `runClarificationLoop()` called; resolved answer injected into context |
+
+Both gates are opt-in via `AgenticLoopConfig` flags. When disabled, the loop behaves as before.
+
+#### 4.2 agenticChatHandler.ts
+
+Provides factory functions for VS Code Chat mode:
+
+| Function | Purpose |
+|----------|---------|
+| `buildChatLlmAdapterFactory()` | Creates `LlmAdapterFactory` using `vscode.lm.sendChatRequest` |
+| `buildChatAgentLoader()` | Creates `AgentLoader` that reads `.agent.md` files from workspace |
+
+#### 4.3 agentic-runner.ps1 (CLI)
+
+PowerShell functions for CLI mode:
+
+| Function | Purpose |
+|----------|---------|
+| `Invoke-SelfReviewLoop` | Runs self-review using CLI LLM adapter |
+| `Invoke-ClarificationLoop` | Runs clarification using CLI LLM adapter |
+
+Constants: `$SELF_REVIEW_MAX_ITERATIONS`, `$CLARIFICATION_MAX_ITERATIONS`, default token budgets.
+
+#### 4.4 index.ts (Barrel Exports)
+
+All public types and functions are re-exported from `vscode-extension/src/agentic/index.ts`:
+
+```typescript
+// Sub-Agent Spawner
+export { spawnSubAgent, spawnSubAgentWithHistory, ... } from './subAgentSpawner';
+// Self-Review Loop
+export { runSelfReview, parseReviewResponse, ... } from './selfReviewLoop';
+// Clarification Loop
+export { runClarificationLoop, defaultClarificationEvaluator, ... } from './clarificationLoop';
+```
+
+---
+
+### 5. Data Models
+
+#### 5.1 Configuration Hierarchy
+
+```
+SubAgentConfig (base)
+  |
+  +-- SelfReviewConfig (extends with reviewer-specific settings)
+  |     role, maxIterations, reviewerMaxIterations, reviewerTokenBudget, reviewerCanWrite
+  |
+  +-- ClarificationLoopConfig (extends with responder-specific settings)
+        question, requestingRole, respondingRole, maxIterations, responderMaxIterations,
+        responderTokenBudget, onHumanFallback, evaluator
+```
+
+#### 5.2 Result Types
+
+```
+SubAgentResult (base)
+  |
+  +-- SelfReviewResult (aggregated across iterations)
+  |     approved, allFindings[], addressedFindings[], iterations, summary
+  |
+  +-- ClarificationLoopResult (aggregated across iterations)
+        resolved, answer, iterations, escalatedToHuman, exchangeHistory[]
+```
+
+---
+
+### 6. Testing Strategy
+
+| Module | Test File | Coverage Focus |
+|--------|-----------|----------------|
+| Sub-Agent Spawner | `test/agentic/subAgentSpawner.test.ts` | Config merging, system prompt building, minimal tool registry, no-model fallback |
+| Self-Review Loop | `test/agentic/selfReviewLoop.test.ts` | Review parsing, finding categorization, iteration limits, approval flow |
+| Clarification Loop | `test/agentic/clarificationLoop.test.ts` | Evaluator behavior, human fallback, exchange history, resolution detection |
+
+**Test approach**:
+- Mock `LlmAdapterFactory` to return canned responses
+- Mock `AgentLoader` to return test agent definitions
+- Verify iteration counts, exit reasons, and finding structures
+- No real LLM calls in unit tests
+
+---
+
+### 7. Security Considerations
+
+| Concern | Mitigation |
+|---------|------------|
+| Reviewer modifying code | `reviewerCanWrite: false` by default strips write/edit/exec tools |
+| Token budget exhaustion | Hard caps on `tokenBudget` and `maxIterations` for all sub-agents |
+| Prompt injection via agent output | Reviewer system prompt includes explicit instruction to ignore code-level directives |
+| Human fallback data leakage | `onHumanFallback` receives only the question and exchange history, not full agent context |
+
+---
+
+### 8. Performance Characteristics
+
+| Metric | Value | Notes |
+|--------|-------|-------|
+| Self-review overhead | 2-4 LLM calls per iteration | Reviewer call + optional fix call |
+| Clarification overhead | 1-2 LLM calls per iteration | Responder call + evaluation |
+| Max self-review wall time | ~2 min (15 iterations x 8s/call) | With typical LLM latency |
+| Max clarification wall time | ~48s (6 iterations x 8s/call) | With typical LLM latency |
+| Memory overhead | <1 MB | In-memory only, no persistence |
+
+---
+
+### 9. Implementation Notes
+
+#### Directory Structure
+
+```
+vscode-extension/src/agentic/
+  agenticLoop.ts           # Main loop (modified: self-review gate + clarification handler)
+  index.ts                 # Barrel exports (modified: 3 new modules)
+  sessionState.ts          # Session state management
+  subAgentSpawner.ts       # NEW: Sub-agent foundation
+  selfReviewLoop.ts        # NEW: Self-review orchestrator
+  clarificationLoop.ts     # NEW: Clarification orchestrator
+  toolEngine.ts            # Tool execution engine
+  toolLoopDetection.ts     # Tool loop detection
+
+vscode-extension/src/chat/
+  agenticChatHandler.ts    # Modified: buildChatLlmAdapterFactory(), buildChatAgentLoader()
+
+vscode-extension/src/test/agentic/
+  subAgentSpawner.test.ts  # NEW: Sub-agent spawner tests
+  selfReviewLoop.test.ts   # NEW: Self-review loop tests
+  clarificationLoop.test.ts # NEW: Clarification loop tests
+
+.agentx/
+  agentic-runner.ps1       # Modified: Invoke-SelfReviewLoop, Invoke-ClarificationLoop
+```
+
+---
+
 **Generated by AgentX Architect Agent**
-**Last Updated**: 2026-02-27
-**Version**: 1.0
+**Last Updated**: 2026-03-05
+**Version**: 1.1
 
 
 ---

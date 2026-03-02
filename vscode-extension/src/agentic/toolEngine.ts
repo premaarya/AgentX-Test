@@ -440,6 +440,243 @@ function escapeRegExp(str: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Agent Communication Tools
+// ---------------------------------------------------------------------------
+
+/**
+ * Callback type for handling clarification requests from within a tool.
+ * Set on the ToolRegistry so the request_clarification tool can invoke it.
+ */
+export type ClarificationHandler = (
+  targetAgent: string,
+  topic: string,
+  question: string,
+) => Promise<{ answer: string }>;
+
+/** Request clarification from another agent (agent-to-agent communication). */
+export const requestClarificationTool: AgentToolDef = {
+  name: 'request_clarification',
+  description:
+    'Request clarification from another agent when you are blocked and need '
+    + 'information only that agent can provide. The response will contain the '
+    + 'target agent\'s answer. Only use when truly blocked -- for minor '
+    + 'decisions, use your best judgment instead.',
+  parameters: {
+    targetAgent: {
+      type: 'string',
+      description: 'Name of the agent to ask (e.g. architect, product-manager, engineer).',
+      required: true,
+    },
+    topic: {
+      type: 'string',
+      description: 'Short topic label for the clarification (e.g. "authentication flow").',
+      required: true,
+    },
+    question: {
+      type: 'string',
+      description: 'The full question to ask the target agent. Be specific and provide context.',
+      required: true,
+    },
+  },
+  mutating: false,
+  async execute(params, ctx) {
+    const targetAgent = params.targetAgent as string;
+    const topic = params.topic as string;
+    const question = params.question as string;
+
+    // The handler is injected by the ToolRegistry owner (AgenticLoop / ChatHandler)
+    const handler = (ctx as ToolContext & { clarificationHandler?: ClarificationHandler })
+      .clarificationHandler;
+
+    if (!handler) {
+      return textResult(
+        'Clarification is not available in this context. '
+        + 'Make your best judgment and proceed.',
+        false,
+      );
+    }
+
+    try {
+      const result = await handler(targetAgent, topic, question);
+      return textResult(
+        `[Clarification from ${targetAgent}]:\n\n${result.answer}`,
+        false,
+      );
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return textResult(
+        `Clarification request to ${targetAgent} failed: ${msg}. `
+        + 'Proceed with your best judgment.',
+        true,
+      );
+    }
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Done-Validation Tool
+// ---------------------------------------------------------------------------
+
+/** Validate whether the current task meets completion criteria. */
+export const validateDoneTool: AgentToolDef = {
+  name: 'validate_done',
+  description:
+    'Run completion validation checks before finishing. Checks: tests pass, '
+    + 'lint clean, coverage met, and custom criteria. Call this before '
+    + 'providing your final response to ensure quality gates are satisfied.',
+  parameters: {
+    criteria: {
+      type: 'string',
+      description:
+        'Comma-separated validation checks to run. Options: tests, lint, '
+        + 'coverage, build, custom. Default: "tests,lint".',
+      default: 'tests,lint',
+    },
+    customCommand: {
+      type: 'string',
+      description: 'Custom shell command to run for validation (used with "custom" criteria).',
+    },
+  },
+  mutating: false,
+  async execute(params, ctx) {
+    const criteria = ((params.criteria as string) ?? 'tests,lint')
+      .split(',')
+      .map(c => c.trim().toLowerCase());
+
+    const results: string[] = [];
+    let allPassed = true;
+
+    for (const check of criteria) {
+      switch (check) {
+        case 'tests': {
+          // Detect test framework and run tests
+          const testResult = await runValidationCommand(ctx, [
+            'npx jest --passWithNoTests --ci 2>&1',
+            'npm test 2>&1',
+            'dotnet test --no-build 2>&1',
+            'python -m pytest --tb=short 2>&1',
+          ]);
+          if (testResult.passed) {
+            results.push('[PASS] Tests: All tests passing');
+          } else {
+            results.push(`[FAIL] Tests: ${testResult.output.slice(0, 300)}`);
+            allPassed = false;
+          }
+          break;
+        }
+        case 'lint': {
+          const lintResult = await runValidationCommand(ctx, [
+            'npx eslint . --max-warnings=0 2>&1',
+            'npm run lint 2>&1',
+            'dotnet format --verify-no-changes 2>&1',
+            'python -m flake8 . 2>&1',
+          ]);
+          if (lintResult.passed) {
+            results.push('[PASS] Lint: No warnings or errors');
+          } else {
+            results.push(`[FAIL] Lint: ${lintResult.output.slice(0, 300)}`);
+            allPassed = false;
+          }
+          break;
+        }
+        case 'build': {
+          const buildResult = await runValidationCommand(ctx, [
+            'npm run build 2>&1',
+            'npx tsc --noEmit 2>&1',
+            'dotnet build --no-restore 2>&1',
+          ]);
+          if (buildResult.passed) {
+            results.push('[PASS] Build: Compiles successfully');
+          } else {
+            results.push(`[FAIL] Build: ${buildResult.output.slice(0, 300)}`);
+            allPassed = false;
+          }
+          break;
+        }
+        case 'coverage': {
+          const covResult = await runValidationCommand(ctx, [
+            'npx jest --coverage --ci 2>&1',
+          ]);
+          if (covResult.passed) {
+            // Parse coverage percentage if possible
+            const covMatch = covResult.output.match(/All files\s*\|\s*([\d.]+)/);
+            const pct = covMatch ? covMatch[1] : 'unknown';
+            results.push(`[PASS] Coverage: ${pct}%`);
+          } else {
+            results.push(`[FAIL] Coverage: ${covResult.output.slice(0, 300)}`);
+            allPassed = false;
+          }
+          break;
+        }
+        case 'custom': {
+          const cmd = params.customCommand as string;
+          if (!cmd) {
+            results.push('[SKIP] Custom: No command provided');
+          } else {
+            const customResult = await runShellCommand(ctx, cmd);
+            if (customResult.passed) {
+              results.push(`[PASS] Custom: ${cmd}`);
+            } else {
+              results.push(`[FAIL] Custom (${cmd}): ${customResult.output.slice(0, 300)}`);
+              allPassed = false;
+            }
+          }
+          break;
+        }
+        default:
+          results.push(`[SKIP] Unknown criteria: ${check}`);
+      }
+    }
+
+    const summary = allPassed
+      ? 'VALIDATION PASSED -- All checks green. Safe to finalize.'
+      : 'VALIDATION FAILED -- Fix the failing checks and re-validate before finalizing.';
+
+    return textResult(`${summary}\n\n${results.join('\n')}`);
+  },
+};
+
+/**
+ * Try multiple validation commands until one succeeds or all fail.
+ * Returns the result of the first command that exits with code 0,
+ * or the last failure if none succeed.
+ */
+async function runValidationCommand(
+  ctx: ToolContext,
+  commands: string[],
+): Promise<{ passed: boolean; output: string }> {
+  for (const cmd of commands) {
+    const result = await runShellCommand(ctx, cmd);
+    // If exit code 0, this check passed
+    if (result.passed) {
+      return result;
+    }
+    // If the command was found but failed (not "command not found"), report it
+    if (!result.output.includes('not found') && !result.output.includes('not recognized')) {
+      return result;
+    }
+    // Otherwise try the next command
+  }
+  return { passed: false, output: 'No supported validation tool found in workspace.' };
+}
+
+function runShellCommand(
+  ctx: ToolContext,
+  command: string,
+): Promise<{ passed: boolean; output: string }> {
+  return new Promise((resolve) => {
+    exec(command, { cwd: ctx.workspaceRoot, timeout: 60_000 }, (err, stdout, stderr) => {
+      if (ctx.abortSignal.aborted) {
+        resolve({ passed: false, output: 'Aborted' });
+        return;
+      }
+      const output = (stdout + '\n' + stderr).trim();
+      resolve({ passed: !err, output: output.slice(0, 2000) });
+    });
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Tool Registry
 // ---------------------------------------------------------------------------
 
@@ -460,6 +697,8 @@ export class ToolRegistry {
     this.register(terminalExecTool);
     this.register(grepSearchTool);
     this.register(listDirTool);
+    this.register(requestClarificationTool);
+    this.register(validateDoneTool);
   }
 
   /** Register a tool definition. Overwrites if name already exists. */

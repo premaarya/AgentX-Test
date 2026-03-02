@@ -10,6 +10,7 @@
 
 1. [ADR-1: Agent-to-Agent Clarification Protocol](#adr-1-agent-to-agent-clarification-protocol)
 2. [ADR-29: Persistent Agent Memory Pipeline](#adr-29-persistent-agent-memory-pipeline)
+3. [ADR-30: Agentic Loop Quality Framework](#adr-30-agentic-loop-quality-framework)
 
 ---
 
@@ -899,6 +900,153 @@ The `IObservationStore` interface enables swapping `JsonObservationStore` for `S
 | Date | Reviewer | Status | Notes |
 |------|----------|--------|-------|
 | 2026-02-27 | Solution Architect Agent | Accepted | Initial architecture |
+
+---
+
+## ADR-30: Agentic Loop Quality Framework
+
+> Status: Accepted | Date: 2026-03-05 | Epic: #30 | PRD: [PRD-AgentX.md](../prd/PRD-AgentX.md#feature-prd-agentic-loop-quality-framework)
+
+### Context
+
+AgentX's agentic loop (`agenticLoop.ts`) executed agent work without built-in quality assurance. When an agent completed its task, the output was handed off to the next phase (e.g., Engineer -> Reviewer) without automated self-checking. Similarly, when an agent encountered ambiguity in an upstream artifact (e.g., vague PRD requirement), there was no mechanism to resolve it without human intervention.
+
+ADR-1 established a comprehensive Clarification Protocol with hub-routed file-based ledgers, file locking, TOML extensions, and EventBus events. While this design is sound for cross-session, cross-process scenarios, the most common use case -- in-session clarification between two agents in a single agentic loop -- did not need this complexity.
+
+A simpler approach was needed: lightweight, LLM-based iterative loops that operate entirely in-memory.
+
+### Decision
+
+Implement three new modules in the agentic loop:
+
+1. **Sub-Agent Spawner** (`subAgentSpawner.ts`) - Foundation for spawning constrained sub-agents with configurable roles, token budgets, and tool access. Abstracts LLM provider via `LlmAdapterFactory` type.
+
+2. **Self-Review Loop** (`selfReviewLoop.ts`) - Iterative review-fix cycle where a same-role reviewer sub-agent evaluates output, produces structured findings, and the primary agent addresses them. Reviewer is read-only by default.
+
+3. **Clarification Loop** (`clarificationLoop.ts`) - Iterative Q&A between a requesting agent and a responding agent. Uses a pluggable `ClarificationEvaluator` to determine when the question is resolved. Falls back to human input when iterations are exhausted.
+
+### Options Considered
+
+#### Option A: Implement the Full Clarification Protocol (ADR-1 Design)
+
+- **Pros**: Comprehensive; handles cross-session, cross-process scenarios; full audit trail via JSON ledgers; stale/stuck/deadlock detection
+- **Cons**: Over-engineered for in-session use; requires file locking infrastructure; needs TOML extensions, EventBus events, CLI commands, monitoring daemon; significant implementation effort for the common case
+
+#### Option B: Lightweight LLM-Based Iterative Loops (CHOSEN)
+
+- **Pros**: Simple; works immediately; no file I/O or locking; operates in-memory; easy to test; covers the most common clarification scenario; sub-agent spawner is reusable for self-review and clarification
+- **Cons**: Does not handle cross-session clarification; no persistent audit trail; limited to agents within the same session
+
+#### Option C: Hybrid -- Lightweight Loops Now, File-Based Later
+
+- **Pros**: Gets value immediately; leaves the door open for the full protocol later
+- **Cons**: Slightly more design effort to ensure the lightweight approach does not conflict with the future file-based approach
+
+### Rationale
+
+**Option B was chosen**, with acknowledgment that Option C is the long-term path.
+
+1. **Pragmatism over completeness**: The in-session use case is by far the most common (Engineer needs clarification from Architect within the same agentic loop run). The full file-based protocol addresses a rarer scenario.
+
+2. **No file locking needed**: Since everything operates within a single Node.js process (or a single PowerShell session for CLI), there is no concurrent access requiring file locks.
+
+3. **Reusable foundation**: The `SubAgentSpawner` abstraction enables both self-review and clarification with the same underlying mechanism. This was not anticipated in ADR-1.
+
+4. **Test simplicity**: In-memory operations with mock `LlmAdapterFactory` are trivially testable. File-based ledgers require filesystem mocking.
+
+5. **Non-conflicting with ADR-1**: The lightweight loops operate at a different layer (in-session) than the planned protocol (cross-session). Both can coexist -- the lightweight loop handles quick Q&A, while the file-based protocol would handle long-running cross-session negotiations.
+
+### Consequences
+
+**Positive:**
+- Agents self-review their work before handoff, reducing Reviewer rejection rates
+- Agents resolve ambiguity autonomously, reducing human intervention to <20%
+- Sub-Agent Spawner provides a reusable foundation for any future agent-to-agent interaction pattern
+- Both VS Code Chat and CLI modes are supported via `LlmAdapterFactory` abstraction
+- Zero new compile errors; all 3 test files pass
+
+**Negative:**
+- Cross-session clarification still requires the full protocol from ADR-1
+- No persistent audit trail for clarification exchanges (in-memory only)
+- Self-review adds 2-4 LLM calls per iteration, increasing token usage and latency
+
+**Neutral:**
+- The existing Clarification Protocol spec and ADR-1 remain valid for cross-session use cases
+- The Memory Pipeline (ADR-29) is unaffected -- it operates on a different axis (observation persistence vs. quality assurance)
+
+### Architecture Decisions
+
+#### Decision 30.1: LLM Abstraction via Factory Type
+
+```mermaid
+graph LR
+    subgraph Chat["VS Code Chat Mode"]
+        VLM["vscode.lm.sendChatRequest"]
+    end
+    subgraph CLI["CLI Mode"]
+        CLM["Invoke-LlmCall (PowerShell)"]
+    end
+
+    VLM --> LAF["LlmAdapterFactory"]
+    CLM --> LAF
+    LAF --> SAS["SubAgentSpawner"]
+    SAS --> SRL["SelfReviewLoop"]
+    SAS --> CLL["ClarificationLoop"]
+```
+
+The `LlmAdapterFactory` type decouples the quality modules from the specific LLM provider. In VS Code Chat mode, `agenticChatHandler.ts` provides `buildChatLlmAdapterFactory()` that wraps `vscode.lm`. In CLI mode, `agentic-runner.ps1` provides an equivalent PowerShell wrapper. This allows the same `runSelfReview()` and `runClarificationLoop()` functions to work in both environments.
+
+#### Decision 30.2: Read-Only Reviewer by Default
+
+The self-review loop spawns a reviewer sub-agent with `reviewerCanWrite: false`. This means `createMinimalToolRegistry()` strips all write, edit, and execute tools from the reviewer's tool registry. The reviewer can read files and search the codebase, but cannot modify anything.
+
+**Rationale**: A reviewer that can modify code conflates two responsibilities (reviewing vs. fixing). The review findings are returned to the primary agent, which decides how to address them.
+
+#### Decision 30.3: Pluggable Clarification Evaluator
+
+The `ClarificationEvaluator` type allows teams to swap the default heuristic-based evaluator for an LLM-based one:
+
+```typescript
+type ClarificationEvaluator = (
+  question: string,
+  answer: string,
+  history: ClarificationExchange[]
+) => Promise<boolean> | boolean;
+```
+
+The default evaluator uses heuristics (response length, keyword matching, confidence signals). Teams can inject an evaluator that uses a secondary LLM call to judge whether the answer resolves the question.
+
+#### Decision 30.4: Human Fallback as Callback
+
+When the clarification loop exhausts its max iterations without resolution, it invokes `onHumanFallback(question, exchangeHistory)`. This is a callback, not an event or file operation, keeping the flow synchronous and testable.
+
+In VS Code Chat mode, this surfaces a prompt in the chat panel. In CLI mode, it prints to stdout and waits for stdin input.
+
+#### Decision 30.5: Structured Review Findings
+
+Review findings use a structured format with impact levels (`high`, `medium`, `low`) and categories. Only `high` and `medium` findings require addressing -- `low` findings are logged as informational.
+
+This prevents infinite review loops where the reviewer keeps finding minor issues. The self-review loop converges because low-impact findings are accepted without action.
+
+### References
+
+#### Internal
+- [PRD-AgentX: Agentic Loop Quality Framework](../prd/PRD-AgentX.md#feature-prd-agentic-loop-quality-framework)
+- [ADR-1: Agent-to-Agent Clarification Protocol](#adr-1-agent-to-agent-clarification-protocol) (established the hub-routed clarification pattern)
+- [ADR-29: Persistent Agent Memory Pipeline](#adr-29-persistent-agent-memory-pipeline) (parallel but independent initiative)
+- [SPEC-AgentX: Technical Specification](../specs/SPEC-AgentX.md#agentic-loop-quality-framework-specification)
+- [ARCH-AgentX: Architecture Document](../architecture/ARCH-AgentX.md#agentic-loop-quality-framework-architecture)
+- [SubAgentSpawner](../../vscode-extension/src/agentic/subAgentSpawner.ts)
+- [SelfReviewLoop](../../vscode-extension/src/agentic/selfReviewLoop.ts)
+- [ClarificationLoop](../../vscode-extension/src/agentic/clarificationLoop.ts)
+- [AgenticLoop](../../vscode-extension/src/agentic/agenticLoop.ts)
+- [AgenticChatHandler](../../vscode-extension/src/chat/agenticChatHandler.ts)
+
+### Review History
+
+| Date | Reviewer | Status | Notes |
+|------|----------|--------|-------|
+| 2026-03-05 | Solution Architect Agent | Accepted | Initial architecture decision |
 
 ---
 

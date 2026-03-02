@@ -10,6 +10,7 @@ import { registerLoopCommand } from './commands/loopCommand';
 import { AgentTreeProvider } from './views/agentTreeProvider';
 import { ReadyQueueTreeProvider } from './views/readyQueueTreeProvider';
 import { WorkflowTreeProvider } from './views/workflowTreeProvider';
+import { SettingsTreeProvider, registerEditSettingCommand } from './views/settingsTreeProvider';
 import { TemplateTreeProvider } from './views/templateTreeProvider';
 import { AgentXContext } from './agentxContext';
 import { registerChatParticipant } from './chat/chatParticipant';
@@ -102,11 +103,13 @@ export function activate(context: vscode.ExtensionContext) {
  const readyQueueProvider = new ReadyQueueTreeProvider(agentxContext);
  const templateProvider = new TemplateTreeProvider(agentxContext);
  const workflowProvider = new WorkflowTreeProvider(agentxContext);
+ const settingsProvider = new SettingsTreeProvider();
 
  vscode.window.registerTreeDataProvider('agentx-agents', agentTreeProvider);
  vscode.window.registerTreeDataProvider('agentx-ready', readyQueueProvider);
  vscode.window.registerTreeDataProvider('agentx-templates', templateProvider);
  vscode.window.registerTreeDataProvider('agentx-workflows', workflowProvider);
+ vscode.window.registerTreeDataProvider('agentx-settings', settingsProvider);
 
  // Register commands
  registerInitializeCommand(context, agentxContext);
@@ -116,6 +119,7 @@ export function activate(context: vscode.ExtensionContext) {
  registerDepsCommand(context, agentxContext);
  registerDigestCommand(context, agentxContext);
  registerLoopCommand(context, agentxContext);
+ registerEditSettingCommand(context, settingsProvider);
 
  // Show issue detail command (used by ready queue tree item click)
  let issueChannel: vscode.OutputChannel | undefined;
@@ -187,6 +191,7 @@ export function activate(context: vscode.ExtensionContext) {
  readyQueueProvider.refresh();
  templateProvider.refresh();
  workflowProvider.refresh();
+ settingsProvider.refresh();
  clearInstructionCache();
  // Re-check initialization state after cache clear
  agentxContext.checkInitialized().then((initialized: boolean) => {

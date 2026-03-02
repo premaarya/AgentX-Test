@@ -15,7 +15,24 @@
 
 import * as vscode from 'vscode';
 import { AgentXContext, AgentDefinition } from '../agentxContext';
-import { AgenticLoop, ToolRegistry, LoopSummary } from '../agentic';
+import {
+  AgenticLoop,
+  ToolRegistry,
+  LoopSummary,
+  DoneValidator,
+  LlmAdapter,
+} from '../agentic';
+import {
+  LlmAdapterFactory,
+  AgentLoader,
+} from '../agentic/subAgentSpawner';
+import {
+  SelfReviewConfig,
+  getDefaultSelfReviewConfig,
+} from '../agentic/selfReviewLoop';
+import {
+  getDefaultClarificationConfig,
+} from '../agentic/clarificationLoop';
 import { createVsCodeLmAdapter } from './vscodeLmAdapter';
 import { loadAgentInstructions } from './agentContextLoader';
 import { selectModelForAgent, ModelSelectionResult } from '../utils/modelSelector';
@@ -57,6 +74,30 @@ const DEFAULT_CHAT_CONFIG: Required<AgenticChatConfig> = {
   autonomous: false,
 };
 
+/**
+ * Read user-configurable loop settings from VS Code workspace configuration.
+ * Falls back to hardcoded defaults when no setting is present.
+ */
+function getLoopSettings() {
+  const loopCfg = vscode.workspace.getConfiguration('agentx.loop');
+  const srCfg = vscode.workspace.getConfiguration('agentx.selfReview');
+  const clCfg = vscode.workspace.getConfiguration('agentx.clarification');
+  return {
+    loop: {
+      maxIterations: loopCfg.get<number>('maxIterations', 20),
+      tokenBudget: loopCfg.get<number>('tokenBudget', 100_000),
+    },
+    selfReview: {
+      maxIterations: srCfg.get<number>('maxIterations', 15),
+      reviewerMaxIterations: srCfg.get<number>('reviewerMaxIterations', 8),
+    },
+    clarification: {
+      maxIterations: clCfg.get<number>('maxIterations', 6),
+      responderMaxIterations: clCfg.get<number>('responderMaxIterations', 5),
+    },
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Singleton Components
 // ---------------------------------------------------------------------------
@@ -83,20 +124,72 @@ function getClarificationRouter(workspaceRoot: string, agentx: AgentXContext): C
 }
 
 // ---------------------------------------------------------------------------
-// Sub-Agent Runner (Agent-to-Agent Communication)
+// LLM Adapter Factory & Agent Loader (used by self-review & clarification)
 // ---------------------------------------------------------------------------
 
 /**
- * Creates a runSubagent function that invokes a target agent through the
- * VS Code Language Model API. This enables real inter-agent communication
- * in the Copilot Chat experience.
+ * Build an LlmAdapterFactory that creates LLM adapters via the VS Code
+ * Language Model API. Used by the self-review and clarification loops
+ * to spawn sub-agents.
+ */
+function buildChatLlmAdapterFactory(): LlmAdapterFactory {
+  return async (
+    _role: string,
+    agentDef: { model?: string; modelFallback?: string } | undefined,
+  ): Promise<LlmAdapter | null> => {
+    const modelResult = await selectModelForAgent(
+      agentDef as AgentDefinition | undefined,
+    );
+    if (!modelResult.chatModel) {
+      return null;
+    }
+    return createVsCodeLmAdapter({ chatModel: modelResult.chatModel });
+  };
+}
+
+/**
+ * Build an AgentLoader that loads agent definitions and instructions
+ * from the workspace .agent.md files.
+ */
+function buildChatAgentLoader(agentx: AgentXContext): AgentLoader {
+  return {
+    async loadDef(role: string) {
+      try {
+        const fileName = role + '.agent.md';
+        const def = await agentx.readAgentDef(fileName);
+        return def
+          ? {
+              name: def.name,
+              description: def.description,
+              model: def.model,
+              modelFallback: def.modelFallback,
+            }
+          : undefined;
+      } catch {
+        return undefined;
+      }
+    },
+    async loadInstructions(role: string) {
+      try {
+        const fileName = role + '.agent.md';
+        return await loadAgentInstructions(agentx, fileName) ?? undefined;
+      } catch {
+        return undefined;
+      }
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Sub-Agent Runner (Legacy -- used by ClarificationRouter)
+// ---------------------------------------------------------------------------
+
+/**
+ * Creates a runSubagent function used by the ClarificationRouter for
+ * backward-compatible agent-to-agent communication.
  *
- * When Agent A needs clarification from Agent B:
- *   1. ClarificationRouter calls this function
- *   2. We load Agent B's definition and instructions
- *   3. We select Agent B's preferred model
- *   4. We run a mini agentic loop with Agent B's persona
- *   5. We return Agent B's response text
+ * @deprecated Prefer the new clarification loop module for iterative
+ * agent-to-agent communication with human fallback.
  */
 function createSubagentRunner(
   agentx: AgentXContext,
@@ -218,9 +311,17 @@ function buildAgentSystemPrompt(
   }
 
   parts.push('## Clarification');
-  parts.push('If you need input from another agent, state clearly: "I need clarification from [agent-name] about [topic]".');
+  parts.push('If you need input from another agent, use the request_clarification tool.');
+  parts.push('This is a proper tool call -- do NOT embed clarification requests in text output.');
   parts.push('Only request clarification when the missing information truly blocks progress.');
   parts.push('For minor decisions, use your best judgment and proceed.');
+  parts.push('');
+  parts.push('## Self-Review');
+  parts.push('When you report work as complete, a same-role reviewer sub-agent will');
+  parts.push('automatically review your output. If the reviewer finds HIGH or MEDIUM');
+  parts.push('impact issues, you will receive their findings and must address them.');
+  parts.push('This loop continues until the reviewer approves or max iterations are reached.');
+  parts.push('Focus on producing quality work upfront to minimize review iterations.');
 
   return parts.join('\n');
 }
@@ -250,6 +351,9 @@ export async function runAgenticChat(
   config?: AgenticChatConfig,
 ): Promise<AgenticChatResult> {
   const cfg = { ...DEFAULT_CHAT_CONFIG, ...config };
+
+  // Read user-configurable loop settings from VS Code settings
+  const loopSettings = getLoopSettings();
   let clarificationsRequested = 0;
 
   // -----------------------------------------------------------------------
@@ -280,64 +384,169 @@ export async function runAgenticChat(
   }
 
   // -----------------------------------------------------------------------
-  // 3. Set up clarification callback (agent-to-agent communication)
+  // 3. Build sub-agent infrastructure (self-review & clarification)
   // -----------------------------------------------------------------------
+  const llmAdapterFactory = buildChatLlmAdapterFactory();
+  const agentLoader = buildChatAgentLoader(agentx);
+  const canClarify = cfg.enableClarification ? parseCanClarifyList(instructions) : [];
+
+  // Legacy clarification callback (used by ClarificationRouter fallback)
   let clarificationCallback:
     | ((topic: string, question: string) => Promise<import('../utils/clarificationTypes').ClarificationResult>)
     | undefined;
 
-  if (cfg.enableClarification && agentx.workspaceRoot) {
+  if (canClarify.length > 0 && agentx.workspaceRoot) {
     const router = getClarificationRouter(agentx.workspaceRoot, agentx);
 
-    // Parse which agents this agent can clarify with from instructions
-    const canClarify = parseCanClarifyList(instructions);
+    clarificationCallback = async (topic: string, question: string) => {
+      const targetAgent = detectTargetAgent(question, canClarify);
+      clarificationsRequested++;
 
-    if (canClarify.length > 0) {
-      clarificationCallback = async (topic: string, question: string) => {
-        // Determine target agent from the question context
-        const targetAgent = detectTargetAgent(question, canClarify);
-        clarificationsRequested++;
+      response.markdown(
+        `> **[Clarification]** Asking **${targetAgent}** about: ${topic}\n\n`,
+      );
 
-        response.markdown(
-          `> **[Clarification]** Asking **${targetAgent}** about: ${topic}\n\n`,
-        );
+      const issueNum = cfg.issueNumber || 0;
+      const result = await router.requestClarification(
+        {
+          issueNumber: issueNum,
+          fromAgent: agentName,
+          toAgent: targetAgent,
+          topic,
+          question,
+          blocking: true,
+        },
+        canClarify,
+      );
 
-        const issueNum = cfg.issueNumber || 0;
-        const result = await router.requestClarification(
-          {
-            issueNumber: issueNum,
-            fromAgent: agentName,
-            toAgent: targetAgent,
-            topic,
-            question,
-            blocking: true,
-          },
-          canClarify,
-        );
+      response.markdown(
+        `> **[${targetAgent} responded]**: ${result.answer}\n\n`,
+      );
 
-        response.markdown(
-          `> **[${targetAgent} responded]**: ${result.answer.slice(0, 200)}${result.answer.length > 200 ? '...' : ''}\n\n`,
-        );
-
-        return result;
-      };
-    }
+      return result;
+    };
   }
 
   // -----------------------------------------------------------------------
-  // 4. Create the agentic loop
+  // 4. Create the agentic loop (self-review + clarification loop)
   // -----------------------------------------------------------------------
   const toolRegistry = new ToolRegistry();
+
+  // Self-review config: applicable to ALL agents (not just code-producing)
+  const wsRoot = agentx.workspaceRoot ?? process.cwd();
+  const selfReviewConfig: SelfReviewConfig = {
+    ...getDefaultSelfReviewConfig(agentName, wsRoot),
+    maxIterations: loopSettings.selfReview.maxIterations,
+    reviewerMaxIterations: loopSettings.selfReview.reviewerMaxIterations,
+  };
+
+  // Clarification loop config
+  const clarificationLoopConfig = agentx.workspaceRoot
+    ? {
+        ...getDefaultClarificationConfig(agentx.workspaceRoot),
+        maxIterations: loopSettings.clarification.maxIterations,
+        responderMaxIterations: loopSettings.clarification.responderMaxIterations,
+        onHumanFallback: async (topic: string, context: string) => {
+          response.markdown(
+            `> **[Human Escalation]** The agents could not resolve a question.\n\n`
+            + `> ${context.slice(0, 500)}\n\n`
+            + `> Please provide guidance and re-run the agent.\n\n`,
+          );
+          return '(Escalated to human -- awaiting response in next turn)';
+        },
+      }
+    : undefined;
+
+  // Keep legacy DoneValidator as secondary fallback
+  const doneValidator = buildDoneValidator(agentName, agentx.workspaceRoot);
 
   const loop = new AgenticLoop(
     {
       agentName,
       systemPrompt,
-      maxIterations: cfg.maxIterations,
-      tokenBudget: cfg.tokenBudget,
+      maxIterations: cfg.maxIterations ?? loopSettings.loop.maxIterations,
+      tokenBudget: cfg.tokenBudget ?? loopSettings.loop.tokenBudget,
       issueNumber: cfg.issueNumber || undefined,
-      canClarify: cfg.enableClarification ? parseCanClarifyList(instructions) : undefined,
+      canClarify: canClarify.length > 0 ? canClarify : undefined,
       onClarificationNeeded: clarificationCallback,
+      doneValidator,
+      workspaceRoot: agentx.workspaceRoot,
+      // New: self-review loop (replaces DoneValidator)
+      selfReviewConfig,
+      selfReviewProgress: {
+        onReviewIteration: (iteration, maxIterations) => {
+          response.markdown(`> **[Self-Review]** Review iteration ${iteration}/${maxIterations}...\n\n`);
+        },
+        onFindingsReceived: (findings, iteration) => {
+          const nonLow = findings.filter(f => f.impact !== 'low');
+          if (nonLow.length > 0) {
+            response.markdown(
+              `> **[Self-Review]** Iteration ${iteration}: ${nonLow.length} finding(s) to address:\n\n`,
+            );
+            // Stream each finding so the human can see what the reviewer found
+            for (const finding of nonLow) {
+              const badge = finding.impact === 'high' ? '[HIGH]' : '[MEDIUM]';
+              response.markdown(
+                `> - ${badge} **${finding.category}**: ${finding.description}\n`,
+              );
+            }
+            response.markdown('\n');
+          } else if (findings.length > 0) {
+            response.markdown(
+              `> **[Self-Review]** Iteration ${iteration}: ${findings.length} low-impact note(s) only -- approving.\n\n`,
+            );
+          }
+        },
+        onAddressingFindings: (count) => {
+          response.markdown(`> **[Self-Review]** Addressing ${count} finding(s)...\n\n`);
+        },
+        onApproved: (iteration) => {
+          response.markdown(`> **[Self-Review PASSED]** Approved at iteration ${iteration}.\n\n`);
+        },
+        onMaxIterationsReached: (iterations) => {
+          response.markdown(
+            `> **[Self-Review]** Max iterations (${iterations}) reached -- accepting response.\n\n`,
+          );
+        },
+      },
+      llmAdapterFactory,
+      agentLoader,
+      // New: clarification loop (replaces single-shot callback)
+      clarificationLoopConfig,
+      clarificationProgress: {
+        onClarificationIteration: (iteration, maxIterations, context) => {
+          clarificationsRequested++;
+          if (context) {
+            response.markdown(
+              `> **[Clarification Loop]** Iteration ${iteration}/${maxIterations}: `
+              + `**${context.fromAgent}** asking **${context.toAgent}** about "${context.topic}"\n\n`
+              + `> _Q:_ ${context.question}\n\n`,
+            );
+          } else {
+            response.markdown(
+              `> **[Clarification Loop]** Iteration ${iteration}/${maxIterations}...\n\n`,
+            );
+          }
+        },
+        onSubAgentResponse: (agentResponse, iteration) => {
+          response.markdown(
+            `> **[Clarification]** Response at iteration ${iteration}:\n\n`
+            + `> ${agentResponse}\n\n`,
+          );
+        },
+        onHumanEscalation: (topic) => {
+          response.markdown(
+            `> **[Human Escalation]** Could not resolve: ${topic}\n\n`
+            + `> Please provide guidance and re-run the agent.\n\n`,
+          );
+        },
+        onResolved: (answer, iterations) => {
+          response.markdown(
+            `> **[Clarification Resolved]** After ${iterations} iteration(s):\n\n`
+            + `> ${answer}\n\n`,
+          );
+        },
+      },
     },
     toolRegistry,
   );
@@ -382,6 +591,17 @@ export async function runAgenticChat(
       },
       onLoopWarning: (detection) => {
         response.markdown(`> **[Loop Warning]** ${detection.message}\n\n`);
+      },
+      onValidation: (passed, details) => {
+        if (passed) {
+          response.markdown(`> **[Validation PASSED]**\n\n`);
+        } else {
+          response.markdown(`> **[Validation FAILED]**\n\n`);
+          // Stream the full feedback so the human can see what needs fixing
+          if (details) {
+            response.markdown(`> ${details}\n\n`);
+          }
+        }
       },
       onText: (_text) => {
         // Final text streamed at the end
@@ -496,4 +716,115 @@ function detectTargetAgent(question: string, canClarify: string[]): string {
 
   // Default to first available
   return canClarify[0] ?? 'agent-x';
+}
+
+/**
+ * Build a DoneValidator for agents that produce code.
+ *
+ * @deprecated Use selfReviewConfig for LLM-based self-review instead.
+ * This is kept as a secondary fallback when selfReviewConfig is not
+ * available (e.g., when no LLM adapter factory is configured).
+ *
+ * Only engineer and tester agents get done-validation (they write code
+ * that must pass tests/lint). Other agents (PM, architect, etc.) produce
+ * documents and don't need automated validation.
+ */
+function buildDoneValidator(
+  agentName: string,
+  workspaceRoot?: string,
+): DoneValidator | undefined {
+  // Only code-producing agents get validation
+  const codeAgents = ['engineer', 'tester', 'data-scientist'];
+  if (!codeAgents.includes(agentName)) {
+    return undefined;
+  }
+
+  if (!workspaceRoot) {
+    return undefined;
+  }
+
+  return {
+    async validate(): Promise<{ passed: boolean; feedback?: string }> {
+      const cp = require('child_process');
+      const path = require('path');
+      const failures: string[] = [];
+
+      // Check 1: Run tests if a test script exists
+      try {
+        const pkgPath = path.join(workspaceRoot, 'package.json');
+        const fs = require('fs');
+        if (fs.existsSync(pkgPath)) {
+          const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+          if (pkg.scripts?.test) {
+            const result = cp.spawnSync('npm', ['test', '--', '--passWithNoTests'], {
+              cwd: workspaceRoot,
+              timeout: 60_000,
+              encoding: 'utf-8',
+              shell: true,
+            });
+            if (result.status !== 0) {
+              const output = (result.stdout + result.stderr).slice(-500);
+              failures.push(`Tests failed:\\n${output}`);
+            }
+          }
+        }
+      } catch {
+        // Non-fatal -- skip test check
+      }
+
+      // Check 2: TypeScript compilation
+      try {
+        const tsconfigPath = path.join(workspaceRoot, 'tsconfig.json');
+        const fs = require('fs');
+        if (fs.existsSync(tsconfigPath)) {
+          const result = cp.spawnSync('npx', ['tsc', '--noEmit'], {
+            cwd: workspaceRoot,
+            timeout: 30_000,
+            encoding: 'utf-8',
+            shell: true,
+          });
+          if (result.status !== 0) {
+            const output = (result.stdout + result.stderr).slice(-500);
+            failures.push(`TypeScript compilation errors:\\n${output}`);
+          }
+        }
+      } catch {
+        // Non-fatal
+      }
+
+      // Check 3: Lint
+      try {
+        const fs = require('fs');
+        const pkgPath = path.join(workspaceRoot, 'package.json');
+        if (fs.existsSync(pkgPath)) {
+          const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+          if (pkg.scripts?.lint) {
+            const result = cp.spawnSync('npm', ['run', 'lint'], {
+              cwd: workspaceRoot,
+              timeout: 30_000,
+              encoding: 'utf-8',
+              shell: true,
+            });
+            if (result.status !== 0) {
+              const output = (result.stdout + result.stderr).slice(-500);
+              failures.push(`Lint errors:\\n${output}`);
+            }
+          }
+        }
+      } catch {
+        // Non-fatal
+      }
+
+      if (failures.length === 0) {
+        return { passed: true };
+      }
+
+      return {
+        passed: false,
+        feedback: 'The following validation checks failed:\\n\\n'
+          + failures.map((f, i) => `### Check ${i + 1}\\n${f}`).join('\\n\\n')
+          + '\\n\\nPlease fix these issues before completing the task.',
+      };
+    },
+  };
 }

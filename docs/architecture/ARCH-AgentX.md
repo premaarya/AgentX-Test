@@ -9,7 +9,8 @@
 
 1. [Clarification Protocol Architecture](#clarification-protocol-architecture)
 2. [Memory Pipeline Architecture](#memory-pipeline-architecture)
-3. [Related Documents](#related-documents)
+3. [Agentic Loop Quality Framework Architecture](#agentic-loop-quality-framework-architecture)
+4. [Related Documents](#related-documents)
 
 ---
 
@@ -1007,6 +1008,355 @@ stateDiagram-v2
 
 ---
 
+## Agentic Loop Quality Framework Architecture
+
+> Date: 2026-03-05 | Epic: #30 | ADR: [ADR-AgentX.md](../adr/ADR-AgentX.md#adr-30-agentic-loop-quality-framework) | Spec: [SPEC-AgentX.md](../specs/SPEC-AgentX.md#agentic-loop-quality-framework-specification) | PRD: [PRD-AgentX.md](../prd/PRD-AgentX.md#feature-prd-agentic-loop-quality-framework)
+
+### 1. System Context
+
+The Agentic Loop Quality Framework adds automated quality assurance and inter-agent clarification capabilities to AgentX's agentic loop. It operates as an in-session, in-memory layer -- distinct from the planned cross-session Clarification Protocol (Architecture #1) and Memory Pipeline (Architecture #2).
+
+```mermaid
+graph TB
+    subgraph External["External Systems"]
+        LLM["LLM Provider<br/>(VS Code LM API / CLI)"]
+        FS["File System<br/>(Agent definitions, workspace)"]
+        USER["Human User<br/>(fallback for clarification)"]
+    end
+
+    subgraph AgentX["AgentX Agentic Loop"]
+        AL["agenticLoop.ts<br/>(Orchestrator)"]
+        SAS["subAgentSpawner.ts<br/>(Sub-Agent Foundation)"]
+        SRL["selfReviewLoop.ts<br/>(Quality Gate)"]
+        CLL["clarificationLoop.ts<br/>(Ambiguity Resolution)"]
+    end
+
+    subgraph Integration["Integration Points"]
+        CCH["agenticChatHandler.ts<br/>(VS Code Chat)"]
+        CLI[".agentx/agentic-runner.ps1<br/>(CLI)"]
+    end
+
+    AL --> SRL
+    AL --> CLL
+    SRL --> SAS
+    CLL --> SAS
+    SAS --> LLM
+    SAS --> FS
+    CLL --> USER
+    CCH --> AL
+    CLI --> AL
+```
+
+---
+
+### 2. Component Architecture
+
+#### 2.1 Layer Diagram
+
+```mermaid
+graph TD
+    subgraph L1["Layer 1: Integration"]
+        CCH["agenticChatHandler.ts"]
+        CLI["agentic-runner.ps1"]
+    end
+
+    subgraph L2["Layer 2: Orchestration"]
+        AL["agenticLoop.ts"]
+    end
+
+    subgraph L3["Layer 3: Quality Modules"]
+        SRL["selfReviewLoop.ts"]
+        CLL["clarificationLoop.ts"]
+    end
+
+    subgraph L4["Layer 4: Foundation"]
+        SAS["subAgentSpawner.ts"]
+    end
+
+    L1 --> L2
+    L2 --> L3
+    L3 --> L4
+```
+
+**Layer 1 (Integration)**: Provides environment-specific wiring. VS Code Chat mode uses `buildChatLlmAdapterFactory()` and `buildChatAgentLoader()`. CLI mode uses `Invoke-SelfReviewLoop` and `Invoke-ClarificationLoop`.
+
+**Layer 2 (Orchestration)**: The main agentic loop invokes quality modules at two integration points: the self-review gate (post-task) and the clarification handler (on ambiguity).
+
+**Layer 3 (Quality Modules)**: Two independent modules -- `selfReviewLoop` for iterative review-fix cycles and `clarificationLoop` for iterative Q&A resolution. Both depend on Layer 4 but not on each other.
+
+**Layer 4 (Foundation)**: `subAgentSpawner` provides the core capability of spawning constrained sub-agents. Used by both quality modules.
+
+#### 2.2 Component Responsibilities
+
+| Component | Responsibility | Key Types |
+|-----------|---------------|------------|
+| `subAgentSpawner.ts` | Spawn constrained sub-agents with role, tools, budget | `SubAgentConfig`, `SubAgentResult`, `LlmAdapterFactory`, `AgentLoader` |
+| `selfReviewLoop.ts` | Orchestrate review-fix cycles until approval | `SelfReviewConfig`, `ReviewFinding`, `SelfReviewResult` |
+| `clarificationLoop.ts` | Manage iterative Q&A with evaluation + fallback | `ClarificationLoopConfig`, `ClarificationLoopResult`, `ClarificationEvaluator` |
+| `agenticLoop.ts` | Integrate quality gates into main loop | Self-review gate, clarification handler |
+| `agenticChatHandler.ts` | Wire Chat-mode factories | `buildChatLlmAdapterFactory()`, `buildChatAgentLoader()` |
+| `agentic-runner.ps1` | Wire CLI-mode functions | `Invoke-SelfReviewLoop`, `Invoke-ClarificationLoop` |
+
+---
+
+### 3. Data Flow: Self-Review
+
+```mermaid
+sequenceDiagram
+    participant AL as agenticLoop
+    participant SRL as selfReviewLoop
+    participant SAS as subAgentSpawner
+    participant LLM as LLM Provider
+
+    Note over AL: Agent completes task
+    AL->>SRL: runSelfReview(config)
+
+    rect rgb(240, 248, 255)
+    Note over SRL,LLM: Iteration 1
+    SRL->>SAS: spawnSubAgent(reviewer)
+    SAS->>LLM: System prompt + review request
+    LLM-->>SAS: Response with ```review``` block
+    SAS-->>SRL: SubAgentResult
+    SRL->>SRL: parseReviewResponse()
+    Note over SRL: 2 HIGH, 1 MEDIUM findings
+    end
+
+    rect rgb(255, 248, 240)
+    Note over SRL,LLM: Iteration 2
+    SRL->>SRL: Address HIGH + MEDIUM findings
+    SRL->>SAS: spawnSubAgent(reviewer)
+    SAS->>LLM: Review with prior findings context
+    LLM-->>SAS: APPROVED: true
+    SAS-->>SRL: SubAgentResult
+    SRL->>SRL: parseReviewResponse()
+    end
+
+    SRL-->>AL: SelfReviewResult(approved=true, iterations=2)
+```
+
+**Key behaviors:**
+- Only `high` and `medium` impact findings require addressing
+- `low` findings are logged but do not block approval
+- Reviewer sub-agent has read-only tools by default (`reviewerCanWrite: false`)
+- Maximum 15 iterations prevents infinite review loops
+
+---
+
+### 4. Data Flow: Clarification
+
+```mermaid
+sequenceDiagram
+    participant AL as agenticLoop
+    participant CLL as clarificationLoop
+    participant SAS as subAgentSpawner
+    participant LLM as LLM Provider
+    participant HF as Human Fallback
+
+    Note over AL: Agent encounters ambiguity
+    AL->>CLL: runClarificationLoop(config)
+
+    rect rgb(240, 248, 255)
+    Note over CLL,LLM: Iteration 1
+    CLL->>SAS: spawnSubAgent(responder)
+    SAS->>LLM: Question + context
+    LLM-->>SAS: Answer
+    SAS-->>CLL: SubAgentResult
+    CLL->>CLL: evaluate(question, answer)
+    Note over CLL: Not resolved
+    end
+
+    rect rgb(240, 255, 240)
+    Note over CLL,LLM: Iteration 2
+    CLL->>SAS: spawnSubAgent(responder)
+    SAS->>LLM: Refined question + exchange history
+    LLM-->>SAS: Detailed answer
+    SAS-->>CLL: SubAgentResult
+    CLL->>CLL: evaluate(question, answer)
+    Note over CLL: Resolved!
+    end
+
+    CLL-->>AL: ClarificationLoopResult(resolved=true, iterations=2)
+
+    Note over CLL,HF: If max iterations reached:
+    CLL->>HF: onHumanFallback(question, history)
+    HF-->>CLL: Human answer
+    CLL-->>AL: ClarificationLoopResult(escalatedToHuman=true)
+```
+
+**Key behaviors:**
+- Default `ClarificationEvaluator` uses heuristics; pluggable for LLM-based evaluation
+- Exchange history is preserved across iterations for context accumulation
+- Human fallback is invoked only when max iterations (default: 6) are exhausted
+- `onHumanFallback` callback keeps the flow synchronous and testable
+
+---
+
+### 5. LLM Abstraction Pattern
+
+The `LlmAdapterFactory` type enables the quality modules to work across both VS Code Chat and CLI modes:
+
+```mermaid
+graph LR
+    subgraph Chat["VS Code Chat Mode"]
+        VLM["vscode.lm.sendChatRequest()"] --> CLAF["buildChatLlmAdapterFactory()"]
+    end
+
+    subgraph CLI["CLI Mode"]
+        PSH["Invoke-LlmCall"] --> PLAF["PowerShell LlmAdapterFactory"]
+    end
+
+    CLAF --> LAF["LlmAdapterFactory type"]
+    PLAF --> LAF
+
+    LAF --> SAS["subAgentSpawner"]
+    SAS --> SRL["selfReviewLoop"]
+    SAS --> CLL["clarificationLoop"]
+```
+
+The factory receives a `systemPrompt` and optional `toolRegistry`, and returns an object with a `send(userMessage) -> Promise<string>` method. This allows the quality modules to be completely agnostic about the LLM provider.
+
+---
+
+### 6. Agent Definition Loading
+
+The `AgentLoader` interface abstracts how agent definitions (`.agent.md` files) are loaded:
+
+```mermaid
+graph TD
+    AL["AgentLoader interface"] --> LD["loadDef(role)"]
+    AL --> LI["loadInstructions(role)"]
+
+    LD --> AD["AgentDefLike"]
+    AD --> N["name"]
+    AD --> D["description"]
+    AD --> M["model"]
+    AD --> MF["modelFallback[]"]
+
+    LI --> RAW["Raw instruction text"]
+
+    subgraph Sources
+        AGT[".github/agents/*.agent.md"]
+        MOCK["Test mock definitions"]
+    end
+
+    Sources --> AL
+```
+
+In VS Code Chat mode, `buildChatAgentLoader()` reads `.agent.md` files from the workspace. In tests, a mock loader returns canned definitions.
+
+---
+
+### 7. Tool Access Control
+
+The sub-agent spawner implements tool access control via `createMinimalToolRegistry()`:
+
+| Tool Category | Full Access | Read-Only (Reviewer) |
+|--------------|------------|---------------------|
+| `read_file` | Yes | Yes |
+| `grep_search` | Yes | Yes |
+| `semantic_search` | Yes | Yes |
+| `file_search` | Yes | Yes |
+| `list_dir` | Yes | Yes |
+| `replace_string_in_file` | Yes | **No** |
+| `create_file` | Yes | **No** |
+| `run_in_terminal` | Yes | **No** |
+
+When `reviewerCanWrite: false` (default for self-review), the reviewer sub-agent can inspect the codebase but cannot modify it. This enforces the separation between reviewing and fixing.
+
+---
+
+### 8. Configuration Defaults
+
+| Parameter | Sub-Agent | Self-Review | Clarification |
+|-----------|-----------|-------------|---------------|
+| `maxIterations` | 5 | 15 | 6 |
+| `tokenBudget` | 20,000 | 30,000 | 20,000 |
+| `includeTools` | true | read-only | true |
+| `canWrite` | configurable | false | configurable |
+
+All defaults are overridable via the respective config interfaces. The CLI (`agentic-runner.ps1`) mirrors these defaults in PowerShell constants.
+
+---
+
+### 9. Relationship to Other Architecture Components
+
+```mermaid
+graph TD
+    subgraph Existing["Existing Components"]
+        TE["toolEngine.ts"]
+        TLD["toolLoopDetection.ts"]
+        SS["sessionState.ts"]
+        MS["modelSelector.ts"]
+        CC["contextCompactor.ts"]
+    end
+
+    subgraph New["Quality Framework (New)"]
+        SAS["subAgentSpawner.ts"]
+        SRL["selfReviewLoop.ts"]
+        CLL["clarificationLoop.ts"]
+    end
+
+    subgraph Planned["Planned (Future)"]
+        CR["clarificationRouter.ts"]
+        CM["clarificationMonitor.ts"]
+        FL["fileLock.ts"]
+        OBS["observationStore.ts"]
+    end
+
+    SAS --> TE
+    SAS --> MS
+    SRL --> SAS
+    CLL --> SAS
+
+    CR -.-> CLL
+    OBS -.-> SS
+
+    style Planned fill:#f5f5f5,stroke:#ccc
+```
+
+**Integration with existing:**
+- Uses `toolEngine.ts` for tool execution within sub-agents
+- Uses `modelSelector.ts` for LLM model selection
+- Uses `sessionState.ts` for session context
+- Uses `contextCompactor.ts` when context needs trimming
+
+**Relationship to planned:**
+- The planned `clarificationRouter.ts` (from Architecture #1) could delegate in-session clarification to `clarificationLoop.ts`
+- The planned `observationStore.ts` (from Architecture #2) could persist self-review findings as observations
+- `fileLock.ts` is NOT needed by the quality framework (in-memory only)
+
+---
+
+### 10. File Map
+
+| File | Layer | Status | Lines |
+|------|-------|--------|-------|
+| `vscode-extension/src/agentic/subAgentSpawner.ts` | Foundation | New | ~326 |
+| `vscode-extension/src/agentic/selfReviewLoop.ts` | Quality | New | ~471 |
+| `vscode-extension/src/agentic/clarificationLoop.ts` | Quality | New | ~451 |
+| `vscode-extension/src/agentic/agenticLoop.ts` | Orchestration | Modified | ~811 |
+| `vscode-extension/src/agentic/index.ts` | Exports | Modified | ~107 |
+| `vscode-extension/src/chat/agenticChatHandler.ts` | Integration | Modified | ~694 |
+| `.agentx/agentic-runner.ps1` | Integration (CLI) | Modified | ~1177 |
+| `vscode-extension/src/test/agentic/subAgentSpawner.test.ts` | Test | New | - |
+| `vscode-extension/src/test/agentic/selfReviewLoop.test.ts` | Test | New | - |
+| `vscode-extension/src/test/agentic/clarificationLoop.test.ts` | Test | New | - |
+
+---
+
+### 11. Key Decisions Summary
+
+| # | Decision | Rationale | See |
+|---|----------|-----------|-----|
+| 1 | In-memory only (no file-based ledgers) | No cross-process coordination needed | [ADR-30 sec 1](../adr/ADR-AgentX.md#decision-301-llm-abstraction-via-factory-type) |
+| 2 | LlmAdapterFactory abstraction | Decouples from VS Code LM API; works for Chat + CLI | [ADR-30 sec 1](../adr/ADR-AgentX.md#decision-301-llm-abstraction-via-factory-type) |
+| 3 | Read-only reviewer by default | Separates review from fix responsibility | [ADR-30 sec 2](../adr/ADR-AgentX.md#decision-302-read-only-reviewer-by-default) |
+| 4 | Pluggable ClarificationEvaluator | Default heuristic + LLM-based option | [ADR-30 sec 3](../adr/ADR-AgentX.md#decision-303-pluggable-clarification-evaluator) |
+| 5 | Human fallback as callback | Synchronous, testable, environment-agnostic | [ADR-30 sec 4](../adr/ADR-AgentX.md#decision-304-human-fallback-as-callback) |
+| 6 | Structured findings with impact levels | Prevents infinite review loops | [ADR-30 sec 5](../adr/ADR-AgentX.md#decision-305-structured-review-findings) |
+
+---
+
 ## Related Documents
 
 - [PRD-AgentX.md](../prd/PRD-AgentX.md) - Product Requirements Document
@@ -1017,6 +1367,6 @@ stateDiagram-v2
 ---
 
 **Generated by AgentX Architect Agent**
-**Last Updated**: 2026-02-27
-**Version**: 1.0
+**Last Updated**: 2026-03-05
+**Version**: 1.1
 

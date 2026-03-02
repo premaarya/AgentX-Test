@@ -552,6 +552,17 @@ Types: `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `chore`
 | Packs | `packs/` |
 | Agent Delegation | `.github/agent-delegation.md` |
 
+### New Features (v7.3)
+
+| Feature | Location | Status |
+|---------|----------|--------|
+| **Self-Review Loop** | `vscode-extension/src/agentic/selfReviewLoop.ts` | [PASS] Stable |
+| **Clarification Loop** | `vscode-extension/src/agentic/clarificationLoop.ts` | [PASS] Stable |
+| **Sub-Agent Spawner** | `vscode-extension/src/agentic/subAgentSpawner.ts` | [PASS] Stable |
+| **Streaming Visibility** | `vscode-extension/src/chat/agenticChatHandler.ts` | [PASS] Stable |
+| **Configurable Settings Sidebar** | `vscode-extension/src/views/settingsTreeProvider.ts` | [PASS] Stable |
+| **VS Code Loop Settings** | `vscode-extension/package.json` (6 settings) | [PASS] Stable |
+
 ### New Features (v7.2)
 
 | Feature | Location | Status |

@@ -39,6 +39,12 @@ $Script:MAX_TOOL_RESULT_CHARS = 8000
 $Script:SESSION_DIR = $null
 $Script:ApiMode = $null  # 'copilot' or 'models'
 
+# Self-review & clarification defaults (configurable per invocation)
+$Script:SELF_REVIEW_MAX_ITERATIONS = 15
+$Script:SELF_REVIEW_REVIEWER_MAX_ITERATIONS = 8
+$Script:CLARIFICATION_MAX_ITERATIONS = 6
+$Script:CLARIFICATION_RESPONDER_MAX_ITERATIONS = 5
+
 # All models mapped: agent frontmatter name -> Copilot API model ID
 # Copilot API has the full catalog; GitHub Models has limited GPT-only.
 $Script:MODEL_MAP_COPILOT = @{
@@ -485,6 +491,13 @@ function Build-SystemPrompt([hashtable]$agentDef, [string]$agentName) {
     $parts += "You have workspace tools: file_read, file_write, file_edit, grep_search, list_dir, terminal_exec."
     $parts += "Use them to explore the codebase and complete tasks. When done, provide a text summary."
     $parts += ""
+    $parts += "## Self-Review"
+    $parts += "When you report work as complete, a same-role reviewer sub-agent will"
+    $parts += "automatically review your output. If the reviewer finds HIGH or MEDIUM"
+    $parts += "impact issues, you will receive their findings and must address them."
+    $parts += "This loop continues until the reviewer approves or max iterations are reached."
+    $parts += "Focus on producing quality work upfront to minimize review iterations."
+    $parts += ""
     $parts += "## Clarification"
     $parts += 'If you need input from another agent, say: "I need clarification from [agent-name] about [topic]".'
 
@@ -560,6 +573,331 @@ function Find-ClarificationRequest([string]$text, [string[]]$canClarify) {
     $topic = $match.Groups[2].Value.Trim()
     if ($target -notin $canClarify) { return $null }
     return @{ targetAgent = $target; topic = $topic; question = $text }
+}
+
+# ---------------------------------------------------------------------------
+# Self-Review Loop (same-role sub-agent reviews work iteratively)
+# ---------------------------------------------------------------------------
+
+<#
+.SYNOPSIS
+  Spawn a same-role sub-agent to review the main agent's work.
+  Returns structured findings. Non-low findings must be addressed.
+
+.PARAMETER AgentName
+  Name of the agent whose work is being reviewed.
+
+.PARAMETER WorkOutput
+  The text output produced by the main agent (its "I'm done" response).
+
+.PARAMETER Token
+  GitHub auth token for LLM API calls.
+
+.PARAMETER ModelId
+  Model ID to use for the reviewer sub-agent.
+
+.PARAMETER WorkspaceRoot
+  Workspace root path.
+
+.PARAMETER MaxReviewerIterations
+  Max tool iterations for the reviewer sub-agent (default: 8).
+
+.OUTPUTS
+  Hashtable with: approved (bool), findings (array), feedback (string)
+#>
+function Invoke-SelfReviewLoop {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$AgentName,
+        [Parameter(Mandatory)][string]$WorkOutput,
+        [Parameter(Mandatory)][string]$Token,
+        [Parameter(Mandatory)][string]$ModelId,
+        [Parameter(Mandatory)][string]$WorkspaceRoot,
+        [int]$MaxReviewerIterations = $Script:SELF_REVIEW_REVIEWER_MAX_ITERATIONS
+    )
+
+    $reviewPrompt = @"
+You are reviewing work produced by the $AgentName agent. Examine their output
+and the current state of the workspace to determine if the work is complete
+and meets quality standards.
+
+## Work Output to Review
+$WorkOutput
+
+## Review Instructions
+1. Use workspace tools (file_read, grep_search, list_dir) to verify the work
+2. Check for completeness, correctness, and adherence to standards
+3. Provide your review in this EXACT format:
+
+``````review
+APPROVED: true|false
+FINDINGS:
+- [HIGH] category: description of critical issue
+- [MEDIUM] category: description of moderate issue
+- [LOW] category: description of minor suggestion
+``````
+
+Impact Guidelines:
+- HIGH: Blocks completion (bugs, missing features, security issues, broken tests)
+- MEDIUM: Should fix (code quality, missing docs, edge cases, naming)
+- LOW: Nice to have (style, optimization, minor suggestions)
+
+If everything looks good, set APPROVED: true with any LOW findings.
+"@
+
+    # Load the same agent's definition for the reviewer
+    $agentDef = Read-AgentDef -agentName $AgentName -root $WorkspaceRoot
+    if (-not $agentDef) {
+        $agentDef = @{ name = $AgentName; description = ''; model = ''; body = '' }
+    }
+
+    # Build reviewer system prompt
+    $reviewerSystemPrompt = @"
+You are a REVIEWER sub-agent for the $($agentDef.name ?? $AgentName) role.
+Your job is to review the main agent's work output for quality and completeness.
+You have READ-ONLY access to the workspace. Use file_read, grep_search, list_dir
+to verify the work. Do NOT modify any files.
+
+Produce a structured review with APPROVED status and FINDINGS list.
+"@
+
+    # Run a mini agentic loop as the reviewer
+    $reviewMessages = @(
+        @{ role = 'system'; content = $reviewerSystemPrompt }
+        @{ role = 'user'; content = $reviewPrompt }
+    )
+
+    # Use read-only tools only (no file_write, file_edit, terminal_exec)
+    $readOnlyTools = Get-ToolSchemas | Where-Object {
+        $_.function.name -in @('file_read', 'grep_search', 'list_dir')
+    }
+
+    $reviewerIterations = 0
+    $reviewText = ''
+    $reviewerDetector = New-LoopDetector
+
+    while ($reviewerIterations -lt $MaxReviewerIterations) {
+        $reviewerIterations++
+        try {
+            $response = Invoke-LlmChat -token $Token -modelId $ModelId -messages $reviewMessages -tools $readOnlyTools -maxTokens 4096
+        } catch {
+            Write-Host "`e[31m  [SELF-REVIEW] Reviewer LLM error: $_`e[0m"
+            return @{ approved = $true; findings = @(); feedback = '(Reviewer error -- auto-approving)' }
+        }
+
+        $choice = $response.choices[0]
+        $msg = $choice.message
+        $hasToolCalls = ($null -ne $msg.PSObject.Properties['tool_calls']) -and ($null -ne $msg.tool_calls) -and ($msg.tool_calls.Count -gt 0)
+
+        if (-not $hasToolCalls) {
+            $reviewText = if ($msg.content) { $msg.content } else { '' }
+            break
+        }
+
+        # Record and execute tool calls
+        $assistantMsg = @{ role = 'assistant'; content = $(if ($msg.content) { $msg.content } else { '' }); tool_calls = @($msg.tool_calls) }
+        $reviewMessages += $assistantMsg
+
+        foreach ($tc in $msg.tool_calls) {
+            $toolName = $tc.function.name
+            # Only allow read-only tools
+            if ($toolName -notin @('file_read', 'grep_search', 'list_dir')) {
+                $reviewMessages += @{ role = 'tool'; tool_call_id = $tc.id; content = "Tool '$toolName' not available in review mode." }
+                continue
+            }
+            $toolArgs = @{}
+            try { $toolArgs = $tc.function.arguments | ConvertFrom-Json -AsHashtable } catch {}
+            $result = Invoke-Tool -name $toolName -params $toolArgs -workspaceRoot $WorkspaceRoot
+
+            $paramsJson = $toolArgs | ConvertTo-Json -Depth 5 -Compress
+            Add-LoopRecord -detector $reviewerDetector -toolName $toolName -paramsJson $paramsJson -resultSnippet $result.text.Substring(0, [Math]::Min(200, $result.text.Length))
+            $reviewMessages += @{ role = 'tool'; tool_call_id = $tc.id; content = $result.text }
+        }
+
+        $loopCheck = Test-LoopDetection -detector $reviewerDetector
+        if ($loopCheck.severity -eq 'circuit_breaker') { break }
+    }
+
+    # Parse the review response
+    $approved = $true
+    $findings = @()
+    $feedback = ''
+
+    $reviewBlock = [regex]::Match($reviewText, '(?s)```review\s*\n(.*?)```')
+    if ($reviewBlock.Success) {
+        $block = $reviewBlock.Groups[1].Value
+        if ($block -match 'APPROVED:\s*(false|no)', 'IgnoreCase') {
+            $approved = $false
+        }
+
+        $findingMatches = [regex]::Matches($block, '-\s*\[(HIGH|MEDIUM|LOW)\]\s*([^:]+):\s*(.+)')
+        foreach ($fm in $findingMatches) {
+            $impact = $fm.Groups[1].Value.ToLower()
+            $findings += @{ impact = $impact; category = $fm.Groups[2].Value.Trim(); description = $fm.Groups[3].Value.Trim() }
+        }
+    } else {
+        # Freeform fallback: check for rejection signals
+        if ($reviewText -match 'not approved|needs changes|must fix|critical issue|fail', 'IgnoreCase') {
+            $approved = $false
+        }
+    }
+
+    # Build feedback from non-low findings
+    $actionable = @($findings | Where-Object { $_.impact -ne 'low' })
+    if ($actionable.Count -gt 0) {
+        $approved = $false
+        $parts = @("[Self-Review FAILED] Address the following $($actionable.Count) finding(s):")
+        $i = 0
+        foreach ($f in $actionable) {
+            $i++
+            $parts += "$i. [$($f.impact.ToUpper())] $($f.category): $($f.description)"
+        }
+        $feedback = $parts -join "`n"
+    } elseif (-not $approved) {
+        $feedback = "[Self-Review FAILED] Reviewer did not approve. Review output:`n$($reviewText.Substring(0, [Math]::Min(500, $reviewText.Length)))"
+    }
+
+    Write-Host "`e[$(if ($approved) {'32'} else {'33'})m  [SELF-REVIEW] $(if ($approved) {'APPROVED'} else {'NOT APPROVED'}) ($($findings.Count) findings, $($actionable.Count) actionable)`e[0m"
+
+    return @{
+        approved = $approved
+        findings = $findings
+        feedback = $feedback
+    }
+}
+
+# ---------------------------------------------------------------------------
+# Clarification Loop (iterative inter-agent Q&A with human fallback)
+# ---------------------------------------------------------------------------
+
+<#
+.SYNOPSIS
+  Run an iterative clarification loop between two agents. The requesting
+  agent's question is sent to the target agent; the answer is evaluated.
+  If not resolved, follow-up questions are asked. After max iterations,
+  escalates to human.
+
+.PARAMETER FromAgent
+  Name of the agent requesting clarification.
+
+.PARAMETER TargetAgent
+  Name of the agent being asked.
+
+.PARAMETER Topic
+  Topic/context for the clarification.
+
+.PARAMETER Question
+  The initial question.
+
+.PARAMETER Token
+  GitHub auth token.
+
+.PARAMETER ModelId
+  Model ID for the responder sub-agent.
+
+.PARAMETER WorkspaceRoot
+  Workspace root path.
+
+.PARAMETER MaxIterations
+  Max clarification rounds (default: 6).
+
+.OUTPUTS
+  Hashtable with: resolved (bool), answer (string), iterations (int), escalatedToHuman (bool)
+#>
+function Invoke-ClarificationLoop {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$FromAgent,
+        [Parameter(Mandatory)][string]$TargetAgent,
+        [Parameter(Mandatory)][string]$Topic,
+        [Parameter(Mandatory)][string]$Question,
+        [Parameter(Mandatory)][string]$Token,
+        [Parameter(Mandatory)][string]$ModelId,
+        [Parameter(Mandatory)][string]$WorkspaceRoot,
+        [int]$MaxIterations = $Script:CLARIFICATION_MAX_ITERATIONS
+    )
+
+    $currentQuestion = $Question
+    $exchanges = @()
+
+    for ($i = 1; $i -le $MaxIterations; $i++) {
+        Write-Host "`e[33m  [CLARIFY $i/$MaxIterations] Asking $TargetAgent about: $Topic`e[0m"
+
+        # Run a sub-agent loop as the target agent
+        $subResult = Invoke-AgenticLoop `
+            -Agent $TargetAgent `
+            -Prompt "You are being asked a clarification question by the $FromAgent agent.`nTopic: $Topic`nQuestion: $currentQuestion`n`nAnswer from your perspective as the $TargetAgent. Use workspace tools to research if needed." `
+            -MaxIterations $Script:CLARIFICATION_RESPONDER_MAX_ITERATIONS `
+            -WorkspaceRoot $WorkspaceRoot `
+            -Model $ModelId
+
+        $answer = if ($subResult.finalText) { $subResult.finalText } else { '(No response from sub-agent)' }
+
+        $exchanges += @{
+            question = $currentQuestion
+            response = $answer
+            iteration = $i
+            respondedBy = 'sub-agent'
+        }
+
+        Write-Host "`e[32m  [CLARIFY RESPONSE] $TargetAgent answered ($($answer.Length) chars)`e[0m"
+
+        # Evaluate the answer using heuristics
+        $isNonAnswer = $answer -match "I don't know|I'm not sure|I cannot|unable to|no information|cannot determine"
+        $isTooShort = $answer.Length -lt 50
+
+        if (-not $isNonAnswer -and -not $isTooShort) {
+            # Answer seems substantive -- resolved
+            return @{
+                resolved = $true
+                answer = $answer
+                iterations = $i
+                escalatedToHuman = $false
+                exchanges = $exchanges
+            }
+        }
+
+        # Generate follow-up question
+        $currentQuestion = "Your previous answer was not sufficient. Original question: $Question`nYour answer: $($answer.Substring(0, [Math]::Min(200, $answer.Length)))`nPlease provide a more detailed and specific answer."
+    }
+
+    # Exhausted iterations -- escalate to human
+    Write-Host "`e[35m  [HUMAN ESCALATION] Clarification not resolved after $MaxIterations iterations.`e[0m"
+    $escalationContext = "The $FromAgent agent asked the $TargetAgent agent about '$Topic' but could not get a satisfactory answer after $MaxIterations attempts.`n"
+    $escalationContext += "Original question: $Question`n"
+    foreach ($ex in $exchanges) {
+        $escalationContext += "  Iteration $($ex.iteration): Q: $($ex.question.Substring(0, [Math]::Min(100, $ex.question.Length)))... A: $($ex.response.Substring(0, [Math]::Min(100, $ex.response.Length)))...`n"
+    }
+
+    Write-Host "`e[35m  [HUMAN REQUIRED]`n$escalationContext`e[0m"
+
+    # In CLI mode, prompt the human interactively
+    $humanAnswer = ''
+    try {
+        Write-Host "`e[35m  Please provide guidance (or press Enter to skip):`e[0m"
+        $humanAnswer = Read-Host '  > '
+    } catch {
+        $humanAnswer = '(Human escalation -- no response in non-interactive mode)'
+    }
+
+    if (-not $humanAnswer) {
+        $humanAnswer = '(Human escalation -- awaiting response)'
+    }
+
+    $exchanges += @{
+        question = $Question
+        response = $humanAnswer
+        iteration = $MaxIterations + 1
+        respondedBy = 'human'
+    }
+
+    return @{
+        resolved = ($humanAnswer -and $humanAnswer -ne '(Human escalation -- awaiting response)')
+        answer = $humanAnswer
+        iterations = $MaxIterations + 1
+        escalatedToHuman = $true
+        exchanges = $exchanges
+    }
 }
 
 # ---------------------------------------------------------------------------
@@ -667,6 +1005,10 @@ function Invoke-AgenticLoop {
     $finalText = ''
     $exitReason = 'text_response'
 
+    # Self-review state (tracks review iterations across the main loop)
+    $selfReviewIteration = 0
+    $selfReviewMax = $Script:SELF_REVIEW_MAX_ITERATIONS
+
     Write-Host "`e[90m  -----------------------------------------------`e[0m"
 
     # --- Main loop ---
@@ -695,29 +1037,60 @@ function Invoke-AgenticLoop {
             break
         }
 
-        # Text-only response -> check for clarification, then done
+        # Text-only response -> self-review -> clarification -> done
         if (-not $hasToolCalls) {
             $finalText = if ($hasContent) { $msg.content } else { '' }
 
             # Add to conversation
             $messages += @{ role = 'assistant'; content = $finalText }
 
-            # Check for clarification request
+            # --- Step 1: Check for clarification request ---
             $clarifyReq = Find-ClarificationRequest -text $finalText -canClarify $canClarify
             if ($clarifyReq) {
                 Write-Host "`e[33m  [CLARIFY] Asking $($clarifyReq.targetAgent) about: $($clarifyReq.topic)`e[0m"
 
-                # Run a sub-agent loop for clarification
-                $subResult = Invoke-AgenticLoop -Agent $clarifyReq.targetAgent -Prompt $clarifyReq.question `
-                    -MaxIterations 5 -WorkspaceRoot $WorkspaceRoot -Model $modelId
-                $answer = if ($subResult.finalText) { $subResult.finalText } else { '(No response from sub-agent)' }
+                # Use the new iterative clarification loop
+                $clarifyResult = Invoke-ClarificationLoop `
+                    -FromAgent $Agent `
+                    -TargetAgent $clarifyReq.targetAgent `
+                    -Topic $clarifyReq.topic `
+                    -Question $clarifyReq.question `
+                    -Token $token `
+                    -ModelId $modelId `
+                    -WorkspaceRoot $WorkspaceRoot
 
-                Write-Host "`e[32m  [RESPONSE] $($clarifyReq.targetAgent) answered ($($answer.Length) chars)`e[0m"
+                $answer = if ($clarifyResult.answer) { $clarifyResult.answer } else { '(No resolution)' }
+                $source = if ($clarifyResult.escalatedToHuman) { 'human' } else { $clarifyReq.targetAgent }
 
                 # Feed answer back and continue
-                $messages += @{ role = 'user'; content = "[Clarification from $($clarifyReq.targetAgent)]: $answer" }
+                $messages += @{ role = 'user'; content = "[Clarification from $source]: $answer" }
                 $finalText = ''
                 continue
+            }
+
+            # --- Step 2: Self-review gate ---
+            if ($selfReviewIteration -lt $selfReviewMax) {
+                $selfReviewIteration++
+                Write-Host "`e[36m  [SELF-REVIEW] Iteration $selfReviewIteration/$selfReviewMax...`e[0m"
+
+                $reviewResult = Invoke-SelfReviewLoop `
+                    -AgentName $Agent `
+                    -WorkOutput $finalText `
+                    -Token $token `
+                    -ModelId $modelId `
+                    -WorkspaceRoot $WorkspaceRoot
+
+                if (-not $reviewResult.approved) {
+                    # Inject feedback and continue the main loop
+                    $messages += @{
+                        role = 'user'
+                        content = "[Self-Review FAILED - Iteration $selfReviewIteration/$selfReviewMax]`n$($reviewResult.feedback)`n`nPlease address the findings above and try again."
+                    }
+                    $finalText = ''
+                    continue
+                }
+
+                Write-Host "`e[32m  [SELF-REVIEW] Approved on iteration $selfReviewIteration`e[0m"
             }
 
             $exitReason = 'text_response'

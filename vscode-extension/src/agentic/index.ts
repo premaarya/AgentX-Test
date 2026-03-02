@@ -7,6 +7,9 @@
 //   - Tool Loop Detection (hash-based cycle detection)
 //   - Session State (persistence, compaction, lifecycle)
 //   - Agentic Loop (LLM <-> Tool orchestration)
+//   - Sub-Agent Spawner (generalized sub-agent invocation)
+//   - Self-Review Loop (same-role iterative review)
+//   - Clarification Loop (inter-agent iterative Q&A)
 // ---------------------------------------------------------------------------
 
 // Tool Engine
@@ -17,6 +20,7 @@ export {
   ToolContext,
   ToolCallRequest,
   ToolRegistry,
+  ClarificationHandler,
   // Built-in tools
   fileReadTool,
   fileWriteTool,
@@ -24,6 +28,8 @@ export {
   terminalExecTool,
   grepSearchTool,
   listDirTool,
+  requestClarificationTool,
+  validateDoneTool,
 } from './toolEngine';
 
 // Tool Loop Detection
@@ -55,6 +61,7 @@ export {
   AgenticLoop,
   AgenticLoopConfig,
   AgenticLoopError,
+  DoneValidator,
   LlmAdapter,
   LlmResponse,
   LlmToolCall,
@@ -62,3 +69,38 @@ export {
   LoopSummary,
   LoopExitReason,
 } from './agenticLoop';
+
+// Sub-Agent Spawner
+export {
+  SubAgentConfig,
+  SubAgentResult,
+  LlmAdapterFactory,
+  AgentDefLike,
+  AgentLoader,
+  spawnSubAgent,
+  spawnSubAgentWithHistory,
+} from './subAgentSpawner';
+
+// Self-Review Loop
+export {
+  FindingImpact,
+  ReviewFinding,
+  ReviewResult,
+  SelfReviewConfig,
+  SelfReviewResult,
+  SelfReviewProgress,
+  runSelfReview,
+  getDefaultSelfReviewConfig,
+} from './selfReviewLoop';
+
+// Clarification Loop
+export {
+  ClarificationLoopConfig,
+  ClarificationLoopResult,
+  ClarificationExchange,
+  ClarificationProgress,
+  ClarificationEvaluator,
+  ClarificationEvaluation,
+  runClarificationLoop,
+  getDefaultClarificationConfig,
+} from './clarificationLoop';

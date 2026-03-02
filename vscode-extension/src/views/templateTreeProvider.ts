@@ -31,8 +31,8 @@ interface TemplateDef {
 const TEMPLATE_ICONS: Record<string, string> = {
  PRD: 'file-text',
  ADR: 'law',
- SPEC: 'symbols-file', // Updated from 'symbol-file'
- UX: 'paintcan',
+ SPEC: 'symbol-file',
+ UX: 'color-mode',
  REVIEW: 'checklist',
  'SECURITY-PLAN': 'shield',
  PROGRESS: 'graph',

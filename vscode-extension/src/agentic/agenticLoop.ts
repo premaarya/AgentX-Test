@@ -10,13 +10,17 @@
 //   3. Record calls for loop detection
 //   4. Append tool results to conversation
 //   5. Check loop detection / budget / abort
-//   6. Repeat until LLM returns a text-only response or limits hit
+//   6. On text-only response -> run done-validation, re-enter if validation fails
+//   7. Repeat until validated text response, or limits hit
 //
 // The loop is model-agnostic: it receives an LLM adapter interface so it
 // can work with any provider (OpenAI, Anthropic, Azure OpenAI, local).
+//
+// Agent-to-agent communication happens through the request_clarification
+// tool (not fragile regex matching on LLM text output).
 // ---------------------------------------------------------------------------
 
-import { ToolRegistry, ToolCallRequest, ToolResult, ToolContext } from './toolEngine';
+import { ToolRegistry, ToolCallRequest, ToolResult, ToolContext, ClarificationHandler } from './toolEngine';
 import {
   ToolLoopDetector,
   LoopDetectionResult,
@@ -29,6 +33,23 @@ import {
   SessionStorage,
   InMemorySessionStorage,
 } from './sessionState';
+import {
+  LlmAdapterFactory,
+  AgentLoader,
+} from './subAgentSpawner';
+import {
+  SelfReviewConfig,
+  SelfReviewResult,
+  SelfReviewProgress,
+  runSelfReview,
+} from './selfReviewLoop';
+import {
+  ClarificationLoopConfig,
+  ClarificationLoopResult,
+  ClarificationProgress,
+  ClarificationEvaluator,
+  runClarificationLoop,
+} from './clarificationLoop';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -83,6 +104,7 @@ export interface LoopProgressCallback {
   onLoopWarning?(result: LoopDetectionResult): void;
   onText?(text: string): void;
   onComplete?(summary: LoopSummary): void;
+  onValidation?(passed: boolean, details: string): void;
 }
 
 /** Final summary of the agentic loop execution. */
@@ -105,6 +127,24 @@ export type LoopExitReason =
   | 'error'
   | 'empty_response';
 
+/**
+ * Done-validation callback (LEGACY -- prefer selfReviewConfig).
+ * Called when the LLM produces a text-only response
+ * (signaling "I'm done"). Returns whether the work is actually done.
+ *
+ * If validation fails, the loop injects the failure message into the
+ * conversation and continues iterating so the LLM can self-correct.
+ *
+ * @deprecated Use selfReviewConfig for LLM-based self-review instead.
+ */
+export interface DoneValidator {
+  /**
+   * Validate whether the agent's work meets completion criteria.
+   * @returns { passed: true } or { passed: false, feedback: "..." }
+   */
+  validate(): Promise<{ passed: boolean; feedback?: string }>;
+}
+
 /** Configuration for the agentic loop. */
 export interface AgenticLoopConfig {
   /** Maximum iterations before forced stop (default 30). */
@@ -126,6 +166,7 @@ export interface AgenticLoopConfig {
   /**
    * Agents this loop instance is allowed to request clarifications from.
    * Empty / undefined means clarification is disabled for this loop.
+   * The request_clarification tool checks this list at execution time.
    * Example: ['architect', 'product-manager']
    */
   readonly canClarify?: readonly string[];
@@ -135,24 +176,85 @@ export interface AgenticLoopConfig {
    */
   readonly clarifyMaxRounds?: number;
   /**
-   * Callback invoked when the LLM signals it needs clarification.
-   * The loop calls this and waits for the resolution before continuing.
-   * If not provided, clarifications are logged but not awaited.
+   * Callback invoked when the request_clarification tool is called.
+   * Routes the question to the target agent and returns the answer.
+   * If not provided, the tool returns a graceful "not available" message.
    */
   readonly onClarificationNeeded?: (
     topic: string,
     question: string,
   ) => Promise<import('../utils/clarificationTypes').ClarificationResult>;
+  /**
+   * Done-validation hook (LEGACY). When set, the loop validates completion
+   * criteria before accepting a text-only response as "done". If validation
+   * fails, the feedback is injected into the conversation and the loop
+   * continues. Maximum re-validation attempts = 3 to prevent infinite loops.
+   *
+   * @deprecated Use selfReviewConfig for LLM-based self-review instead.
+   */
+  readonly doneValidator?: DoneValidator;
+  /**
+   * Self-review loop configuration. When set, the loop spawns a same-role
+   * sub-agent to review the main agent's work whenever a text-only response
+   * is produced (signaling "done"). The reviewer provides structured findings
+   * and the main agent addresses non-low-impact findings iteratively.
+   *
+   * This replaces DoneValidator with a richer, LLM-based review mechanism
+   * that works for ALL agent roles (not just code-producing agents).
+   *
+   * Max iterations configurable (default: 15).
+   */
+  readonly selfReviewConfig?: SelfReviewConfig;
+  /**
+   * Self-review progress callbacks. Streamed to the UI during review.
+   */
+  readonly selfReviewProgress?: SelfReviewProgress;
+  /**
+   * LLM adapter factory for spawning sub-agents (self-review & clarification).
+   * Must be provided if selfReviewConfig or clarificationLoopConfig is set.
+   */
+  readonly llmAdapterFactory?: LlmAdapterFactory;
+  /**
+   * Agent loader for loading sub-agent definitions and instructions.
+   * Must be provided if selfReviewConfig or clarificationLoopConfig is set.
+   */
+  readonly agentLoader?: AgentLoader;
+  /**
+   * Clarification loop configuration. When set, the request_clarification
+   * tool uses the clarification loop module for iterative agent-to-agent
+   * communication with human fallback.
+   *
+   * Max iterations configurable (default: 6).
+   */
+  readonly clarificationLoopConfig?: ClarificationLoopConfig;
+  /**
+   * Clarification loop progress callbacks.
+   */
+  readonly clarificationProgress?: ClarificationProgress;
+  /**
+   * Custom evaluator for clarification answers. If not provided, a
+   * default heuristic evaluator is used.
+   */
+  readonly clarificationEvaluator?: ClarificationEvaluator;
+  /**
+   * Workspace root path for CLI loop state bridge.
+   * When set, the agentic loop reads/updates .agentx/state/loop-state.json
+   * to stay synchronized with the CLI-based iterative loop.
+   */
+  readonly workspaceRoot?: string;
 }
 
 const DEFAULT_CONFIG: AgenticLoopConfig = {
-  maxIterations: 30,
+  maxIterations: 20,
   tokenBudget: 100_000,
   systemPrompt: 'You are a helpful AI coding assistant.',
   agentName: 'engineer',
   compactKeepRecent: 10,
   autoCompact: true,
 };
+
+/** Maximum re-validation attempts before accepting the response. */
+const MAX_VALIDATION_RETRIES = 3;
 
 // ---------------------------------------------------------------------------
 // Custom Errors
@@ -174,7 +276,8 @@ export class AgenticLoopError extends Error {
 
 /**
  * The inner agentic loop: runs the LLM <-> Tool cycle until the LLM produces
- * a text-only response, a safety limit is hit, or the operation is aborted.
+ * a validated text-only response, a safety limit is hit, or the operation is
+ * aborted.
  *
  * ## Architecture
  *
@@ -189,7 +292,8 @@ export class AgenticLoopError extends Error {
  *     |                |
  *     v                |
  *  tool_calls?  -----> [Tool Registry] -> execute
- *     |    yes              |
+ *     |    yes              |  (includes request_clarification
+ *     |                     |   and validate_done tools)
  *     |                     v
  *     |             [Loop Detector] -> record + detect
  *     |                     |
@@ -199,7 +303,11 @@ export class AgenticLoopError extends Error {
  *     |
  *     | no tool_calls (text only)
  *     v
- *  Return final text
+ *  [Done Validator] -- pass? -> Return final text
+ *       |                       (also updates CLI loop state)
+ *       | fail
+ *       v
+ *  Inject feedback -> continue loop
  * ```
  */
 export class AgenticLoop {
@@ -236,7 +344,6 @@ export class AgenticLoop {
     abortSignal: AbortSignal,
     progress?: LoopProgressCallback,
   ): Promise<LoopSummary> {
-    const startTime = Date.now();
     this.loopDetector.reset();
 
     // Create session
@@ -260,22 +367,94 @@ export class AgenticLoop {
       timestamp: new Date().toISOString(),
     });
 
-    // Get tool schemas
-    const toolSchemas = this.toolRegistry.toFunctionSchemas();
+    return this.executeLoop(sessionId, llm, abortSignal, progress);
+  }
 
-    // Build tool context
-    const workspaceRoot = this.resolveWorkspaceRoot();
-    const toolCtx: ToolContext = {
+  /**
+   * Resume a previously saved session with a new user message.
+   */
+  async resume(
+    sessionId: string,
+    userMessage: string,
+    llm: LlmAdapter,
+    abortSignal: AbortSignal,
+    progress?: LoopProgressCallback,
+  ): Promise<LoopSummary> {
+    this.loopDetector.reset();
+    const loaded = this.sessionManager.load(sessionId);
+    if (!loaded) {
+      throw new AgenticLoopError(
+        `Session not found: ${sessionId}`,
+        'error',
+      );
+    }
+
+    // Add the new user message
+    this.sessionManager.addMessage(sessionId, {
+      role: 'user',
+      content: userMessage,
+      timestamp: new Date().toISOString(),
+    });
+
+    return this.executeLoop(sessionId, llm, abortSignal, progress);
+  }
+
+  // -----------------------------------------------------------------------
+  // Accessors
+  // -----------------------------------------------------------------------
+
+  /** Get the tool registry for external registration. */
+  getToolRegistry(): ToolRegistry {
+    return this.toolRegistry;
+  }
+
+  /** Get the session manager for external queries. */
+  getSessionManager(): SessionManager {
+    return this.sessionManager;
+  }
+
+  /** Get the loop detector for inspection. */
+  getLoopDetector(): ToolLoopDetector {
+    return this.loopDetector;
+  }
+
+  // -----------------------------------------------------------------------
+  // Core Loop (single implementation -- used by both run and resume)
+  // -----------------------------------------------------------------------
+
+  /**
+   * Execute the core LLM <-> Tool cycle for a session that already has
+   * system prompt and user message(s) in its history.
+   *
+   * This is the SINGLE implementation of the loop logic, eliminating the
+   * previous duplication between run() and runFromSession().
+   */
+  private async executeLoop(
+    sessionId: string,
+    llm: LlmAdapter,
+    abortSignal: AbortSignal,
+    progress?: LoopProgressCallback,
+  ): Promise<LoopSummary> {
+    const startTime = Date.now();
+
+    // Build tool context with clarification handler injected
+    const workspaceRoot = this.config.workspaceRoot ?? this.resolveWorkspaceRoot();
+    const clarificationHandler = this.buildClarificationHandler();
+    const toolCtx: ToolContext & { clarificationHandler?: ClarificationHandler } = {
       workspaceRoot,
       abortSignal,
       log: (msg) => progress?.onText?.(msg),
+      clarificationHandler,
     };
+
+    const toolSchemas = this.toolRegistry.toFunctionSchemas();
 
     let iterations = 0;
     let totalToolCalls = 0;
     let finalText = '';
     let exitReason: LoopExitReason = 'text_response';
     let lastLoopResult: LoopDetectionResult | null = null;
+    let validationRetries = 0;
 
     // --- Main loop ---
     while (iterations < this.config.maxIterations) {
@@ -319,7 +498,7 @@ export class AgenticLoop {
         break;
       }
 
-      // If text-only response -> check for clarification need, then done
+      // If text-only response -> validate, then done
       if (response.toolCalls.length === 0) {
         finalText = response.text;
         progress?.onText?.(finalText);
@@ -330,26 +509,72 @@ export class AgenticLoop {
           timestamp: new Date().toISOString(),
         });
 
-        // Check if the LLM is requesting clarification from another agent
-        const clarifyResult = this.detectClarificationRequest(finalText);
-        if (clarifyResult && this.config.onClarificationNeeded) {
+        // --- Self-Review Loop (replaces old DoneValidator) ---
+        if (
+          this.config.selfReviewConfig
+          && this.config.llmAdapterFactory
+          && this.config.agentLoader
+          && validationRetries < MAX_VALIDATION_RETRIES
+        ) {
           try {
-            const result = await this.config.onClarificationNeeded(
-              clarifyResult.topic,
-              clarifyResult.question,
+            const reviewResult: SelfReviewResult = await runSelfReview(
+              this.config.selfReviewConfig,
+              finalText,
+              this.config.llmAdapterFactory,
+              this.config.agentLoader,
+              abortSignal,
+              this.config.selfReviewProgress,
             );
-            // Feed the clarification answer back as a user message and continue the loop
-            this.sessionManager.addMessage(sessionId, {
-              role: 'user',
-              content: `[Clarification from ${clarifyResult.targetAgent}]: ${result.answer}`,
-              timestamp: new Date().toISOString(),
-            });
-            finalText = ''; // Reset -- loop continues with the clarification answer
-            continue;
+
+            progress?.onValidation?.(reviewResult.approved, reviewResult.summary);
+
+            if (!reviewResult.approved && reviewResult.summary) {
+              validationRetries++;
+              // Inject review findings as feedback for the main agent to fix
+              this.sessionManager.addMessage(sessionId, {
+                role: 'user',
+                content:
+                  `[Self-Review FAILED - iteration ${validationRetries}/${MAX_VALIDATION_RETRIES}]\n\n`
+                  + `${reviewResult.summary}\n\n`
+                  + 'Please address the findings above and try again.',
+                timestamp: new Date().toISOString(),
+              });
+              finalText = ''; // Reset -- loop continues with review feedback
+              continue;
+            }
+            // Review approved -- fall through to exit
           } catch {
-            // Clarification failed -- treat as normal text response
+            // Review error -- accept the response to avoid infinite retry
           }
         }
+        // --- Legacy DoneValidator gate (deprecated, for backward compat) ---
+        else if (this.config.doneValidator && validationRetries < MAX_VALIDATION_RETRIES) {
+          try {
+            const validation = await this.config.doneValidator.validate();
+            progress?.onValidation?.(validation.passed, validation.feedback ?? '');
+
+            if (!validation.passed && validation.feedback) {
+              validationRetries++;
+              this.sessionManager.addMessage(sessionId, {
+                role: 'user',
+                content:
+                  `[Done-Validation FAILED - attempt ${validationRetries}/${MAX_VALIDATION_RETRIES}]\n\n`
+                  + `${validation.feedback}\n\n`
+                  + 'Please fix the issues above and try again. '
+                  + 'Use the validate_done tool to verify your fixes before responding.',
+                timestamp: new Date().toISOString(),
+              });
+              finalText = ''; // Reset -- loop continues with validation feedback
+              continue;
+            }
+            // Validation passed -- fall through to exit
+          } catch {
+            // Validation error -- accept the response to avoid infinite retry
+          }
+        }
+
+        // Update CLI loop state if workspace root is available
+        this.updateCliLoopState(workspaceRoot, iterations, finalText);
 
         exitReason = 'text_response';
         break;
@@ -442,236 +667,133 @@ export class AgenticLoop {
     return summary;
   }
 
+  // -----------------------------------------------------------------------
+  // Clarification handler (wired into the request_clarification tool)
+  // -----------------------------------------------------------------------
+
   /**
-   * Resume a previously saved session with a new user message.
+   * Build a ClarificationHandler that the request_clarification tool will
+   * call at execution time. This replaces the old regex-based detection.
+   *
+   * When clarificationLoopConfig is set, the handler uses the full
+   * clarification loop for iterative back-and-forth with human fallback.
+   * Otherwise, falls back to the single-shot onClarificationNeeded callback.
    */
-  async resume(
-    sessionId: string,
-    userMessage: string,
-    llm: LlmAdapter,
-    abortSignal: AbortSignal,
-    progress?: LoopProgressCallback,
-  ): Promise<LoopSummary> {
-    this.loopDetector.reset();
-    const loaded = this.sessionManager.load(sessionId);
-    if (!loaded) {
-      throw new AgenticLoopError(
-        `Session not found: ${sessionId}`,
-        'error',
-      );
+  private buildClarificationHandler(): ClarificationHandler | undefined {
+    if (!this.config.canClarify || this.config.canClarify.length === 0) {
+      return undefined;
     }
 
-    // Add the new user message and run
-    this.sessionManager.addMessage(sessionId, {
-      role: 'user',
-      content: userMessage,
-      timestamp: new Date().toISOString(),
-    });
+    const canClarify = this.config.canClarify;
 
-    // Re-run the loop with existing session context
-    return this.runFromSession(sessionId, llm, abortSignal, progress);
-  }
+    // Prefer the new clarification loop if configured
+    if (
+      this.config.clarificationLoopConfig
+      && this.config.llmAdapterFactory
+      && this.config.agentLoader
+    ) {
+      const loopConfig = this.config.clarificationLoopConfig;
+      const llmFactory = this.config.llmAdapterFactory;
+      const agentLoader = this.config.agentLoader;
+      const evaluator = this.config.clarificationEvaluator;
+      const clarificationProgress = this.config.clarificationProgress;
+      const agentName = this.config.agentName;
 
-  // -----------------------------------------------------------------------
-  // Accessors
-  // -----------------------------------------------------------------------
-
-  /** Get the tool registry for external registration. */
-  getToolRegistry(): ToolRegistry {
-    return this.toolRegistry;
-  }
-
-  /** Get the session manager for external queries. */
-  getSessionManager(): SessionManager {
-    return this.sessionManager;
-  }
-
-  /** Get the loop detector for inspection. */
-  getLoopDetector(): ToolLoopDetector {
-    return this.loopDetector;
-  }
-
-  // -----------------------------------------------------------------------
-  // Private
-  // -----------------------------------------------------------------------
-
-  /**
-   * Run the loop for an existing active session (used by resume).
-   */
-  private async runFromSession(
-    sessionId: string,
-    llm: LlmAdapter,
-    abortSignal: AbortSignal,
-    progress?: LoopProgressCallback,
-  ): Promise<LoopSummary> {
-    const startTime = Date.now();
-    const toolSchemas = this.toolRegistry.toFunctionSchemas();
-    const workspaceRoot = this.resolveWorkspaceRoot();
-    const toolCtx: ToolContext = {
-      workspaceRoot,
-      abortSignal,
-      log: (msg) => progress?.onText?.(msg),
-    };
-
-    let iterations = 0;
-    let totalToolCalls = 0;
-    let finalText = '';
-    let exitReason: LoopExitReason = 'text_response';
-    let lastLoopResult: LoopDetectionResult | null = null;
-
-    while (iterations < this.config.maxIterations) {
-      iterations++;
-      progress?.onIteration?.(iterations, this.config.maxIterations);
-
-      if (abortSignal.aborted) {
-        exitReason = 'aborted';
-        break;
-      }
-
-      if (this.config.autoCompact) {
-        this.sessionManager.compact(
-          sessionId,
-          this.config.tokenBudget,
-          this.config.compactKeepRecent,
-        );
-      }
-
-      const messages = this.sessionManager.getMessages(sessionId);
-      let response: LlmResponse;
-      try {
-        response = await llm.chat(messages, toolSchemas, abortSignal);
-      } catch (err: unknown) {
-        if (abortSignal.aborted) { exitReason = 'aborted'; break; }
-        finalText = `LLM error: ${err instanceof Error ? err.message : String(err)}`;
-        exitReason = 'error';
-        break;
-      }
-
-      if (!response.text && response.toolCalls.length === 0) {
-        exitReason = 'empty_response';
-        break;
-      }
-
-      if (response.toolCalls.length === 0) {
-        finalText = response.text;
-        progress?.onText?.(finalText);
-        this.sessionManager.addMessage(sessionId, {
-          role: 'assistant',
-          content: finalText,
-          timestamp: new Date().toISOString(),
-        });
-
-        // Check for clarification request in resumed session
-        const clarifyResult = this.detectClarificationRequest(finalText);
-        if (clarifyResult && this.config.onClarificationNeeded) {
-          try {
-            const result = await this.config.onClarificationNeeded(
-              clarifyResult.topic,
-              clarifyResult.question,
-            );
-            this.sessionManager.addMessage(sessionId, {
-              role: 'user',
-              content: `[Clarification from ${clarifyResult.targetAgent}]: ${result.answer}`,
-              timestamp: new Date().toISOString(),
-            });
-            finalText = '';
-            continue;
-          } catch {
-            // Clarification failed -- treat as normal text response
-          }
+      return async (targetAgent: string, topic: string, question: string) => {
+        // Scope check
+        const normalized = targetAgent.toLowerCase();
+        if (!canClarify.includes(normalized)) {
+          throw new Error(
+            `Cannot request clarification from '${targetAgent}'. `
+            + `Allowed agents: [${canClarify.join(', ')}]`,
+          );
         }
 
-        exitReason = 'text_response';
-        break;
-      }
-
-      const sessionToolCalls: SessionToolCall[] = response.toolCalls.map((tc) => ({
-        id: tc.id, name: tc.name, params: tc.arguments,
-      }));
-      this.sessionManager.addMessage(sessionId, {
-        role: 'assistant',
-        content: response.text,
-        toolCalls: sessionToolCalls,
-        timestamp: new Date().toISOString(),
-      });
-
-      for (const toolCall of response.toolCalls) {
-        if (abortSignal.aborted) { exitReason = 'aborted'; break; }
-        progress?.onToolCall?.(toolCall.name, toolCall.arguments);
-        const result = await this.toolRegistry.execute(
-          { id: toolCall.id, name: toolCall.name, params: toolCall.arguments },
-          toolCtx,
+        const result: ClarificationLoopResult = await runClarificationLoop(
+          loopConfig,
+          agentName,
+          normalized,
+          topic,
+          question,
+          llmFactory,
+          agentLoader,
+          new AbortController().signal, // Sub-loops get their own abort
+          evaluator,
+          clarificationProgress,
         );
-        totalToolCalls++;
-        progress?.onToolResult?.(toolCall.name, result);
 
-        const resultText = result.content.map((c) => c.text).join('\n');
-        this.loopDetector.record(toolCall.name, toolCall.arguments, resultText);
-        this.sessionManager.addMessage(sessionId, {
-          role: 'tool',
-          content: resultText,
-          toolCallId: toolCall.id,
-          timestamp: new Date().toISOString(),
-        });
-      }
-
-      if (abortSignal.aborted) { exitReason = 'aborted'; break; }
-
-      lastLoopResult = this.loopDetector.detect();
-      if (lastLoopResult.severity !== 'none') {
-        progress?.onLoopWarning?.(lastLoopResult);
-      }
-      if (lastLoopResult.severity === 'circuit_breaker') {
-        exitReason = 'circuit_breaker';
-        finalText = `Loop detection circuit breaker: ${lastLoopResult.message}`;
-        break;
-      }
+        return { answer: result.answer };
+      };
     }
 
-    if (iterations >= this.config.maxIterations && exitReason === 'text_response' && !finalText) {
-      exitReason = 'max_iterations';
+    // Fall back to the legacy single-shot callback
+    if (!this.config.onClarificationNeeded) {
+      return undefined;
     }
 
-    this.sessionManager.save(sessionId);
+    const callback = this.config.onClarificationNeeded;
 
-    const summary: LoopSummary = {
-      sessionId,
-      iterations,
-      toolCallsExecuted: totalToolCalls,
-      finalText,
-      exitReason,
-      loopDetection: lastLoopResult,
-      totalTokensEstimate: this.sessionManager.getMeta(sessionId)?.totalTokensEstimate ?? 0,
-      durationMs: Date.now() - startTime,
+    return async (targetAgent: string, topic: string, question: string) => {
+      // Scope check
+      const normalized = targetAgent.toLowerCase();
+      if (!canClarify.includes(normalized)) {
+        throw new Error(
+          `Cannot request clarification from '${targetAgent}'. `
+          + `Allowed agents: [${canClarify.join(', ')}]`,
+        );
+      }
+
+      const result = await callback(topic, question);
+      return { answer: result.answer };
     };
-    progress?.onComplete?.(summary);
-    return summary;
   }
 
+  // -----------------------------------------------------------------------
+  // CLI Loop State Bridge
+  // -----------------------------------------------------------------------
+
   /**
-   * Detect if the LLM's text response contains a clarification request.
-   * Pattern: "I need clarification from [agent-name] about [topic]"
+   * Update the CLI loop state file (.agentx/state/loop-state.json) so
+   * the agentic loop and CLI-based iterative loop stay synchronized.
+   *
+   * Only writes if the file already exists (loop was started via CLI).
    */
-  private detectClarificationRequest(
-    text: string,
-  ): { targetAgent: string; topic: string; question: string } | null {
-    if (!this.config.canClarify || this.config.canClarify.length === 0) {
-      return null;
+  private updateCliLoopState(
+    workspaceRoot: string,
+    iterations: number,
+    summary: string,
+  ): void {
+    try {
+      const fs = require('fs');
+      const pathMod = require('path');
+      const stateFile = pathMod.join(workspaceRoot, '.agentx', 'state', 'loop-state.json');
+
+      if (!fs.existsSync(stateFile)) {
+        return; // No CLI loop active -- nothing to bridge
+      }
+
+      const raw = fs.readFileSync(stateFile, 'utf-8');
+      const state = JSON.parse(raw);
+
+      if (!state.active) {
+        return; // Loop already complete/cancelled
+      }
+
+      // Record the agentic iteration in the CLI loop history
+      state.iteration = (state.iteration ?? 0) + 1;
+      state.lastIterationAt = new Date().toISOString();
+      if (!state.history) { state.history = []; }
+      state.history.push({
+        iteration: state.iteration,
+        timestamp: new Date().toISOString(),
+        summary: `[agentic-loop] ${iterations} LLM iterations. ${summary.slice(0, 200)}`,
+        status: 'agentic',
+      });
+
+      fs.writeFileSync(stateFile, JSON.stringify(state, null, 2), 'utf-8');
+    } catch {
+      // Non-fatal -- bridge is best-effort
     }
-
-    const pattern = /I need clarification from \[?([\w-]+)\]? about \[?([^\]\n]+)\]?/i;
-    const match = text.match(pattern);
-    if (!match) { return null; }
-
-    const targetAgent = match[1].toLowerCase();
-    const topic = match[2].trim();
-
-    // Only trigger if the target agent is in the allowed list
-    if (!this.config.canClarify.includes(targetAgent)) {
-      return null;
-    }
-
-    return { targetAgent, topic, question: text };
   }
 
   private resolveWorkspaceRoot(): string {
