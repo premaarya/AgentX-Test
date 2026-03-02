@@ -160,6 +160,85 @@ describe('agentRouter - classifyPrompt', () => {
     assert.equal(result.agentFile, 'customer-coach');
   });
 
+  // --- Tester routes ----------------------------------------------------
+
+  it('should route "test the application" to tester', () => {
+    const result = classifyPrompt('test the application end to end');
+    assert.equal(result.agentFile, 'tester');
+  });
+
+  it('should route "write e2e tests" to tester', () => {
+    const result = classifyPrompt('write e2e tests for the login flow');
+    assert.equal(result.agentFile, 'tester');
+  });
+
+  it('should route "set up playwright" to tester', () => {
+    const result = classifyPrompt('set up playwright for browser testing');
+    assert.equal(result.agentFile, 'tester');
+  });
+
+  it('should route "test automation" to tester', () => {
+    const result = classifyPrompt('we need test automation for the checkout flow');
+    assert.equal(result.agentFile, 'tester');
+  });
+
+  it('should route "test coverage" to tester', () => {
+    const result = classifyPrompt('improve test coverage to 80%');
+    assert.equal(result.agentFile, 'tester');
+  });
+
+  it('should route "regression test" to tester', () => {
+    const result = classifyPrompt('run regression tests before release');
+    assert.equal(result.agentFile, 'tester');
+  });
+
+  it('should route "quality assurance" to tester', () => {
+    const result = classifyPrompt('quality assurance for the new feature');
+    assert.equal(result.agentFile, 'tester');
+  });
+
+  it('should route "load test the API" to tester', () => {
+    const result = classifyPrompt('load test the API under 1000 concurrent users');
+    assert.equal(result.agentFile, 'tester');
+  });
+
+  it('should route "production readiness" to tester', () => {
+    const result = classifyPrompt('check production readiness for v2.0');
+    assert.equal(result.agentFile, 'tester');
+  });
+
+  // --- Data Scientist routes --------------------------------------------
+
+  it('should route "build an ai model" to data-scientist', () => {
+    const result = classifyPrompt('build an ai model for sentiment analysis');
+    assert.equal(result.agentFile, 'data-scientist');
+  });
+
+  it('should route "fine-tune the LLM" to data-scientist', () => {
+    const result = classifyPrompt('fine-tune the LLM on our domain data');
+    assert.equal(result.agentFile, 'data-scientist');
+  });
+
+  it('should route "RAG pipeline" to data-scientist', () => {
+    const result = classifyPrompt('build a RAG pipeline for document search');
+    assert.equal(result.agentFile, 'data-scientist');
+  });
+
+  it('should route "model drift" to data-scientist', () => {
+    const result = classifyPrompt('detect model drift in production');
+    assert.equal(result.agentFile, 'data-scientist');
+  });
+
+  it('should route "embeddings" to data-scientist', () => {
+    const result = classifyPrompt('generate embeddings for the knowledge base');
+    assert.equal(result.agentFile, 'data-scientist');
+  });
+
+  it('should route "machine learning pipeline" to data-scientist', () => {
+    const result = classifyPrompt('set up a machine learning pipeline');
+    assert.equal(result.agentFile, 'data-scientist');
+  });
+
   // --- Engineer routes --------------------------------------------------
 
   it('should route "implement the login endpoint" to engineer', () => {
@@ -212,6 +291,12 @@ describe('agentRouter - classifyPrompt', () => {
     // "review" matches reviewer; "code" matches engineer -- reviewer first
     const result = classifyPrompt('review the code changes');
     assert.equal(result.agentFile, 'reviewer');
+  });
+
+  it('should prefer tester over engineer for "test the feature"', () => {
+    // "test" matches tester; "feature" matches engineer -- tester first
+    const result = classifyPrompt('test the feature thoroughly');
+    assert.equal(result.agentFile, 'tester');
   });
 
   // --- Case insensitivity -----------------------------------------------

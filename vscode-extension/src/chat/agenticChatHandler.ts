@@ -182,12 +182,41 @@ function buildAgentSystemPrompt(
       parts.push('## Boundaries\n' + boundaryMatch[1].trim());
       parts.push('');
     }
+
+    // Extract Workflow / Execution Steps for actionable guidance
+    const workflowMatch = instructions.match(/## Workflow\n([\s\S]*?)(?=\n## |\n---)/);
+    if (workflowMatch) {
+      parts.push('## Workflow\n' + workflowMatch[1].trim());
+      parts.push('');
+    }
+
+    // Extract Automation-First or similar priority sections
+    const automationMatch = instructions.match(/## Automation[^\n]*\n([\s\S]*?)(?=\n## |\n---)/);
+    if (automationMatch) {
+      parts.push('## Automation-First Principle\n' + automationMatch[1].trim());
+      parts.push('');
+    }
   }
 
   parts.push('## Tool Usage');
   parts.push('You have workspace tools available (file_read, file_write, file_edit, grep_search, list_dir, terminal_exec).');
   parts.push('Use them to explore the codebase and complete tasks. When done, provide a text summary.');
   parts.push('');
+
+  // Tester-specific automation directives
+  if (agentName === 'tester') {
+    parts.push('## Test Automation Directives (MANDATORY)');
+    parts.push('You are a TEST AUTOMATION agent. Your PRIMARY output is executable test code, NOT documentation.');
+    parts.push('1. Use workspace tools to explore the project structure and detect existing test frameworks');
+    parts.push('2. If no test framework exists, install one (Playwright for e2e, Jest/Mocha/pytest for unit)');
+    parts.push('3. Write actual test files (.spec.ts, .test.ts, test_*.py, *Tests.cs, etc.)');
+    parts.push('4. Use Page Object Model for e2e tests, test factories for data, mocks for external services');
+    parts.push('5. Run the tests via terminal to verify they pass');
+    parts.push('6. Only AFTER tests are written and running, create the test report markdown');
+    parts.push('7. NEVER produce only a markdown test plan -- always write code first');
+    parts.push('');
+  }
+
   parts.push('## Clarification');
   parts.push('If you need input from another agent, state clearly: "I need clarification from [agent-name] about [topic]".');
   parts.push('Only request clarification when the missing information truly blocks progress.');

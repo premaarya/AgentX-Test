@@ -41,6 +41,16 @@ const ROUTE_RULES: RouteRule[] = [
     description: 'Routing to Reviewer -- issue is in review phase',
   },
   {
+    agentFile: 'tester',
+    keywords: /\b(test(?:ing|er|s)?(?:\s+automation)?|e2e|end[- ]to[- ]end|playwright|cypress|selenium|test suite|test coverage|quality assurance|qa\b|regression test|smoke test|load test|perf(?:ormance)? test|security test|penetration test|certification|production readiness|test plan|test report)\b/i,
+    description: 'Routing to Tester -- test automation, QA, and certification',
+  },
+  {
+    agentFile: 'data-scientist',
+    keywords: /\b(machine learning|data science|model drift|fine[- ]?tun\w*|retrieval augmented|embeddings?|vector search|prompt engineer|llm eval|ai model|neural net\w*|deep learning|transformer|dataset|feature engineer)\b|\brag\b|\bml\b/i,
+    description: 'Routing to Data Scientist -- ML/AI model lifecycle',
+  },
+  {
     agentFile: 'devops',
     keywords: /\b(devops|ci\/cd|pipeline|deploy|infrastructure|docker|kubernetes|k8s|github actions|terraform|helm|release)\b/i,
     description: 'Routing to DevOps Engineer -- infrastructure/pipeline work',
@@ -62,7 +72,7 @@ const ROUTE_RULES: RouteRule[] = [
   },
   {
     agentFile: 'engineer',
-    keywords: /\b(implement|code|build|fix|bug|test|develop|refactor|feature|function|class|api|endpoint|database|migration)\b/i,
+    keywords: /\b(implement|code|build|fix|bug|develop|refactor|feature|function|class|api|endpoint|database|migration)\b/i,
     description: 'Routing to Engineer -- implementation work',
   },
 ];
