@@ -306,7 +306,8 @@ export class StructuredLogger {
   // -----------------------------------------------------------------------
 
   private generateCorrelationId(): string {
-    const rand = Math.random().toString(36).slice(2, 10);
-    return `${Date.now()}-${rand}`;
+    // Generate a UUID v4-style identifier (spec requires UUID format)
+    const hex = () => Math.random().toString(16).slice(2, 6);
+    return `${hex()}${hex()}-${hex()}-4${hex().slice(1)}-${(8 + Math.floor(Math.random() * 4)).toString(16)}${hex().slice(1)}-${hex()}${hex()}${hex()}`;
   }
 }

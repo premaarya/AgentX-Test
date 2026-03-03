@@ -316,3 +316,96 @@ This review intentionally held a high bar because Feature #49 is P0 security har
 **[PASS] APPROVED**
 
 All three previously blocking findings are fixed with corresponding regression tests, and the full test suite passes.
+
+---
+
+## P1 Implementation Review (2026-03-03)
+
+**Review scope**: Epic #47 P1 implementation (Features #50, #51, #49 story #58)
+**Stories reviewed**: #58, #59, #60, #61, #62
+**Commit reviewed**: `e43ea0f`
+**Reviewer**: Code Reviewer Agent
+
+### Summary
+
+- Reviewed all new source modules and corresponding tests for:
+  - `pathSandbox`
+  - `progressTracker`
+  - `parallelToolExecutor`
+  - `retryWithBackoff`
+  - `structuredLogger`
+- Reviewed integration points in:
+  - `agenticLoop.ts`
+  - `toolEngine.ts`
+  - `vscodeLmAdapter.ts`
+- Cross-referenced with:
+  - `docs/specs/SPEC-47.md` sections 3.4-3.8
+  - `docs/adr/ADR-47.md` decisions 47.2-47.5
+
+### Validation Results
+
+- Test run executed: `cd vscode-extension && npm test`
+- Result: **828 passing, 0 failing**
+
+### Requirement Checks
+
+1. **PathSandbox**
+	- [PASS] Blocked directories present: `.ssh`, `.aws`, `.gnupg`, `.azure`, `.kube`
+	- [PASS] Blocked patterns present: `.env`, `*.pem`, `*.key`, `*password*`, `*secret*`, `*.pfx`, `*.p12`
+	- [PASS] Traversal detection implemented (`../`, `..\\`, bare `..` forms)
+	- [PASS] Workspace root containment enforced in `validatePath`
+	- [PASS] Integrated in `file_read`, `file_write`, `file_edit`
+
+2. **ProgressTracker (Dual Ledger)**
+	- [PASS] `TaskLedger` and `ProgressLedger` types match SPEC model
+	- [PASS] Defaults match SPEC: `stallThreshold=3`, `staleTimeoutMs=60000`, `maxReplans=2`
+	- [PASS] Replan context includes objective, facts, last failure details
+	- [WARN] `isStale()` exists and is tested, but no stale-warning emission is wired in `agenticLoop` yet
+
+3. **ParallelToolExecutor**
+	- [PASS] Uses `Promise.allSettled()` for independent calls
+	- [PASS] Preserves original result ordering
+	- [PASS] One tool failure does not cancel sibling executions
+	- [PASS] Dependency heuristics implemented (path writers/readers, call-id references)
+	- [PASS] Integrated in `agenticLoop` execution path
+
+4. **RetryWithBackoff**
+	- [PASS] Exponential delay formula with jitter implemented
+	- [PASS] Retryable statuses include `429, 500, 502, 503`
+	- [PASS] Non-retryable statuses (`400, 401, 403, 404`) are not retried
+	- [PASS] Default `maxRetries=5` implemented
+	- [PASS] Integrated in `vscodeLmAdapter`
+
+5. **StructuredLogger**
+	- [PASS] JSONL output format implemented
+	- [PASS] Rotation defaults match SPEC target (10 MB, max 5 files)
+	- [PASS] Secret redaction integrated for message + metadata
+	- [PASS] Correlation ID included on all entries
+	- [WARN] SPEC 3.5 calls for UUID-format `correlationId`; current generator is timestamp-random string, not UUID
+
+### Integration Review Notes
+
+- `agenticLoop` correctly initializes and updates `ProgressTracker`, and triggers replans on stall.
+- `agenticLoop` uses `ParallelToolExecutor` for approved tool requests.
+- `toolEngine` integrates path sandboxing for read/write/edit file tools.
+- `vscodeLmAdapter` wraps LM calls with retry/backoff.
+
+### Forbidden-Term Scan
+
+- Scan performed for `sharkbait` and `shyamsridhar`.
+- No matches found in `vscode-extension/src/**`.
+- Existing mentions are present in this review document from prior review notes.
+
+### P1 Decision
+
+**[WARN] CHANGES REQUESTED**
+
+Rationale:
+- SPEC-47 section 3.5 requires UUID-format `correlationId`; implementation currently generates a non-UUID string.
+- SPEC/sequence expectations include stale-warning signaling; `ProgressTracker.isStale()` is not currently consumed by `agenticLoop` for warning emission.
+
+### Required Follow-ups
+
+1. Update `StructuredLogger` correlation ID generation to UUID format (or validate injected IDs to UUID).
+2. Wire stale detection in `agenticLoop` to emit warning progress events when `isStale()` is true.
+3. Add/extend regression tests for both behaviors.

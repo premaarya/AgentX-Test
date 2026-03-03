@@ -54,10 +54,15 @@ describe('StructuredLogger -- constructor', () => {
     }
   });
 
-  it('generates a correlationId automatically', () => {
+  it('generates a UUID-format correlationId automatically', () => {
     const logger = new StructuredLogger();
     const id = logger.getCorrelationId();
     assert.ok(typeof id === 'string' && id.length > 0);
+    // UUID v4 format: 8-4-4-4-12 hex chars
+    assert.ok(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id),
+      `correlationId should be UUID v4 format, got: ${id}`,
+    );
   });
 
   it('accepts a custom correlationId', () => {

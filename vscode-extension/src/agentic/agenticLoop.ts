@@ -846,6 +846,23 @@ export class AgenticLoop {
         progressTracker.acknowledgeReplan();
       }
 
+      // Emit stale-warning if no progress for staleTimeoutMs
+      if (progressTracker.isStale()) {
+        const staleMsg = `[STALE WARNING] No progress recorded for 60 seconds. `
+          + `Consider changing strategy or requesting help.`;
+        this.sessionManager.addMessage(sessionId, {
+          role: 'user',
+          content: staleMsg,
+          timestamp: new Date().toISOString(),
+        });
+        progress?.onLoopWarning?.({
+          severity: 'warning',
+          detector: null,
+          message: staleMsg,
+          count: 0,
+        });
+      }
+
       if (abortSignal.aborted) {
         exitReason = 'aborted';
         break;
