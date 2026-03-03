@@ -12,6 +12,7 @@ constraints:
  - "MUST NOT write code or technical specifications"
  - "MUST NOT create UX designs or wireframes"
  - "MUST create PRD before creating child issues"
+ - "MUST READ PRD and EXISTING Spec, Code before start working on"
  - "MUST link all child issues to parent Epic"
  - "CAN research codebase to understand current capabilities"
  - "MUST create progress log at docs/progress/ISSUE-{id}-log.md"

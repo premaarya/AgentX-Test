@@ -10,6 +10,7 @@ constraints:
  - "MUST run `.agentx/agentx.ps1 hook -Phase start -Agent engineer -Issue <n>` before starting work"
  - "MUST run `.agentx/agentx.ps1 hook -Phase finish -Agent engineer -Issue <n>` after completing work"
  - "MUST NOT modify PRD, ADR, or UX documents"
+ - "MUST READ PRD and EXISTING Spec, Code before start working on"
  - "MUST achieve 80% test coverage (70% unit, 20% integration, 10% e2e)"
  - "MUST NOT skip security checks (secrets, SQL injection, validation)"
  - "MUST follow Skills.md standards for language/framework"

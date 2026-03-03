@@ -72,26 +72,39 @@ export const DEFAULT_ALLOWLIST: readonly string[] = [
   'npm run', 'npm test', 'npm list', 'npm ls', 'npm outdated',
   'npm audit', 'npm ci', 'npm version', 'npm view', 'npm info',
   'npm help', 'npm search',
-  'node', 'npx', 'bun', 'deno',
+  // NOTE: Bare interpreter entries (node, npx, bun, deno) are NOT
+  // auto-allowed because they permit arbitrary code execution via flags
+  // like -e / -c.  Only version checks are safe to auto-execute.
+  'node --version', 'node -v', 'npx --version',
+  'bun --version', 'deno --version',
 
   // Python -- read-only / non-mutating
-  'python', 'python3',
+  // NOTE: Bare python/python3 are NOT auto-allowed (python -c risk).
+  'python --version', 'python -V', 'python3 --version', 'python3 -V',
   'pip list', 'pip show', 'pip check', 'pip freeze',
   'pip3 list', 'pip3 show', 'pip3 check', 'pip3 freeze',
   'pipenv run', 'poetry run', 'poetry show',
 
-  // .NET
-  'dotnet', 'nuget',
+  // .NET -- safe subcommands only
+  'dotnet build', 'dotnet test', 'dotnet run', 'dotnet restore',
+  'dotnet clean', 'dotnet --version', 'dotnet --list-sdks',
+  'dotnet --list-runtimes', 'dotnet --info',
+  'nuget list', 'nuget sources',
 
-  // Build / lint / test tools
+  // Build / lint / test tools (safe -- no code-exec flags)
   'tsc', 'eslint', 'prettier', 'jest', 'vitest', 'mocha', 'pytest',
-  'cargo', 'rustc', 'go', 'make', 'cmake', 'ninja',
+  'cargo build', 'cargo test', 'cargo check', 'cargo clippy',
+  'rustc --version', 'go build', 'go test', 'go vet', 'go version',
+  'make', 'cmake', 'ninja',
 
-  // Containers / orchestration (read-only usage)
-  'docker', 'kubectl',
+  // Containers / orchestration (read-only subcommands)
+  'docker ps', 'docker images', 'docker inspect', 'docker logs',
+  'docker version', 'docker info', 'docker compose ps',
+  'kubectl get', 'kubectl describe', 'kubectl logs',
+  'kubectl version', 'kubectl config',
 
-  // Network utilities (read-only)
-  'curl', 'wget',
+  // Network utilities (read-only, explicit safe subcommands)
+  'curl --version', 'wget --version',
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -282,18 +295,12 @@ function validateSingle(
     }
   }
 
-  // Also allow if the bare program name is in the allowlist (handles cases
-  // like "node --version" where "node" alone is in the list).
-  for (const entry of effectiveAllowlist) {
-    const entryNorm = normalise(entry);
-    if (!entryNorm.includes(' ') && prog === entryNorm) {
-      return {
-        classification: 'allowed',
-        command,
-        reversibility: 'easy',
-      };
-    }
-  }
+  // NOTE: Bare program names (e.g. "node", "python", "docker") are NOT
+  // auto-allowed even if they appear in the allowlist without a subcommand.
+  // The allowlist entry must include a safe subcommand prefix (e.g.
+  // "npm test", "git status").  A bare "python" would auto-allow
+  // "python -c 'import os; os.system(...)'", breaching the security model.
+  // Unknown flag combinations route to confirmation (Layer 3).
 
   // Layer 3: unknown -- requires confirmation with reversibility info
   const rev = classifyReversibility(command);

@@ -9,6 +9,8 @@ infer: true
 constraints:
  - "MUST run `.agentx/agentx.ps1 hook -Phase start -Agent devops-engineer -Issue <n>` before starting work"
  - "MUST run `.agentx/agentx.ps1 hook -Phase finish -Agent devops-engineer -Issue <n>` after completing work"
+ - "MUST read relevant SKILL.md files before designing pipelines"
+ - "MUST READ PRD, EXISTING Spec, Code and any other artifacts before start working on"
  - "MUST NOT modify application source code (src/**)"
  - "MUST NOT modify PRD, ADR, or UX documents"
  - "MUST follow security best practices (secrets management, least privilege)"

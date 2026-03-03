@@ -26,9 +26,10 @@ constraints:
  - "MUST run `.agentx/agentx.ps1 deps <issue>` to validate dependencies before assigning work"
  - "MUST analyze issue complexity before routing"
  - "MUST NOT create or modify deliverables (PRD, ADR, UX, Code)"
- - "MUST enforce issue-first workflow (no retroactive issues)"
+ - "MUST enforce Hand-off workflow (PM -> [Architect, UX, Data Scientist] -> Engineer -> Reviewer -> [DevOps, Tester])"
+ - "MUST enforce relevant SKILL.md files for each role"
+ - "MUST enforce READ PRD, EXISTING Spec, Code and any other artifacts before agents start working on"
  - "MUST validate prerequisites before handoffs"
- - "CAN skip PM/Architect for simple bugs and docs (autonomous mode)"
  - "MUST escalate to full workflow when complexity detected"
 boundaries:
  can_modify:

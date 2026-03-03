@@ -310,12 +310,15 @@ export const terminalExecTool: AgentToolDef = {
     if (validation.classification === 'requires_confirmation') {
       // Return a special result so the agentic loop can request user confirmation.
       // The caller inspects meta.requiresConfirmation to pause execution.
+      // Redact secrets from command text to prevent credential leakage in
+      // UI, logs, or telemetry pipelines.
+      const safeCommand = redactSecrets(command);
       return {
         content: [{
           type: 'text',
           text:
             `Command requires user confirmation before execution.\n` +
-            `Command: ${command}\n` +
+            `Command: ${safeCommand}\n` +
             `Reversibility: ${validation.reversibility ?? 'unknown'}\n` +
             (validation.undoHint ? `Undo hint: ${validation.undoHint}\n` : '') +
             `Reason: ${validation.reason ?? ''}`,
@@ -323,7 +326,7 @@ export const terminalExecTool: AgentToolDef = {
         isError: false,
         meta: {
           requiresConfirmation: true,
-          command,
+          command: safeCommand,
           reversibility: validation.reversibility,
           undoHint: validation.undoHint,
         },

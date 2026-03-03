@@ -232,3 +232,43 @@ describe('terminal_exec - secret redaction on output', () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// terminal_exec -- confirmation path must redact secrets (review blocker #2)
+// ---------------------------------------------------------------------------
+
+describe('terminal_exec - confirmation path redaction', () => {
+  it('should redact secrets in the confirmation display text', async () => {
+    // A command with a bearer token that goes to requires_confirmation
+    const cmd = 'some-unknown-tool --auth "Bearer eyABC123secretToken456=="';
+    const result = await terminalExecTool.execute(
+      { command: cmd },
+      makeCtx(),
+    );
+    if (result.meta?.requiresConfirmation) {
+      // The display text should NOT contain the raw token
+      assert.ok(
+        !result.content[0].text.includes('eyABC123secretToken456'),
+        'raw bearer token should be redacted in confirmation display text',
+      );
+      // The meta.command should also be redacted
+      assert.ok(
+        !String(result.meta.command).includes('eyABC123secretToken456'),
+        'raw bearer token should be redacted in meta.command',
+      );
+    }
+  });
+
+  it('should redact API keys in confirmation meta', async () => {
+    const cmd = 'deploy-tool --api-key=sk-proj1234567890ABCDEFGHIJK';
+    const result = await terminalExecTool.execute(
+      { command: cmd },
+      makeCtx(),
+    );
+    if (result.meta?.requiresConfirmation) {
+      assert.ok(
+        !String(result.meta.command).includes('sk-proj1234567890ABCDEFGHIJK'),
+        'raw API key should be redacted in meta.command',
+      );
+    }
+  });
+});

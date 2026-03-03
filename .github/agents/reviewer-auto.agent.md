@@ -10,6 +10,7 @@ constraints:
  - "MUST run `.agentx/agentx.ps1 hook -Phase start -Agent reviewer -Issue <n>` before starting review"
  - "MUST run `.agentx/agentx.ps1 hook -Phase finish -Agent reviewer -Issue <n>` after completing review"
  - "MUST get human approval before any changes are merged"
+ - "MUST READ PRD, EXISTING Spec, Code and any other artifacts before start working on"
  - "MUST run all tests after applying fixes to verify no regressions"
  - "MUST categorize fixes as safe (auto) or risky (manual approval)"
  - "MUST NOT change business logic without explicit approval"

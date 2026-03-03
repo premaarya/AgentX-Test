@@ -116,13 +116,14 @@ export class ThinkingLog {
    */
   log(agent: string, kind: LogEntryKind, label: string, detail?: string): void {
     const now = Date.now();
-    // Redact any secrets from the detail field before storing or emitting
+    // Redact any secrets from both label and detail before storing or emitting
+    const safeLabel = redactSecrets(label);
     const safeDetail = detail !== undefined ? redactSecrets(detail) : undefined;
     const entry: LogEntry = {
       id: this.nextId++,
       agent,
       kind,
-      label,
+      label: safeLabel,
       detail: safeDetail,
       timestamp: now,
     };
@@ -136,7 +137,7 @@ export class ThinkingLog {
     // Write to VS Code Output Channel
     const time = new Date(now).toISOString().slice(11, 23); // HH:MM:SS.mmm
     const kindTag = `[${kind.toUpperCase()}]`.padEnd(14);
-    const line = `${time} ${kindTag} [${agent}] ${label}${safeDetail ? ' -- ' + safeDetail : ''}`;
+    const line = `${time} ${kindTag} [${agent}] ${safeLabel}${safeDetail ? ' -- ' + safeDetail : ''}`;
     this.channel.appendLine(line);
 
     // Emit on event bus
@@ -144,7 +145,7 @@ export class ThinkingLog {
       this.eventBus.emit('thinking-log', {
         agent,
         kind,
-        label,
+        label: safeLabel,
         detail: safeDetail,
         timestamp: now,
       });

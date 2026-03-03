@@ -10,6 +10,7 @@ constraints:
  - "MUST run `.agentx/agentx.ps1 hook -Phase start -Agent reviewer -Issue <n>` before starting review"
  - "MUST run `.agentx/agentx.ps1 hook -Phase finish -Agent reviewer -Issue <n>` after completing review"
  - "MUST NOT modify source code directly"
+ - "MUST READ PRD, EXISTING Spec, Code and any other artifacts before start working on"
  - "MUST verify 80% test coverage before approval"
  - "MUST check all security requirements (secrets, SQL, validation)"
  - "MUST validate documentation completeness"

@@ -138,4 +138,41 @@ describe('ThinkingLog', () => {
     assert.equal(standalone.getEntries().length, 1);
     standalone.dispose();
   });
+
+  // -------------------------------------------------------------------------
+  // Label redaction (review blocker #3 regression tests)
+  // -------------------------------------------------------------------------
+
+  it('should redact secrets from the label field', () => {
+    log.log('agent', 'info', 'token is Bearer eyABC123secret456==', 'some detail');
+    const entries = log.getEntries();
+    const last = entries[entries.length - 1];
+    assert.ok(
+      !last.label.includes('eyABC123secret456'),
+      'raw bearer token should be redacted from label',
+    );
+    assert.ok(
+      last.label.includes('[REDACTED'),
+      'label should contain redaction placeholder',
+    );
+  });
+
+  it('should redact secrets from both label and detail simultaneously', () => {
+    log.log(
+      'agent',
+      'tool-call',
+      'calling api with sk-proj1234567890ABCDEFGHIJK',
+      'password=superSecretPass123!xyz',
+    );
+    const entries = log.getEntries();
+    const last = entries[entries.length - 1];
+    assert.ok(
+      !last.label.includes('sk-proj1234567890ABCDEFGHIJK'),
+      'API key should be redacted from label',
+    );
+    assert.ok(
+      last.detail !== undefined && !last.detail.includes('superSecretPass123'),
+      'password should be redacted from detail',
+    );
+  });
 });

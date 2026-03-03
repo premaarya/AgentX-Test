@@ -12,6 +12,8 @@ constraints:
  - "MUST NOT write implementation code"
  - "MUST NOT include code examples in Tech Specs (use diagrams only)"
  - "MUST NOT create PRD or UX designs"
+ - "MUST read relevant SKILL.md files before designing architecture"
+ - "MUST READ PRD, EXISTING Spec, Code and any other artifacts before start working on"
  - "MUST evaluate at least 3 options in ADR before deciding"
  - "CAN research codebase patterns and existing architecture"
  - "MUST create progress log at docs/progress/ISSUE-{id}-log.md"

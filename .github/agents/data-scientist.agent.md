@@ -8,6 +8,7 @@ modelFallback: Claude Sonnet 4.5 (copilot)
 infer: true
 constraints:
   - "MUST read relevant SKILL.md files before generating any implementation"
+  - "MUST READ PRD and EXISTING Spec, Code before start working on"
   - "MUST follow retrieval-led reasoning over pre-training-led reasoning"
   - "MUST validate all statistical methods and thresholds with domain context"
   - "MUST document experiment parameters, metrics, and results"

@@ -8,8 +8,10 @@ modelFallback: GPT-5.2-Codex (copilot)
 infer: true
 constraints:
   - "MUST read relevant SKILL.md files before designing any test strategy"
+  - "MUST READ PRD, EXISTING Spec, Code and any other artifacts before start working on"
   - "MUST follow retrieval-led reasoning over pre-training-led reasoning"
   - "MUST achieve minimum 80% code coverage (70% unit, 20% integration, 10% e2e)"
+  
   - "MUST NOT certify for production without passing ALL quality gates"
   - "MUST NOT skip security testing for any public-facing feature"
   - "MUST document all test plans, results, and defects found"
