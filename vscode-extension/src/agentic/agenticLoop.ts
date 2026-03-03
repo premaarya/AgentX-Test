@@ -51,6 +51,8 @@ import {
   ClarificationEvaluator,
   runClarificationLoop,
 } from './clarificationLoop';
+import { ProgressTracker } from './progressTracker';
+import { ParallelToolExecutor } from './parallelToolExecutor';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -546,6 +548,11 @@ export class AgenticLoop {
     let lastLoopResult: LoopDetectionResult | null = null;
     let validationRetries = 0;
 
+    // Progress tracking and parallel execution
+    const progressTracker = new ProgressTracker();
+    const parallelExecutor = new ParallelToolExecutor();
+    progressTracker.initialize(this.config.systemPrompt);
+
     // --- Main loop ---
     while (iterations < this.config.maxIterations) {
       iterations++;
@@ -712,7 +719,12 @@ export class AgenticLoop {
         timestamp: new Date().toISOString(),
       });
 
-      // Execute each tool call
+      // --- 3-Phase tool execution ---
+
+      // Phase 1: Pre-process boundary hooks sequentially; collect approved calls.
+      const approvedRequests: ToolCallRequest[] = [];
+      const approvedParams: Record<string, Record<string, unknown>> = {};
+
       for (const toolCall of response.toolCalls) {
         if (abortSignal.aborted) {
           exitReason = 'aborted';
@@ -753,6 +765,10 @@ export class AgenticLoop {
                 toolCallId: toolCall.id,
                 timestamp: new Date().toISOString(),
               });
+              progressTracker.recordFailure(
+                response.toolCalls.indexOf(toolCall),
+                `[BOUNDARY BLOCKED] ${toolCall.name}`,
+              );
             }
             this.handleHookError('onBeforeToolUse', err);
           }
@@ -760,21 +776,38 @@ export class AgenticLoop {
 
         if (boundaryBlocked) { continue; }
 
-        progress?.onToolCall?.(toolCall.name, effectiveParams);
+        approvedRequests.push({ id: toolCall.id, name: toolCall.name, params: effectiveParams });
+        approvedParams[toolCall.id] = effectiveParams;
+      }
 
-        const request: ToolCallRequest = {
-          id: toolCall.id,
-          name: toolCall.name,
-          params: effectiveParams,
-        };
+      if (abortSignal.aborted) { exitReason = 'aborted'; }
 
-        const result = await this.toolRegistry.execute(request, toolCtx);
+      // Phase 2: Execute approved calls via parallel executor.
+      const parallelResults = exitReason !== 'aborted' && approvedRequests.length > 0
+        ? await parallelExecutor.analyzeAndExecute(approvedRequests, this.toolRegistry, toolCtx)
+        : [];
+
+      // Phase 3: Post-process results (results are in the same order as approvedRequests).
+      for (let ri = 0; ri < parallelResults.length; ri++) {
+        const result = parallelResults[ri];
+        const request = approvedRequests[ri];
+        const effectiveParams = approvedParams[request.id] ?? {};
+        const stepIndex = response.toolCalls.findIndex((tc) => tc.id === request.id);
+
         totalToolCalls++;
-        progress?.onToolResult?.(toolCall.name, result);
+        progress?.onToolCall?.(request.name, effectiveParams);
+        progress?.onToolResult?.(request.name, result);
 
         // Record for loop detection
         const resultText = result.content.map((c) => c.text).join('\n');
-        this.loopDetector.record(toolCall.name, effectiveParams, resultText);
+        this.loopDetector.record(request.name, effectiveParams, resultText);
+
+        // Progress tracking
+        if (result.isError) {
+          progressTracker.recordFailure(stepIndex, resultText);
+        } else {
+          progressTracker.recordSuccess(stepIndex, resultText);
+        }
 
         if (this.config.hooks?.onAfterToolUse) {
           try {
@@ -782,7 +815,7 @@ export class AgenticLoop {
               sessionId,
               iteration: iterations,
               agentName: this.config.agentName,
-              toolName: toolCall.name,
+              toolName: request.name,
               params: effectiveParams,
               result,
             });
@@ -795,9 +828,22 @@ export class AgenticLoop {
         this.sessionManager.addMessage(sessionId, {
           role: 'tool',
           content: resultText,
-          toolCallId: toolCall.id,
+          toolCallId: request.id,
           timestamp: new Date().toISOString(),
         });
+      }
+
+      // Inject replan message if stalled
+      if (progressTracker.isStalled()) {
+        const ctx = progressTracker.getRePlanContext();
+        const replanMsg = `[REPLAN NEEDED] Agent has stalled after ${ctx.lastErrors.length} consecutive failures. `
+          + `Objective: ${ctx.objective}. Please try a different approach.`;
+        this.sessionManager.addMessage(sessionId, {
+          role: 'user',
+          content: replanMsg,
+          timestamp: new Date().toISOString(),
+        });
+        progressTracker.acknowledgeReplan();
       }
 
       if (abortSignal.aborted) {

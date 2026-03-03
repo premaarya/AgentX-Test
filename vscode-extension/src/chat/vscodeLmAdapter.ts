@@ -20,6 +20,7 @@ import {
   LlmToolCall,
   SessionMessage,
 } from '../agentic';
+import { withRetry } from '../utils/retryWithBackoff';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -205,22 +206,26 @@ export function createVsCodeLmAdapter(config: VsCodeLmAdapterConfig): LlmAdapter
       const tokenSource = new vscode.CancellationTokenSource();
       signal.addEventListener('abort', () => tokenSource.cancel(), { once: true });
 
-      // Send request to VS Code LM
-      const chatResponse = await chatModel.sendRequest(
-        vsMessages,
-        {},
-        tokenSource.token,
+      // Send request to VS Code LM with retry/backoff
+      const { cleanText, toolCalls } = await withRetry(
+        async () => {
+          const chatResponse = await chatModel.sendRequest(
+            vsMessages,
+            {},
+            tokenSource.token,
+          );
+
+          // Stream and collect response text
+          let fullText = '';
+          for await (const fragment of chatResponse.text) {
+            if (signal.aborted) { break; }
+            fullText += fragment;
+          }
+
+          return extractToolCalls(fullText);
+        },
+        { maxRetries: 3 },
       );
-
-      // Stream and collect response text
-      let fullText = '';
-      for await (const fragment of chatResponse.text) {
-        if (signal.aborted) { break; }
-        fullText += fragment;
-      }
-
-      // Parse tool calls from the response
-      const { cleanText, toolCalls } = extractToolCalls(fullText);
 
       return {
         text: cleanText,

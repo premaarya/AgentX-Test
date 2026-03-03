@@ -124,3 +124,19 @@ export {
   matchesBoundaryPattern,
   checkBoundary,
 } from './boundaryHook';
+// Progress Tracker
+export {
+  ProgressTracker,
+  PlanStep,
+  StepRecord,
+  TaskLedger,
+  ProgressLedger,
+  RePlanContext,
+} from './progressTracker';
+
+// Parallel Tool Executor
+export {
+  ParallelToolExecutor,
+  DependencyGraph,
+  detectDependencies,
+} from './parallelToolExecutor';

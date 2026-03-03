@@ -26,7 +26,7 @@ describe('ToolRegistry', () => {
     );
 
     assert.equal(result.isError, true);
-    assert.ok(result.content[0].text.includes('outside workspace'));
+    assert.ok(result.content[0].text.includes('Path access denied'));
   });
 });
 

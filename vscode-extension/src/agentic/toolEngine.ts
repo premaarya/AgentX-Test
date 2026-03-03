@@ -16,6 +16,7 @@ import * as path from 'path';
 import { exec } from 'child_process';
 import { validateCommand } from '../utils/commandValidator';
 import { redactSecrets } from '../utils/secretRedactor';
+import { validatePath } from '../utils/pathSandbox';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -144,10 +145,11 @@ export const fileReadTool: AgentToolDef = {
   mutating: false,
   async execute(params, ctx) {
     const filePath = params.filePath as string;
-    const abs = resolveWorkspaceTarget(ctx.workspaceRoot, filePath);
-    if (!abs) {
-      return textResult(`Path is outside workspace: ${filePath}`, true);
+    const pathCheck = validatePath(filePath, ctx.workspaceRoot);
+    if (!pathCheck.allowed) {
+      return textResult(`Path access denied: ${pathCheck.reason ?? filePath}`, true);
     }
+    const abs = pathCheck.resolvedPath;
 
     if (!fs.existsSync(abs)) {
       return textResult(`File not found: ${filePath}`, true);
@@ -193,10 +195,11 @@ export const fileWriteTool: AgentToolDef = {
   async execute(params, ctx) {
     const filePath = params.filePath as string;
     const content = params.content as string;
-    const abs = resolveWorkspaceTarget(ctx.workspaceRoot, filePath);
-    if (!abs) {
-      return textResult(`Path is outside workspace: ${filePath}`, true);
+    const pathCheck = validatePath(filePath, ctx.workspaceRoot);
+    if (!pathCheck.allowed) {
+      return textResult(`Path access denied: ${pathCheck.reason ?? filePath}`, true);
     }
+    const abs = pathCheck.resolvedPath;
 
     try {
       fs.mkdirSync(path.dirname(abs), { recursive: true });
@@ -234,10 +237,11 @@ export const fileEditTool: AgentToolDef = {
   mutating: true,
   async execute(params, ctx) {
     const filePath = params.filePath as string;
-    const abs = resolveWorkspaceTarget(ctx.workspaceRoot, filePath);
-    if (!abs) {
-      return textResult(`Path is outside workspace: ${filePath}`, true);
+    const pathCheck = validatePath(filePath, ctx.workspaceRoot);
+    if (!pathCheck.allowed) {
+      return textResult(`Path access denied: ${pathCheck.reason ?? filePath}`, true);
     }
+    const abs = pathCheck.resolvedPath;
 
     if (!fs.existsSync(abs)) {
       return textResult(`File not found: ${filePath}`, true);

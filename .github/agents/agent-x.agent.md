@@ -1,6 +1,6 @@
 ---
 name: 0. Agent X (Auto)
-description: 'Agent X - Adaptive coordinator for multi-agent workflow. Auto-detects issue complexity and routes intelligently: simple tasks go direct to Engineer, complex work flows through PM -> [Architect, Data Scientist, UX] -> Engineer -> Reviewer -> [DevOps, Tester] -> Engineer (bug fixes).'
+description: 'Agent X - Adaptive coordinator for multi-agent workflow. Auto-detects issue complexity and routes intelligently: follows workflow through PM -> [Architect, Data Scientist, UX] -> Engineer -> Reviewer -> [DevOps, Tester] -> Engineer (bug fixes).'
 maturity: stable
 mode: adaptive
 model: Claude Opus 4.6 (copilot)
