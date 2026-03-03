@@ -14,6 +14,8 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { exec } from 'child_process';
+import { validateCommand } from '../utils/commandValidator';
+import { redactSecrets } from '../utils/secretRedactor';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -295,14 +297,40 @@ export const terminalExecTool: AgentToolDef = {
     const command = params.command as string;
     const timeoutMs = (params.timeoutMs as number) ?? 30_000;
 
-    // Security: block dangerous commands
-    const blocked = ['rm -rf' + ' /', 'format' + ' c:', 'drop' + ' database', 'git reset' + ' --hard'];
-    for (const pattern of blocked) {
-      if (command.toLowerCase().includes(pattern)) {
-        return textResult(`Blocked dangerous command: ${pattern}`, true);
-      }
+    // Security: validate command against allowlist / blocklist
+    const validation = validateCommand(command);
+
+    if (validation.classification === 'blocked') {
+      return textResult(
+        `Blocked dangerous command: ${validation.reason ?? command}`,
+        true,
+      );
     }
 
+    if (validation.classification === 'requires_confirmation') {
+      // Return a special result so the agentic loop can request user confirmation.
+      // The caller inspects meta.requiresConfirmation to pause execution.
+      return {
+        content: [{
+          type: 'text',
+          text:
+            `Command requires user confirmation before execution.\n` +
+            `Command: ${command}\n` +
+            `Reversibility: ${validation.reversibility ?? 'unknown'}\n` +
+            (validation.undoHint ? `Undo hint: ${validation.undoHint}\n` : '') +
+            `Reason: ${validation.reason ?? ''}`,
+        }],
+        isError: false,
+        meta: {
+          requiresConfirmation: true,
+          command,
+          reversibility: validation.reversibility,
+          undoHint: validation.undoHint,
+        },
+      };
+    }
+
+    // classification === 'allowed' -- proceed with execution
     return new Promise<ToolResult>((resolve) => {
       const child = exec(command, {
         cwd: ctx.workspaceRoot,
@@ -314,14 +342,20 @@ export const terminalExecTool: AgentToolDef = {
           return;
         }
         if (error) {
-          const combined = [stdout.trim(), stderr.trim()].filter(Boolean).join('\n');
+          const combined = [stdout.trim(), stderr.trim()]
+            .filter(Boolean)
+            .map(redactSecrets)
+            .join('\n');
           resolve(textResult(
-            `Command failed (exit ${error.code ?? 'unknown'}):\n${combined || error.message}`,
+            `Command failed (exit ${error.code ?? 'unknown'}):\n${combined || redactSecrets(error.message)}`,
             true,
           ));
           return;
         }
-        const output = [stdout.trim(), stderr.trim()].filter(Boolean).join('\n');
+        const output = [stdout.trim(), stderr.trim()]
+          .filter(Boolean)
+          .map(redactSecrets)
+          .join('\n');
         resolve(textResult(output || '(no output)'));
       });
 
