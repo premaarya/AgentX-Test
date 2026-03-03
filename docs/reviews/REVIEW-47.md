@@ -274,3 +274,45 @@ This review intentionally held a high bar because Feature #49 is P0 security har
 ### Validation evidence
 - Test execution: `cd vscode-extension && npm test` -> `666 passing (15s)`
 - Forbidden term scan: no matches for `sharkbait` or `shyamsridhar` (excluding `.git` and `node_modules`)
+
+---
+
+## Re-Review (2026-03-03)
+
+**Re-review scope**: Verify resolution of the 3 previously identified blockers from the prior review.
+**Fix commit reviewed**: `903bcd7`
+**Reviewer**: Code Reviewer Agent
+
+### Re-Review Findings
+
+1. **Blocker #1 (HIGH): Bare-program allowlist bypass** -> **RESOLVED**
+	 - Verified in `vscode-extension/src/utils/commandValidator.ts`:
+		 - Bare entries for interpreters/runtimes/tools were replaced with safe subcommand prefixes (for example `node --version`, `python --version`, `docker ps`, `kubectl get`, `curl --version`).
+		 - The broad bare-program auto-allow behavior was removed and replaced with explicit policy comments stating bare programs are not auto-allowed.
+	 - Regression coverage verified in `vscode-extension/src/test/utils/commandValidator.test.ts`:
+		 - Added bare-program safety tests confirming commands like `node`, `python`, `docker`, `kubectl` route to `requires_confirmation` unless matching explicit safe prefixes.
+
+2. **Blocker #2 (HIGH): Confirmation path leaked raw command secrets** -> **RESOLVED**
+	 - Verified in `vscode-extension/src/agentic/toolEngine.ts`:
+		 - Confirmation branch now computes `safeCommand = redactSecrets(command)`.
+		 - Both confirmation display text and `meta.command` use `safeCommand`.
+	 - Regression coverage verified in `vscode-extension/src/test/agentic/toolEngine.test.ts`:
+		 - Added tests asserting bearer tokens/API keys do not appear in confirmation text or `meta.command`.
+
+3. **Blocker #3 (MEDIUM): ThinkingLog label not redacted** -> **RESOLVED**
+	 - Verified in `vscode-extension/src/utils/thinkingLog.ts`:
+		 - `label` is now redacted via `safeLabel = redactSecrets(label)` before storage/output/event emission.
+		 - `detail` redaction remains in place.
+	 - Regression coverage verified in `vscode-extension/src/test/utils/thinkingLog.test.ts`:
+		 - Added tests asserting secrets are redacted from `label` and from both `label` + `detail` together.
+
+### Validation Run
+
+- Executed: `cd vscode-extension && npm test`
+- Result: **684 passing, 0 failing**
+
+### Re-Review Decision
+
+**[PASS] APPROVED**
+
+All three previously blocking findings are fixed with corresponding regression tests, and the full test suite passes.
