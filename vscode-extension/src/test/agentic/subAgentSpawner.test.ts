@@ -409,5 +409,116 @@ describe('SubAgentSpawner', () => {
       // The vote should pick the most common response
       assert.ok(result.response.length > 0, 'Vote should produce a non-empty result');
     });
+
+    // -- Negative-path tests requested by reviewer --
+
+    it('should not count placeholder aborted results as success', async () => {
+      let adapterIdx = 0;
+      const factory: LlmAdapterFactory = async () => {
+        adapterIdx++;
+        return makeDelayedAdapter(
+          adapterIdx === 1 ? 'Fast agent' : 'Slow agent',
+          adapterIdx === 1 ? 10 : 500,
+        );
+      };
+      const loader = createFakeAgentLoader();
+      const signal = new AbortController().signal;
+
+      const invocations = [
+        makeInvocation('fast', 'Be fast'),
+        makeInvocation('slow', 'Be slow'),
+      ];
+
+      const result = await runParallelSubAgents(
+        invocations,
+        { strategy: 'race', consolidation: 'merge' },
+        factory,
+        loader,
+        signal,
+      );
+
+      // Only 1 real success (winner), the other is 'aborted' placeholder
+      assert.equal(result.successCount, 1, 'Placeholder aborted results should not count as success');
+    });
+
+    it('should not satisfy quorum when failures exceed threshold', async () => {
+      let agentIdx = 0;
+      const factory: LlmAdapterFactory = async () => {
+        agentIdx++;
+        if (agentIdx <= 2) {
+          // First 2 agents fail
+          return {
+            async chat(): Promise<LlmResponse> {
+              throw new Error(`Agent ${agentIdx} failed`);
+            },
+          };
+        }
+        // Third agent succeeds
+        return createFakeAdapter('Success');
+      };
+      const loader = createFakeAgentLoader();
+      const signal = new AbortController().signal;
+
+      const invocations = [
+        makeInvocation('agent-1', 'Work'),
+        makeInvocation('agent-2', 'Work'),
+        makeInvocation('agent-3', 'Work'),
+      ];
+
+      const result = await runParallelSubAgents(
+        invocations,
+        { strategy: 'quorum', consolidation: 'merge', quorumThreshold: 0.67 },
+        factory,
+        loader,
+        signal,
+      );
+
+      // Quorum needs ceil(3 * 0.67) = 2 successful agents
+      // Only 1 succeeded, so quorum is not truly met
+      assert.ok(
+        result.successCount <= 1,
+        `Should have at most 1 success when 2 of 3 agents fail, got ${result.successCount}`,
+      );
+    });
+
+    it('should not select error result as race winner', async () => {
+      let agentIdx = 0;
+      const factory: LlmAdapterFactory = async () => {
+        agentIdx++;
+        if (agentIdx === 1) {
+          // First agent returns error result (fast)
+          return {
+            async chat(): Promise<LlmResponse> {
+              throw new Error('Fast but broken');
+            },
+          };
+        }
+        // Second agent succeeds (slow)
+        return makeDelayedAdapter('Correct answer', 50);
+      };
+      const loader = createFakeAgentLoader();
+      const signal = new AbortController().signal;
+
+      const invocations = [
+        makeInvocation('broken-agent', 'Fail'),
+        makeInvocation('good-agent', 'Succeed'),
+      ];
+
+      const result = await runParallelSubAgents(
+        invocations,
+        { strategy: 'race', consolidation: 'merge' },
+        factory,
+        loader,
+        signal,
+      );
+
+      // The race should pick the good agent, not the broken one
+      const winner = result.individual.find((r) => r.exitReason === 'text_response');
+      assert.ok(winner, 'Race should have a non-error winner');
+      assert.ok(
+        !result.response.includes('Fast but broken'),
+        'Error agent should not be the race winner',
+      );
+    });
   });
 });

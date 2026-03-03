@@ -462,7 +462,7 @@ export async function runParallelSubAgents(
       break;
   }
 
-  const successResults = results.filter((r) => r.exitReason !== 'error');
+  const successResults = results.filter((r) => r.exitReason === 'text_response');
   const consolidated = consolidateResults(
     invocations,
     results,
@@ -508,21 +508,27 @@ async function executeRace(
   invocations: readonly ParallelSubAgentInvocation[],
   makePromise: (inv: ParallelSubAgentInvocation) => Promise<SubAgentResult>,
 ): Promise<SubAgentResult[]> {
-  // Start all, return on first success
+  // Start all, return on first non-error success
   const promises = invocations.map((inv, idx) =>
-    makePromise(inv).then((result) => ({ result, idx })),
+    makePromise(inv).then((result) => {
+      // Only treat non-error results as race winners
+      if (result.exitReason === 'error') {
+        throw new Error(`Sub-agent "${inv.config.role}" completed with error`);
+      }
+      return { result, idx };
+    }),
   );
 
   try {
     const { result, idx } = await Promise.any(promises);
-    // Return array with only the winner populated, errors for rest
+    // Return array with only the winner populated, placeholders for rest
     return invocations.map((_, i) =>
       i === idx
         ? result
         : { response: '(not selected - race strategy)', iterations: 0, exitReason: 'aborted' as LoopExitReason, toolCalls: 0, durationMs: 0 },
     );
   } catch {
-    // All failed
+    // All failed or all returned error results
     return invocations.map(() => ({
       response: '(all sub-agents failed in race)',
       iterations: 0,
@@ -540,27 +546,41 @@ async function executeQuorum(
 ): Promise<SubAgentResult[]> {
   const needed = Math.ceil(invocations.length * threshold);
   const results: Array<SubAgentResult | null> = new Array(invocations.length).fill(null);
-  let completedCount = 0;
+  let totalCompleted = 0;
+  let successCount = 0;
 
   return new Promise((resolve) => {
     let resolved = false;
+
+    const tryResolve = (): void => {
+      // Quorum met: enough successful agents completed
+      if (!resolved && successCount >= needed) {
+        resolved = true;
+        resolve(results.map((r) => r ?? {
+          response: '(quorum reached before completion)',
+          iterations: 0,
+          exitReason: 'aborted' as LoopExitReason,
+          toolCalls: 0,
+          durationMs: 0,
+        }));
+        return;
+      }
+      // All agents finished but quorum never reached
+      if (!resolved && totalCompleted >= invocations.length) {
+        resolved = true;
+        resolve(results as SubAgentResult[]);
+      }
+    };
 
     invocations.forEach((inv, idx) => {
       makePromise(inv)
         .then((result) => {
           results[idx] = result;
-          completedCount++;
-          if (!resolved && completedCount >= needed) {
-            resolved = true;
-            // Fill remaining with placeholder
-            resolve(results.map((r) => r ?? {
-              response: '(quorum reached before completion)',
-              iterations: 0,
-              exitReason: 'aborted' as LoopExitReason,
-              toolCalls: 0,
-              durationMs: 0,
-            }));
+          totalCompleted++;
+          if (result.exitReason !== 'error') {
+            successCount++;
           }
+          tryResolve();
         })
         .catch((err) => {
           const msg = err instanceof Error ? err.message : String(err);
@@ -571,11 +591,8 @@ async function executeQuorum(
             toolCalls: 0,
             durationMs: 0,
           };
-          completedCount++;
-          if (!resolved && completedCount >= invocations.length) {
-            resolved = true;
-            resolve(results as SubAgentResult[]);
-          }
+          totalCompleted++;
+          tryResolve();
         });
     });
   });
