@@ -409,3 +409,32 @@ Rationale:
 1. Update `StructuredLogger` correlation ID generation to UUID format (or validate injected IDs to UUID).
 2. Wire stale detection in `agenticLoop` to emit warning progress events when `isStale()` is true.
 3. Add/extend regression tests for both behaviors.
+
+---
+
+## P1 Blocker Re-Review (2026-03-03)
+
+**Re-review scope**: Verify resolution of the 2 prior P1 blockers from the P1 implementation review.
+**Commit reviewed**: `97c86b8`
+**Reviewer**: Code Reviewer Agent
+
+### Blocker Verification
+
+1. **UUID correlationId requirement (SPEC 3.5)** -> **RESOLVED**
+	- Verified in `vscode-extension/src/utils/structuredLogger.ts`: `generateCorrelationId()` now emits UUID v4 shape (`8-4-4-4-12`, version nibble `4`, variant nibble `[8|9|a|b]`).
+	- Verified in `vscode-extension/src/test/utils/structuredLogger.test.ts`: correlation ID assertion now enforces UUID v4 regex.
+
+2. **Stale-warning wiring from `ProgressTracker.isStale()`** -> **RESOLVED**
+	- Verified in `vscode-extension/src/agentic/agenticLoop.ts`: stale check now runs after stall/replan block.
+	- On stale detection, loop injects stale warning text into session and emits `onLoopWarning` with typed `LoopDetectionResult` payload (`severity: 'warning', detector: null, count: 0`).
+
+### Validation Run
+
+- Executed: `cd vscode-extension && npm test`
+- Result: **828 passing, 0 failing**
+
+### Re-Review Decision
+
+**[PASS] APPROVED**
+
+Both previously blocking P1 items are fixed and validated by full test-suite pass.
