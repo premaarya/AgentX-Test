@@ -64,8 +64,8 @@ type WizardOutgoingMessage =
 
 const BRANCH = 'master';
 const ARCHIVE_URL = `https://github.com/jnPiyush/AgentX/archive/refs/heads/${BRANCH}.zip`;
-const ESSENTIAL_DIRS = ['.agentx', '.github', '.vscode', 'scripts'];
-const ESSENTIAL_FILES = ['AGENTS.md', 'Skills.md', '.gitignore'];
+const ESSENTIAL_DIRS = ['.agentx', '.github', '.claude', '.vscode', 'scripts', 'docs', 'packs'];
+const ESSENTIAL_FILES = ['AGENTS.md', 'Skills.md', 'CLAUDE.md', '.gitignore'];
 
 function isInitializedWorkspace(root: string): boolean {
   const hasAgentxDir = fs.existsSync(path.join(root, '.agentx'));
@@ -298,10 +298,12 @@ export class InitWizardPanel {
           'architect',
           'engineer',
           'reviewer',
-          'devops',
+          'devops-engineer',
+          'auto-fix-reviewer',
           'data-scientist',
           'tester',
           'customer-coach',
+          'powerbi-analyst',
         ]) {
           agentStatus[agent] = { status: 'idle', issue: null, lastActivity: null };
         }

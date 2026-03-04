@@ -258,8 +258,9 @@ if (-not (Test-Path $statusFile) -or $Force) {
  "data-scientist" = @{ status="idle"; issue=$null; lastActivity=$null }
  "tester" = @{ status="idle"; issue=$null; lastActivity=$null }
  "customer-coach" = @{ status="idle"; issue=$null; lastActivity=$null }
+ "powerbi-analyst" = @{ status="idle"; issue=$null; lastActivity=$null }
  } | ConvertTo-Json -Depth 10 | Set-Content $statusFile
- Write-OK "Agent status initialized (10 agents)"
+ Write-OK "Agent status initialized (11 agents)"
 }
 
 # Mode config

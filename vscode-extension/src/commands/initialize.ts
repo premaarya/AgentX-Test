@@ -260,6 +260,7 @@ export function registerInitializeCommand(
   'data-scientist',
   'tester',
   'customer-coach',
+  'powerbi-analyst',
  ]) {
  agentStatus[agent] = { status: 'idle', issue: null, lastActivity: null };
  }

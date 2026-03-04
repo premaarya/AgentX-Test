@@ -214,7 +214,8 @@ if [ ! -f "$STATUS" ] || [ "$FORCE" = "true" ]; then
  "auto-fix-reviewer": { "status": "idle", "issue": null, "lastActivity": null },
  "data-scientist": { "status": "idle", "issue": null, "lastActivity": null },
  "tester": { "status": "idle", "issue": null, "lastActivity": null },
- "customer-coach": { "status": "idle", "issue": null, "lastActivity": null }
+ "customer-coach": { "status": "idle", "issue": null, "lastActivity": null },
+ "powerbi-analyst": { "status": "idle", "issue": null, "lastActivity": null }
 }
 EOF
  ok "Agent status initialized"
