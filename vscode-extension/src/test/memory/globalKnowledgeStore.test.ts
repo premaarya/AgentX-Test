@@ -32,32 +32,27 @@ function makeKnowledgeInput(overrides: Partial<KnowledgeEntry> = {}): Omit<Knowl
 }
 
 // ---------------------------------------------------------------------------
-// Setup / teardown
-// ---------------------------------------------------------------------------
-
-beforeEach(() => {
-  tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'agentx-gk-test-'));
-  // Override HOME so GlobalKnowledgeStore writes to temp
-  originalHome = process.env['HOME'];
-  originalUserProfile = process.env['USERPROFILE'];
-  process.env['HOME'] = tmpHome;
-  process.env['USERPROFILE'] = tmpHome;
-});
-
-afterEach(() => {
-  // Restore HOME
-  if (originalHome !== undefined) { process.env['HOME'] = originalHome; }
-  else { delete process.env['HOME']; }
-  if (originalUserProfile !== undefined) { process.env['USERPROFILE'] = originalUserProfile; }
-  else { delete process.env['USERPROFILE']; }
-  fs.rmSync(tmpHome, { recursive: true, force: true });
-});
-
-// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
 describe('GlobalKnowledgeStore', () => {
+  beforeEach(() => {
+    tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'agentx-gk-test-'));
+    // Override HOME so GlobalKnowledgeStore writes to temp
+    originalHome = process.env['HOME'];
+    originalUserProfile = process.env['USERPROFILE'];
+    process.env['HOME'] = tmpHome;
+    process.env['USERPROFILE'] = tmpHome;
+  });
+
+  afterEach(() => {
+    // Restore HOME
+    if (originalHome !== undefined) { process.env['HOME'] = originalHome; }
+    else { delete process.env['HOME']; }
+    if (originalUserProfile !== undefined) { process.env['USERPROFILE'] = originalUserProfile; }
+    else { delete process.env['USERPROFILE']; }
+    fs.rmSync(tmpHome, { recursive: true, force: true });
+  });
   it('should be constructable', () => {
     const store = new GlobalKnowledgeStore();
     assert.ok(store, 'GlobalKnowledgeStore instance should be created');

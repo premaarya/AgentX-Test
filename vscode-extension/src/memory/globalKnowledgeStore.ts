@@ -15,6 +15,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import * as crypto from 'crypto';
+import { readJsonSafe, writeJsonLocked } from '../utils/fileLock';
 import {
   type IGlobalKnowledgeStore,
   type KnowledgeEntry,
@@ -37,24 +38,6 @@ import {
 
 function generateId(): string {
   return `GK-${crypto.randomBytes(4).toString('hex')}`;
-}
-
-function readJsonSafe<T>(filePath: string): T | null {
-  try {
-    if (!fs.existsSync(filePath)) { return null; }
-    const raw = fs.readFileSync(filePath, 'utf-8');
-    return JSON.parse(raw) as T;
-  } catch {
-    return null;
-  }
-}
-
-function writeJsonSync(filePath: string, data: unknown): void {
-  const dir = path.dirname(filePath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
 }
 
 // ---------------------------------------------------------------------------
@@ -123,7 +106,7 @@ export class GlobalKnowledgeStore implements IGlobalKnowledgeStore {
 
     // Write entry file
     const entryPath = path.join(this.knowledgeDir, `${entry.id}.json`);
-    writeJsonSync(entryPath, entry);
+    writeJsonLocked(entryPath, entry);
 
     // Update manifest
     const index: KnowledgeIndex = {
@@ -189,7 +172,7 @@ export class GlobalKnowledgeStore implements IGlobalKnowledgeStore {
     };
 
     const entryPath = path.join(this.knowledgeDir, `${id}.json`);
-    writeJsonSync(entryPath, updated);
+    writeJsonLocked(entryPath, updated);
 
     // Update manifest usageCount
     const manifest = await this.loadManifest();
@@ -365,7 +348,7 @@ export class GlobalKnowledgeStore implements IGlobalKnowledgeStore {
 
   private async saveManifest(manifest: GlobalKnowledgeManifest): Promise<void> {
     const manifestPath = path.join(this.knowledgeDir, GLOBAL_MANIFEST_FILE);
-    writeJsonSync(manifestPath, manifest);
+    writeJsonLocked(manifestPath, manifest);
     this.manifestCache = manifest;
     this.manifestCacheTime = Date.now();
   }

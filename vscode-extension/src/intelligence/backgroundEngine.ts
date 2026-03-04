@@ -128,8 +128,9 @@ export class BackgroundEngine implements IBackgroundEngine {
     this.intervalHandle = setInterval(async () => {
       try {
         await this.runNow();
-      } catch {
-        // Engine must never crash -- errors are swallowed silently
+      } catch (err) {
+        // Engine must never crash -- log and continue
+        this.dispatcher.error(`Background scan failed: ${err instanceof Error ? err.message : String(err)}`);
       }
     }, this.config.scanIntervalMs);
 
@@ -153,8 +154,9 @@ export class BackgroundEngine implements IBackgroundEngine {
       try {
         const results = await detector.detect();
         allResults.push(...results);
-      } catch {
-        // Individual detector failures are silently swallowed
+      } catch (err) {
+        // Individual detector failure -- log but continue pipeline
+        this.dispatcher.warning(`Detector failed: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
 

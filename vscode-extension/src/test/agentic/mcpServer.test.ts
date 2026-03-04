@@ -17,25 +17,20 @@ function makeRequest(method: string, params?: Record<string, unknown>, id: numbe
 }
 
 // ---------------------------------------------------------------------------
-// Setup / teardown
-// ---------------------------------------------------------------------------
-
-beforeEach(() => {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentx-mcp-test-'));
-  agentxDir = path.join(tmpDir, '.agentx');
-  memoryDir = path.join(agentxDir, 'memory');
-  fs.mkdirSync(memoryDir, { recursive: true });
-});
-
-afterEach(() => {
-  fs.rmSync(tmpDir, { recursive: true, force: true });
-});
-
-// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
 describe('AgentXMcpServer', () => {
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentx-mcp-test-'));
+    agentxDir = path.join(tmpDir, '.agentx');
+    memoryDir = path.join(agentxDir, 'memory');
+    fs.mkdirSync(memoryDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
   it('should be constructable', () => {
     const server = new AgentXMcpServer(agentxDir, memoryDir);
     assert.ok(server);
@@ -67,10 +62,10 @@ describe('AgentXMcpServer', () => {
     assert.ok(tools.length > 0, 'Should have tools');
 
     const toolNames = tools.map((t) => t['name']);
-    assert.ok(toolNames.includes('set_agent_state'));
-    assert.ok(toolNames.includes('create_issue'));
-    assert.ok(toolNames.includes('trigger_workflow'));
-    assert.ok(toolNames.includes('memory_search'));
+    assert.ok(toolNames.includes('set-agent-state'));
+    assert.ok(toolNames.includes('create-issue'));
+    assert.ok(toolNames.includes('trigger-workflow'));
+    assert.ok(toolNames.includes('memory-search'));
   });
 
   it('should list resources', async () => {
@@ -97,10 +92,10 @@ describe('AgentXMcpServer', () => {
     assert.strictEqual(response.error!.code, -32601, 'Should be method not found');
   });
 
-  it('should handle tool call for set_agent_state', async () => {
+  it('should handle tool call for set-agent-state', async () => {
     const server = new AgentXMcpServer(agentxDir, memoryDir);
     const response = await server.handleRequest(makeRequest('tools/call', {
-      name: 'set_agent_state',
+      name: 'set-agent-state',
       arguments: { agent: 'engineer', state: 'working', issueNumber: 42 },
     }));
 

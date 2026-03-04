@@ -45,24 +45,19 @@ function makeEntry(overrides: Partial<ObservationIndex> = {}): ObservationIndex 
 }
 
 // ---------------------------------------------------------------------------
-// Setup / teardown
-// ---------------------------------------------------------------------------
-
-beforeEach(() => {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentx-synapse-test-'));
-  memoryDir = path.join(tmpDir, 'memory');
-  fs.mkdirSync(memoryDir, { recursive: true });
-});
-
-afterEach(() => {
-  fs.rmSync(tmpDir, { recursive: true, force: true });
-});
-
-// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
 describe('SynapseNetwork', () => {
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentx-synapse-test-'));
+    memoryDir = path.join(tmpDir, 'memory');
+    fs.mkdirSync(memoryDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
   it('should be constructable with a memory directory', () => {
     const network = new SynapseNetwork(memoryDir);
     assert.ok(network, 'SynapseNetwork instance should be created');

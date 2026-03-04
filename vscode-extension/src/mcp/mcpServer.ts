@@ -244,7 +244,12 @@ export class AgentXMcpServer {
       if (!trimmed) { continue; }
 
       try {
-        const request = JSON.parse(trimmed) as JsonRpcRequest;
+        const parsed = JSON.parse(trimmed) as Record<string, unknown>;
+        // Validate JSON-RPC 2.0 envelope
+        if (parsed['jsonrpc'] !== '2.0' || typeof parsed['method'] !== 'string') {
+          continue; // Ignore non-conforming messages
+        }
+        const request = parsed as unknown as JsonRpcRequest;
         void this.handleRequest(request).then((response) => {
           if (request.id !== undefined) {
             process.stdout.write(JSON.stringify(response) + '\n');
@@ -319,24 +324,68 @@ export class AgentXMcpServer {
     id?: string | number,
     params?: Record<string, unknown>,
   ): JsonRpcResponse {
-    const toolName = params?.['name'] as string;
+    const toolName = params?.['name'];
+    if (typeof toolName !== 'string') {
+      return {
+        jsonrpc: '2.0',
+        id: id ?? null,
+        error: { code: -32602, message: 'Missing or invalid tool name' },
+      };
+    }
     const args = (params?.['arguments'] ?? {}) as Record<string, unknown>;
 
     let result: ToolResult;
 
     switch (toolName) {
-      case 'set-agent-state':
-        result = handleSetAgentState(args as unknown as SetAgentStateInput, this.agentxDir);
+      case 'set-agent-state': {
+        if (typeof args['agent'] !== 'string' || typeof args['state'] !== 'string') {
+          return { jsonrpc: '2.0', id: id ?? null, error: { code: -32602, message: 'set-agent-state requires string agent and state' } };
+        }
+        const input: SetAgentStateInput = {
+          agent: args['agent'] as SetAgentStateInput['agent'],
+          state: args['state'] as SetAgentStateInput['state'],
+          issueNumber: typeof args['issueNumber'] === 'number' ? args['issueNumber'] : undefined,
+        };
+        result = handleSetAgentState(input, this.agentxDir);
         break;
-      case 'create-issue':
-        result = handleCreateIssue(args as unknown as CreateIssueInput, this.agentxDir);
+      }
+      case 'create-issue': {
+        if (typeof args['title'] !== 'string' || typeof args['type'] !== 'string') {
+          return { jsonrpc: '2.0', id: id ?? null, error: { code: -32602, message: 'create-issue requires string title and type' } };
+        }
+        const input: CreateIssueInput = {
+          title: args['title'],
+          type: args['type'] as CreateIssueInput['type'],
+          priority: typeof args['priority'] === 'string' ? args['priority'] as CreateIssueInput['priority'] : undefined,
+          description: typeof args['description'] === 'string' ? args['description'] : undefined,
+          labels: Array.isArray(args['labels']) ? args['labels'].filter((l): l is string => typeof l === 'string') : undefined,
+        };
+        result = handleCreateIssue(input, this.agentxDir);
         break;
-      case 'trigger-workflow':
-        result = handleTriggerWorkflow(args as unknown as TriggerWorkflowInput, this.agentxDir);
+      }
+      case 'trigger-workflow': {
+        if (typeof args['issueNumber'] !== 'number' || typeof args['workflowType'] !== 'string') {
+          return { jsonrpc: '2.0', id: id ?? null, error: { code: -32602, message: 'trigger-workflow requires number issueNumber and string workflowType' } };
+        }
+        const input: TriggerWorkflowInput = {
+          issueNumber: args['issueNumber'],
+          workflowType: args['workflowType'] as TriggerWorkflowInput['workflowType'],
+        };
+        result = handleTriggerWorkflow(input, this.agentxDir);
         break;
-      case 'memory-search':
-        result = handleMemorySearch(args as unknown as MemorySearchInput, this.memoryDir);
+      }
+      case 'memory-search': {
+        if (typeof args['query'] !== 'string') {
+          return { jsonrpc: '2.0', id: id ?? null, error: { code: -32602, message: 'memory-search requires string query' } };
+        }
+        const input: MemorySearchInput = {
+          query: args['query'],
+          store: typeof args['store'] === 'string' ? args['store'] as MemorySearchInput['store'] : undefined,
+          limit: typeof args['limit'] === 'number' ? args['limit'] : undefined,
+        };
+        result = handleMemorySearch(input, this.memoryDir);
         break;
+      }
       default:
         return {
           jsonrpc: '2.0',

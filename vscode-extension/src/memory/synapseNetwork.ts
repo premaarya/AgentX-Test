@@ -191,12 +191,23 @@ export class SynapseNetwork implements ISynapseNetwork {
   /**
    * Weighted Jaccard similarity:
    *   0.4 * jaccard(labels) + 0.4 * jaccard(keywords) + 0.2 * (category match)
+   *
+   * When either side has empty labels (common for manifest-loaded candidates),
+   * the label weight is redistributed proportionally to keywords and category.
    */
   private computeSimilarity(a: ObservationMeta, b: ObservationMeta): number {
-    const labelSim = this.jaccard(a.labels, b.labels);
     const keywordSim = this.jaccard(a.keywords, b.keywords);
     const categorySim = a.category === b.category ? 1.0 : 0.0;
 
+    // If either side has no labels, redistribute that weight
+    if (a.labels.size === 0 || b.labels.size === 0) {
+      // Normalize: keyword 0.4 + category 0.2 -> 0.667 + 0.333
+      const kw = 0.4 / (0.4 + 0.2);
+      const cw = 0.2 / (0.4 + 0.2);
+      return kw * keywordSim + cw * categorySim;
+    }
+
+    const labelSim = this.jaccard(a.labels, b.labels);
     return 0.4 * labelSim + 0.4 * keywordSim + 0.2 * categorySim;
   }
 
