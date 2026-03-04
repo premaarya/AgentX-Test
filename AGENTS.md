@@ -168,6 +168,8 @@ Spike + Backlog -> Architect
 type:devops + Backlog -> DevOps Engineer (skip PM/Architect for infrastructure work)
 type:data-science + Backlog -> Data Scientist (skip PM/Architect for ML/AI work)
 type:testing + Backlog -> Tester (skip PM/Architect for testing/certification work)
+type:powerbi + Backlog -> PowerBI Developer (skip PM/Architect for report-only work)
+type:mcp + Backlog -> MCP Developer (skip PM/Architect for MCP App and compliance dashboard work)
 In Review + needs:testing -> Tester (pre-release certification)
 ```
 
@@ -212,6 +214,8 @@ In Review + needs:testing -> Tester (pre-release certification)
 | `type:devops` | DevOps Engineer | CI/CD Pipelines + Deployment Docs |
 | `type:data-science` | Data Scientist | ML Pipelines + Evals + Model Cards |
 | `type:testing` | Tester | Test Suites + Certification Reports |
+| `type:powerbi` | PowerBI Developer | Reports + Semantic Model + Deployment Docs |
+| `type:mcp` | MCP Developer | MCP Server + App UI + VS Code Registration + Docs |
 
 **Decision Tree:**
 - Broken? -> `type:bug`
@@ -220,6 +224,8 @@ In Review + needs:testing -> Tester (pre-release certification)
 - Pipeline/deployment/release? -> `type:devops`
 - ML/AI model, drift, eval, RAG, fine-tuning? -> `type:data-science`
 - Testing, certification, quality gates, pre-release? -> `type:testing`
+- Power BI report, dashboard, DAX measures, semantic model? -> `type:powerbi`
+- MCP App, interactive UI panel in AI host, compliance dashboard, registerAppTool? -> `type:mcp`
 - Large/vague? -> `type:epic`
 - Single capability? -> `type:feature`
 - Else -> `type:story`
@@ -408,6 +414,41 @@ All AgentX core agents are currently **stable** (production-ready).
  - Can modify: `docs/coaching/**`, `docs/presentations/**`, GitHub Issues
  - Cannot modify: `src/**`, `docs/prd/**`, `docs/adr/**`, `docs/ux/**`
 
+### PowerBI Developer
+- **Maturity**: Stable
+- **Trigger**: `type:powerbi` label
+- **Output**: PBIP reports at `reports/**`, semantic models at `models/**`, deployment docs at `docs/powerbi/**`
+- **Status**: Move to `In Progress` when starting -> `In Review` when pbi-tools compile passes
+- **Tools**: All tools available (create_file, run_in_terminal, semantic_search, etc.)
+- **Validation**: `.github/scripts/validate-handoff.sh {issue} powerbi-developer`
+- **Constraints**:
+ - [PASS] CAN author DAX measures, Power Query transformations, report layouts, RLS, themes
+ - [PASS] MUST use PBIP format - never commit .pbix binaries
+ - [PASS] MUST run pbi-tools compile before marking In Review
+ - [FAIL] CANNOT write application source code or CI/CD pipelines
+ - [FAIL] CANNOT publish directly to Production - must promote through pipeline stages
+- **Boundaries**:
+ - Can modify: `reports/**`, `models/**`, `docs/powerbi/**`, `scripts/deploy/powerbi/**`
+ - Cannot modify: `src/**`, `docs/prd/**`, `docs/adr/**`, `docs/ux/**`, `.github/workflows/**`
+
+### MCP Developer
+- **Maturity**: Stable
+- **Trigger**: `type:mcp` label
+- **Output**: MCP server at `src/mcp-apps/**`, bundled app at `dist/mcp-app.html`, VS Code registration at `.vscode/mcp.json`, docs at `docs/mcp-apps/**`
+- **Status**: Move to `In Progress` when starting -> `In Review` when `npm run build` passes and basic-host test succeeds
+- **Tools**: All tools available (create_file, run_in_terminal, semantic_search, web, etc.)
+- **Validation**: `.github/scripts/validate-handoff.sh {issue} mcp-developer`
+- **Constraints**:
+ - [PASS] CAN build MCP App servers with registerAppTool, registerAppResource, StreamableHTTPServerTransport
+ - [PASS] CAN build interactive HTML UIs using the App class (connect, ontoolresult, callServerTool)
+ - [PASS] MUST use `npm run build` (vite-plugin-singlefile) before testing or serving
+ - [PASS] MUST use StreamableHTTPServerTransport - stdio transport is forbidden for MCP Apps
+ - [FAIL] CANNOT hardcode GitHub tokens or org names in source files
+ - [FAIL] CANNOT use stdio transport for MCP Apps
+- **Boundaries**:
+ - Can modify: `src/mcp-apps/**`, `dist/**`, `.vscode/mcp.json`, `docs/mcp-apps/**`
+ - Cannot modify: `reports/**`, `models/**`, `docs/prd/**`, `docs/adr/**`, `.github/workflows/**`
+
 ---
 
 ## Handoff Flow
@@ -435,6 +476,8 @@ Agents query the backlog for the next priority item instead of receiving explici
 | **DevOps** | `type:devops` + Status=`Ready`, sorted by priority |
 | **Data Scientist** | `type:data-science` + Status=`Ready`, sorted by priority |
 | **Tester** | `type:testing` + Status=`Ready` or `In Review` + `needs:testing`, sorted by priority |
+| **PowerBI Developer** | `type:powerbi` + Status=`Ready` or `Backlog`, sorted by priority |
+| **MCP Developer** | `type:mcp` + Status=`Ready` or `Backlog`, sorted by priority |
 
 **Priority Order**: `priority:p0` > `priority:p1` > `priority:p2` > `priority:p3` > (no label)
 
@@ -551,6 +594,14 @@ Types: `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `chore`
 | Shared Modules | `scripts/modules/` |
 | Packs | `packs/` |
 | Agent Delegation | `.github/agent-delegation.md` |
+| Report Files (PBIP) | `reports/` |
+| Semantic Models | `models/` |
+| PowerBI Docs | `docs/powerbi/` |
+| PowerBI Deploy Scripts | `scripts/deploy/powerbi/` |
+| MCP App Source | `src/mcp-apps/` |
+| MCP App Bundles | `dist/` |
+| MCP App Docs | `docs/mcp-apps/` |
+| VS Code MCP Config | `.vscode/mcp.json` |
 
 ### New Features (v7.3)
 
@@ -622,11 +673,11 @@ Types: `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `chore`
 
 ### Labels
 
-**Type Labels**: `type:epic`, `type:feature`, `type:story`, `type:bug`, `type:spike`, `type:docs`, `type:data-science`, `type:testing`
+**Type Labels**: `type:epic`, `type:feature`, `type:story`, `type:bug`, `type:spike`, `type:docs`, `type:data-science`, `type:testing`, `type:powerbi`, `type:mcp`
 
 **Priority Labels**: `priority:p0`, `priority:p1`, `priority:p2`, `priority:p3`
 
-**Workflow Labels**: `needs:ux`, `needs:help`, `needs:changes`, `needs:iteration` (extended loop, max 20), `needs:testing` (pre-release certification)
+**Workflow Labels**: `needs:ux`, `needs:help`, `needs:changes`, `needs:iteration` (extended loop, max 20), `needs:testing` (pre-release certification), `needs:architecture` (Power BI semantic model ADR), `needs:deployment-pipeline` (Power BI CI/CD setup)
 
 ---
 

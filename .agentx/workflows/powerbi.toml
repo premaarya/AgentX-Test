@@ -1,0 +1,212 @@
+# AgentX Workflow: Power BI Report / Dashboard
+# Triggered for issues labelled type:powerbi
+# Flow: PM (requirements) -> UX (wireframes) -> PowerBI Developer (model + report) -> Reviewer -> DevOps (pipeline)
+
+[workflow]
+name        = "powerbi"
+description = "End-to-end Power BI report and dashboard development from requirements to deployed workspace artifact"
+version     = "1.0.0"
+trigger     = { labels = ["type:powerbi"] }
+
+# Skills loaded at the start of the workflow (router only - agents load specific skills themselves)
+skills = [
+  ".github/skills/data/powerbi-reports/SKILL.md",
+  ".github/skills/data/powerbi-deployment/SKILL.md",
+  ".github/skills/languages/dax/SKILL.md",
+  ".github/skills/languages/power-query/SKILL.md"
+]
+
+# ------------------------------------------------------------------ #
+# STEP 1: Product Manager - Report Requirements
+# ------------------------------------------------------------------ #
+[[steps]]
+id          = "pm"
+agent       = "product-manager"
+description = "Define report requirements, audience, KPIs, and acceptance criteria"
+status_in   = "Backlog"
+status_out  = "Ready"
+skills      = [
+  ".github/skills/development/documentation/SKILL.md"
+]
+deliverables = [
+  "docs/prd/PRD-{issue}.md"
+]
+validation  = ".github/scripts/validate-handoff.sh {issue} pm"
+iterate     = false
+notes       = """
+For Power BI work, the PRD must capture:
+- Report name and artifact type (report / dashboard / semantic model)
+- Target audience and personas
+- Key measures and KPIs
+- Data sources and tables
+- RLS requirements
+- Deployment pipeline targets (Dev/Test/Prod)
+- Refresh schedule
+"""
+
+# ------------------------------------------------------------------ #
+# STEP 2: UX Designer - Dashboard Wireframes (conditional)
+# Runs when needs:ux label is present
+# ------------------------------------------------------------------ #
+[[steps]]
+id          = "ux"
+agent       = "ux-designer"
+description = "Create wireframes and layout designs for report pages and dashboard tiles"
+status_in   = "Ready"
+status_out  = "Ready"
+condition   = { labels = ["needs:ux"] }
+parallel    = ["architect"]  # UX and Architect run in parallel if both needed
+skills      = [
+  ".github/skills/design/ux-ui-design/SKILL.md"
+]
+deliverables = [
+  "docs/ux/UX-{issue}.md",
+  "docs/ux/prototypes/"
+]
+validation  = ".github/scripts/validate-handoff.sh {issue} ux"
+iterate     = false
+notes       = """
+For Power BI, UX wireframes should cover:
+- Page layout with visual placement (use HTML/CSS prototype or annotated sketch)
+- Slicer panel design and positioning
+- KPI card layout and colour coding
+- Navigation pattern (tabs, bookmarks, drill-through buttons)
+- Mobile layout if required
+"""
+
+# ------------------------------------------------------------------ #
+# STEP 3: Architect - Semantic Model Design (conditional)
+# Runs when data model complexity warrants an ADR
+# ------------------------------------------------------------------ #
+[[steps]]
+id          = "architect"
+agent       = "architect"
+description = "Design semantic model schema (star schema, relationships, partitioning strategy)"
+status_in   = "Ready"
+status_out  = "Ready"
+condition   = { labels = ["needs:architecture"] }
+parallel    = ["ux"]
+skills      = [
+  ".github/skills/architecture/database/SKILL.md",
+  ".github/skills/data/fabric-analytics/SKILL.md"
+]
+deliverables = [
+  "docs/adr/ADR-{issue}.md",
+  "docs/specs/SPEC-{issue}.md"
+]
+validation  = ".github/scripts/validate-handoff.sh {issue} architect"
+iterate     = false
+notes       = """
+For Power BI semantic models, the ADR should document:
+- Table schema (fact and dimension tables, primary/foreign keys)
+- Relationship cardinality and cross-filter directions
+- Partitioning strategy for incremental refresh
+- DirectLake vs Import vs DirectQuery decision (with rationale)
+- DAX measure groups and high-level measure list
+"""
+
+# ------------------------------------------------------------------ #
+# STEP 4: PowerBI Developer - Model + Report Implementation
+# ------------------------------------------------------------------ #
+[[steps]]
+id          = "powerbi-developer"
+agent       = "powerbi-developer"
+description = "Implement DAX measures, Power Query, report layout, RLS, and theme"
+status_in   = "Ready"
+status_out  = "In Review"
+skills      = [
+  ".github/skills/data/powerbi-reports/SKILL.md",
+  ".github/skills/languages/dax/SKILL.md",
+  ".github/skills/languages/power-query/SKILL.md",
+  ".github/skills/data/powerbi-deployment/SKILL.md"
+]
+deliverables = [
+  "reports/{ReportName}.Report/",
+  "models/{ModelName}.SemanticModel/ (if model changes)",
+  "docs/powerbi/RLS-MATRIX.md (if RLS configured)"
+]
+validation  = "pbi-tools compile -folder reports/{ReportName} -outPath dist/{ReportName}.pbix"
+iterate     = true
+max_iterations = 5
+completion_criteria = [
+  "pbi-tools compile passes with no errors",
+  "All DAX measures use VAR/RETURN (for multi-step measures)",
+  "All DAX measures use DIVIDE() not /",
+  "Query folding verified for large table filters",
+  "RLS documented in docs/powerbi/RLS-MATRIX.md (if applicable)",
+  "Custom theme applied",
+  "No .pbix binary files in reports/ or models/"
+]
+notes       = """
+Clear context from UX/Architect phase before starting implementation.
+PowerBI Developer follows PBIP format standards only.
+All credentials must be in GitHub Secrets - never in report files.
+"""
+
+# ------------------------------------------------------------------ #
+# STEP 5: Code Reviewer
+# ------------------------------------------------------------------ #
+[[steps]]
+id          = "reviewer"
+agent       = "reviewer"
+description = "Review DAX quality, PBIP compliance, RLS correctness, and layout standards"
+status_in   = "In Review"
+status_out  = "Validating"
+skills      = [
+  ".github/skills/development/code-review/SKILL.md"
+]
+deliverables = [
+  "docs/reviews/REVIEW-{issue}.md"
+]
+validation  = ".github/scripts/validate-handoff.sh {issue} reviewer"
+iterate     = false
+notes       = """
+Power BI review checklist (in addition to standard code review):
+- PBIP format: no .pbix in reports/ or models/
+- DAX: VAR/RETURN, DIVIDE(), display folders, no visual-level measures
+- Power Query: explicit types, query folding, incremental refresh parameters
+- RLS: documented, tested with pass and fail user scenarios
+- pbi-tools compile passes cleanly
+- Theme JSON applied
+"""
+
+# ------------------------------------------------------------------ #
+# STEP 6: DevOps Engineer - CI/CD Deployment Pipeline
+# ------------------------------------------------------------------ #
+[[steps]]
+id          = "devops"
+agent       = "devops"
+description = "Configure or update GitHub Actions workflows for automated Power BI deployment"
+status_in   = "Validating"
+status_out  = "Done"
+condition   = { labels = ["needs:deployment-pipeline"] }
+skills      = [
+  ".github/skills/operations/github-actions-workflows/SKILL.md",
+  ".github/skills/data/powerbi-deployment/SKILL.md"
+]
+deliverables = [
+  ".github/workflows/powerbi-validate.yml",
+  ".github/workflows/powerbi-deploy.yml",
+  ".github/workflows/powerbi-refresh.yml",
+  "docs/deployment/powerbi-deployment.md"
+]
+validation  = ".github/scripts/validate-handoff.sh {issue} devops"
+iterate     = false
+notes       = """
+Deployment pipeline requires:
+- Service Principal registered in Entra ID with Power BI API permissions
+- GitHub Secrets: PBI_TENANT_ID, PBI_CLIENT_ID, PBI_CLIENT_SECRET
+- GitHub Secrets: PBI_WORKSPACE_DEV_ID, PBI_WORKSPACE_TEST_ID, PBI_WORKSPACE_PROD_ID
+- Power BI Admin Portal: Service Principal API access enabled
+Templates at: .github/workflows/powerbi-validate.yml, powerbi-deploy.yml, powerbi-refresh.yml
+"""
+
+# ------------------------------------------------------------------ #
+# Workflow metadata
+# ------------------------------------------------------------------ #
+[metadata]
+created     = "2026-03-03"
+updated     = "2026-03-03"
+author      = "AgentX"
+context_clear_before = ["powerbi-developer"]  # Clear UX/Architect context before implementation
+labels_created = ["type:powerbi", "needs:ux", "needs:architecture", "needs:deployment-pipeline"]

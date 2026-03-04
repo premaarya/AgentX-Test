@@ -1,5 +1,5 @@
 ---
-description: 'Compressed skill index for AI agents. 57 skills across 9 categories. Load max 3-4 per task.'
+description: 'Compressed skill index for AI agents. 62 skills across 9 categories. Load max 3-4 per task.'
 ---
 
 # Production Code Skills Index
@@ -12,7 +12,7 @@ description: 'Compressed skill index for AI agents. 57 skills across 9 categorie
 
 **Loading order**: Router -> instruction (auto) -> this index -> pick skills -> `read_file` them.
 
-**Anti-pattern**: Never load all 57 skills. Use Quick Reference below.
+**Anti-pattern**: Never load all 62 skills. Use Quick Reference below.
 
 ---
 
@@ -31,7 +31,6 @@ description: 'Compressed skill index for AI agents. 57 skills across 9 categorie
 | **DevOps / CI/CD** | [GitHub Actions](.github/skills/operations/github-actions-workflows/SKILL.md), [YAML Pipelines](.github/skills/operations/yaml-pipelines/SKILL.md), [Release Mgmt](.github/skills/operations/release-management/SKILL.md) |
 | **Code Review** | [Code Review](.github/skills/development/code-review/SKILL.md), [Security](.github/skills/architecture/security/SKILL.md), [Testing](.github/skills/development/testing/SKILL.md), [Core Principles](.github/skills/architecture/core-principles/SKILL.md) |
 | **AI Agent Development** | [AI Agent Dev](.github/skills/ai-systems/ai-agent-development/SKILL.md), [Cognitive Arch](.github/skills/ai-systems/cognitive-architecture/SKILL.md), [MCP Server](.github/skills/ai-systems/mcp-server-development/SKILL.md), [Prompt Eng](.github/skills/ai-systems/prompt-engineering/SKILL.md) |
-| **MCP Apps / Interactive UI** | [MCP Apps](.github/skills/ai-systems/mcp-apps-development/SKILL.md), [MCP Server](.github/skills/ai-systems/mcp-server-development/SKILL.md), [React](.github/skills/languages/react/SKILL.md), [Frontend/UI](.github/skills/design/frontend-ui/SKILL.md) |
 | **Iterative / Quality Loop** | [Iterative Loop](.github/skills/development/iterative-loop/SKILL.md), [Testing](.github/skills/development/testing/SKILL.md), [Code Review](.github/skills/development/code-review/SKILL.md) |
 | **Model Fine-Tuning** | [Model Fine-Tuning](.github/skills/ai-systems/model-fine-tuning/SKILL.md), [AI Evaluation](.github/skills/ai-systems/ai-evaluation/SKILL.md), [Feedback Loops](.github/skills/ai-systems/feedback-loops/SKILL.md) |
 | **RAG / Retrieval** | [RAG Pipelines](.github/skills/ai-systems/rag-pipelines/SKILL.md), [Context Mgmt](.github/skills/ai-systems/context-management/SKILL.md), [Cognitive Arch](.github/skills/ai-systems/cognitive-architecture/SKILL.md) |
@@ -46,10 +45,12 @@ description: 'Compressed skill index for AI agents. 57 skills across 9 categorie
 | **Performance Testing** | [Performance Testing](.github/skills/testing/performance-testing/SKILL.md), [Performance & Scalability](.github/skills/architecture/performance/SKILL.md), [Test Automation](.github/skills/testing/test-automation/SKILL.md) |
 | **Security Testing** | [Security Testing](.github/skills/testing/security-testing/SKILL.md), [Security](.github/skills/architecture/security/SKILL.md), [Testing](.github/skills/development/testing/SKILL.md) |
 | **Production Release** | [Production Readiness](.github/skills/testing/production-readiness/SKILL.md), [Security Testing](.github/skills/testing/security-testing/SKILL.md), [Performance Testing](.github/skills/testing/performance-testing/SKILL.md), [Release Mgmt](.github/skills/operations/release-management/SKILL.md) |
+| **PowerBI Report/Dashboard** | [PowerBI Reports](.github/skills/data/powerbi-reports/SKILL.md), [DAX](.github/skills/languages/dax/SKILL.md), [Power Query](.github/skills/languages/power-query/SKILL.md), [PowerBI Deployment](.github/skills/data/powerbi-deployment/SKILL.md) |
+| **MCP App Development** | [MCP App Dev](.github/skills/ai-systems/mcp-app-development/SKILL.md), [GitHub Compliance](.github/skills/data/github-compliance/SKILL.md), [MCP Server](.github/skills/ai-systems/mcp-server-development/SKILL.md), [TypeScript](.github/skills/languages/typescript/SKILL.md) |
 
 ---
 
-## Skills Directory (57 skills -- pipe-delimited)
+## Skills Directory (56 skills -- pipe-delimited)
 
 > Format: `category|skill|path|keywords`
 > Read the SKILL.md at the path when the task matches keywords.
@@ -92,11 +93,16 @@ data|fabric-analytics|.github/skills/data/fabric-analytics/SKILL.md|Lakehouse,Wa
 data|fabric-data-agent|.github/skills/data/fabric-data-agent/SKILL.md|NL-to-SQL,conversational-agents
 data|fabric-forecast|.github/skills/data/fabric-forecasting/SKILL.md|time-series,LightGBM,Prophet
 data|databricks|.github/skills/data/databricks/SKILL.md|Unity-Catalog,Delta-Lake,DLT,MLflow,Photon,DAB,AutoLoader,Spark,medallion,Vector-Search
+data|powerbi-reports|.github/skills/data/powerbi-reports/SKILL.md|DAX,visuals,RLS,themes,PBIP,bookmarks,report-authoring
+data|powerbi-deploy|.github/skills/data/powerbi-deployment/SKILL.md|REST-API,XMLA,Service-Principal,pbi-tools,refresh,deployment-pipeline
+lang|dax|.github/skills/languages/dax/SKILL.md|DAX,CALCULATE,FILTER,time-intelligence,measures,VAR,DIVIDE
+lang|power-query|.github/skills/languages/power-query/SKILL.md|M,query-folding,incremental-refresh,custom-functions,Power-Query
 ai|ai-agent-dev|.github/skills/ai-systems/ai-agent-development/SKILL.md|Foundry,Agent-Framework,tracing
 ai|prompt-eng|.github/skills/ai-systems/prompt-engineering/SKILL.md|system-prompts,CoT,few-shot,guardrails
 ai|cognitive-arch|.github/skills/ai-systems/cognitive-architecture/SKILL.md|RAG,memory-systems,vector-search
 ai|mcp-server|.github/skills/ai-systems/mcp-server-development/SKILL.md|MCP-protocol,tools,resources,stdio/SSE
-ai|mcp-apps|.github/skills/ai-systems/mcp-apps-development/SKILL.md|MCP-Apps,ext-apps,interactive-UI,View,Host,iframe,registerAppTool
+ai|mcp-app-dev|.github/skills/ai-systems/mcp-app-development/SKILL.md|MCP-App,ext-apps,registerAppTool,interactive-UI,vite,iframe,dashboard,RESOURCE_MIME_TYPE
+data|github-compliance|.github/skills/data/github-compliance/SKILL.md|GitHub-API,branch-protection,CODEOWNERS,CodeQL,Dependabot,compliance,guardrails,org-audit
 ai|model-drift|.github/skills/ai-systems/model-drift-management/SKILL.md|concept-drift,covariate-shift,PSI,retraining,monitoring
 ai|data-drift|.github/skills/ai-systems/data-drift-strategy/SKILL.md|feature-drift,schema-drift,data-quality,distribution-shift
 ai|fine-tuning|.github/skills/ai-systems/model-fine-tuning/SKILL.md|LoRA,QLoRA,PEFT,DPO,distillation,training-data
@@ -192,11 +198,15 @@ E2E Test Suite|e2e-testing->test-automation->integration-testing->code-review
 Performance Validation|performance-testing->test-automation->testing->code-review
 Security Certification|security-testing->production-readiness->testing->code-review
 Production Release|production-readiness->security-testing->performance-testing->e2e-testing
+PowerBI Report|ux-ui->powerbi-reports->dax->power-query->powerbi-deploy->code-review
+PowerBI Feature|api-design->fabric-analytics->powerbi-reports->dax->powerbi-deploy->testing->code-review
+MCP App|mcp-app-dev->mcp-server->typescript->testing->code-review
+GitHub Compliance Dashboard|github-compliance->mcp-app-dev->mcp-server->testing->code-review
 ```
 
 **Checkpoint**: For chains with 5+ skills, commit + test at each skill boundary.
 
 ---
 
-**See Also**: [AGENTS.md](AGENTS.md) | [agentskills.io](https://agentskills.io/specification) | 56 skills (arch:5, dev:10, lang:8, ops:5, infra:4, data:5, ai:11, design:2, test:6)
+**See Also**: [AGENTS.md](AGENTS.md) | [agentskills.io](https://agentskills.io/specification) | 62 skills (arch:5, dev:10, lang:10, ops:5, infra:4, data:8, ai:12, design:2, test:6)
 

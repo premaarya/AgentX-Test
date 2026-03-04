@@ -1,0 +1,170 @@
+name: Power BI Report / Dashboard
+description: New Power BI report, dashboard, or semantic model change
+title: "[PowerBI] "
+labels: ["type:powerbi"]
+projects: ["jnPiyush/1"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Power BI Report / Dashboard
+
+        Use this template for new Power BI reports, dashboards, or semantic model changes.
+
+        **Workflow:**
+        1. Fill out this template -> Status: **Backlog**
+        2. PowerBI Developer picks up -> Status: **In Progress**
+        3. pbi-tools compile passes, review requested -> Status: **In Review**
+        4. Review approved, deployed to Dev -> Status: **Done**
+
+        > Status is tracked via **GitHub Projects**, not labels.
+
+  - type: input
+    id: report-name
+    attributes:
+      label: Report / Dashboard Name
+      description: Name of the Power BI report or dashboard (will become the PBIP folder name)
+      placeholder: "SalesPerformanceReport"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: artifact-type
+    attributes:
+      label: Artifact Type
+      description: What type of Power BI artifact is this?
+      options:
+        - "Report (multi-page, interactive, drill-through)"
+        - "Dashboard (pinned tiles, KPI monitoring)"
+        - "Semantic Model only (measures, RLS, no new report pages)"
+        - "Report + Semantic Model (new report with new model)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What does this report show and who is the audience?
+      placeholder: |
+        Sales performance report for regional managers showing revenue, margin,
+        and variance vs budget by product category and geography.
+        Audience: Regional Sales Managers (filtered by their region via RLS).
+    validations:
+      required: true
+
+  - type: textarea
+    id: data-sources
+    attributes:
+      label: Data Sources
+      description: List the data sources, databases, and tables required
+      placeholder: |
+        - SQL Server: sqlserver.company.com / SalesDB
+          Tables: dbo.fact_sales, dbo.dim_product, dbo.dim_customer, dbo.dim_date, dbo.dim_geography
+        - SharePoint: Budget file (Excel) uploaded to SharePoint Online
+    validations:
+      required: true
+
+  - type: textarea
+    id: key-measures
+    attributes:
+      label: Key DAX Measures Required
+      description: List the KPIs and measures this report must include
+      placeholder: |
+        - Revenue (sum of sales amount)
+        - Gross Margin %
+        - Revenue YTD
+        - Revenue vs LY (same period last year)
+        - Revenue vs Budget %
+        - Units Sold
+        - Average Order Value
+    validations:
+      required: true
+
+  - type: textarea
+    id: report-pages
+    attributes:
+      label: Report Pages / Layout
+      description: Describe the pages and key visuals required
+      placeholder: |
+        Page 1 - Executive Summary:
+          - KPI cards: Revenue, Margin %, Units Sold
+          - Line chart: Monthly Revenue trend (13 months rolling)
+          - Bar chart: Top 10 products by revenue
+
+        Page 2 - Regional Breakdown:
+          - Matrix: Region x Month x Revenue
+          - Map: Revenue by geography
+
+        Slicers: Date range, Product Category, Region
+    validations:
+      required: false
+
+  - type: textarea
+    id: rls-requirements
+    attributes:
+      label: Row-Level Security (RLS) Requirements
+      description: Describe any data access restrictions by user identity
+      placeholder: |
+        - Regional managers see only their assigned region
+        - Finance team sees all regions
+        - RLS based on user email matched to dim_user_region table
+        - No RLS: Accessed by Power BI App with single shared identity
+    validations:
+      required: true
+
+  - type: dropdown
+    id: deployment-target
+    attributes:
+      label: Target Deployment Environment
+      description: Which Power BI workspace is the initial target?
+      options:
+        - "Dev workspace only"
+        - "Dev -> Test (promote after Dev review)"
+        - "Dev -> Test -> Prod (full pipeline)"
+        - "Fabric deployment pipeline (all stages)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: refresh-schedule
+    attributes:
+      label: Dataset Refresh Schedule
+      description: How often should the dataset refresh?
+      options:
+        - "Manual refresh only"
+        - "Daily (once per day)"
+        - "Twice daily"
+        - "Hourly"
+        - "Real-time / DirectLake (no scheduled refresh)"
+        - "Weekly"
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: Specific, testable criteria for completion
+      placeholder: |
+        - [ ] PBIP files committed to reports/ and models/ directories
+        - [ ] pbi-tools compile passes with no errors
+        - [ ] All DAX measures use VAR/RETURN and DIVIDE()
+        - [ ] RLS tested with at least one pass and one fail scenario
+        - [ ] Report published to Dev workspace with successful refresh
+        - [ ] Custom brand theme applied
+        - [ ] Mobile layout defined
+        - [ ] RLS-MATRIX.md updated (if RLS configured)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: Task priority
+      options:
+        - "P0 - Critical: Blocker"
+        - "P1 - High: Needed for current sprint"
+        - "P2 - Medium: Important but flexible"
+        - "P3 - Low: Can wait"
