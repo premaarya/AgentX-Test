@@ -1,0 +1,171 @@
+name: Power BI Dataset Refresh
+
+on:
+  workflow_run:
+    workflows: ["Power BI Deploy"]
+    types: [completed]
+    branches: [main, 'release/**']
+  workflow_dispatch:
+    inputs:
+      workspace_id:
+        description: 'Power BI Workspace ID (leave empty to use Dev workspace)'
+        required: false
+        type: string
+      dataset_name:
+        description: 'Dataset name to refresh (leave empty to refresh all datasets in workspace)'
+        required: false
+        type: string
+      refresh_type:
+        description: 'Refresh type'
+        required: false
+        default: 'full'
+        type: choice
+        options:
+          - full
+          - automatic
+          - dataOnly
+
+permissions:
+  contents: read
+
+jobs:
+  trigger-refresh:
+    name: Trigger Dataset Refresh
+    # Only run if triggered by a successful deployment, or manually invoked
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    runs-on: windows-latest
+
+    steps:
+      - name: Resolve workspace
+        id: workspace
+        shell: pwsh
+        run: |
+          $wid = "${{ github.event.inputs.workspace_id }}"
+          if (-not $wid) {
+            # Default to Dev after deployment; adjust for release branches
+            $branch = "${{ github.event.workflow_run.head_branch || github.ref_name }}"
+            if ($branch -like "release/*") {
+              $wid = "${{ secrets.PBI_WORKSPACE_TEST_ID }}"
+            } else {
+              $wid = "${{ secrets.PBI_WORKSPACE_DEV_ID }}"
+            }
+          }
+          echo "workspace_id=$wid" >> $env:GITHUB_OUTPUT
+
+      - name: Acquire Power BI OAuth token
+        id: token
+        shell: pwsh
+        run: |
+          $body = @{
+            grant_type    = "client_credentials"
+            scope         = "https://analysis.windows.net/powerbi/api/.default"
+            client_id     = "${{ secrets.PBI_CLIENT_ID }}"
+            client_secret = "${{ secrets.PBI_CLIENT_SECRET }}"
+          }
+          $resp = Invoke-RestMethod `
+            -Uri "https://login.microsoftonline.com/${{ secrets.PBI_TENANT_ID }}/oauth2/v2.0/token" `
+            -Method POST -Body $body `
+            -ContentType "application/x-www-form-urlencoded"
+          echo "::add-mask::$($resp.access_token)"
+          echo "pbi_token=$($resp.access_token)" >> $env:GITHUB_OUTPUT
+
+      - name: Get datasets in workspace
+        id: datasets
+        shell: pwsh
+        run: |
+          $token       = "${{ steps.token.outputs.pbi_token }}"
+          $workspaceId = "${{ steps.workspace.outputs.workspace_id }}"
+          $headers     = @{ Authorization = "Bearer $token" }
+          $nameFilter  = "${{ github.event.inputs.dataset_name }}"
+
+          $all = (Invoke-RestMethod `
+            -Uri "https://api.powerbi.com/v1.0/myorg/groups/$workspaceId/datasets" `
+            -Method GET -Headers $headers).value
+
+          # Filter to refreshable datasets only (exclude read-only / push datasets)
+          $refreshable = $all | Where-Object {
+            $_.isRefreshable -eq $true -and
+            (-not $nameFilter -or $_.name -like "*$nameFilter*")
+          }
+
+          if (-not $refreshable) {
+            Write-Host "No refreshable datasets found matching filter: '$nameFilter'"
+            echo "dataset_ids=" >> $env:GITHUB_OUTPUT
+          } else {
+            $ids = ($refreshable | Select-Object -ExpandProperty id) -join ","
+            $names = ($refreshable | Select-Object -ExpandProperty name) -join ", "
+            Write-Host "Datasets to refresh: $names"
+            echo "dataset_ids=$ids" >> $env:GITHUB_OUTPUT
+          }
+
+      - name: Trigger enhanced refresh on all target datasets
+        shell: pwsh
+        run: |
+          $token       = "${{ steps.token.outputs.pbi_token }}"
+          $workspaceId = "${{ steps.workspace.outputs.workspace_id }}"
+          $refreshType = "${{ github.event.inputs.refresh_type || 'full' }}"
+          $datasetIds  = "${{ steps.datasets.outputs.dataset_ids }}" -split "," | Where-Object { $_ }
+
+          if (-not $datasetIds) {
+            Write-Host "No datasets to refresh - exiting"
+            exit 0
+          }
+
+          $headers = @{
+            Authorization  = "Bearer $token"
+            "Content-Type" = "application/json"
+          }
+          $body = @{
+            type           = $refreshType
+            commitMode     = "transactional"
+            maxParallelism = 2
+            retryCount     = 2
+            objects        = @()
+            notifyOption   = "MailOnFailure"
+          } | ConvertTo-Json -Depth 5
+
+          $requestIds = @{}
+          foreach ($datasetId in $datasetIds) {
+            $uri = "https://api.powerbi.com/v1.0/myorg/groups/$workspaceId/datasets/$datasetId/refreshes"
+            $resp = Invoke-RestMethod -Uri $uri -Method POST -Headers $headers -Body $body
+            $requestIds[$datasetId] = $resp.requestId
+            Write-Host "Refresh started for dataset $datasetId : requestId=$($resp.requestId)"
+          }
+
+          # Poll all refresh statuses
+          Write-Host "Polling refresh status (timeout 30 min)..."
+          $baseHeaders = @{ Authorization = "Bearer $token" }
+          $timeout     = (Get-Date).AddMinutes(30)
+          $failed      = @()
+
+          foreach ($datasetId in $datasetIds) {
+            $pollUri = "https://api.powerbi.com/v1.0/myorg/groups/$workspaceId/datasets/$datasetId/refreshes?`$top=1"
+            do {
+              Start-Sleep -Seconds 20
+              $latest = (Invoke-RestMethod -Uri $pollUri -Method GET -Headers $baseHeaders).value[0]
+              Write-Host "  Dataset $datasetId status: $($latest.status)"
+            } while ($latest.status -eq "Unknown" -and (Get-Date) -lt $timeout)
+
+            if ($latest.status -ne "Completed") {
+              Write-Host "[FAIL] Refresh failed for dataset $datasetId : $($latest.serviceExceptionJson)"
+              $failed += $datasetId
+            } else {
+              Write-Host "[PASS] Refresh completed for dataset $datasetId"
+            }
+          }
+
+          if ($failed.Count -gt 0) {
+            Write-Error "Refresh failed for $($failed.Count) dataset(s): $($failed -join ', ')"
+            exit 1
+          }
+
+      - name: Summary
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "=== Power BI Dataset Refresh Summary ==="
+          Write-Host "Workspace : ${{ steps.workspace.outputs.workspace_id }}"
+          Write-Host "Status    : ${{ job.status }}"
+          Write-Host "Triggered by: ${{ github.event_name }}"

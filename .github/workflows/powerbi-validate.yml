@@ -1,0 +1,138 @@
+name: Power BI Validate
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'reports/**'
+      - 'models/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  validate-pbip:
+    name: Validate PBIP Structure
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.x'
+
+      - name: Install pbi-tools
+        run: dotnet tool install --global pbi-tools
+        shell: pwsh
+
+      - name: Discover report folders
+        id: discover
+        shell: pwsh
+        run: |
+          $reportFolders = Get-ChildItem -Path "reports" -Filter "*.Report" -Directory -Recurse -ErrorAction SilentlyContinue
+          if (-not $reportFolders) {
+            Write-Host "No .Report folders found - skipping compile validation"
+            echo "has_reports=false" >> $env:GITHUB_OUTPUT
+          } else {
+            $names = $reportFolders.FullName -join ","
+            echo "report_folders=$names" >> $env:GITHUB_OUTPUT
+            echo "has_reports=true" >> $env:GITHUB_OUTPUT
+          }
+
+      - name: Validate PBIP info for each report
+        if: steps.discover.outputs.has_reports == 'true'
+        shell: pwsh
+        run: |
+          $folders = "${{ steps.discover.outputs.report_folders }}" -split ","
+          $failed = @()
+          foreach ($folder in $folders) {
+            $parent = Split-Path $folder -Parent
+            Write-Host "Validating: $parent"
+            $output = pbi-tools info -folder "$parent" 2>&1
+            if ($LASTEXITCODE -ne 0) {
+              Write-Host "[FAIL] Validation failed for: $parent"
+              Write-Host $output
+              $failed += $parent
+            } else {
+              Write-Host "[PASS] $parent"
+            }
+          }
+          if ($failed.Count -gt 0) {
+            Write-Error "PBIP validation failed for $($failed.Count) report(s): $($failed -join ', ')"
+            exit 1
+          }
+
+      - name: Compile PBIP to .pbix
+        if: steps.discover.outputs.has_reports == 'true'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path "dist" -Force | Out-Null
+          $reportFolders = Get-ChildItem -Path "reports" -Filter "*.Report" -Directory -Recurse
+          $failed = @()
+          foreach ($folder in $reportFolders) {
+            $parent = $folder.Parent.FullName
+            $name   = $folder.Parent.Name
+            $out    = "dist/$name.pbix"
+            Write-Host "Compiling: $name"
+            pbi-tools compile -folder "$parent" -outPath "$out" -overwrite 2>&1
+            if ($LASTEXITCODE -ne 0) {
+              Write-Host "[FAIL] Compile failed for: $name"
+              $failed += $name
+            } else {
+              Write-Host "[PASS] Compiled: $out"
+            }
+          }
+          if ($failed.Count -gt 0) {
+            Write-Error "pbi-tools compile failed for: $($failed -join ', ')"
+            exit 1
+          }
+
+      - name: Check for committed .pbix binaries (blocked)
+        shell: pwsh
+        run: |
+          $pbixFiles = Get-ChildItem -Path "reports", "models" -Filter "*.pbix" -Recurse -ErrorAction SilentlyContinue
+          if ($pbixFiles) {
+            Write-Error "[FAIL] .pbix binary files found in reports/ or models/ - use PBIP format only:`n$($pbixFiles.FullName -join "`n")"
+            exit 1
+          }
+          Write-Host "[PASS] No .pbix binaries found in source directories"
+
+      - name: Validate DAX measure formatting (Tabular Editor BPA)
+        if: steps.discover.outputs.has_reports == 'true'
+        shell: pwsh
+        run: |
+          $tePath = (Get-Command TabularEditor3.exe -ErrorAction SilentlyContinue)?.Source
+          if (-not $tePath) {
+            Write-Host "[WARN] Tabular Editor 3 CLI not found - skipping BPA check"
+            Write-Host "Install: choco install tabulareditor3 or add to CI tool cache"
+            exit 0
+          }
+          $modelFolders = Get-ChildItem -Path "reports", "models" -Filter "*.SemanticModel" -Directory -Recurse -ErrorAction SilentlyContinue
+          foreach ($m in $modelFolders) {
+            Write-Host "Running BPA on: $($m.FullName)"
+            TabularEditor3.exe "$($m.FullName)/model.bim" -A ".github/powerbi-bpa-rules.json" -V 2>&1
+          }
+
+      - name: Post PR comment with validation summary
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const outcome = '${{ job.status }}' === 'success' ? '[PASS]' : '[FAIL]';
+            const body = `## Power BI Validation ${outcome}\n\n` +
+              `**Checks run:**\n` +
+              `- PBIP structure validation (pbi-tools info)\n` +
+              `- PBIP compile to .pbix (pbi-tools compile)\n` +
+              `- Binary .pbix file check\n` +
+              `- DAX BPA rules (Tabular Editor, if installed)\n\n` +
+              `See workflow run for full details.`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body
+            });

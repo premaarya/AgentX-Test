@@ -36,5 +36,5 @@
  "chat.viewProgressBadge.enabled": true,
  "inlineChat.enableV2": true,
 "inlineChat.notebookAgent": true,
-"agentx.mode": "github"
+"agentx.mode": "local"
 }

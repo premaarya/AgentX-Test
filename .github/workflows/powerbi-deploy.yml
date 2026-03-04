@@ -1,0 +1,214 @@
+name: Power BI Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - 'release/**'
+    paths:
+      - 'reports/**'
+      - 'models/**'
+  workflow_dispatch:
+    inputs:
+      target_environment:
+        description: 'Target deployment environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - test
+          - prod
+      report_name:
+        description: 'Report name to deploy (leave empty to deploy all changed reports)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  DOTNET_VERSION: '8.x'
+
+jobs:
+  determine-target:
+    name: Determine Deploy Target
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.env.outputs.environment }}
+      workspace_id: ${{ steps.env.outputs.workspace_id }}
+    steps:
+      - name: Resolve target environment
+        id: env
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TARGET="${{ github.event.inputs.target_environment }}"
+          elif [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
+            TARGET="test"
+          else
+            TARGET="dev"
+          fi
+          echo "environment=$TARGET" >> $GITHUB_OUTPUT
+          if [ "$TARGET" = "prod" ]; then
+            echo "workspace_id=${{ secrets.PBI_WORKSPACE_PROD_ID }}" >> $GITHUB_OUTPUT
+          elif [ "$TARGET" = "test" ]; then
+            echo "workspace_id=${{ secrets.PBI_WORKSPACE_TEST_ID }}" >> $GITHUB_OUTPUT
+          else
+            echo "workspace_id=${{ secrets.PBI_WORKSPACE_DEV_ID }}" >> $GITHUB_OUTPUT
+          fi
+
+  compile-and-publish:
+    name: Compile and Publish to ${{ needs.determine-target.outputs.environment }}
+    runs-on: windows-latest
+    needs: determine-target
+    environment: ${{ needs.determine-target.outputs.environment }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install pbi-tools
+        shell: pwsh
+        run: dotnet tool install --global pbi-tools
+
+      - name: Compile all PBIP reports to .pbix
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path "dist" -Force | Out-Null
+          $filter = "${{ github.event.inputs.report_name }}"
+          $reportFolders = Get-ChildItem -Path "reports" -Filter "*.Report" -Directory -Recurse
+          if ($filter) {
+            $reportFolders = $reportFolders | Where-Object { $_.Parent.Name -like "*$filter*" }
+          }
+          if (-not $reportFolders) {
+            Write-Host "No matching report folders found"
+            exit 0
+          }
+          $failed = @()
+          foreach ($folder in $reportFolders) {
+            $parent = $folder.Parent.FullName
+            $name   = $folder.Parent.Name
+            $out    = "dist/$name.pbix"
+            Write-Host "Compiling: $name"
+            pbi-tools compile -folder "$parent" -outPath "$out" -overwrite
+            if ($LASTEXITCODE -ne 0) {
+              $failed += $name
+            } else {
+              Write-Host "[PASS] Compiled: $out"
+            }
+          }
+          if ($failed.Count -gt 0) {
+            Write-Error "Compile failed: $($failed -join ', ')"
+            exit 1
+          }
+
+      - name: Acquire Power BI OAuth token
+        id: token
+        shell: pwsh
+        run: |
+          $body = @{
+            grant_type    = "client_credentials"
+            scope         = "https://analysis.windows.net/powerbi/api/.default"
+            client_id     = "${{ secrets.PBI_CLIENT_ID }}"
+            client_secret = "${{ secrets.PBI_CLIENT_SECRET }}"
+          }
+          $resp = Invoke-RestMethod `
+            -Uri "https://login.microsoftonline.com/${{ secrets.PBI_TENANT_ID }}/oauth2/v2.0/token" `
+            -Method POST -Body $body `
+            -ContentType "application/x-www-form-urlencoded"
+          echo "::add-mask::$($resp.access_token)"
+          echo "pbi_token=$($resp.access_token)" >> $env:GITHUB_OUTPUT
+
+      - name: Publish .pbix files to workspace
+        shell: pwsh
+        run: |
+          $token       = "${{ steps.token.outputs.pbi_token }}"
+          $workspaceId = "${{ needs.determine-target.outputs.workspace_id }}"
+          $headers     = @{ Authorization = "Bearer $token" }
+          $pbixFiles   = Get-ChildItem -Path "dist" -Filter "*.pbix"
+          if (-not $pbixFiles) {
+            Write-Host "No .pbix files to publish"
+            exit 0
+          }
+          foreach ($file in $pbixFiles) {
+            $reportName = [System.IO.Path]::GetFileNameWithoutExtension($file.Name)
+            Write-Host "Publishing: $reportName to workspace $workspaceId"
+            $uri = "https://api.powerbi.com/v1.0/myorg/groups/$workspaceId/imports" +
+                   "?datasetDisplayName=$reportName&nameConflict=CreateOrOverwrite"
+            $form     = @{ file = Get-Item $file.FullName }
+            $response = Invoke-RestMethod -Uri $uri -Method POST -Headers $headers -Form $form
+            $importId = $response.id
+            Write-Host "Import started: $importId - polling status..."
+
+            # Poll until complete
+            $pollUri = "https://api.powerbi.com/v1.0/myorg/groups/$workspaceId/imports/$importId"
+            $timeout = (Get-Date).AddMinutes(10)
+            do {
+              Start-Sleep -Seconds 8
+              $status = Invoke-RestMethod -Uri $pollUri -Method GET -Headers $headers
+              Write-Host "  Status: $($status.importState)"
+            } while ($status.importState -eq "Publishing" -and (Get-Date) -lt $timeout)
+
+            if ($status.importState -ne "Succeeded") {
+              Write-Error "[FAIL] Import failed for $reportName : $($status.importState)"
+              exit 1
+            }
+            Write-Host "[PASS] Published: $reportName"
+          }
+
+      - name: Update dataset parameters (connection strings)
+        shell: pwsh
+        run: |
+          $token       = "${{ steps.token.outputs.pbi_token }}"
+          $workspaceId = "${{ needs.determine-target.outputs.workspace_id }}"
+          $env         = "${{ needs.determine-target.outputs.environment }}"
+          $headers     = @{
+            Authorization  = "Bearer $token"
+            "Content-Type" = "application/json"
+          }
+
+          # Get all datasets in workspace
+          $datasets = (Invoke-RestMethod `
+            -Uri "https://api.powerbi.com/v1.0/myorg/groups/$workspaceId/datasets" `
+            -Method GET -Headers $headers).value
+
+          foreach ($ds in $datasets) {
+            # Get current parameters
+            $paramsUri = "https://api.powerbi.com/v1.0/myorg/groups/$workspaceId/datasets/$($ds.id)/parameters"
+            $params    = (Invoke-RestMethod -Uri $paramsUri -Method GET -Headers $headers).value
+
+            $updates = @()
+            foreach ($p in $params) {
+              if ($p.name -eq "ServerName" -and $env:SQL_SERVER_NAME) {
+                $updates += @{ name = "ServerName"; newValue = $env:SQL_SERVER_NAME }
+              }
+              if ($p.name -eq "DatabaseName" -and $env:SQL_DATABASE_NAME) {
+                $updates += @{ name = "DatabaseName"; newValue = $env:SQL_DATABASE_NAME }
+              }
+            }
+
+            if ($updates.Count -gt 0) {
+              $body = @{ updateDetails = $updates } | ConvertTo-Json -Depth 5
+              Invoke-RestMethod -Uri $paramsUri -Method PATCH -Headers $headers -Body $body
+              Write-Host "[PASS] Updated parameters for: $($ds.name)"
+            }
+          }
+        env:
+          SQL_SERVER_NAME: ${{ vars.SQL_SERVER_NAME }}
+          SQL_DATABASE_NAME: ${{ vars.SQL_DATABASE_NAME }}
+
+      - name: Summary
+        if: always()
+        shell: pwsh
+        run: |
+          $env = "${{ needs.determine-target.outputs.environment }}"
+          Write-Host "=== Power BI Deployment Summary ==="
+          Write-Host "Environment  : $env"
+          Write-Host "Workspace ID : ${{ needs.determine-target.outputs.workspace_id }}"
+          Write-Host "Status       : ${{ job.status }}"
