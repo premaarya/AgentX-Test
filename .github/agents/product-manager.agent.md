@@ -120,6 +120,14 @@ Update Epic Status to `Ready` in GitHub Projects.
 | Feature issues | GitHub Issues with `type:feature` |
 | Story issues | GitHub Issues with `type:story` |
 
+## Skills to Load
+
+| Task | Skill |
+|------|-------|
+| Product requirements documentation | [Documentation](../skills/development/documentation/SKILL.md) |
+| AI/ML requirement framing | [AI Agent Development](../skills/ai-systems/ai-agent-development/SKILL.md) |
+| Prioritization and decomposition quality checks | [Code Review](../skills/development/code-review/SKILL.md) |
+
 ## Enforcement Gates
 
 ### Entry

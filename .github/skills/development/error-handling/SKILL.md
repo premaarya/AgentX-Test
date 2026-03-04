@@ -12,7 +12,7 @@ metadata:
 
 > **Purpose**: Handle failures gracefully with logging, retries, and circuit breakers. 
 > **Goal**: No silent failures, clear error messages, system resilience. 
-> **Note**: For language-specific implementations, see [C# Development](../csharp/SKILL.md) or [Python Development](../python/SKILL.md).
+> **Note**: For language-specific implementations, see [C# Development](../../languages/csharp/SKILL.md) or [Python Development](../../languages/python/SKILL.md).
 
 ---
 

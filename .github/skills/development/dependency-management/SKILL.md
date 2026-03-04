@@ -12,7 +12,7 @@ metadata:
 
 > **Purpose**: Manage third-party dependencies securely and reliably. 
 > **Goal**: Reproducible builds, no vulnerable packages, controlled updates. 
-> **Note**: For implementation, see [C# Development](../csharp/SKILL.md) or [Python Development](../python/SKILL.md).
+> **Note**: For implementation, see [C# Development](../../languages/csharp/SKILL.md) or [Python Development](../../languages/python/SKILL.md).
 
 ---
 
@@ -135,7 +135,7 @@ Examples by Language:
 
 ---
 
-**See Also**: [Security](../../architecture/security/SKILL.md) - [C# Development](../csharp/SKILL.md) - [Python Development](../python/SKILL.md)
+**See Also**: [Security](../../architecture/security/SKILL.md) - [C# Development](../../languages/csharp/SKILL.md) - [Python Development](../../languages/python/SKILL.md)
 
 ## Scripts
 

@@ -12,7 +12,7 @@ metadata:
 
 > **Purpose**: Implement observability for production systems. 
 > **Goal**: Structured logs, correlation across requests, actionable metrics. 
-> **Note**: For implementation, see [C# Development](../csharp/SKILL.md) or [Python Development](../python/SKILL.md).
+> **Note**: For implementation, see [C# Development](../../languages/csharp/SKILL.md) or [Python Development](../../languages/python/SKILL.md).
 
 ---
 
@@ -146,7 +146,7 @@ Production: INFO (or WARN)
 
 ---
 
-**See Also**: [Error Handling](../error-handling/SKILL.md) - [C# Development](../csharp/SKILL.md) - [Python Development](../python/SKILL.md)
+**See Also**: [Error Handling](../error-handling/SKILL.md) - [C# Development](../../languages/csharp/SKILL.md) - [Python Development](../../languages/python/SKILL.md)
 
 ## Troubleshooting
 

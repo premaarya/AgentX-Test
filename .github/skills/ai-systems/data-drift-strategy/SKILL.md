@@ -264,4 +264,4 @@ Extract -> [Quality Gate 1: Schema] -> Transform -> [Quality Gate 2: Stats] -> L
 
 ---
 
-**Related**: [Model Drift Management](../model-drift-management/SKILL.md) for model-level monitoring | [AI Evaluation](../ai-evaluation/SKILL.md) for model quality metrics | [Data Analysis](.github/skills/data/data-analysis/SKILL.md) for exploratory analysis
+**Related**: [Model Drift Management](../model-drift-management/SKILL.md) for model-level monitoring | [AI Evaluation](../ai-evaluation/SKILL.md) for model quality metrics | [Data Analysis](../../data/data-analysis/SKILL.md) for exploratory analysis

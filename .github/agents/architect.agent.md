@@ -122,9 +122,9 @@ Update Status to `Ready` in GitHub Projects.
 | Task | Skill |
 |------|-------|
 | API design, REST/GraphQL patterns | [API Design](../skills/architecture/api-design/SKILL.md) |
-| System design patterns | [System Design](../skills/architecture/system-design/SKILL.md) |
-| AI/ML architecture | [AI Systems](../skills/ai-systems/) (relevant sub-skill) |
-| Security architecture | [Security](../skills/security/) (relevant sub-skill) |
+| System design patterns | [Core Principles](../skills/architecture/core-principles/SKILL.md) |
+| AI/ML architecture | [AI Agent Development](../skills/ai-systems/ai-agent-development/SKILL.md) |
+| Security architecture | [Security](../skills/architecture/security/SKILL.md) |
 
 ## Enforcement Gates
 

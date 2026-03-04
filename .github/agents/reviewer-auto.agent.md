@@ -127,6 +127,14 @@ Before issuing the final decision, verify with fresh eyes:
 | Requires human merge approval | Yes | Yes |
 | Reverts on test failure | N/A | Yes |
 
+## Skills to Load
+
+| Task | Skill |
+|------|-------|
+| Safe auto-fix boundaries and review process | [Code Review](../skills/development/code-review/SKILL.md) |
+| Test regressions after auto-fixes | [Testing](../skills/development/testing/SKILL.md) |
+| Security blocking criteria | [Security](../skills/architecture/security/SKILL.md) |
+
 ## Enforcement Gates
 
 ### Entry

@@ -144,9 +144,9 @@ Before committing, verify with fresh eyes:
 
 | Task | Skill |
 |------|-------|
-| Testing strategy | [Testing Strategies](../skills/testing/testing-strategies/SKILL.md) |
-| E2E with Playwright | [Playwright E2E](../skills/testing/playwright-e2e/SKILL.md) |
-| Unit testing patterns | [Unit Testing](../skills/testing/unit-testing/SKILL.md) |
+| Testing strategy | [Testing](../skills/development/testing/SKILL.md) |
+| E2E with Playwright | [E2E Testing](../skills/testing/e2e-testing/SKILL.md) |
+| Unit testing patterns | [Testing](../skills/development/testing/SKILL.md) |
 | Integration testing | [Integration Testing](../skills/testing/integration-testing/SKILL.md) |
 | Performance testing | [Performance Testing](../skills/testing/performance-testing/SKILL.md) |
 | Security testing | [Security Testing](../skills/testing/security-testing/SKILL.md) |

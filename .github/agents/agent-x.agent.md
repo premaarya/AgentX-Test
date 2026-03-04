@@ -199,6 +199,14 @@ Before completing any routing decision, verify:
 - [ ] Handoff comment posted on the issue
 - [ ] No routing loops (same issue bouncing between agents)
 
+## Skills to Load
+
+| Task | Skill |
+|------|-------|
+| Routing and workflow quality checks | [Code Review](../skills/development/code-review/SKILL.md) |
+| Iterative loop enforcement | [Iterative Loop](../skills/development/iterative-loop/SKILL.md) |
+| Safety and escalation behavior | [Error Handling](../skills/development/error-handling/SKILL.md) |
+
 ## Error Recovery
 
 | Error | Detection | Recovery |

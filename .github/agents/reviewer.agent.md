@@ -134,6 +134,14 @@ Update Status back to `In Progress`.
 | Review Document | `docs/reviews/REVIEW-{issue}.md` |
 | Issue Comments | GitHub Issue (inline feedback) |
 
+## Skills to Load
+
+| Task | Skill |
+|------|-------|
+| Review checklist and audit rigor | [Code Review](../skills/development/code-review/SKILL.md) |
+| Security validation | [Security](../skills/architecture/security/SKILL.md) |
+| Test quality and coverage checks | [Testing](../skills/development/testing/SKILL.md) |
+
 ## Enforcement Gates
 
 ### Entry

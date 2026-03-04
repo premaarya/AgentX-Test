@@ -407,7 +407,7 @@ loop_defaults:
 
 ---
 
-## Philosophy
+## Core Rules
 
 ### 1. Iteration > Perfection
 
@@ -447,5 +447,5 @@ contract: output it only when the statement is TRUE.
 
 - [Ralph Loop Plugin (Anthropic)](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/ralph-loop)
 - [Original Technique (Geoffrey Huntley)](https://ghuntley.com/ralph/)
-- [Prompt Engineering Skill](../prompt-engineering/SKILL.md)
+- [Prompt Engineering Skill](../../ai-systems/prompt-engineering/SKILL.md)
 ```

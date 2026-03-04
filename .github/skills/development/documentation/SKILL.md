@@ -12,7 +12,7 @@ metadata:
 
 > **Purpose**: Write clear, maintainable documentation for code and APIs. 
 > **Goal**: Self-documenting code, useful comments, comprehensive READMEs. 
-> **Note**: For implementation, see [C# Development](../csharp/SKILL.md) or [Python Development](../python/SKILL.md).
+> **Note**: For implementation, see [C# Development](../../languages/csharp/SKILL.md) or [Python Development](../../languages/python/SKILL.md).
 
 ---
 
@@ -131,7 +131,7 @@ Classes:
 
 ---
 
-**See Also**: [API Design](../../architecture/api-design/SKILL.md) - [C# Development](../csharp/SKILL.md) - [Python Development](../python/SKILL.md)
+**See Also**: [API Design](../../architecture/api-design/SKILL.md) - [C# Development](../../languages/csharp/SKILL.md) - [Python Development](../../languages/python/SKILL.md)
 
 ## Scripts
 

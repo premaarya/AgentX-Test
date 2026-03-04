@@ -203,7 +203,7 @@ If the context does not contain enough information, say "I don't have enough inf
 ## Question
 {user_question}
 
-## Rules
+## Core Rules
 - Cite sources using [Source: filename, page N]
 - Do not fabricate information not in the context
 - If unsure, indicate uncertainty

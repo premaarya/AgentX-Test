@@ -12,7 +12,7 @@ metadata:
 
 > **Purpose**: Manage application configuration securely across environments. 
 > **Goal**: Externalized config, no hardcoded secrets, fail-fast validation. 
-> **Note**: For implementation, see [C# Development](../csharp/SKILL.md) or [Python Development](../python/SKILL.md).
+> **Note**: For implementation, see [C# Development](../../languages/csharp/SKILL.md) or [Python Development](../../languages/python/SKILL.md).
 
 ---
 
@@ -128,7 +128,7 @@ Priority (highest to lowest):
 
 ---
 
-**See Also**: [Security](../../architecture/security/SKILL.md) - [C# Development](../csharp/SKILL.md) - [Python Development](../python/SKILL.md)
+**See Also**: [Security](../../architecture/security/SKILL.md) - [C# Development](../../languages/csharp/SKILL.md) - [Python Development](../../languages/python/SKILL.md)
 
 ## Troubleshooting
 

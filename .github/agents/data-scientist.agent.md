@@ -116,14 +116,14 @@ Update Status to `In Review` in GitHub Projects.
 | Domain | Skill |
 |--------|-------|
 | Prompt engineering | [Prompt Engineering](../skills/ai-systems/prompt-engineering/SKILL.md) |
-| Evaluations & benchmarks | [Evaluations](../skills/ai-systems/evaluations/SKILL.md) |
-| RAG pipelines | [RAG](../skills/ai-systems/rag/SKILL.md) |
-| Fine-tuning | [Fine-Tuning](../skills/ai-systems/fine-tuning/SKILL.md) |
-| Model drift | [Model Drift](../skills/ai-systems/model-drift/SKILL.md) |
-| Data drift | [Data Drift](../skills/ai-systems/data-drift/SKILL.md) |
+| Evaluations & benchmarks | [AI Evaluation](../skills/ai-systems/ai-evaluation/SKILL.md) |
+| RAG pipelines | [RAG Pipelines](../skills/ai-systems/rag-pipelines/SKILL.md) |
+| Fine-tuning | [Model Fine-Tuning](../skills/ai-systems/model-fine-tuning/SKILL.md) |
+| Model drift | [Model Drift Management](../skills/ai-systems/model-drift-management/SKILL.md) |
+| Data drift | [Data Drift Strategy](../skills/ai-systems/data-drift-strategy/SKILL.md) |
 | Context management | [Context Management](../skills/ai-systems/context-management/SKILL.md) |
 | Feedback loops | [Feedback Loops](../skills/ai-systems/feedback-loops/SKILL.md) |
-| Agentic patterns | [Agent Design](../skills/ai-systems/agent-design/SKILL.md) |
+| Agentic patterns | [AI Agent Development](../skills/ai-systems/ai-agent-development/SKILL.md) |
 | Databricks | [Databricks](../skills/data/databricks/SKILL.md) |
 
 ## Anti-Patterns

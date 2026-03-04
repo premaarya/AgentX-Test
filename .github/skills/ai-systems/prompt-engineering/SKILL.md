@@ -193,7 +193,7 @@ full_prompt = f"{prompt}\n\n## Output Format\n{template}"
 
 ---
 
-## Rules
+## Core Rules
 1. All endpoints return ActionResult<T>
 2. Use [Authorize] on all non-public endpoints
 3. Validate input with FluentValidation

@@ -158,9 +158,9 @@ Load the language instruction file matching the file type being edited (auto-loa
 
 | Task | Skill |
 |------|-------|
-| Testing strategy | [Testing Skill](../skills/testing/) (relevant sub-skill) |
-| Performance work | [Performance Profiling](../skills/development/performance-profiling/SKILL.md) |
-| AI/ML implementation | [AI Systems](../skills/ai-systems/) (relevant sub-skill) |
+| Testing strategy | [Testing](../skills/development/testing/SKILL.md) |
+| Performance work | [Performance](../skills/architecture/performance/SKILL.md) |
+| AI/ML implementation | [AI Agent Development](../skills/ai-systems/ai-agent-development/SKILL.md) |
 | API implementation | [API Design](../skills/architecture/api-design/SKILL.md) |
 | Iterative refinement | [Iterative Loop](../skills/development/iterative-loop/SKILL.md) |
 

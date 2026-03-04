@@ -12,7 +12,7 @@ metadata:
 
 > **Purpose**: Use type systems to catch errors at compile/analysis time rather than runtime. 
 > **Goal**: Prevent null errors, type mismatches, and invalid states. 
-> **Note**: For implementation, see [C# Development](../csharp/SKILL.md) or [Python Development](../python/SKILL.md).
+> **Note**: For implementation, see [C# Development](../../languages/csharp/SKILL.md) or [Python Development](../../languages/python/SKILL.md).
 
 ---
 
@@ -198,7 +198,7 @@ Custom Types:
 
 ---
 
-**See Also**: [Testing](../testing/SKILL.md) - [C# Development](../csharp/SKILL.md) - [Python Development](../python/SKILL.md)
+**See Also**: [Testing](../testing/SKILL.md) - [C# Development](../../languages/csharp/SKILL.md) - [Python Development](../../languages/python/SKILL.md)
 
 ## Troubleshooting
 

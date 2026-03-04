@@ -12,7 +12,7 @@ metadata:
 
 > **Purpose**: Language-agnostic testing strategies ensuring code quality and reliability. 
 > **Goal**: 80%+ coverage with 70% unit, 20% integration, 10% e2e tests. 
-> **Note**: For language-specific examples, see [C# Development](../csharp/SKILL.md) or [Python Development](../python/SKILL.md).
+> **Note**: For language-specific examples, see [C# Development](../../languages/csharp/SKILL.md) or [Python Development](../../languages/python/SKILL.md).
 
 ---
 

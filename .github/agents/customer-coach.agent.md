@@ -93,6 +93,14 @@ git add docs/coaching/ docs/presentations/
 git commit -m "docs: add research brief for {topic}"
 ```
 
+## Skills to Load
+
+| Task | Skill |
+|------|-------|
+| Research brief structure and clarity | [Documentation](../skills/development/documentation/SKILL.md) |
+| Comparative option analysis | [Code Review](../skills/development/code-review/SKILL.md) |
+| Domain-specific topic deep dives | [Data Analysis](../skills/data/data-analysis/SKILL.md) |
+
 ## Enforcement Gates
 
 ### Entry

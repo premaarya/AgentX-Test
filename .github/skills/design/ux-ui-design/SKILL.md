@@ -176,7 +176,7 @@ Detailed code blocks and templates are extracted into dedicated reference files:
 **Related Skills:**
 - [Frontend/UI Development](../frontend-ui/SKILL.md)
 - [React Framework](../../languages/react/SKILL.md)
-- [Accessibility](../architecture/accessibility/SKILL.md)
+- [E2E Testing (A11y validation)](../../testing/e2e-testing/SKILL.md)
 
 ---
 
