@@ -3,7 +3,7 @@
 [![Version](https://img.shields.io/badge/Version-7.3.5-0EA5E9?style=for-the-badge)](https://marketplace.visualstudio.com/items?itemName=jnPiyush.agentx)
 [![License](https://img.shields.io/badge/License-Apache_2.0-22C55E?style=for-the-badge)](LICENSE)
 
-**AgentX** brings structured multi-agent orchestration to your VS Code workspace. Coordinate AI coding assistants (GitHub Copilot, Claude, etc.) as a real software team with parallel design and validation stages across PM, UX, Architect, Data Scientist, Engineer, Reviewer, DevOps, Tester, and Customer Coach.
+**AgentX** brings structured multi-agent orchestration to your VS Code workspace. Coordinate AI coding assistants (GitHub Copilot, Claude, etc.) as a real software team with parallel design and validation stages across PM, UX, Architect, Data Scientist, Engineer, Reviewer, DevOps, Tester, Power BI Analyst, and Customer Coach.
 
 ## Features
 
@@ -15,7 +15,7 @@ Initialize AgentX in any workspace with a single command. Defaults to **Local mo
 | **Local** | ✅ Yes | Filesystem-based issue tracking, zero prompts |
 | **GitHub** | — | Full features: GitHub Actions, PRs, Projects (asks for repo/project) |
 
-### 🤖 11 Specialized Agents
+### 🤖 12 Specialized Agents
 | Agent | Role | Model |
 |-------|------|-------|
 | 🎯 Agent X | Adaptive coordinator | Claude Opus 4.6 |
@@ -28,6 +28,7 @@ Initialize AgentX in any workspace with a single command. Defaults to **Local mo
 | ⚙️ DevOps Engineer | CI/CD pipelines | Claude Sonnet 4.5 |
 | 📊 Data Scientist | ML pipelines and evaluations | Claude Sonnet 4.5 |
 | 🧪 Tester | Test automation and certification | Claude Sonnet 4.5 |
+| 📊 Power BI Analyst | Reports, dashboards & DAX | Claude Sonnet 4.5 |
 | 🧭 Customer Coach | Research and consulting preparation | Claude Sonnet 4.5 |
 
 ### 📊 Sidebar Views

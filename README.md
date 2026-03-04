@@ -47,8 +47,8 @@ AgentX is a **multi-agent orchestration framework** that enables AI coding assis
 <td width="50%">
 
 ### Multi-Agent Orchestration
-- **11 specialized agents** working as a real software team
-- PM, UX, Architect, Data Scientist, Engineer, Reviewer, Auto-Fix Reviewer, DevOps, Tester, Customer Coach
+- **12 specialized agents** working as a real software team
+- PM, UX, Architect, Data Scientist, Engineer, Reviewer, Auto-Fix Reviewer, DevOps, Tester, Power BI Analyst, Customer Coach
 - Hub-and-spoke coordination via **Agent X**
 - Issue-first workflow with automatic routing by type & priority
 
@@ -116,8 +116,8 @@ AgentX is a **multi-agent orchestration framework** that enables AI coding assis
 <td width="50%">
 
 ### Framework Totals
-- **62 skills** across 10 categories
-- **11 agent definitions** (10 stable + 1 preview)
+- **63 skills** across 10 categories
+- **12 agent definitions** (11 stable + 1 preview)
 - **7 TOML workflow** templates (feature, epic, story, bug, spike, devops, docs)
 - **12 instruction files**, **11 prompts**, **9 templates**
 - Declarative workflows with dependency management
@@ -384,18 +384,18 @@ Bug-fix loop: Validating -> In Progress (Engineer) when Tester reports defects.
 ```
 AgentX/
 ├── 📄 AGENTS.md              # Workflow & orchestration rules
-├── 📄 Skills.md              # 62 production skills index
+├── 📄 Skills.md              # 63 production skills index
 ├── 📄 CONTRIBUTING.md        # Contributor guide
 │
 ├── 📁 .github/
-│   ├── 📁 agents/            # 11 agent definitions
+│   ├── 📁 agents/            # 12 agent definitions
 │   ├── 📁 hooks/             # Pre-commit validation
 │   ├── 📁 scripts/           # Validation & metrics scripts
 │   ├── 📁 security/          # Command allowlist
 │   ├── 📁 templates/         # PRD, ADR, Spec, UX, Progress templates
 │   ├── 📁 prompts/           # 11 reusable prompts
 │   ├── 📁 workflows/         # GitHub Actions (CI/CD, scanning)
-│   └── 📁 skills/            # 62 skill documents (10 categories)
+│   └── 📁 skills/            # 63 skill documents (10 categories)
 │   └── 📁 instructions/      # 12 language/IaC-specific guides
 │   └── 📁 schemas/           # JSON schema validation
 │

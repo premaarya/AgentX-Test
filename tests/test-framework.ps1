@@ -52,7 +52,7 @@ Assert-FileExists "LICENSE" "LICENSE"
 Write-Host ""
 Write-Host " 2. Agent Definitions" -ForegroundColor White
 
-$agents = @("agent-x", "product-manager", "architect", "engineer", "reviewer", "ux-designer", "devops", "reviewer-auto", "data-scientist", "tester", "customer-coach")
+$agents = @("agent-x", "product-manager", "architect", "engineer", "reviewer", "ux-designer", "devops", "reviewer-auto", "data-scientist", "tester", "customer-coach", "powerbi-analyst")
 foreach ($agent in $agents) {
  Assert-FileExists ".github/agents/$agent.agent.md" "Agent: $agent"
 }

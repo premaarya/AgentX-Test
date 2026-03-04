@@ -75,7 +75,7 @@ assert_file_exists "LICENSE"     "LICENSE"
 echo ""
 echo -e "  \033[1;37m2. Agent Definitions\033[0m"
 
-for agent in agent-x product-manager architect engineer reviewer ux-designer devops reviewer-auto data-scientist tester customer-coach; do
+for agent in agent-x product-manager architect engineer reviewer ux-designer devops reviewer-auto data-scientist tester customer-coach powerbi-analyst; do
   assert_file_exists ".github/agents/$agent.agent.md" "Agent: $agent"
 done
 
