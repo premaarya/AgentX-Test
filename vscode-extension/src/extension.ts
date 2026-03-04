@@ -34,6 +34,8 @@ import { PluginManager } from './utils/pluginManager';
 import { GitStorageProvider } from './utils/gitStorageProvider';
 import { promptIfUpdateAvailable } from './utils/versionChecker';
 import { StructuredLogger } from './utils/structuredLogger';
+import { ObservationExtractor } from './memory/observationExtractor';
+import { JsonObservationStore } from './memory/observationStore';
 
 let agentxContext: AgentXContext;
 let eventBus: AgentEventBus;
@@ -131,6 +133,32 @@ export function activate(context: vscode.ExtensionContext) {
   });
  }
 
+ // Wire memory pipeline: extract observations from compaction summaries
+ if (agentxDir) {
+  const memoryDir = path.join(agentxDir, 'memory');
+  const observationStore = new JsonObservationStore(memoryDir);
+  const observationExtractor = new ObservationExtractor();
+
+  eventBus.on('context-compacted', (e) => {
+   if (!e.summary) { return; }
+   try {
+    const observations = observationExtractor.extractObservations(
+     e.summary,
+     e.agent ?? 'unknown',
+     0, // Issue number not available from event -- will be enriched later
+     `session-${Date.now()}`,
+    );
+    if (observations.length > 0) {
+     observationStore.store(observations).catch((err) => {
+      console.warn('AgentX: Failed to persist observations:', err);
+     });
+    }
+   } catch (err) {
+    console.warn('AgentX: Observation extraction failed:', err);
+   }
+  });
+ }
+
  // Start scheduler when enabled tasks exist
  if (taskScheduler.getEnabledTasks().length > 0) {
   taskScheduler.start(async (task) => {
@@ -167,6 +195,7 @@ export function activate(context: vscode.ExtensionContext) {
  const sourceProvider = new SourceTreeProvider(agentxContext);
 
  vscode.window.registerTreeDataProvider('agentx-agents', agentTreeProvider);
+ vscode.window.registerTreeDataProvider('agentx-ready', readyQueueProvider);
  vscode.window.registerTreeDataProvider('agentx-docs', docsProvider);
  vscode.window.registerTreeDataProvider('agentx-source', sourceProvider);
  vscode.window.registerTreeDataProvider('agentx-templates', templateProvider);

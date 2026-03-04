@@ -238,6 +238,12 @@
      "contextualTitle": "AgentX Workflows"
     },
     {
+     "id": "agentx-ready",
+     "name": "Ready Queue",
+     "icon": "$(checklist)",
+     "contextualTitle": "AgentX Ready Queue"
+    },
+    {
      "id": "agentx-settings",
      "name": "Settings",
      "icon": "$(settings-gear)",
@@ -256,7 +262,7 @@
    "view/title": [
     {
      "command": "agentx.refresh",
-     "when": "view == agentx-agents || view == agentx-docs || view == agentx-source || view == agentx-templates || view == agentx-settings",
+     "when": "view == agentx-agents || view == agentx-ready || view == agentx-docs || view == agentx-source || view == agentx-templates || view == agentx-settings",
      "group": "navigation"
     }
    ],

@@ -36,6 +36,11 @@ const ROUTE_RULES: RouteRule[] = [
     description: 'Routing to Architect -- system design/technical decisions',
   },
   {
+    agentFile: 'reviewer-auto',
+    keywords: /\b(auto[- ]?fix|auto[- ]?review|safe fix|auto[- ]?apply|auto[- ]?correct)\b/i,
+    description: 'Routing to Auto-Fix Reviewer -- review with auto-applied safe fixes',
+  },
+  {
     agentFile: 'reviewer',
     keywords: /\b(review|code review|pr review|pull request|in review|quality check|security review)\b/i,
     description: 'Routing to Reviewer -- issue is in review phase',
