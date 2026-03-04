@@ -33,7 +33,8 @@ function makeProvider(dir?: string): GitStorageProvider {
 // GitStorageProvider
 // ---------------------------------------------------------------------------
 
-describe('GitStorageProvider', () => {
+describe('GitStorageProvider', function () {
+  this.timeout(30_000); // Git plumbing operations can be slow on CI/Windows
 
   // Setup / teardown -- scoped to this describe block
   beforeEach(() => {

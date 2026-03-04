@@ -95,7 +95,6 @@ export function activate(context: vscode.ExtensionContext) {
    if (useGit) {
     gitStorageProvider = new GitStorageProvider({
      workspaceRoot: agentxContext.workspaceRoot,
-     eventBus,
     });
     // Lazy init -- the branch is created on first write.
     console.log('AgentX: Git storage provider initialized (orphan branch: agentx/data).');

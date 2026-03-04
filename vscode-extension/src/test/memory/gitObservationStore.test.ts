@@ -46,7 +46,8 @@ function makeObs(overrides: Partial<Observation> = {}): Observation {
 // GitObservationStore
 // ---------------------------------------------------------------------------
 
-describe('GitObservationStore', () => {
+describe('GitObservationStore', function () {
+  this.timeout(30_000); // Git plumbing operations can be slow on CI/Windows
 
   // Setup / teardown -- scoped to this describe block
   beforeEach(async () => {

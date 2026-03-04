@@ -24,7 +24,7 @@
 import { execFileSync, ExecFileSyncOptions } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
-import { AgentEventBus } from './eventBus';
+
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -65,8 +65,6 @@ export interface GitStorageConfig {
   readonly branch?: string;
   /** Remote name for push/pull. Default: 'origin'. */
   readonly remote?: string;
-  /** EventBus for lifecycle events (optional). */
-  readonly eventBus?: AgentEventBus;
 }
 
 // ---------------------------------------------------------------------------
@@ -107,14 +105,12 @@ export class GitStorageProvider {
   private readonly workspaceRoot: string;
   private readonly branch: string;
   private readonly remote: string;
-  private readonly eventBus?: AgentEventBus;
   private initialized = false;
 
   constructor(config: GitStorageConfig) {
     this.workspaceRoot = config.workspaceRoot;
     this.branch = config.branch ?? DATA_BRANCH;
     this.remote = config.remote ?? 'origin';
-    this.eventBus = config.eventBus;
   }
 
   // -------------------------------------------------------------------------
