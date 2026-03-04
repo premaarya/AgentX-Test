@@ -202,6 +202,16 @@ export enum ProgressLocation {
   Notification = 15,
 }
 
+// --- ViewColumn enum -----------------------------------------------------
+
+export enum ViewColumn {
+  Active = -1,
+  Beside = -2,
+  One = 1,
+  Two = 2,
+  Three = 3,
+}
+
 // --- QuickPickItemKind enum ----------------------------------------------
 
 export enum QuickPickItemKind {
