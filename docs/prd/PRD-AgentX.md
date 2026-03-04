@@ -587,12 +587,42 @@ AgentX itself is a **rule-based orchestration framework** that coordinates AI-po
 - 3 test files with full compile-clean coverage
 - Barrel exports updated in `agentic/index.ts`
 
-### Phase 9: Growth & Ecosystem [PLANNED]
+### Phase 9: Cognitive Foundation (v7.4.0) [PLANNED]
+**Goal**: Establish learning-from-experience capability with outcome tracking, episodic memory, confidence markers, and memory health
+**PRD**: [PRD-Phase1-Cognitive-Foundation.md](PRD-Phase1-Cognitive-Foundation.md)
+**Spec**: [SPEC-Phase1-Cognitive-Foundation.md](../specs/SPEC-Phase1-Cognitive-Foundation.md)
+**Deliverables**:
+- Outcome Tracker (`outcomeTracker.ts`) -- structured outcome recording after quality loops
+- Session Recorder (`sessionRecorder.ts`) -- auto-capture at context compaction
+- Confidence Markers -- `[Confidence: HIGH/MEDIUM/LOW]` in Architect/Reviewer prompts
+- Memory Health command (`agentx.memoryHealth`) with scan and auto-repair
+- Outcome-informed prompt injection (top 3 lessons per task)
+- Session resume command for continuity
+
+### Phase 10: Knowledge Evolution (v7.5.0) [PLANNED]
+**Goal**: Evolve observations into shared knowledge with expertise tracking
+**Deliverables**:
+- Global Knowledge Base (cross-issue pattern promotion)
+- Agent Expertise Model (per-agent performance profiles)
+- Model-Task Mapping (learned model preferences)
+- Knowledge promotion workflow (observation -> knowledge)
+
+### Phase 11: Proactive Intelligence & MCP Dashboard (v7.6.0) [PLANNED]
+**Goal**: Transform AgentX from reactive orchestrator to proactive intelligence platform with rich UI
+**PRD**: [PRD-Phase3-Proactive-Intelligence.md](PRD-Phase3-Proactive-Intelligence.md)
+**Spec**: [SPEC-Phase3-Proactive-Intelligence.md](../specs/SPEC-Phase3-Proactive-Intelligence.md)
+**Deliverables**:
+- Background Intelligence Engine (stale issue detection, dependency monitoring, pattern analysis)
+- AgentX MCP Server (4 tools + 6 resources, stdio/SSE transport)
+- MCP App Dashboard (interactive React UI in VS Code via MCP Apps framework)
+- Synapse Network (cross-issue observation linking)
+- Cross-Session Continuity (auto-resume with outcome context)
+
+### Phase 12: Growth & Ecosystem [PLANNED]
 **Goal**: Community growth, marketplace, and enterprise features
 **Deliverables**:
 - Community pack marketplace
 - Additional agents (QA, DBA, Security Analyst)
-- Real-time analytics dashboard in VS Code
 - Cross-repo issue synchronization
 - Auto-Fix Reviewer graduation to Stable
 
@@ -611,8 +641,6 @@ AgentX itself is a **rule-based orchestration framework** that coordinates AI-po
 **Future Considerations**:
 - JetBrains plugin (evaluate after VS Code market traction)
 - Web-based dashboard for team visibility (evaluate for enterprise users)
-- Agent memory persistence across sessions (evaluate RAG patterns)
-- MCP Server integration for agent-to-agent communication
 
 ---
 
