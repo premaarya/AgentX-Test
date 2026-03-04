@@ -163,7 +163,7 @@ Control what gets installed with the `-Profile` flag:
 
 | Profile | Skills | Instructions | Prompts | Hooks | VS Code |
 |---------|--------|-------------|---------|-------|---------|
-| **full** (default) | All 42 | All 12 | [PASS] | [PASS] | [PASS] |
+| **full** (default) | All 62 | All 12 | [PASS] | [PASS] | [PASS] |
 | **minimal** | None | None | [FAIL] | [FAIL] | [FAIL] |
 | **python** | Python, testing, data, architecture | python, api | [PASS] | [PASS] | [PASS] |
 | **dotnet** | C#, Blazor, Azure, SQL, architecture | csharp, blazor, api | [PASS] | [PASS] | [PASS] |
@@ -833,5 +833,5 @@ DEBUG=1 ./validate-handoff.sh 123 engineer  # Debug mode
 | Resource | Description |
 |----------|-------------|
 | [AGENTS.md](../AGENTS.md) | Agent roles, workflow, classification rules |
-| [Skills.md](../Skills.md) | 42 production skills index + workflow scenarios |
+| [Skills.md](../Skills.md) | 62 production skills index + workflow scenarios |
 | [CONTRIBUTING.md](../CONTRIBUTING.md) | How to contribute to AgentX |

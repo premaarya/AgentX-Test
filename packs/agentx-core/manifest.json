@@ -1,6 +1,6 @@
 {
   "name": "agentx-core",
-  "version": "7.3.0",
+  "version": "7.3.5",
   "description": "Core AgentX pack -- full SDLC agents, workflow engine, and essential instructions for multi-agent orchestration.",
   "maturity": "stable",
   "tags": ["sdlc", "orchestration", "multi-agent", "copilot", "workflow"],
@@ -14,6 +14,8 @@
       ".github/agents/reviewer.agent.md",
       ".github/agents/reviewer-auto.agent.md",
       ".github/agents/devops.agent.md",
+      ".github/agents/data-scientist.agent.md",
+      ".github/agents/tester.agent.md",
       ".github/agents/customer-coach.agent.md"
     ],
     "instructions": [
@@ -29,7 +31,8 @@
       ".github/templates/SPEC-TEMPLATE.md",
       ".github/templates/UX-TEMPLATE.md",
       ".github/templates/REVIEW-TEMPLATE.md",
-      ".github/templates/SECURITY-PLAN-TEMPLATE.md"
+      ".github/templates/SECURITY-PLAN-TEMPLATE.md",
+      ".github/templates/PROGRESS-TEMPLATE.md"
     ],
     "workflows": [
       ".agentx/workflows/epic.toml",

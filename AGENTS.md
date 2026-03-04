@@ -168,6 +168,7 @@ Spike + Backlog -> Architect
 type:devops + Backlog -> DevOps Engineer (skip PM/Architect for infrastructure work)
 type:data-science + Backlog -> Data Scientist (skip PM/Architect for ML/AI work)
 type:testing + Backlog -> Tester (skip PM/Architect for testing/certification work)
+type:powerbi + Backlog -> Power BI Analyst (skip PM/Architect for report/dashboard work)
 In Review + needs:testing -> Tester (pre-release certification)
 ```
 
@@ -196,6 +197,7 @@ In Review + needs:testing -> Tester (pre-release certification)
 - Reviewer: Review document complete, approval decision present
 - DevOps: CI/CD pipelines validated, deployment docs present
 - Tester: Test suites pass, certification report complete
+- Power BI Analyst: Semantic model validated, DAX measures tested, report spec documented
 
 ---
 
@@ -336,6 +338,7 @@ Agent memory persists observations across sessions. Context compaction prevents 
 | `type:devops` | DevOps Engineer | CI/CD Pipelines + Deployment Docs |
 | `type:data-science` | Data Scientist | ML Pipelines + Evals + Model Cards |
 | `type:testing` | Tester | Test Suites + Certification Reports |
+| `type:powerbi` | Power BI Analyst | Reports + Semantic Models + DAX Measures |
 
 **Decision Tree:**
 - Broken? -> `type:bug`
@@ -344,6 +347,7 @@ Agent memory persists observations across sessions. Context compaction prevents 
 - Pipeline/deployment/release? -> `type:devops`
 - ML/AI model, drift, eval, RAG, fine-tuning? -> `type:data-science`
 - Testing, certification, quality gates, pre-release? -> `type:testing`
+- Power BI report, dashboard, DAX, semantic model? -> `type:powerbi`
 - Large/vague? -> `type:epic`
 - Single capability? -> `type:feature`
 - Else -> `type:story`
@@ -517,6 +521,23 @@ All AgentX core agents are currently **stable** (production-ready).
  - Can modify: `tests/**`, `e2e/**`, `docs/testing/**`, `scripts/test/**`, `.github/workflows/*test*`
  - Cannot modify: `src/**`, `docs/prd/**`, `docs/adr/**`, `docs/ux/**`
 
+### Power BI Analyst
+- **Maturity**: Stable
+- **Trigger**: `type:powerbi` label, or Power BI report/dashboard tasks
+- **Output**: Reports at `reports/**`, semantic models at `datasets/**`, docs at `docs/powerbi/`
+- **Status**: Move to `In Progress` when starting -> `In Review` when report complete
+- **Tools**: All tools available (create_file, read_file, semantic_search, run_in_terminal, etc.)
+- **Validation**: `.github/scripts/validate-handoff.sh {issue} powerbi-analyst`
+- **Constraints**:
+ - [PASS] CAN design star schema models, author DAX measures, build Power Query transformations, create reports
+ - [PASS] CAN configure row-level security and performance optimization
+ - [FAIL] CANNOT modify application source code, PRD, ADR, UX docs, or CI/CD pipelines
+ - [FAIL] CANNOT embed credentials in reports or connection strings
+ - [FAIL] CANNOT use copyrighted third-party visuals without verified license
+- **Boundaries**:
+ - Can modify: `reports/**`, `datasets/**`, `docs/powerbi/**`, `scripts/powerbi/**`
+ - Cannot modify: `src/**`, `docs/prd/**`, `docs/adr/**`, `docs/ux/**`, `.github/workflows/**`
+
 ### Customer Coach
 - **Maturity**: Stable
 - **Trigger**: Consulting research requests, topic preparation, client engagement prep
@@ -544,7 +565,7 @@ PM -> [Architect, Data Scientist, UX] (parallel) -> Engineer -> Reviewer -> [Dev
 **Parallel Validation Phase**: DevOps Engineer and Tester validate in parallel after Reviewer approves.
 **Bug-Fix Feedback Loop**: Tester defects route back to Engineer for resolution before closing.
 
-> **Note**: Customer Coach operates **standalone** (not part of the SDLC pipeline). It handles consulting research, topic preparation, and client engagement prep independently.
+> **Note**: Customer Coach and Power BI Analyst operate **standalone** (not part of the core SDLC pipeline). Customer Coach handles consulting research. Power BI Analyst handles reporting/BI work independently or after data layer is ready.
 
 ### Backlog-Based Handoffs
 
@@ -559,6 +580,7 @@ Agents query the backlog for the next priority item instead of receiving explici
 | **DevOps** | `type:devops` + Status=`Ready`, sorted by priority |
 | **Data Scientist** | `type:data-science` + Status=`Ready`, sorted by priority |
 | **Tester** | `type:testing` + Status=`Ready` or `In Review` + `needs:testing`, sorted by priority |
+| **Power BI Analyst** | `type:powerbi` + Status=`Ready`, sorted by priority |
 
 **Priority Order**: `priority:p0` > `priority:p1` > `priority:p2` > `priority:p3` > (no label)
 
@@ -746,7 +768,7 @@ Types: `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `chore`
 
 ### Labels
 
-**Type Labels**: `type:epic`, `type:feature`, `type:story`, `type:bug`, `type:spike`, `type:docs`, `type:data-science`, `type:testing`
+**Type Labels**: `type:epic`, `type:feature`, `type:story`, `type:bug`, `type:spike`, `type:docs`, `type:data-science`, `type:testing`, `type:powerbi`
 
 **Priority Labels**: `priority:p0`, `priority:p1`, `priority:p2`, `priority:p3`
 

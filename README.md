@@ -9,11 +9,11 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/jnPiyush/AgentX/releases/tag/v7.3.0"><img src="https://img.shields.io/badge/Version-7.3.0-0EA5E9?style=for-the-badge" alt="Version 7.3.0"></a>
+  <a href="https://github.com/jnPiyush/AgentX/releases/tag/v7.3.5"><img src="https://img.shields.io/badge/Version-7.3.5-0EA5E9?style=for-the-badge" alt="Version 7.3.5"></a>
   <a href="https://github.com/github/awesome-copilot"><img src="https://img.shields.io/badge/Standard-awesome--copilot-7C3AED?style=for-the-badge&logo=github" alt="Awesome Copilot"></a>
   <a href="https://agentskills.io/specification"><img src="https://img.shields.io/badge/Skills-agentskills.io-F97316?style=for-the-badge" alt="Skills Spec"></a>
   <a href="https://scorecard.dev/viewer/?uri=github.com/jnPiyush/AgentX"><img src="https://img.shields.io/badge/OpenSSF-Scorecard-4DC71F?style=for-the-badge" alt="OpenSSF Scorecard"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-22C55E?style=for-the-badge" alt="MIT License"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-22C55E?style=for-the-badge" alt="Apache 2.0 License"></a>
 </p>
 
 <p align="center">
@@ -47,8 +47,8 @@ AgentX is a **multi-agent orchestration framework** that enables AI coding assis
 <td width="50%">
 
 ### Multi-Agent Orchestration
-- **9 specialized agents** working as a real software team
-- PM, UX, Architect, Engineer, Reviewer, DevOps + more
+- **11 specialized agents** working as a real software team
+- PM, UX, Architect, Data Scientist, Engineer, Reviewer, Auto-Fix Reviewer, DevOps, Tester, Customer Coach
 - Hub-and-spoke coordination via **Agent X**
 - Issue-first workflow with automatic routing by type & priority
 
@@ -384,7 +384,7 @@ Bug-fix loop: Validating -> In Progress (Engineer) when Tester reports defects.
 ```
 AgentX/
 ├── 📄 AGENTS.md              # Workflow & orchestration rules
-├── 📄 Skills.md              # 56 production skills index
+├── 📄 Skills.md              # 62 production skills index
 ├── 📄 CONTRIBUTING.md        # Contributor guide
 │
 ├── 📁 .github/
@@ -478,7 +478,7 @@ git push origin feature/amazing-feature
 
 ## 📜 License
 
-MIT License - See [LICENSE](LICENSE) for details.
+Apache License 2.0 - See [LICENSE](LICENSE) for details.
 
 ---
 

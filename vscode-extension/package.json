@@ -2,13 +2,13 @@
  "name": "agentx",
  "displayName": "AgentX - Multi-Agent Orchestration",
  "description": "AI-powered multi-agent orchestration framework for GitHub Copilot. Coordinate PM, UX, Architect, Data Scientist, Engineer, Reviewer, DevOps, and Tester agents in a structured software development workflow.",
- "version": "7.3.0",
+ "version": "7.3.5",
  "publisher": "jnPiyush",
  "author": {
   "name": "Piyush Jain"
  },
  "icon": "resources/icon.png",
- "license": "MIT",
+ "license": "Apache-2.0",
  "galleryBanner": {
   "color": "#1e1e2e",
   "theme": "dark"

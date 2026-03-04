@@ -163,13 +163,14 @@ Agent role files are at `.github/agents/`. Load only the active agent's definiti
 | DevOps Engineer | [.github/agents/devops.agent.md](.github/agents/devops.agent.md) |
 | Data Scientist | [.github/agents/data-scientist.agent.md](.github/agents/data-scientist.agent.md) |
 | Tester | [.github/agents/tester.agent.md](.github/agents/tester.agent.md) |
+| Power BI Analyst | [.github/agents/powerbi-analyst.agent.md](.github/agents/powerbi-analyst.agent.md) |
 | Customer Coach | [.github/agents/customer-coach.agent.md](.github/agents/customer-coach.agent.md) |
 
 ---
 
 ## Claude Code Commands
 
-All 11 agents are available as `/project:` slash commands in Claude Code via `.claude/commands/`:
+All 12 agents are available as `/project:` slash commands in Claude Code via `.claude/commands/`:
 
 | Command | Agent | Purpose |
 |---------|-------|---------|
@@ -183,6 +184,7 @@ All 11 agents are available as `/project:` slash commands in Claude Code via `.c
 | `/project:devops` | DevOps Engineer | GitHub Actions pipelines, deployment automation |
 | `/project:data-scientist` | Data Scientist | ML pipelines, evaluations, drift monitoring |
 | `/project:tester` | Tester | Automated testing, certification reports |
+| `/project:powerbi-analyst` | Power BI Analyst | Power BI reports, DAX measures, semantic models |
 | `/project:customer-coach` | Customer Coach | Consulting research, client-ready materials |
 
 **Usage**: Type `/project:engineer Implement the health endpoint for issue #1` in Claude Code.

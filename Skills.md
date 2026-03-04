@@ -1,5 +1,5 @@
 ---
-description: 'Compressed skill index for AI agents. 62 skills across 10 categories. Load max 3-4 per task.'
+description: 'Compressed skill index for AI agents. 63 skills across 10 categories. Load max 3-4 per task.'
 ---
 
 # Production Code Skills Index
@@ -12,7 +12,7 @@ description: 'Compressed skill index for AI agents. 62 skills across 10 categori
 
 **Loading order**: Router -> instruction (auto) -> this index -> pick skills -> `read_file` them.
 
-**Anti-pattern**: Never load all 62 skills. Use Quick Reference below.
+**Anti-pattern**: Never load all 63 skills. Use Quick Reference below.
 
 ---
 
@@ -40,6 +40,7 @@ description: 'Compressed skill index for AI agents. 62 skills across 10 categori
 | **Databricks / Delta Lake** | [Databricks](.github/skills/data/databricks/SKILL.md), [Database](.github/skills/architecture/database/SKILL.md), [Python](.github/skills/languages/python/SKILL.md), [Testing](.github/skills/development/testing/SKILL.md) |
 | **Containerization** | [Containerization](.github/skills/infrastructure/containerization/SKILL.md), [Security](.github/skills/architecture/security/SKILL.md), [Release Mgmt](.github/skills/operations/release-management/SKILL.md) |
 | **Data Analysis** | [Data Analysis](.github/skills/data/data-analysis/SKILL.md), [Database](.github/skills/architecture/database/SKILL.md), [Testing](.github/skills/development/testing/SKILL.md) |
+| **Power BI Report / Dashboard** | [Power BI](.github/skills/data/powerbi/SKILL.md), [Fabric Analytics](.github/skills/data/fabric-analytics/SKILL.md), [Database](.github/skills/architecture/database/SKILL.md), [Documentation](.github/skills/development/documentation/SKILL.md) |
 | **UX/UI Design** | [UX/UI Design](.github/skills/design/ux-ui-design/SKILL.md), [Frontend/UI](.github/skills/design/frontend-ui/SKILL.md), [React](.github/skills/languages/react/SKILL.md) |
 | **E2E Testing** | [E2E Testing](.github/skills/testing/e2e-testing/SKILL.md), [Test Automation](.github/skills/testing/test-automation/SKILL.md), [Testing](.github/skills/development/testing/SKILL.md) |
 | **Integration Testing** | [Integration Testing](.github/skills/testing/integration-testing/SKILL.md), [API Design](.github/skills/architecture/api-design/SKILL.md), [Testing](.github/skills/development/testing/SKILL.md) |
@@ -54,7 +55,7 @@ description: 'Compressed skill index for AI agents. 62 skills across 10 categori
 
 ---
 
-## Skills Directory (62 skills -- pipe-delimited)
+## Skills Directory (63 skills -- pipe-delimited)
 
 > Format: `category|skill|path|keywords`
 > Read the SKILL.md at the path when the task matches keywords.
@@ -97,6 +98,7 @@ data|fabric-analytics|.github/skills/data/fabric-analytics/SKILL.md|Lakehouse,Wa
 data|fabric-data-agent|.github/skills/data/fabric-data-agent/SKILL.md|NL-to-SQL,conversational-agents
 data|fabric-forecast|.github/skills/data/fabric-forecasting/SKILL.md|time-series,LightGBM,Prophet
 data|databricks|.github/skills/data/databricks/SKILL.md|Unity-Catalog,Delta-Lake,DLT,MLflow,Photon,DAB,AutoLoader,Spark,medallion,Vector-Search
+data|powerbi|.github/skills/data/powerbi/SKILL.md|Power-BI,DAX,semantic-model,star-schema,DirectLake,Power-Query,M,RLS,PBIP,report,dashboard
 ai|ai-agent-dev|.github/skills/ai-systems/ai-agent-development/SKILL.md|Foundry,Agent-Framework,tracing
 ai|prompt-eng|.github/skills/ai-systems/prompt-engineering/SKILL.md|system-prompts,CoT,few-shot,guardrails
 ai|cognitive-arch|.github/skills/ai-systems/cognitive-architecture/SKILL.md|RAG,memory-systems,vector-search
@@ -188,6 +190,8 @@ Fabric ETL|fabric-analytics->database->testing->code-review
 Fabric Agent|fabric-analytics->fabric-data-agent->prompt-eng->code-review
 Forecasting|fabric-analytics->fabric-forecast->testing->code-review
 Data Analysis|data-analysis->database->testing->code-review
+Power BI Report|powerbi->fabric-analytics->database->documentation->code-review
+Power BI Dashboard|powerbi->data-analysis->database->code-review
 Databricks ETL|databricks->database->python->testing->code-review
 Databricks ML|databricks->ai-agent-dev->python->testing->code-review
 AI Agent|ai-agent-dev->prompt-eng->python/csharp->error-handling->testing->code-review
@@ -213,5 +217,5 @@ Legal Research Brief|legal->documentation
 
 ---
 
-**See Also**: [AGENTS.md](AGENTS.md) | [agentskills.io](https://agentskills.io/specification) | 62 skills (arch:5, dev:10, lang:8, ops:5, infra:4, data:5, ai:11, design:2, test:6, domain:5)
+**See Also**: [AGENTS.md](AGENTS.md) | [agentskills.io](https://agentskills.io/specification) | 63 skills (arch:5, dev:10, lang:8, ops:5, infra:4, data:6, ai:11, design:2, test:6, domain:5)
 

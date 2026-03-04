@@ -17,6 +17,7 @@ complexity_escalation:
   - "type:devops -> DevOps Engineer required"
   - "type:data-science -> Data Scientist required"
   - "type:testing -> Tester required"
+  - "type:powerbi -> Power BI Analyst required"
   - "files > 3 -> Full workflow"
   - "unclear_scope -> PM required"
 constraints:
@@ -87,6 +88,11 @@ handoffs:
     prompt: "Research and prepare materials on the requested topic for consulting engagement"
     send: false
     context: "Standalone agent, not part of SDLC pipeline"
+  - label: "Power BI Report"
+    agent: powerbi-analyst
+    prompt: "Design and build Power BI reports, semantic models, and DAX measures for issue #${issue_number}"
+    send: false
+    context: "Triggered for type:powerbi, standalone or after data layer is ready"
 ---
 
 # Agent X - Hub Coordinator
@@ -116,6 +122,7 @@ Route to specialist agent, skipping PM/Architect:
 | `type:devops` | DevOps Engineer | PM, Architect |
 | `type:data-science` | Data Scientist | PM, Architect |
 | `type:testing` | Tester | PM, Architect |
+| `type:powerbi` | Power BI Analyst | PM, Architect |
 
 ### Full Workflow Mode
 
@@ -228,6 +235,7 @@ Before completing any routing decision, verify:
 | Reviewer | In Review | Review at `docs/reviews/REVIEW-{id}.md` | -> Validating or Done |
 | DevOps | `type:devops` or Validating | Pipelines at `.github/workflows/` | -> In Review |
 | Tester | `type:testing` or Validating | Test suites + certification at `docs/testing/` | -> In Review |
+| Power BI Analyst | `type:powerbi` | Reports + models at `reports/`, `datasets/`, `docs/powerbi/` | -> In Review |
 
 ## When Blocked (Agent-to-Agent Communication)
 

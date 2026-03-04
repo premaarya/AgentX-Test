@@ -76,6 +76,11 @@ const ROUTE_RULES: RouteRule[] = [
     description: 'Routing to Customer Coach -- research and consulting preparation',
   },
   {
+    agentFile: 'powerbi-analyst',
+    keywords: /\b(power\s*bi|powerbi|pbix|pbip|dax|semantic model|directlake|direct\s*lake|report builder|data visualization|dashboard design|power query|star schema)\b/i,
+    description: 'Routing to Power BI Analyst -- report and dashboard development',
+  },
+  {
     agentFile: 'engineer',
     keywords: /\b(implement|code|build|fix|bug|develop|refactor|feature|function|class|api|endpoint|database|migration)\b/i,
     description: 'Routing to Engineer -- implementation work',
