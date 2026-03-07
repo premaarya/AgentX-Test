@@ -249,6 +249,12 @@
       },
       {
         "path": "./.github/agentx/instructions/typescript.instructions.md"
+      },
+      {
+        "path": "./.github/agentx/copilot-instructions.md"
+      },
+      {
+        "path": "./.github/agentx/AGENTS.md"
       }
     ],
     "chatPromptFiles": [

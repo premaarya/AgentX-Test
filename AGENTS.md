@@ -1,5 +1,6 @@
 ---
 description: 'AI Agent Guidelines - map of all resources, quick-reference rules, and pointers to detailed docs.'
+applyTo: '**'
 ---
 
 # AI Agent Guidelines

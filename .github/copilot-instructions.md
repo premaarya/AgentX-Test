@@ -1,5 +1,6 @@
 ---
 description: 'Global instructions for GitHub Copilot across the entire repository.'
+applyTo: '**'
 ---
 
 # Global Copilot Instructions

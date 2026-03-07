@@ -30,11 +30,23 @@ function discoverAgents() {
 // --- Discover chatInstructions ---
 function discoverInstructions() {
     const dir = path.join(githubDir, 'instructions');
-    if (!fs.existsSync(dir)) { return []; }
-    return fs.readdirSync(dir)
-        .filter(f => f.endsWith('.instructions.md'))
-        .sort()
-        .map(f => ({ path: PREFIX + '/instructions/' + f }));
+    const results = [];
+    if (fs.existsSync(dir)) {
+        for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.instructions.md')).sort()) {
+            results.push({ path: PREFIX + '/instructions/' + f });
+        }
+    }
+    // Global instruction files outside instructions/ directory
+    const extraInstructions = [
+        { src: path.join(githubDir, 'copilot-instructions.md'), dest: PREFIX + '/copilot-instructions.md' },
+        { src: path.join(repoRoot, 'AGENTS.md'), dest: PREFIX + '/AGENTS.md' },
+    ];
+    for (const extra of extraInstructions) {
+        if (fs.existsSync(extra.src)) {
+            results.push({ path: extra.dest });
+        }
+    }
+    return results;
 }
 
 // --- Discover chatPromptFiles ---
