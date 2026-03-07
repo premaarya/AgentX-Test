@@ -414,7 +414,7 @@ Bug-fix loop: Validating -> In Progress (Engineer) when Tester reports defects.
 
 ```
 AgentX/
-├── 📄 AGENTS.md              # Workflow & orchestration rules
+├── 📄 AGENTS.md              # Quick-reference map (points to detailed docs)
 ├── 📄 Skills.md              # 63 production skills index
 ├── 📄 CONTRIBUTING.md        # Contributor guide
 │
@@ -423,8 +423,8 @@ AgentX/
 │   ├── 📁 hooks/             # Pre-commit validation
 │   ├── 📁 scripts/           # Validation & metrics scripts
 │   ├── 📁 security/          # Command allowlist
-│   ├── 📁 templates/         # PRD, ADR, Spec, UX, Progress templates
-│   ├── 📁 prompts/           # 11 reusable prompts
+│   ├── 📁 templates/         # PRD, ADR, Spec, UX, Progress, Exec Plan templates
+│   ├── 📁 prompts/           # 12 reusable prompts
 │   ├── 📁 workflows/         # GitHub Actions (CI/CD, scanning)
 │   └── 📁 skills/            # 63 skill documents (10 categories)
 │   └── 📁 instructions/      # 7 auto-applied instruction files
@@ -445,7 +445,11 @@ AgentX/
 ├── 📁 memories/              # Cross-session memory files
 │
 └── 📁 docs/
-    ├── 📁 adr/               # Architecture Decision Records
+    ├── � WORKFLOW.md        # Workflow, routing, handoff, status transitions
+    ├── 📄 QUALITY_SCORE.md   # Graded quality assessment
+    ├── 📄 GOLDEN_PRINCIPLES.md # Mechanical rules enforced by linters
+    ├── 📄 tech-debt-tracker.md # Known gaps and deferred work
+    ├── �📁 adr/               # Architecture Decision Records
     ├── 📁 architecture/      # Architecture docs & migration plan
     ├── 📁 prd/               # Product Requirements Docs
     └── 📁 specs/             # Technical Specifications
@@ -457,9 +461,13 @@ AgentX/
 
 | Document | Description |
 |----------|-------------|
-| [AGENTS.md](AGENTS.md) | Complete workflow, agent roles, handoff rules |
+| [AGENTS.md](AGENTS.md) | Quick-reference map of all resources |
+| [docs/WORKFLOW.md](docs/WORKFLOW.md) | Workflow, routing, handoff rules, architecture |
 | [Skills.md](Skills.md) | 63 production skills across 10 categories |
 | [**Guide**](docs/GUIDE.md) | **Quickstart, setup, local mode, MCP server, troubleshooting** |
+| [docs/QUALITY_SCORE.md](docs/QUALITY_SCORE.md) | Graded quality assessment of every component |
+| [docs/GOLDEN_PRINCIPLES.md](docs/GOLDEN_PRINCIPLES.md) | Mechanical rules enforced by linters |
+| [docs/tech-debt-tracker.md](docs/tech-debt-tracker.md) | Known gaps and deferred work |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute to AgentX |
 
 ### Packs

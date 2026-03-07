@@ -25,7 +25,7 @@ If a skill, spec, or doc exists in the workspace, read it first; generate second
 |------|------|------|
 | Writing/editing code in existing files | [AGENTS.md](../AGENTS.md) + Language instruction (auto via `applyTo`) + relevant skills | Skills not matching task |
 | Creating new files, features, issues | [AGENTS.md](../AGENTS.md) (workflow + classification) | Skills not matching task |
-| Multi-agent coordination, handoffs | [AGENTS.md](../AGENTS.md) (full) | Unrelated skills |
+| Multi-agent coordination, handoffs | [AGENTS.md](../AGENTS.md) + [docs/WORKFLOW.md](../docs/WORKFLOW.md) | Unrelated skills |
 | Answering questions, research | Nothing extra - use tools | AGENTS.md, Skills.md |
 | Debugging | Language instruction + error handling skill | AGENTS.md |
 
@@ -35,7 +35,7 @@ If a skill, spec, or doc exists in the workspace, read it first; generate second
 
 ## When to Read AGENTS.md
 
-Read [AGENTS.md](../AGENTS.md) for **any coding or workflow task** - it contains classification, commit format, agent roles, and security checklist.
+Read [AGENTS.md](../AGENTS.md) for **any coding or workflow task** - it contains classification, commit format, and security checklist. For workflow details, routing, and handoff rules, see [docs/WORKFLOW.md](../docs/WORKFLOW.md).
 
 > **Skip AGENTS.md** for: answering questions, research, and debugging only.
 
@@ -82,8 +82,10 @@ For file types not listed above, load the matching **skill** on demand from [Ski
 
 ## Reference
 
-- **Workflows & Agent Roles**: [AGENTS.md](../AGENTS.md) (load when needed)
+- **Workflows & Agent Roles**: [AGENTS.md](../AGENTS.md) (map) + [docs/WORKFLOW.md](../docs/WORKFLOW.md) (workflow details)
 - **Skills Index**: [Skills.md](../Skills.md) (use Quick Reference to pick skills)
+- **Quality & Debt**: [docs/QUALITY_SCORE.md](../docs/QUALITY_SCORE.md) | [docs/tech-debt-tracker.md](../docs/tech-debt-tracker.md)
+- **Golden Principles**: [docs/GOLDEN_PRINCIPLES.md](../docs/GOLDEN_PRINCIPLES.md)
 - **Frontmatter Validation**: `pwsh scripts/validate-frontmatter.ps1`
 
 ## ASCII-Only Rule
