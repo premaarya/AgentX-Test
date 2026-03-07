@@ -13,6 +13,8 @@ constraints:
   - "MUST NOT write code or technical specifications"
   - "MUST NOT create UX designs or wireframes"
   - "MUST NOT add constraints that contradict the user's stated technology intent"
+  - "MUST conduct deep research before writing requirements -- prior art, competitive landscape, industry standards, user needs validation"
+  - "MUST document research findings with sources in a Research Summary section within the PRD"
 boundaries:
   can_modify:
     - "docs/prd/** (PRD documents)"
@@ -52,11 +54,46 @@ Transform user needs into structured product requirements. Create PRDs and break
 
 ## Execution Steps
 
-### 1. Research Requirements
+### 1. Deep Research (MANDATORY -- invest the majority of effort here)
 
-- Read the issue description and any linked context
-- Use `semantic_search` to find similar features, existing PRDs
-- Use `runSubagent` for competitor research or feasibility checks
+Research is the foundation of good requirements. Rushing to write a PRD without deep research produces shallow, assumption-driven specs that waste downstream effort.
+
+**Phase 1: Understand the Problem Space**
+
+- Read the issue description and all linked context thoroughly
+- Use `semantic_search` to find similar features, past PRDs, related decisions, and prior art in the codebase
+- Use `grep_search` to find relevant discussions, comments, TODOs, or open questions referencing the problem
+- Identify what has already been tried, decided, or rejected for this problem
+
+**Phase 2: Prior Art and Competitive Analysis**
+
+- Use `fetch` to research how 3-5 existing products, services, or open-source projects solve the same or a similar problem
+- For each solution found, document: approach taken, strengths, weaknesses, and user reception
+- Create a comparison matrix of existing solutions
+- Identify patterns that recur across multiple solutions -- these signal proven approaches
+- Note anti-patterns, common complaints, and failure modes users report about existing solutions
+
+**Phase 3: Industry Standards and Compliance**
+
+- Research relevant industry standards, regulations, or compliance requirements (e.g., WCAG, GDPR, SOC2, HIPAA, PCI-DSS)
+- Identify platform, ecosystem, or infrastructure constraints that may shape requirements
+- Use `fetch` to check for recent developments, breaking changes, or emerging standards in the technology landscape
+- Document any regulatory or compliance requirements that must be reflected in the PRD
+
+**Phase 4: User Needs Validation**
+
+- Search for real user feedback: support tickets, forum discussions, GitHub issues, app reviews, or community posts related to the problem
+- Identify unmet needs and pain points from actual users (evidence-based, not assumed)
+- Validate that the proposed solution addresses the root cause, not just symptoms
+- If no direct user evidence exists, document this gap explicitly and flag assumptions
+
+**Phase 5: Feasibility Signal**
+
+- Use `runSubagent("Architect", "Quick feasibility check: [problem summary]. Are there any known blockers, constraints, or risks?")` for early technical feasibility validation
+- For GenAI features, use `runSubagent("DataScientist", "Quick feasibility check: [AI requirement]. What models, techniques, and evaluation approaches apply?")` to validate AI feasibility
+- Document any technical risks, unknowns, or dependencies surfaced during research
+
+**Research Output**: Document all findings in a **Research Summary** section within the PRD (placed before Requirements). MUST include: sources consulted (with URLs), key findings, chosen approach rationale, and rejected alternatives with reasons.
 
 ### 2. Classify Domain Intent
 
@@ -101,6 +138,10 @@ Before handoff, verify with fresh eyes:
 - [ ] Every user story has specific, testable acceptance criteria
 - [ ] Stories sized appropriately (2-5 days each)
 - [ ] Dependencies and risks identified
+- [ ] **Research depth**: PRD includes Research Summary with sources, key findings, and rationale
+- [ ] **Prior art analyzed**: 3+ existing solutions studied and compared; comparison matrix present
+- [ ] **User needs evidence-based**: Requirements grounded in real user feedback or gaps explicitly flagged as assumptions
+- [ ] **Standards checked**: Relevant industry standards and compliance requirements identified
 - [ ] **Intent preserved**: if user said "AI/GenAI", PRD includes GenAI Requirements section
 - [ ] **GenAI completeness**: GenAI Requirements cover LLM selection, evaluation strategy, model pinning, guardrails, and responsible AI
 - [ ] **No contradictions**: constraints do not conflict with user's technology intent
@@ -144,6 +185,7 @@ Update Epic Status to `Ready` in GitHub Projects.
 - [PASS] Epic + Feature + Story issues created with proper hierarchy
 - [PASS] All stories have acceptance criteria
 - [PASS] PRD committed to repository
+- [PASS] Research Summary section documents prior art analysis with sources and evidence
 - [PASS] Validation passes: `.github/scripts/validate-handoff.sh <issue> pm`
 
 ## When Blocked (Agent-to-Agent Communication)

@@ -11,6 +11,8 @@ constraints:
   - "MUST follow WCAG 2.1 AA accessibility standards"
   - "MUST create responsive designs (mobile, tablet, desktop)"
   - "MUST explore at least 2 alternative layouts before committing to a design"
+  - "MUST conduct deep design research before designing -- competitive audit, pattern libraries, accessibility standards, user behavior studies"
+  - "MUST document design research findings with sources in the UX Spec"
   - "MUST NOT write application or business logic code"
   - "MUST NOT create technical architecture or ADRs"
 boundaries:
@@ -52,11 +54,45 @@ Design user interfaces using the AgentX UX methodology: Empathize, Define, Ideat
 - Identify all stories with `needs:ux` label
 - Understand user flows and requirements
 
-### 2. Research Design Patterns
+### 2. Deep Design Research (MANDATORY -- research before designing)
 
-- Use `semantic_search` to find existing UI patterns and design systems
-- Reference [UX/UI Design Skill](../skills/design/ux-ui-design/SKILL.md) for methodology
-- Reference [Frontend/UI Skill](../skills/design/frontend-ui/SKILL.md) for HTML5/CSS3 patterns
+Design decisions must be grounded in evidence, not personal preference. Invest effort here before sketching anything.
+
+**Phase 1: Competitive Design Audit**
+
+- Use `fetch` to study how 3-5 leading products solve the same or similar UX problem
+- For each product, document: layout approach, navigation patterns, interaction model, strengths, and weaknesses
+- Create a comparison of design approaches with notes on what works and what does not
+- Pay specific attention to how competitors handle edge cases, error states, and empty states
+
+**Phase 2: Design Pattern Research**
+
+- Research established UX patterns from authoritative sources (Nielsen Norman Group, Baymard Institute, GOV.UK Design System, Material Design guidelines)
+- Use `fetch` to find documented patterns for the specific interaction type (e.g., data tables, forms, wizards, dashboards, search interfaces)
+- Identify which patterns are proven for the target user type and context
+- Document which patterns were considered and why specific ones were selected
+
+**Phase 3: Design System and Component Research**
+
+- Research relevant design systems for reusable component patterns (Material Design, Fluent UI, Ant Design, Radix, Shadcn)
+- Identify existing components that can be reused or adapted instead of designing from scratch
+- Research component interaction patterns: states (default, hover, active, focus, disabled, error, loading), transitions, and micro-interactions
+- If the project has an existing design system, study it first to ensure consistency
+
+**Phase 4: Accessibility Deep Dive**
+
+- Research WCAG 2.1 AA patterns specific to the components being designed (not generic accessibility)
+- Use `fetch` to find accessibility implementation examples for the specific pattern (e.g., accessible data grids, accessible modals, accessible drag-and-drop)
+- Research screen reader behavior and keyboard navigation patterns for the chosen components
+- Check WAI-ARIA Authoring Practices for the specific widget type
+
+**Phase 5: Platform and Responsive Patterns**
+
+- If mobile: research platform-specific patterns (iOS Human Interface Guidelines, Material Design for Android)
+- Research responsive breakpoint strategies and content priority across screen sizes
+- Study established information hierarchy patterns for the target screen type
+
+**Research Output**: Document findings in a **Design Research** section in the UX Spec. Include: products audited with findings, patterns considered with rationale for selection, accessibility patterns chosen, and sources consulted.
 
 ### 3. Create UX Spec
 
@@ -83,6 +119,10 @@ Before handoff, verify with fresh eyes:
 - [ ] Mobile, tablet, desktop variants specified
 - [ ] WCAG 2.1 AA: keyboard navigation, screen reader friendly, sufficient contrast
 - [ ] HTML/CSS prototypes are interactive, responsive, and accessible
+- [ ] **Design research documented**: UX Spec includes Design Research section with sources and rationale
+- [ ] **Competitive audit completed**: 3+ products studied; findings documented with strengths and weaknesses
+- [ ] **Pattern selection evidence-based**: Chosen patterns grounded in established research, not personal preference
+- [ ] **Accessibility research specific**: WCAG patterns researched for the specific components designed (not generic)
 - [ ] Component states clearly defined (default, hover, active, disabled, error)
 - [ ] An engineer could build exactly what is specified
 
@@ -123,6 +163,7 @@ Update Status to `Ready` in GitHub Projects.
 - [PASS] UX specs created for all stories with `needs:ux`
 - [PASS] HTML/CSS prototypes exist at `docs/ux/prototypes/`
 - [PASS] Prototypes are interactive, responsive, WCAG 2.1 AA compliant
+- [PASS] Design Research section documents competitive audit with sources and pattern rationale
 - [PASS] Validation passes: `.github/scripts/validate-handoff.sh <issue> ux`
 
 ## When Blocked (Agent-to-Agent Communication)

@@ -11,6 +11,8 @@ constraints:
   - "MUST NOT fabricate metrics, benchmarks, or evaluation results"
   - "MUST NOT deploy model changes without evaluation gate approval"
   - "MUST NOT modify PRD, ADR, UX docs, or CI/CD pipelines"
+  - "MUST conduct deep research before designing pipelines -- state-of-the-art survey, benchmark analysis, technique comparison, cost-performance research"
+  - "MUST document research findings with sources in the Model Card and Evaluation Report"
 boundaries:
   can_modify:
     - "src/** (ML/AI code only)"
@@ -51,12 +53,57 @@ Expert in the Generative AI lifecycle: prompt engineering, LLM selection, fine-t
 
 ## Execution Steps
 
-### 1. Read Context & Load Skills
+### 1. Read Context, Load Skills, and Deep Research (MANDATORY)
 
-- Read PRD and any existing GenAI specs
+AI/ML decisions must be grounded in current evidence. Models, techniques, and best practices evolve rapidly -- never rely on stale assumptions.
+
+**Phase 1: Understand the Problem**
+
+- Read PRD and any existing GenAI specs, ADRs, and architecture docs
 - Load the relevant AI skill(s) from the skills map below
 - Use `aitk_get_ai_model_guidance` for model comparison and selection
 - Use `aitk_list_foundry_models` to discover available models
+- Identify the specific AI/ML task type (classification, generation, retrieval, orchestration, evaluation, fine-tuning)
+
+**Phase 2: State-of-the-Art Survey**
+
+- Use `fetch` to research the latest model releases, capability announcements, and leaderboard standings relevant to the task
+- Check current benchmarks: MMLU, HumanEval, MT-Bench, LMSYS Chatbot Arena, HELM, or domain-specific benchmarks as applicable
+- Research which models are leading for the specific task type (e.g., coding, reasoning, retrieval, multilingual, structured output)
+- Document the top 3-5 candidate models with their current benchmark positions, release dates, and known capabilities
+
+**Phase 3: Technique and Pattern Research**
+
+- Use `fetch` to research current best practices and proven techniques for the specific AI/ML approach being applied
+- For RAG: research latest chunking strategies, embedding models, reranking approaches, and hybrid search configurations
+- For fine-tuning: research current LoRA/QLoRA best practices, training data requirements, and evaluation methodology
+- For agent orchestration: research current multi-agent patterns, tool-calling approaches, and handoff strategies
+- For evaluation: research current LLM-as-judge methodology, calibration techniques, and known biases
+- Identify what has changed in the last 6 months -- this field moves fast
+
+**Phase 4: Failure Mode and Limitation Research**
+
+- Research known failure modes, hallucination patterns, and edge cases for candidate models and approaches
+- Use `fetch` to find post-mortems, failure reports, and lessons learned from teams deploying similar AI systems
+- Research known biases, safety issues, and content policy limitations for candidate models
+- Document specific failure modes the design must mitigate
+
+**Phase 5: Cost-Performance Research**
+
+- Research current pricing, token costs, throughput limits, and rate limits for candidate model providers
+- Compare cost-per-task across providers for the expected workload (not just per-token pricing)
+- Research latency data: time-to-first-token, tokens-per-second, and end-to-end latency for comparable workloads
+- Identify cost optimization opportunities: caching, batching, model routing by complexity, smaller models for simple tasks
+- Document the cost-performance trade-off matrix
+
+**Phase 6: Community and Paper Review**
+
+- Check recent papers, technical blog posts (from model providers, AI labs, and practitioners), and community discussions for novel approaches and lessons learned
+- Research what other teams have reported when solving similar problems
+- Look for open-source implementations, reference architectures, or starter kits that can accelerate development
+- Document key references that informed the design
+
+**Research Output**: Document findings in the **Model Card** (model selection rationale with benchmark evidence) and **Evaluation Report** (baseline comparisons with source data). Include: models researched with current benchmark data, techniques considered with evidence, failure modes identified, cost-performance analysis, and key references.
 
 ### 1.5. Delegate to Sub-Agents (When Appropriate)
 
@@ -148,6 +195,11 @@ Apply to: model selection, hyperparameter choices, evaluation conclusions, drift
 - [ ] Prompts stored as separate files in `prompts/` (not inline strings in code)
 - [ ] Fallback strategy exists for model failures and provider outages
 - [ ] Evaluation baseline saved for regression detection
+- [ ] **Research depth**: Model Card documents state-of-the-art survey with benchmark data and sources
+- [ ] **Technique evidence**: Chosen approach grounded in current best practices research, not stale assumptions
+- [ ] **Failure modes researched**: Known failure modes, hallucination patterns, and edge cases documented and mitigated
+- [ ] **Cost-performance analyzed**: Cost-per-task comparison across providers documented with current pricing data
+- [ ] **Community validated**: Key design decisions supported by references to papers, blog posts, or community reports
 
 ### 8. Commit & Handoff
 
@@ -215,6 +267,7 @@ Update Status to `In Review` in GitHub Projects.
 - [PASS] All metrics are real (verified, not fabricated)
 - [PASS] Model card documents limitations and ethical considerations
 - [PASS] Drift monitoring configured
+- [PASS] Research documented: Model Card includes state-of-the-art survey and cost-performance analysis with sources
 - [PASS] Validation passes: `.github/scripts/validate-handoff.sh <issue> data-scientist`
 
 ## When Blocked (Agent-to-Agent Communication)

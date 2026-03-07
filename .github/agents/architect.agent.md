@@ -12,6 +12,8 @@ constraints:
   - "MUST produce a Tech Spec with all 13 required sections"
   - "MUST NOT write implementation code or include code snippets"
   - "MUST NOT modify source code, PRD, or UX documents"
+  - "MUST conduct deep technology research before designing -- landscape scan, failure modes, benchmarks, security posture, long-term viability"
+  - "MUST document research findings with sources in the ADR Context section"
 boundaries:
   can_modify:
     - "docs/adr/** (Architecture Decision Records)"
@@ -47,12 +49,55 @@ Design system architecture through ADRs and Technical Specifications. Communicat
 
 ## Execution Steps
 
-### 1. Read Context
+### 1. Read Context and Deep Research (MANDATORY before designing)
 
-- Read `docs/prd/PRD-{epic-id}.md` for requirements
-- Search existing ADRs: `docs/adr/ADR-*.md` for established patterns
-- Scan codebase with `semantic_search` / `grep_search` to understand current architecture
+Architecture decisions are expensive to reverse. Invest heavily in research to make the right choice the first time.
+
+**Phase 1: Understand the Problem**
+
+- Read `docs/prd/PRD-{epic-id}.md` for requirements, constraints, and quality attributes
+- Search existing ADRs: `docs/adr/ADR-*.md` for established patterns and past decisions
+- Scan codebase with `semantic_search` / `grep_search` to understand current architecture, tech stack, and conventions
 - For GenAI features: use `aitk_get_ai_model_guidance` to compare LLM capabilities, context windows, and pricing
+
+**Phase 2: Technology Landscape Scan**
+
+- Use `fetch` to research the current state of relevant technologies being considered
+- For each candidate technology, assess: maturity level, community size and activity, release cadence, documentation quality, and ecosystem richness
+- Check for recent major version changes, roadmap shifts, or deprecation announcements
+- Identify the market leaders and their relative strengths for the specific problem domain
+
+**Phase 3: Architecture Pattern Research**
+
+- Use `fetch` to research proven architecture patterns from industry leaders who have solved similar problems at scale
+- Study published case studies, architecture blog posts, and conference talks from relevant companies
+- Research how the pattern performs at the expected scale (current and projected)
+- Document which patterns were considered and the evidence supporting each
+
+**Phase 4: Failure Mode and Anti-Pattern Analysis**
+
+- Research known failure modes and post-mortems related to the candidate technologies and patterns
+- Use `fetch` to find common pitfalls, migration horror stories, and operational challenges reported by teams using these technologies
+- Check GitHub Issues, Stack Overflow threads, and incident reports for recurring problems
+- Document identified risks and how the proposed architecture mitigates them
+
+**Phase 5: Benchmark and Performance Research**
+
+- Find published benchmarks relevant to the performance requirements (throughput, latency, memory, scalability)
+- Research real-world performance data from teams running similar workloads
+- For database choices: research benchmark comparisons for the specific query patterns and data volumes expected
+- For API designs: research rate limiting, concurrency, and latency data from comparable systems
+- Document performance evidence supporting the chosen option
+
+**Phase 6: Security and Long-term Viability**
+
+- Research CVEs, security advisories, and known vulnerabilities for candidate technologies
+- Check dependency health: maintenance status, bus factor, corporate backing, and funding
+- Assess long-term viability: is the technology growing, stable, or declining? What is the 3-5 year outlook?
+- Research license compatibility and any licensing risks
+- Document security posture and viability assessment for each option in the ADR
+
+**Research Output**: Document findings in the **Context** section of the ADR. The Context section MUST include: technologies researched with sources, benchmark data cited, failure modes identified, and security assessment. Each ADR option MUST reference specific research evidence, not just abstract reasoning.
 
 ### 2. Create ADR
 
@@ -115,6 +160,10 @@ Apply to: technology choices, pattern selections, trade-off conclusions, risk as
 - [ ] Security considerations documented (auth, data protection, input validation)
 - [ ] Performance targets specified with measurable thresholds
 - [ ] Migration plan covers backward compatibility
+- [ ] **Research depth**: ADR Context section documents technology landscape, benchmarks, failure modes, and security assessment with sources
+- [ ] **Evidence-based options**: Each ADR option references specific research findings, not abstract reasoning
+- [ ] **Failure modes documented**: Known risks, anti-patterns, and post-mortems researched and addressed in design
+- [ ] **Long-term viability assessed**: Technology maturity, community health, and 3-5 year outlook documented
 - [ ] An engineer can implement without ambiguity
 
 ### 7. Commit & Handoff
@@ -158,6 +207,7 @@ Update Status to `Ready` in GitHub Projects.
 - [PASS] ADR exists with 3+ evaluated options (skip for spikes)
 - [PASS] Tech Spec has all 13 sections (skip for spikes)
 - [PASS] Zero code examples in any spec
+- [PASS] ADR Context section includes research evidence with sources (benchmarks, failure modes, security)
 - [PASS] Validation passes: `.github/scripts/validate-handoff.sh <issue> architect`
 
 ## When Blocked (Agent-to-Agent Communication)
