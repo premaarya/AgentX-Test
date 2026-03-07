@@ -215,18 +215,17 @@ Before asking any agent for help, read all relevant filesystem artifacts:
 
 Only proceed to Step 2 if a question remains unanswered after reading all artifacts.
 
-### Step 2: Reach the Right Agent Directly
+### Step 2: Ask the User to Switch Agents
 
-Spawn the target agent with full context in the prompt:
+If a question remains after reading artifacts, ask the user to switch to the relevant agent:
 
-`runSubagent("AgentName", "Context: [what you have read]. Question: [specific question].")`
+"I need input from [AgentName] on [specific question]. Please switch to the [AgentName] agent and ask: [question with context]."
 
-Only spawn agents listed in your `agents:` frontmatter.
-For any agent outside your list, ask the user to mediate.
+Only reference agents listed in your `agents:` frontmatter.
 
 ### Step 3: Follow Up If Needed
 
-If the response does not fully answer, re-spawn with a more specific follow-up.
+If the user returns with an incomplete answer, ask them to follow up with the same agent.
 Maximum 3 follow-up exchanges per topic.
 
 ### Step 4: Escalate to User If Unresolved

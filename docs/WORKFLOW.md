@@ -124,7 +124,7 @@ AgentX uses a **Hub-and-Spoke architecture** for agent coordination:
 
 **Key Principles:**
 
-1. **Centralized Coordination** - Agent X delegates ALL work to specialist agents via `runSubagent` -- it NEVER performs tasks itself (no coding, no docs, no analysis)
+1. **Centralized Coordination** - Agent X delegates ALL work to specialist agents -- it NEVER performs tasks itself (no coding, no docs, no analysis). It tells the user which agent to switch to.
 2. **Strict Role Separation** - Each agent produces one deliverable type (PRD, ADR, Code, Review)
 3. **Universal Tool Access** - All agents have access to all tools for maximum flexibility
 4. **Status-Driven** - GitHub Projects V2 Status field is the source of truth
@@ -193,21 +193,22 @@ In Review + needs:testing -> Tester (pre-release certification)
 
 | Mode | How It Works | Platform |
 |------|-------------|----------|
-| **Mode 1: Agent X Hub** | Agent X body text + `runSubagent` calls route work through PM -> [Architect, UX, Data Scientist] -> Engineer -> Reviewer -> [DevOps, Tester] | VS Code, Claude Code |
+| **Mode 1: Agent X Hub** | Agent X classifies and routes work, telling the user which agent to switch to: PM -> [Architect, UX, Data Scientist] -> Engineer -> Reviewer -> [DevOps, Tester] | VS Code, Claude Code |
 | **Mode 2: Human-Orchestrated** | User picks agent from Copilot agent picker; `handoffs:` frontmatter renders "Hand off to X" buttons | VS Code |
 | **CLI Standalone** | `agentx.ps1 run <agent> <task>` runs agent via GitHub Models API; no sub-agent chaining | CLI |
 
 ### Agent-to-Agent Communication
 
-Agents use Copilot's built-in `runSubagent` tool. Body text instructs: read artifacts first,
-spawn target agent with full context, max 3 follow-up exchanges, escalate to user if unresolved.
-Scope is controlled by `agents:` frontmatter (which agents can be spawned).
+Agents communicate through the user. When an agent needs input from another specialist,
+it asks the user to switch to the relevant agent with full context. The user picks the
+target agent from the Copilot agent picker (VS Code) or slash command (Claude Code).
+Scope is controlled by `agents:` frontmatter (which agents can be referenced).
 
 ### Self-Review Loop
 
-Body text in every agent instructs: "Before handoff, spawn a same-role reviewer sub-agent."
-Reviewer produces structured findings ([HIGH], [MEDIUM], [LOW]). Agent addresses HIGH/MEDIUM
-findings, then re-runs. Copilot executes this natively via `runSubagent`.
+Body text in every agent instructs: "Before handoff, re-check your work against the done criteria."
+The agent evaluates with structured findings ([HIGH], [MEDIUM], [LOW]) and addresses HIGH/MEDIUM
+findings before completing.
 
 ---
 

@@ -103,18 +103,18 @@ AI/ML decisions must be grounded in current evidence. Models, techniques, and be
 
 **Research Output**: Document findings in the **Model Card** (model selection rationale with benchmark evidence) and **Evaluation Report** (baseline comparisons with source data). Include: models researched with current benchmark data, techniques considered with evidence, failure modes identified, cost-performance analysis, and key references.
 
-### 1.5. Delegate to Sub-Agents (When Appropriate)
+### 1.5. Specialized Tasks -- Load the Right Skill
 
-For specialized work, spawn invisible sub-agents instead of doing everything inline:
+For specialized sub-tasks, load the relevant skill and apply it directly:
 
-| Task | Sub-Agent | Invocation |
-|------|-----------|-----------|
-| Prompt design, testing, versioning | Prompt Engineer | `runSubagent("PromptEngineer", "Context: [issue, requirements]. Task: [design/evaluate/test/iterate prompts].")` |
-| Evaluation pipelines, benchmarks, quality gates | Eval Specialist | `runSubagent("EvalSpecialist", "Context: [model, pipeline, test data]. Task: [design eval/run benchmark/compare models].")` |
-| AgentOps tracing, drift detection, cost tracking | Ops Monitor | `runSubagent("OpsMonitor", "Context: [deployed model, metrics]. Task: [setup tracing/detect drift/configure alerts].")` |
-| RAG pipeline design, chunking, retrieval, reranking | RAG Specialist | `runSubagent("RAGSpecialist", "Context: [corpus, query patterns]. Task: [design pipeline/optimize retrieval/evaluate quality].")` |
+| Task | Skill to Load |
+|------|---------------|
+| Prompt design, testing, versioning | [Prompt Engineering](../skills/ai-systems/prompt-engineering/SKILL.md) |
+| Evaluation pipelines, benchmarks, quality gates | [AI Evaluation](../skills/ai-systems/ai-evaluation/SKILL.md) |
+| AgentOps tracing, drift detection, cost tracking | [Model Drift](../skills/ai-systems/model-drift-management/SKILL.md) + [Data Drift](../skills/ai-systems/data-drift-strategy/SKILL.md) |
+| RAG pipeline design, chunking, retrieval, reranking | [RAG Pipelines](../skills/ai-systems/rag-pipelines/SKILL.md) |
 
-Sub-agents produce artifacts in their designated directories. Review their output before incorporating into final deliverables.
+Read the SKILL.md file before starting the specialized task. Apply the skill's patterns directly in your work.
 
 ### 2. Design GenAI Pipeline
 
@@ -293,18 +293,17 @@ Before asking any agent for help, read all relevant filesystem artifacts:
 
 Only proceed to Step 2 if a question remains unanswered after reading all artifacts.
 
-### Step 2: Reach the Right Agent Directly
+### Step 2: Ask the User to Switch Agents
 
-Spawn the target agent with full context in the prompt:
+If a question remains after reading artifacts, ask the user to switch to the relevant agent:
 
-`runSubagent("AgentName", "Context: [what you have read]. Question: [specific question].")`
+"I need input from [AgentName] on [specific question]. Please switch to the [AgentName] agent and ask: [question with context]."
 
-Only spawn agents listed in your `agents:` frontmatter.
-For any agent outside your list, ask the user to mediate.
+Only reference agents listed in your `agents:` frontmatter.
 
 ### Step 3: Follow Up If Needed
 
-If the response does not fully answer, re-spawn with a more specific follow-up.
+If the user returns with an incomplete answer, ask them to follow up with the same agent.
 Maximum 3 follow-up exchanges per topic.
 
 ### Step 4: Escalate to User If Unresolved
