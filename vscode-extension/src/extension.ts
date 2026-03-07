@@ -7,7 +7,6 @@ import { registerDigestCommand } from './commands/digest';
 import { registerLoopCommand } from './commands/loopCommand';
 import { registerShowIssueCommand } from './commands/showIssue';
 import { AgentTreeProvider } from './views/agentTreeProvider';
-import { WorkflowTreeProvider } from './views/workflowTreeProvider';
 import { TemplateTreeProvider } from './views/templateTreeProvider';
 import { AgentXContext } from './agentxContext';
 import { registerChatParticipant } from './chat/chatParticipant';
@@ -25,11 +24,9 @@ export function activate(context: vscode.ExtensionContext) {
  // Register sidebar tree view providers (VS Code-only value)
  const agentTreeProvider = new AgentTreeProvider(agentxContext);
  const templateProvider = new TemplateTreeProvider(agentxContext);
- const workflowProvider = new WorkflowTreeProvider(agentxContext);
 
  vscode.window.registerTreeDataProvider('agentx-agents', agentTreeProvider);
  vscode.window.registerTreeDataProvider('agentx-templates', templateProvider);
- vscode.window.registerTreeDataProvider('agentx-workflows', workflowProvider);
 
  // Register commands
  registerInitializeCommand(context, agentxContext);
@@ -48,7 +45,6 @@ export function activate(context: vscode.ExtensionContext) {
    agentxContext.invalidateCache();
    agentTreeProvider.refresh();
    templateProvider.refresh();
-   workflowProvider.refresh();
    clearInstructionCache();
    agentxContext.checkInitialized().then((initialized: boolean) => {
     vscode.commands.executeCommand('setContext', 'agentx.initialized', initialized);
@@ -83,7 +79,6 @@ export function activate(context: vscode.ExtensionContext) {
    vscode.commands.executeCommand('setContext', 'agentx.adoConnected', agentxContext.adoConnected);
    if (initialized) {
     agentTreeProvider.refresh();
-    workflowProvider.refresh();
    }
   });
  };

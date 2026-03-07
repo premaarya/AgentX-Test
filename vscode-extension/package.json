@@ -130,12 +130,6 @@
           "name": "Templates",
           "icon": "$(file-text)",
           "contextualTitle": "AgentX Templates"
-        },
-        {
-          "id": "agentx-workflows",
-          "name": "Workflows",
-          "icon": "$(git-merge)",
-          "contextualTitle": "AgentX Workflows"
         }
       ]
     },
@@ -150,7 +144,7 @@
       "view/title": [
         {
           "command": "agentx.refresh",
-          "when": "view == agentx-agents || view == agentx-templates || view == agentx-workflows",
+          "when": "view == agentx-agents || view == agentx-templates",
           "group": "navigation"
         }
       ],
