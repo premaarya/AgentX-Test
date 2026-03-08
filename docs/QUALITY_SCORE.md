@@ -17,7 +17,7 @@
 
 ---
 
-## Component Scores (v8.1.2)
+## Component Scores (v8.1.3)
 
 ### Agent Definitions (.github/agents/)
 
@@ -97,7 +97,7 @@
 
 | Document | Grade | Notes |
 |----------|-------|-------|
-| AGENTS.md | A | Slim TOC/map (v8.1.2) |
+| AGENTS.md | A | Slim TOC/map (v8.1.3) |
 | WORKFLOW.md | A | Complete workflow reference extracted from AGENTS.md |
 | Skills.md | A | Compressed index, Quick Reference table |
 | GUIDE.md | B | Quickstart solid, troubleshooting section could expand |
@@ -137,4 +137,4 @@
 
 ---
 
-**Last updated**: v8.1.2
+**Last updated**: v8.1.3
