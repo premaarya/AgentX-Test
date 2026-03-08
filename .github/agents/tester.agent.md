@@ -10,6 +10,7 @@ constraints:
   - "MUST report defects as issues routed back to Engineer -- not fix code directly"
   - "MUST NOT modify application source code"
   - "MUST NOT approve releases -- provides certification report for go/no-go decision"
+  - "MUST create all files locally using editFiles -- MUST NOT use mcp_github_create_or_update_file or mcp_github_push_files to push files directly to GitHub"
 boundaries:
   can_modify:
     - "tests/** (test code)"

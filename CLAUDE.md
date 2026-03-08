@@ -145,6 +145,10 @@ Before any commit:
 
 **Blocked commands**: `rm -rf /`, `git reset --hard`, `drop database`
 
+### Local Files First Rule
+
+All agents MUST create deliverable files locally using `editFiles` -- MUST NOT use `mcp_github_create_or_update_file` or `mcp_github_push_files` to push files directly to GitHub. Users must be able to review files locally before committing.
+
 ---
 
 ## Directive Language

@@ -9,6 +9,7 @@ constraints:
   - "MUST suggest but NOT auto-apply risky changes (logic, refactoring, architecture)"
   - "MUST NOT merge without human approval"
   - "MUST NOT modify business logic without explicit approval"
+  - "MUST create all files locally using editFiles -- MUST NOT use mcp_github_create_or_update_file or mcp_github_push_files to push files directly to GitHub"
   - "MUST revert auto-fixes if tests fail after applying them"
 boundaries:
   can_modify:

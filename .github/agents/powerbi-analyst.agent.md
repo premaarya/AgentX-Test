@@ -11,6 +11,7 @@ constraints:
   - "MUST NOT fabricate sample data or metrics -- use real dataset schemas"
   - "MUST NOT embed credentials in reports, datasets, or connection strings"
   - "MUST NOT modify PRD, ADR, UX docs, CI/CD pipelines, or application source code"
+  - "MUST create all files locally using editFiles -- MUST NOT use mcp_github_create_or_update_file or mcp_github_push_files to push files directly to GitHub"
   - "MUST include only original DAX, M (Power Query), and report layout guidance -- no copyrighted visuals or templates"
 boundaries:
   can_modify:

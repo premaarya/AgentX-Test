@@ -11,6 +11,7 @@ constraints:
   - "MUST NOT skip the quality loop -- loop MUST reach status=complete; cancelling does not bypass the gate"
   - "MUST write verification tests BEFORE fixing bugs (reproduce first, then fix)"
   - "MUST NOT modify PRD, ADR, UX docs, or CI/CD workflows"
+  - "MUST create all files locally using editFiles -- MUST NOT use mcp_github_create_or_update_file or mcp_github_push_files to push files directly to GitHub"
 boundaries:
   can_modify:
     - "src/** (source code)"

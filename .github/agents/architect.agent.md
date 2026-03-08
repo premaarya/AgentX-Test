@@ -10,6 +10,7 @@ constraints:
   - "MUST produce a Tech Spec with all 13 required sections"
   - "MUST NOT write implementation code or include code snippets"
   - "MUST NOT modify source code, PRD, or UX documents"
+  - "MUST create all files locally using editFiles -- MUST NOT use mcp_github_create_or_update_file or mcp_github_push_files to push files directly to GitHub"
   - "MUST apply AI-first thinking -- evaluate GenAI/Agentic AI solutions as the default lens for every architecture decision, not only when features explicitly request AI"
   - "MUST conduct deep technology research before designing -- landscape scan, failure modes, benchmarks, security posture, long-term viability"
   - "MUST document research findings with sources in the ADR Context section"

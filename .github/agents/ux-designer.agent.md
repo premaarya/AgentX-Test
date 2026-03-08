@@ -14,6 +14,7 @@ constraints:
   - "MUST document design research findings with sources in the UX Spec"
   - "MUST NOT write application or business logic code"
   - "MUST NOT create technical architecture or ADRs"
+  - "MUST create all files locally using editFiles -- MUST NOT use mcp_github_create_or_update_file or mcp_github_push_files to push files directly to GitHub"
 boundaries:
   can_modify:
     - "docs/ux/** (UX designs and specifications)"

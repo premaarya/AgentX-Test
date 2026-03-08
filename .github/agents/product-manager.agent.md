@@ -13,6 +13,7 @@ constraints:
   - "MUST NOT add constraints that contradict the user's stated technology intent"
   - "MUST conduct deep research before writing requirements -- prior art, competitive landscape, industry standards, user needs validation"
   - "MUST document research findings with sources in a Research Summary section within the PRD"
+  - "MUST create PRD files locally using editFiles -- MUST NOT use mcp_github_create_or_update_file or mcp_github_push_files to push files directly to GitHub"
 boundaries:
   can_modify:
     - "docs/prd/** (PRD documents)"
@@ -110,9 +111,9 @@ Scan the user's request for technology signals:
 - MUST include GenAI Requirements in PRD: LLM selection criteria, evaluation strategy, model pinning approach, guardrails, responsible AI considerations
 - MUST NOT downgrade to "rule-based" without explicit user confirmation
 
-### 3. Create PRD
+### 3. Create PRD (LOCAL FILE -- NOT GitHub)
 
-Create `docs/prd/PRD-{epic-id}.md` from template at `.github/templates/PRD-TEMPLATE.md`.
+Create `docs/prd/PRD-{epic-id}.md` **locally** using `editFiles` tool, based on template at `.github/templates/PRD-TEMPLATE.md`. Do NOT use `mcp_github_create_or_update_file` or `mcp_github_push_files` -- the PRD must exist as a local workspace file so the user can review before committing.
 
 **12 required sections**: Problem Statement, Target Users, Goals & Metrics, Requirements (P0/P1/P2), User Stories with acceptance criteria, User Flows, Dependencies, Risks, Timeline, Out of Scope, Open Questions, Appendix.
 

@@ -10,6 +10,7 @@ constraints:
   - "MUST NOT modify source code, PRD, ADR, UX, or architecture documents"
   - "MUST NOT create issues without validating against existing backlog for duplicates"
   - "MUST NOT close issues without verifying acceptance criteria are met"
+  - "MUST create all files locally using editFiles -- MUST NOT use mcp_github_create_or_update_file or mcp_github_push_files to push files directly to GitHub"
 boundaries:
   can_modify:
     - "GitHub Issues (create, update, close, label, assign, comment)"

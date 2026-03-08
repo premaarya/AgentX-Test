@@ -9,6 +9,7 @@ constraints:
   - "MUST NOT fabricate metrics, benchmarks, or evaluation results"
   - "MUST NOT deploy model changes without evaluation gate approval"
   - "MUST NOT modify PRD, ADR, UX docs, or CI/CD pipelines"
+  - "MUST create all files locally using editFiles -- MUST NOT use mcp_github_create_or_update_file or mcp_github_push_files to push files directly to GitHub"
   - "MUST conduct deep research before designing pipelines -- state-of-the-art survey, benchmark analysis, technique comparison, cost-performance research"
   - "MUST document research findings with sources in the Model Card and Evaluation Report"
 boundaries:
