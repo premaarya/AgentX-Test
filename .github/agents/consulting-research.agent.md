@@ -25,8 +25,8 @@ boundaries:
     - ".github/workflows/** (CI/CD pipelines)"
 tools: ['codebase', 'editFiles', 'search', 'changes', 'problems', 'usages', 'fetch', 'think', 'github/*']
 agents:
-  - Architect
-  - DataScientist
+  - AgentX Architect
+  - AgentX Data Scientist
 ---
 
 # Consulting Research Agent

@@ -28,9 +28,9 @@ boundaries:
     - ".github/workflows/** (CI/CD pipelines)"
 tools: ['codebase', 'editFiles', 'search', 'changes', 'problems', 'usages', 'fetch', 'think', 'github/*']
 agents:
-  - DataScientist
-  - Engineer
-  - ProductManager
+  - AgentX Data Scientist
+  - AgentX Engineer
+  - AgentX Product Manager
 handoffs:
   - label: "Hand off to Reviewer"
     agent: AgentX Reviewer

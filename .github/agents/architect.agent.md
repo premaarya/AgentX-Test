@@ -28,9 +28,9 @@ boundaries:
     - "tests/** (test code)"
 tools: ['codebase', 'editFiles', 'search', 'changes', 'problems', 'usages', 'fetch', 'think', 'github/*']
 agents:
-  - ProductManager
-  - DataScientist
-  - UXDesigner
+  - AgentX Product Manager
+  - AgentX Data Scientist
+  - AgentX UX Designer
 handoffs:
   - label: "Hand off to Engineer"
     agent: AgentX Engineer

@@ -26,7 +26,7 @@ boundaries:
     - "tests/** (test code)"
 tools: ['codebase', 'editFiles', 'search', 'changes', 'problems', 'fetch', 'think', 'github/*']
 agents:
-  - Architect
+  - AgentX Architect
   - GitHubOps
   - ADOOps
 handoffs:

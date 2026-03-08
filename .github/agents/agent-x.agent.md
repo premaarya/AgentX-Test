@@ -25,20 +25,20 @@ boundaries:
     - "docs/reviews/** (Reviewer deliverables)"
 tools: ['codebase', 'editFiles', 'search', 'changes', 'runCommands', 'problems', 'usages', 'fetch', 'think', 'github/*']
 agents:
-  - ProductManager
-  - Architect
-  - UXDesigner
-  - DataScientist
-  - Engineer
-  - Reviewer
-  - ReviewerAuto
-  - DevOpsEngineer
-  - Tester
-  - PowerBIAnalyst
-  - ConsultingResearch
+  - AgentX Product Manager
+  - AgentX Architect
+  - AgentX UX Designer
+  - AgentX Data Scientist
+  - AgentX Engineer
+  - AgentX Reviewer
+  - AgentX Auto-Fix Reviewer
+  - AgentX DevOps Engineer
+  - AgentX Tester
+  - AgentX Power BI Analyst
+  - AgentX Consulting Research
   - GitHubOps
   - ADOOps
-  - AgileCoach
+  - AgentX Agile Coach
 ---
 
 # Agent X - Hub Coordinator (Delegation-Only)

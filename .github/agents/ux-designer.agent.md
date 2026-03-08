@@ -27,7 +27,7 @@ boundaries:
     - "tests/** (test code)"
 tools: ['codebase', 'editFiles', 'search', 'changes', 'problems', 'usages', 'fetch', 'think', 'github/*']
 agents:
-  - ProductManager
+  - AgentX Product Manager
 handoffs:
   - label: "Hand off to Architect"
     agent: AgentX Architect

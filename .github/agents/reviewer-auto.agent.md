@@ -23,7 +23,7 @@ boundaries:
     - ".github/workflows/** (CI/CD pipelines)"
 tools: ['codebase', 'editFiles', 'search', 'changes', 'runCommands', 'problems', 'usages', 'fetch', 'think', 'github/*']
 agents:
-  - Engineer
+  - AgentX Engineer
 handoffs:
   - label: "Approve (with fixes) -> DevOps + Tester"
     agent: AgentX DevOps Engineer

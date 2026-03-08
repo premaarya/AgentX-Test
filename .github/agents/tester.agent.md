@@ -25,7 +25,7 @@ boundaries:
     - "docs/ux/** (UX documents)"
 tools: ['codebase', 'editFiles', 'search', 'changes', 'runCommands', 'problems', 'usages', 'fetch', 'think', 'github/*']
 agents:
-  - Engineer
+  - AgentX Engineer
   - GitHubOps
   - ADOOps
 handoffs:

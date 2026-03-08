@@ -27,8 +27,8 @@ boundaries:
     - ".github/workflows/** (CI/CD pipelines)"
 tools: ['codebase', 'editFiles', 'search', 'changes', 'runCommands', 'problems', 'usages', 'fetch', 'think', 'github/*']
 agents:
-  - Architect
-  - ProductManager
+  - AgentX Architect
+  - AgentX Product Manager
   - PromptEngineer
   - EvalSpecialist
   - OpsMonitor

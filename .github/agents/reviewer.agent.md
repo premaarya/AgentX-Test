@@ -22,8 +22,8 @@ boundaries:
     - "docs/adr/** (architecture docs)"
 tools: ['codebase', 'editFiles', 'search', 'changes', 'problems', 'usages', 'fetch', 'think', 'github/*']
 agents:
-  - Engineer
-  - ReviewerAuto
+  - AgentX Engineer
+  - AgentX Auto-Fix Reviewer
   - FunctionalReviewer
   - EvalSpecialist
   - GitHubOps
