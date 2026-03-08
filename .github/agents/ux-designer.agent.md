@@ -25,7 +25,7 @@ boundaries:
     - "docs/adr/** (architecture docs)"
     - "docs/prd/** (PRD documents)"
     - "tests/** (test code)"
-tools: ['codebase', 'editFiles', 'search', 'changes', 'runCommands', 'problems', 'usages', 'fetch', 'think', 'github/*']
+tools: ['codebase', 'editFiles', 'search', 'changes', 'problems', 'usages', 'fetch', 'think', 'github/*']
 agents:
   - ProductManager
 handoffs:

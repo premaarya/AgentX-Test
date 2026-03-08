@@ -20,7 +20,7 @@ boundaries:
     - "tests/** (test code)"
     - "docs/prd/** (PRD documents)"
     - "docs/adr/** (architecture docs)"
-tools: ['codebase', 'editFiles', 'search', 'changes', 'runCommands', 'problems', 'usages', 'fetch', 'think', 'github/*']
+tools: ['codebase', 'editFiles', 'search', 'changes', 'problems', 'usages', 'fetch', 'think', 'github/*']
 agents:
   - Engineer
   - ReviewerAuto

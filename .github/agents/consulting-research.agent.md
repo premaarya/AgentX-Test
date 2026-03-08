@@ -23,7 +23,7 @@ boundaries:
     - "docs/adr/** (architecture docs)"
     - "docs/ux/** (UX documents)"
     - ".github/workflows/** (CI/CD pipelines)"
-tools: ['codebase', 'editFiles', 'search', 'changes', 'runCommands', 'problems', 'usages', 'fetch', 'think', 'github/*']
+tools: ['codebase', 'editFiles', 'search', 'changes', 'problems', 'usages', 'fetch', 'think', 'github/*']
 agents:
   - Architect
   - DataScientist
