@@ -27,7 +27,7 @@ boundaries:
 tools: ['codebase', 'editFiles', 'search', 'changes', 'runCommands', 'problems', 'usages', 'fetch', 'think', 'github/*']
 agents:
   - AgentX Engineer
-  - OpsMonitor
+  - AgentX Ops Monitor
 handoffs:
   - label: "Pipelines Ready -> Engineer or Reviewer"
     agent: AgentX Engineer

@@ -29,27 +29,27 @@ agents:
   - AgentX
 handoffs:
   - label: "Triage Backlog"
-    agent: ADOOps
+    agent: AgentX ADO Ops
     prompt: "Scan work items in the backlog, classify by type and priority, apply tags, and flag stale or blocked items."
     send: false
     context: "Self-referencing workflow transition for triage mode"
   - label: "Discover Work"
-    agent: ADOOps
+    agent: AgentX ADO Ops
     prompt: "Search work items matching the given criteria. Summarize findings by type, state, and iteration."
     send: false
     context: "Self-referencing workflow transition for discovery mode"
   - label: "Plan Sprint"
-    agent: ADOOps
+    agent: AgentX ADO Ops
     prompt: "Select work items for the next iteration based on priority, capacity, and dependencies."
     send: false
     context: "Self-referencing workflow transition for sprint planning mode"
   - label: "Execute Work Item"
-    agent: ADOOps
+    agent: AgentX ADO Ops
     prompt: "Process a single work item: update state, assign, add context, or transition through board."
     send: false
     context: "Self-referencing workflow transition for execution mode"
   - label: "PRD to Work Items"
-    agent: ADOOps
+    agent: AgentX ADO Ops
     prompt: "Read the PRD and decompose it into ADO work items (Epics, Features, User Stories, Tasks) with proper hierarchy."
     send: false
     context: "Self-referencing workflow transition for PRD decomposition"

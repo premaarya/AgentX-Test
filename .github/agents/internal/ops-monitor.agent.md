@@ -35,10 +35,11 @@ Production AI operations specialist: AgentOps tracing setup, model drift detecti
 
 ## When Spawned
 
-Data Scientist or DevOps invokes:
+Data Scientist or DevOps Engineer invokes this agent with:
 
 ```
-runSubagent("OpsMonitor", "Context: [deployed model, current metrics, issue]. Task: [setup tracing/detect drift/configure alerts/analyze costs].")
+Context: [deployed model, current metrics, issue]
+Task: [setup tracing/detect drift/configure alerts/analyze costs]
 ```
 
 ## Execution Steps

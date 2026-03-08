@@ -27,8 +27,8 @@ boundaries:
 tools: ['codebase', 'editFiles', 'search', 'changes', 'problems', 'fetch', 'think', 'github/*']
 agents:
   - AgentX Architect
-  - GitHubOps
-  - ADOOps
+  - AgentX GitHub Ops
+  - AgentX ADO Ops
 handoffs:
   - label: "Hand off to UX"
     agent: AgentX UX Designer

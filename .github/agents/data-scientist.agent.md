@@ -29,10 +29,10 @@ tools: ['codebase', 'editFiles', 'search', 'changes', 'runCommands', 'problems',
 agents:
   - AgentX Architect
   - AgentX Product Manager
-  - PromptEngineer
-  - EvalSpecialist
-  - OpsMonitor
-  - RAGSpecialist
+  - AgentX Prompt Engineer
+  - AgentX Eval Specialist
+  - AgentX Ops Monitor
+  - AgentX RAG Specialist
 handoffs:
   - label: "Hand off to Reviewer"
     agent: AgentX Reviewer

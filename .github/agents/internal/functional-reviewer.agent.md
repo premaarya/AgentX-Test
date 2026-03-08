@@ -27,8 +27,7 @@ Invisible sub-agent spawned by the Code Reviewer to perform deep functional anal
 
 ## Trigger
 
-- Spawned by Reviewer agent via 
-unSubagent("FunctionalReviewer", ...)
+- Spawned by the Reviewer agent when deep functional analysis is needed
 - Never invoked directly by users or Agent X
 - Receives: branch name, base branch, issue number, and review context
 

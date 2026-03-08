@@ -34,10 +34,11 @@ Systematic AI evaluation specialist: design evaluation frameworks, implement aut
 
 ## When Spawned
 
-Data Scientist or Reviewer invokes:
+Data Scientist or Reviewer invokes this agent with:
 
 ```
-runSubagent("EvalSpecialist", "Context: [model, pipeline, test dataset]. Task: [design eval/run benchmark/compare models/certify quality].")
+Context: [model, pipeline, test dataset]
+Task: [design eval/run benchmark/compare models/certify quality]
 ```
 
 ## Execution Steps

@@ -27,8 +27,8 @@ tools: ['codebase', 'editFiles', 'search', 'changes', 'runCommands', 'problems',
 agents:
   - AgentX Architect
   - AgentX Reviewer
-  - PromptEngineer
-  - RAGSpecialist
+  - AgentX Prompt Engineer
+  - AgentX RAG Specialist
 handoffs:
   - label: "Hand off to Reviewer"
     agent: AgentX Reviewer

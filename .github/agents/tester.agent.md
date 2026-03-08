@@ -26,8 +26,8 @@ boundaries:
 tools: ['codebase', 'editFiles', 'search', 'changes', 'runCommands', 'problems', 'usages', 'fetch', 'think', 'github/*']
 agents:
   - AgentX Engineer
-  - GitHubOps
-  - ADOOps
+  - AgentX GitHub Ops
+  - AgentX ADO Ops
 handoffs:
   - label: "Defects Found -> Engineer"
     agent: AgentX Engineer

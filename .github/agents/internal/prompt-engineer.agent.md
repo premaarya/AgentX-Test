@@ -33,10 +33,11 @@ Full prompt lifecycle specialist: design, evaluate, test across models, iterate,
 
 ## When Spawned
 
-Data Scientist or Engineer invokes:
+Data Scientist or Engineer invokes this agent with:
 
 ```
-runSubagent("PromptEngineer", "Context: [issue, requirements, existing prompts]. Task: [design/evaluate/test/iterate].")
+Context: [issue, requirements, existing prompts]
+Task: [design/evaluate/test/iterate]
 ```
 
 ## Execution Steps

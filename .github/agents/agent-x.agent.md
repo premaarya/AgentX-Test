@@ -36,8 +36,8 @@ agents:
   - AgentX Tester
   - AgentX Power BI Analyst
   - AgentX Consulting Research
-  - GitHubOps
-  - ADOOps
+  - AgentX GitHub Ops
+  - AgentX ADO Ops
   - AgentX Agile Coach
 ---
 

@@ -24,10 +24,10 @@ tools: ['codebase', 'editFiles', 'search', 'changes', 'problems', 'usages', 'fet
 agents:
   - AgentX Engineer
   - AgentX Auto-Fix Reviewer
-  - FunctionalReviewer
-  - EvalSpecialist
-  - GitHubOps
-  - ADOOps
+  - AgentX Functional Reviewer
+  - AgentX Eval Specialist
+  - AgentX GitHub Ops
+  - AgentX ADO Ops
 handoffs:
   - label: "Approve -> DevOps + Tester"
     agent: AgentX DevOps Engineer

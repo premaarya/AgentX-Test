@@ -35,10 +35,11 @@ RAG pipeline specialist: document analysis, chunking strategy, embedding selecti
 
 ## When Spawned
 
-Data Scientist or Engineer invokes:
+Data Scientist or Engineer invokes this agent with:
 
 ```
-runSubagent("RAGSpecialist", "Context: [document corpus, query patterns, quality requirements]. Task: [design pipeline/optimize retrieval/evaluate quality/troubleshoot].")
+Context: [document corpus, query patterns, quality requirements]
+Task: [design pipeline/optimize retrieval/evaluate quality/troubleshoot]
 ```
 
 ## Execution Steps
