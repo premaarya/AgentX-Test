@@ -537,6 +537,12 @@
           "type": "boolean",
           "default": false,
           "description": "Skip the automatic version check that detects outdated framework files on extension activation. When enabled, you will not be prompted to update."
+        },
+        "agentx.companionDismissed": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "List of companion extension IDs for which the install prompt has been permanently dismissed."
         }
       }
     }

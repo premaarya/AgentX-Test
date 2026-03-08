@@ -13,6 +13,7 @@ import { registerChatParticipant } from './chat/chatParticipant';
 import { clearInstructionCache } from './chat/agentContextLoader';
 import { runSetupWizard, runSilentInstall } from './commands/setupWizard';
 import { silentVersionSync } from './utils/versionChecker';
+import { checkCompanionExtensions } from './utils/companionExtensions';
 
 let agentxContext: AgentXContext;
 
@@ -106,6 +107,9 @@ export function activate(context: vscode.ExtensionContext) {
 
  // Run silent install (non-blocking)
  runSilentInstall(agentxContext).catch(() => { /* ignore */ });
+
+ // Check companion extensions are installed (non-blocking)
+ checkCompanionExtensions().catch(() => { /* ignore */ });
 
  // Set initial context flags
  agentxContext.checkInitialized().then((initialized: boolean) => {
