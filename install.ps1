@@ -217,10 +217,10 @@ try {
 Expand-Archive -Path $ZIPFILE -DestinationPath $TMPRAW -Force
 $root = (Get-ChildItem $TMPRAW -Directory | Select-Object -First 1).FullName
 
-# Copy only essential paths (skip vscode-extension, tests, docs content, CHANGELOG, CONTRIBUTING, etc.)
+# Copy only essential paths (skip vscode-extension, tests, and large docs content)
 New-Item -ItemType Directory -Path $TMP -Force | Out-Null
 $neededDirs = @(".agentx", ".github", ".claude", ".vscode", "scripts", "packs")
-$neededFiles = @(".gitignore")
+$neededFiles = @(".gitignore", "AGENTS.md", "Skills.md")
 foreach ($d in $neededDirs) {
  $src = Join-Path $root $d
  if (Test-Path $src) { Copy-Item $src (Join-Path $TMP $d) -Recurse -Force }
@@ -261,7 +261,19 @@ Write-OK "$copied files installed ($skipped existing skipped)"
 # -- Step 3: Generate runtime files ----------------------
 Write-Host "[3] Configuring runtime..." -ForegroundColor Cyan
 
-@(".agentx/state",".agentx/digests","docs/prd","docs/adr","docs/specs","docs/architecture","memories","memories/session") | ForEach-Object {
+@(
+ ".agentx/state",
+ ".agentx/digests",
+ "docs/prd",
+ "docs/adr",
+ "docs/specs",
+ "docs/ux",
+ "docs/reviews",
+ "docs/progress",
+ "docs/architecture",
+ "memories",
+ "memories/session"
+) | ForEach-Object {
  if (-not (Test-Path $_)) { New-Item -ItemType Directory -Path $_ -Force | Out-Null }
 }
 

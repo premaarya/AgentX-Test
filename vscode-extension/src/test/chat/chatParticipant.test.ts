@@ -1,6 +1,11 @@
 import { strict as assert } from 'assert';
+import * as vscode from 'vscode';
 import { createMockResponseStream } from '../mocks/vscode';
-import { getAgentXChatFollowups, handleAgentXChatRequest } from '../../chat/chatParticipant';
+import {
+  getAgentXChatFollowups,
+  handleAgentXChatRequest,
+  resetChatParticipantStateForTests,
+} from '../../chat/chatParticipant';
 
 describe('chatParticipant', () => {
   it('streams live CLI status lines into chat progress', async () => {
@@ -85,6 +90,47 @@ describe('chatParticipant', () => {
       humanPrompt: 'Need your guidance on auth rollout.',
     });
     assert.ok(response.getMarkdown().includes('@agentx continue'));
+  });
+
+  it('summarizes large output in chat and writes the full transcript to the output channel', async () => {
+    const response = createMockResponseStream();
+    const largeOutput = Array.from({ length: 40 }, (_, index) => `line ${index + 1} ${'x'.repeat(120)}`).join('\n');
+    const written: string[] = [];
+    const originalCreateOutputChannel = vscode.window.createOutputChannel;
+    resetChatParticipantStateForTests();
+    (vscode.window as any).createOutputChannel = () => ({
+      appendLine: (value: string) => { written.push(value); },
+      append: (value: string) => { written.push(value); },
+      clear: () => { written.length = 0; },
+      show: () => undefined,
+      hide: () => undefined,
+      dispose: () => undefined,
+    });
+
+    const agentx = {
+      checkInitialized: async () => true,
+      runCliStreaming: async () => largeOutput,
+      clearPendingClarification: async () => undefined,
+    };
+
+    try {
+      await handleAgentXChatRequest(
+        { prompt: 'run engineer generate a large report' } as any,
+        response as any,
+        agentx as any,
+      );
+    } finally {
+      (vscode.window as any).createOutputChannel = originalCreateOutputChannel;
+    }
+
+    const markdown = response.getMarkdown();
+    assert.ok(markdown.includes('Large output detected'));
+    assert.ok(markdown.includes('Full output was written to the **AgentX Chat** output channel'));
+    assert.ok(markdown.includes('... (24 lines omitted) ...'));
+    assert.ok(!markdown.includes(largeOutput));
+    assert.ok(written.some((value) => value.includes('AgentX Chat Run: engineer')));
+    assert.ok(written.some((value) => value.includes('line 1')));
+    assert.ok(written.some((value) => value.includes('line 40')));
   });
 
   it('resumes a pending clarification with continue', async () => {

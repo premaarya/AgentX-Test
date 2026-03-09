@@ -13,9 +13,18 @@ const ARCHIVE_URL = `https://github.com/jnPiyush/AgentX/archive/refs/heads/${BRA
 /** Essential directories and files to extract (everything else is skipped).
  *  Agents, instructions, prompts, skills, templates, workflows, schemas,
  *  and security files are bundled in the extension. Only GitHub-specific
- *  runtime files need downloading. */
+ *  runtime files and core repo reference docs need downloading. */
 const ESSENTIAL_DIRS = ['.github/hooks', '.github/workflows', '.github/ISSUE_TEMPLATE'];
-const ESSENTIAL_FILES = ['.github/PULL_REQUEST_TEMPLATE.md', '.github/agent-delegation.md', '.github/agentx-security.yml', '.github/CODEOWNERS'];
+const ESSENTIAL_FILES = [
+ '.github/PULL_REQUEST_TEMPLATE.md',
+ '.github/agent-delegation.md',
+ '.github/agentx-security.yml',
+ '.github/CODEOWNERS',
+ 'AGENTS.md',
+ 'Skills.md',
+ 'docs/GUIDE.md',
+ 'docs/WORKFLOW.md',
+];
 
 /**
  * Register the AgentX: Add Integration command.
@@ -265,6 +274,8 @@ export function registerInitializeCommand(
  '.agentx/state', '.agentx/digests',
  'docs/prd', 'docs/adr', 'docs/specs',
  'docs/ux', 'docs/reviews', 'docs/progress',
+        'docs/architecture',
+        'memories', 'memories/session',
  ];
  for (const dir of runtimeDirs) {
  fs.mkdirSync(path.join(root, dir), { recursive: true });

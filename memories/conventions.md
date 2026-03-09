@@ -15,3 +15,6 @@
 - 2026-03-09: Prefer structured clarification handoff summaries over raw answer injection so the requesting agent gets participants, topic, status, recent exchanges, and final guidance in one context block.
 - 2026-03-09: For chat/CLI parity in the extension, prefer streaming the live CLI runner output into chat progress rather than rebuilding a second agent runtime in TypeScript.
 - 2026-03-09: When a CLI flow needs human input inside Copilot Chat, persist a resumable session and continue it with an explicit `@agentx continue "..."` turn instead of relying on stdin prompts.
+- 2026-03-09: Keep bulky AgentX chat stdout out of the Copilot thread; send the full transcript to a VS Code output channel and inline only a short preview when the payload is large.
+- 2026-03-09: Keep `tests/test-install.ps1` aligned with the real installer contract; if the installer advertises an operational repo scaffold, it must create the expected docs/runtime folders and ship the core reference docs used by the framework.
+- 2026-03-09: Keep the VS Code `agentx.initialize` scaffold aligned with `install.ps1`; extension-based setup must leave behind the same core docs and runtime directories or the workspace drifts depending on how AgentX was installed.

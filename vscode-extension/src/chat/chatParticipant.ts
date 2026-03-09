@@ -4,9 +4,14 @@ import { AgentXContext } from '../agentxContext';
 import { stripAnsi } from '../utils/stripAnsi';
 
 const PARTICIPANT_ID = 'agentx.chat';
+const CHAT_OUTPUT_CHANNEL_NAME = 'AgentX Chat';
+const CHAT_OUTPUT_INLINE_LIMIT = 4000;
+const CHAT_OUTPUT_PREVIEW_LINES = 8;
 
 const LIVE_STATUS_PATTERN = /\[(?:COMPACTION|CLARIFY(?: RESPONSE| DETAIL| \d+\/\d+)?|SELF-REVIEW|MODEL FALLBACK|LOOP WARNING|CIRCUIT BREAKER|TOOL ERROR|BOUNDARY BLOCKED|FAIL|WARN|PASS|HUMAN ESCALATION|HUMAN REQUIRED|HUMAN RESPONSE|HUMAN REQUIRED SESSION)\]|^\s*Iteration \d+\/\d+|^\s*Tool:/i;
 const HUMAN_REQUIRED_SESSION_PATTERN = /\[HUMAN REQUIRED SESSION\]\s+(.+)$/i;
+
+let chatOutputChannel: vscode.OutputChannel | undefined;
 
 function normalizeCliLine(line: string): string {
   return stripAnsi(line).trim();
@@ -18,6 +23,54 @@ function shouldSurfaceCliLine(line: string): boolean {
 
 function buildContinueGuidance(agentName: string): string {
   return `Clarification is waiting for your input for the ${agentName} agent. Continue with:\n\n- \`@agentx continue "your guidance here"\``;
+}
+
+function getChatOutputChannel(): vscode.OutputChannel {
+  if (!chatOutputChannel) {
+    chatOutputChannel = vscode.window.createOutputChannel(CHAT_OUTPUT_CHANNEL_NAME);
+  }
+  return chatOutputChannel;
+}
+
+function formatOutputPreview(output: string): string {
+  const normalized = stripAnsi(output).trim();
+  if (!normalized) {
+    return 'No output was produced.';
+  }
+
+  if (normalized.length <= CHAT_OUTPUT_INLINE_LIMIT) {
+    return normalized;
+  }
+
+  const lines = normalized.split(/\r?\n/);
+  const head = lines.slice(0, CHAT_OUTPUT_PREVIEW_LINES);
+  const tail = lines.slice(-CHAT_OUTPUT_PREVIEW_LINES);
+  const previewLines = [...head];
+
+  if (lines.length > CHAT_OUTPUT_PREVIEW_LINES * 2) {
+    previewLines.push(`... (${lines.length - (CHAT_OUTPUT_PREVIEW_LINES * 2)} lines omitted) ...`);
+  }
+
+  if (lines.length > CHAT_OUTPUT_PREVIEW_LINES) {
+    previewLines.push(...tail);
+  }
+
+  return [
+    `Large output detected (${lines.length} lines, ${normalized.length} chars). Full output was written to the **${CHAT_OUTPUT_CHANNEL_NAME}** output channel.`,
+    '',
+    'Preview:',
+    '```text',
+    previewLines.join('\n'),
+    '```',
+  ].join('\n');
+}
+
+function writeOutputToChannel(title: string, output: string): void {
+  const channel = getChatOutputChannel();
+  channel.clear();
+  channel.appendLine(title);
+  channel.appendLine('');
+  channel.appendLine(stripAnsi(output));
 }
 
 function buildPendingClarificationMessage(
@@ -69,6 +122,8 @@ async function resumePendingClarification(
       { AGENTX_NONINTERACTIVE_HUMAN: '1' },
     );
 
+    writeOutputToChannel(`AgentX Chat Resume: ${pending.agentName}`, output);
+
     if (nextPendingSessionId) {
       if (typeof agentx.setPendingClarification === 'function') {
         await agentx.setPendingClarification({
@@ -78,12 +133,12 @@ async function resumePendingClarification(
           humanPrompt: stripAnsi(output),
         });
       }
-      response.markdown(`${stripAnsi(output)}\n\n${buildContinueGuidance(pending.agentName)}`);
+      response.markdown(`${formatOutputPreview(output)}\n\n${buildContinueGuidance(pending.agentName)}`);
     } else {
       if (typeof agentx.clearPendingClarification === 'function') {
         await agentx.clearPendingClarification();
       }
-      response.markdown(stripAnsi(output));
+      response.markdown(formatOutputPreview(output));
     }
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -112,6 +167,10 @@ export async function getAgentXChatFollowups(
       label: 'Show pending clarification context',
     },
   ];
+}
+
+export function resetChatParticipantStateForTests(): void {
+  chatOutputChannel = undefined;
 }
 
 export async function handleAgentXChatRequest(
@@ -152,6 +211,9 @@ export async function handleAgentXChatRequest(
         },
         { AGENTX_NONINTERACTIVE_HUMAN: '1' },
       );
+
+      writeOutputToChannel(`AgentX Chat Run: ${agentName}`, output);
+
       if (pendingSessionId) {
         if (typeof agentx.setPendingClarification === 'function') {
           await agentx.setPendingClarification({
@@ -161,12 +223,12 @@ export async function handleAgentXChatRequest(
             humanPrompt: stripAnsi(output),
           });
         }
-        response.markdown(`${stripAnsi(output)}\n\n${buildContinueGuidance(agentName)}`);
+        response.markdown(`${formatOutputPreview(output)}\n\n${buildContinueGuidance(agentName)}`);
       } else {
         if (typeof agentx.clearPendingClarification === 'function') {
           await agentx.clearPendingClarification();
         }
-        response.markdown(stripAnsi(output));
+        response.markdown(formatOutputPreview(output));
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
