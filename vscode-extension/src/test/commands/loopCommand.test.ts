@@ -43,10 +43,15 @@ describe('registerLoopCommand', () => {
 
   it('should register the loop command', () => {
     assert.ok(registeredCallbacks['agentx.loop'], 'Missing agentx.loop');
+    assert.ok(registeredCallbacks['agentx.loopStart'], 'Missing agentx.loopStart');
+    assert.ok(registeredCallbacks['agentx.loopStatus'], 'Missing agentx.loopStatus');
+    assert.ok(registeredCallbacks['agentx.loopIterate'], 'Missing agentx.loopIterate');
+    assert.ok(registeredCallbacks['agentx.loopComplete'], 'Missing agentx.loopComplete');
+    assert.ok(registeredCallbacks['agentx.loopCancel'], 'Missing agentx.loopCancel');
   });
 
   it('should add the loop command to subscriptions', () => {
-    assert.strictEqual(fakeContext.subscriptions.length, 1);
+    assert.strictEqual(fakeContext.subscriptions.length, 6);
   });
 
   describe('agentx.loop (main)', () => {
@@ -82,6 +87,21 @@ describe('registerLoopCommand', () => {
 
       await registeredCallbacks['agentx.loop']!();
       assert.ok(fakeAgentx.runCli.calledWith('loop', ['cancel']));
+    });
+
+    it('should run the direct loopStart command', async () => {
+      fakeAgentx.checkInitialized.resolves(true);
+      sandbox.stub(vscode.window, 'showInputBox')
+        .onFirstCall().resolves('Implement harness')
+        .onSecondCall().resolves('10')
+        .onThirdCall().resolves('ALL_TESTS_PASSING')
+        .onCall(3).resolves('42');
+      fakeAgentx.runCli.resolves('Loop started');
+
+      await registeredCallbacks['agentx.loopStart']!();
+      assert.ok(fakeAgentx.runCli.calledWith('loop', sinon.match.array.deepEquals([
+        'start', '-p', '"Implement harness"', '-m', '10', '-c', '"ALL_TESTS_PASSING"', '-i', '42',
+      ])));
     });
   });
 

@@ -193,6 +193,37 @@ describe('AgentXContext', () => {
       const result = await ctx.checkInitialized();
       assert.equal(result, false);
     });
+
+    it('should persist pending clarification state in workspace storage', async () => {
+      const root = path.join(tmpBase, 'project');
+      fs.mkdirSync(root, { recursive: true });
+      createAgentXRoot(root);
+      __setWorkspaceFolders([{ path: root }]);
+
+      let stored: unknown;
+      const ctx = new AgentXContext({
+        ...fakeExtensionContext(),
+        workspaceState: {
+          get: () => stored,
+          update: async (_key: string, value: unknown) => { stored = value; },
+        },
+      });
+
+      await ctx.setPendingClarification({
+        sessionId: 'session-1',
+        agentName: 'engineer',
+        prompt: 'fix login',
+      });
+
+      assert.deepEqual(await ctx.getPendingClarification(), {
+        sessionId: 'session-1',
+        agentName: 'engineer',
+        prompt: 'fix login',
+      });
+
+      await ctx.clearPendingClarification();
+      assert.equal(await ctx.getPendingClarification(), undefined);
+    });
   });
 
   // --- Integration detection / getShell ---------------------------------
@@ -299,6 +330,43 @@ describe('AgentXContext', () => {
       __setWorkspaceFolders(undefined);
       const ctx = new AgentXContext(fakeExtensionContext());
       assert.equal(ctx.getCliCommand(), '');
+    });
+  });
+
+  // --- harness helpers -------------------------------------------------
+
+  describe('harness helpers', () => {
+    it('should resolve a state path under .agentx/state', () => {
+      const root = path.join(tmpBase, 'state-root');
+      fs.mkdirSync(root, { recursive: true });
+      createAgentXRoot(root);
+      __setWorkspaceFolders([{ path: root }]);
+
+      const ctx = new AgentXContext(fakeExtensionContext());
+      const statePath = ctx.getStatePath('harness-state.json');
+      assert.equal(statePath, path.join(root, '.agentx', 'state', 'harness-state.json'));
+    });
+
+    it('should list execution plan files relative to the workspace root', () => {
+      const root = path.join(tmpBase, 'plans-root');
+      fs.mkdirSync(path.join(root, 'docs', 'plans'), { recursive: true });
+      fs.mkdirSync(path.join(root, 'docs', 'adr'), { recursive: true });
+      createAgentXRoot(root);
+
+      fs.writeFileSync(path.join(root, 'docs', 'plans', 'alpha.md'), '# Alpha\n');
+      fs.writeFileSync(path.join(root, 'docs', 'adr', 'EXEC-PLAN-Beta.md'), '# Beta\n');
+      __setWorkspaceFolders([{ path: root }]);
+
+      const ctx = new AgentXContext(fakeExtensionContext());
+      const plans = ctx.listExecutionPlanFiles();
+      assert.deepEqual(plans, ['docs/adr/EXEC-PLAN-Beta.md', 'docs/plans/alpha.md']);
+    });
+
+    it('should return an empty execution plan list when workspace root is missing', () => {
+      __setWorkspaceFolders(undefined);
+      const ctx = new AgentXContext(fakeExtensionContext());
+      assert.deepEqual(ctx.listExecutionPlanFiles(), []);
+      assert.equal(ctx.getStatePath('harness-state.json'), undefined);
     });
   });
 
@@ -416,6 +484,40 @@ describe('AgentXContext', () => {
       assert.ok(Array.isArray(def!.handoffs), 'handoffs should be an array');
       assert.ok(def!.handoffs!.length > 0, 'handoffs should not be empty');
       assert.equal(def!.handoffs![0].agent, 'engineer');
+    });
+
+    it('should parse multiline list fields from frontmatter', async () => {
+      const root = path.join(tmpBase, 'agentdef-multiline-lists');
+      fs.mkdirSync(root, { recursive: true });
+      createAgentXRoot(root);
+      fs.mkdirSync(path.join(root, '.github', 'agents'), { recursive: true });
+      fs.writeFileSync(path.join(root, '.github', 'agents', 'lists.agent.md'), [
+        '---',
+        "description: 'Agent with multiline lists'",
+        'model: Claude Opus',
+        'tools:',
+        '  - read',
+        '  - edit',
+        'constraints:',
+        '  - no secrets',
+        '  - no destructive commands',
+        'agents:',
+        '  - engineer',
+        '  - reviewer',
+        '---',
+        '',
+        '# Lists Agent',
+        'Body content',
+      ].join('\n'));
+
+      __setWorkspaceFolders([{ path: root }]);
+      const ctx = new AgentXContext(fakeExtensionContext());
+      const def = await ctx.readAgentDef('lists.agent.md');
+
+      assert.ok(def, 'should parse agent definition');
+      assert.deepEqual(def!.tools, ['read', 'edit']);
+      assert.deepEqual(def!.constraints, ['no secrets', 'no destructive commands']);
+      assert.deepEqual(def!.agents, ['engineer', 'reviewer']);
     });
   });
 

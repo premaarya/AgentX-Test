@@ -5,6 +5,7 @@
 > The Feature PRDs (Sections 13-17) describe TypeScript implementations that were
 > **replaced by declarative architecture** in v8.0.0. The current architecture reference
 > is [AGENTS.md](../../AGENTS.md). Migration details: [MIGRATION-PLAN.md](../architecture/MIGRATION-PLAN.md).
+> Treat the feature implementation sections as archival planning context, not the current runtime contract.
 
 **Epic**: AgentX Full Solution
 **Status**: Approved

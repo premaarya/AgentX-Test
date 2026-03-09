@@ -66,6 +66,46 @@ jobs:
           done
           echo "broken=$BROKEN" >> "$GITHUB_OUTPUT"
 
+      - name: Harness Plan Health
+        id: harness
+        run: |
+          PLANS=0
+          GAPS=0
+          PLACEHOLDERS=0
+          PROGRESS_LOGS=0
+
+          if [ -d "docs/progress" ]; then
+            PROGRESS_LOGS=$(find docs/progress -name '*.md' | wc -l)
+          fi
+
+          if [ -d "docs/plans" ]; then
+            while IFS= read -r plan; do
+              [ -z "$plan" ] && continue
+              PLANS=$((PLANS + 1))
+
+              for section in \
+                "## Purpose / Big Picture" \
+                "## Progress" \
+                "## Decision Log" \
+                "## Plan of Work" \
+                "## Validation and Acceptance" \
+                "## Artifacts and Notes"; do
+                if ! grep -Fq "$section" "$plan"; then
+                  GAPS=$((GAPS + 1))
+                fi
+              done
+
+              if grep -Eq '^Observation:\s*$|^Evidence:\s*$|^Decision:\s*$|^Date/Author:\s*$|^\- \[ \] Acceptance evidence recorded$' "$plan"; then
+                PLACEHOLDERS=$((PLACEHOLDERS + 1))
+              fi
+            done < <(find docs/plans -name '*.md' | sort)
+          fi
+
+          echo "plans=$PLANS" >> "$GITHUB_OUTPUT"
+          echo "gaps=$GAPS" >> "$GITHUB_OUTPUT"
+          echo "placeholders=$PLACEHOLDERS" >> "$GITHUB_OUTPUT"
+          echo "progress_logs=$PROGRESS_LOGS" >> "$GITHUB_OUTPUT"
+
       - name: Generate Report
         run: |
           echo "# Weekly Status Report - $(date +%Y-%m-%d)" > /tmp/status.md
@@ -80,6 +120,8 @@ jobs:
           echo "| Templates | ${{ steps.metrics.outputs.templates }} |" >> /tmp/status.md
           echo "| Prompts | ${{ steps.metrics.outputs.prompts }} |" >> /tmp/status.md
           echo "| Workflows | ${{ steps.metrics.outputs.workflows }} |" >> /tmp/status.md
+          echo "| Execution Plans | ${{ steps.harness.outputs.plans }} |" >> /tmp/status.md
+          echo "| Progress Logs | ${{ steps.harness.outputs.progress_logs }} |" >> /tmp/status.md
           echo "" >> /tmp/status.md
           echo "## Health Checks" >> /tmp/status.md
           echo "" >> /tmp/status.md
@@ -96,6 +138,18 @@ jobs:
             echo "| Reference Links | [PASS] All valid |" >> /tmp/status.md
           else
             echo "| Reference Links | [FAIL] ${{ steps.links.outputs.broken }} broken link(s) |" >> /tmp/status.md
+          fi
+
+          if [ "${{ steps.harness.outputs.gaps }}" -eq 0 ]; then
+            echo "| Plan Structure | [PASS] Required sections present |" >> /tmp/status.md
+          else
+            echo "| Plan Structure | [FAIL] ${{ steps.harness.outputs.gaps }} missing required section(s) |" >> /tmp/status.md
+          fi
+
+          if [ "${{ steps.harness.outputs.placeholders }}" -eq 0 ]; then
+            echo "| Plan Placeholder Debt | [PASS] No obvious stale placeholders |" >> /tmp/status.md
+          else
+            echo "| Plan Placeholder Debt | [WARN] ${{ steps.harness.outputs.placeholders }} plan(s) still contain placeholder content |" >> /tmp/status.md
           fi
 
           echo "" >> /tmp/status.md

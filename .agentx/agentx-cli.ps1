@@ -125,13 +125,154 @@ function Invoke-WithJsonLock([string]$jsonPath, [string]$agent = 'cli', [scriptb
 
 function Get-Timestamp { return (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ') }
 
+function Get-ConfigValue($cfg, [string]$name, $default = $null) {
+    if ($cfg -is [hashtable]) {
+        if ($cfg.ContainsKey($name)) { return $cfg[$name] }
+        return $default
+    }
+
+    if ($null -eq $cfg) { return $default }
+    $prop = $cfg.PSObject.Properties[$name]
+    if ($prop) { return $prop.Value }
+    return $default
+}
+
 function Get-AgentXConfig {
     $cfg = Read-JsonFile $Script:CONFIG_FILE
-    if (-not $cfg) { return @{ mode = 'local' } }
+    if (-not $cfg) { return @{ provider = 'local'; mode = 'local' } }
     return $cfg
 }
 
-function Get-AgentXMode { return (Get-AgentXConfig).mode ?? 'local' }
+function Resolve-AgentXProviderName([string]$value) {
+    $normalized = if ($value) { $value.Trim().ToLowerInvariant() } else { 'local' }
+    switch ($normalized) {
+        'github' { return 'github' }
+        'ado' { return 'ado' }
+        'azure-devops' { return 'ado' }
+        'azure_devops' { return 'ado' }
+        'local' { return 'local' }
+        default { return 'local' }
+    }
+}
+
+function Get-AgentXProvider {
+    return (Get-AgentXProviderResolution).name
+}
+
+function Get-AgentXMode { return Get-AgentXProvider }
+
+function Get-AdoOrganizationUrl {
+    $cfg = Get-AgentXConfig
+    $organization = [string](Get-ConfigValue $cfg 'organization' '')
+    if ([string]::IsNullOrWhiteSpace($organization)) { return '' }
+    if ($organization -match '^https?://') { return $organization.TrimEnd('/') }
+    return "https://dev.azure.com/$($organization.Trim('/'))"
+}
+
+function Get-AdoProjectName {
+    $cfg = Get-AgentXConfig
+    return [string](Get-ConfigValue $cfg 'project' '')
+}
+
+function Test-CommandAvailable([string]$commandName) {
+    try {
+        $null = Get-Command $commandName -ErrorAction Stop
+        return $true
+    } catch {
+        return $false
+    }
+}
+
+function Test-InteractiveConsole {
+    try {
+        return -not [Console]::IsInputRedirected
+    } catch {
+        return $false
+    }
+}
+
+function Test-GitHubCliAuthenticated {
+    if (-not (Test-CommandAvailable 'gh')) { return $false }
+    try {
+        $null = & gh auth status 2>$null
+        $exitCode = if (Test-Path variable:LASTEXITCODE) { $LASTEXITCODE } else { 0 }
+        return $exitCode -eq 0
+    } catch {
+        return $false
+    }
+}
+
+$Script:ProviderInferencePrompted = $false
+
+function Try-PersistInferredProvider([string]$provider, [string]$reason) {
+    if ($Script:ProviderInferencePrompted) { return }
+    $Script:ProviderInferencePrompted = $true
+
+    if ($Script:JsonOutput -or $env:AGENTX_SUPPRESS_PROVIDER_PROMPT -eq '1' -or -not (Test-InteractiveConsole)) { return }
+
+    try {
+        Write-Host "$($C.y)  [WARN] Config says local mode, but $reason.$($C.n)"
+        $answer = Read-Host "  Switch config to provider '$provider' now? [Y/n]"
+        if ([string]::IsNullOrWhiteSpace($answer) -or $answer.Trim().ToLowerInvariant() -in @('y', 'yes')) {
+            Invoke-WithJsonLock $Script:CONFIG_FILE 'cli' {
+                $cfg = Get-AgentXConfig
+                $cfg.provider = $provider
+                Write-JsonFile $Script:CONFIG_FILE $cfg
+            }
+            Write-Host "$($C.g)  Provider updated to '$provider' in .agentx/config.json.$($C.n)"
+        }
+    } catch {
+        Write-Host "$($C.y)  [WARN] Failed to persist inferred provider '$provider': $_$($C.n)"
+    }
+}
+
+function Get-AgentXProviderResolution {
+    $cfg = Get-AgentXConfig
+    $provider = Get-ConfigValue $cfg 'provider'
+    $integration = Get-ConfigValue $cfg 'integration'
+    $mode = Get-ConfigValue $cfg 'mode'
+    $repo = [string](Get-ConfigValue $cfg 'repo' '')
+
+    if ($provider) {
+        $resolved = Resolve-AgentXProviderName "$provider"
+        return [PSCustomObject]@{ name = $resolved; source = 'provider'; inferred = $false; warning = '' }
+    }
+
+    if ($integration) {
+        $resolved = Resolve-AgentXProviderName "$integration"
+        return [PSCustomObject]@{ name = $resolved; source = 'integration'; inferred = $false; warning = '' }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($repo) -and (Test-GitHubCliAuthenticated)) {
+        $reason = "repo '$repo' is configured and GitHub CLI authentication is available"
+        if (Resolve-AgentXProviderName "$mode" -eq 'local') {
+            Try-PersistInferredProvider -provider 'github' -reason $reason
+        }
+        return [PSCustomObject]@{ name = 'github'; source = 'repo'; inferred = $true; warning = "Inferred GitHub provider because $reason." }
+    }
+
+    $resolved = Resolve-AgentXProviderName "$mode"
+    return [PSCustomObject]@{ name = $resolved; source = 'mode'; inferred = $false; warning = '' }
+}
+
+function Assert-AdoCliAvailable {
+    if (-not (Test-CommandAvailable 'az')) {
+        throw 'Azure CLI is required for ADO provider support. Install Azure CLI and the azure-devops extension.'
+    }
+}
+
+function Get-AgentXProviderInfo {
+    $providerResolution = Get-AgentXProviderResolution
+    $provider = $providerResolution.name
+    return [PSCustomObject]@{
+        name = $provider
+        source = $providerResolution.source
+        inferred = $providerResolution.inferred
+        warning = $providerResolution.warning
+        readyUsesExplicitReadyState = ($provider -eq 'local')
+        validationHost = if ($provider -eq 'github') { 'github-actions' } elseif ($provider -eq 'ado') { 'azure-pipelines' } else { 'local' }
+    }
+}
 
 # ---------------------------------------------------------------------------
 # Git-backed persistence helpers
@@ -406,6 +547,323 @@ function Get-Issue([int]$num) {
     return Read-JsonFile (Join-Path $Script:ISSUES_DIR "$num.json")
 }
 
+function Convert-GitHubIssueStateToIssueState([string]$state) {
+    $normalized = if ($state) { $state.Trim().ToLowerInvariant() } else { '' }
+    if ($normalized -eq 'closed') { return 'closed' }
+    return 'open'
+}
+
+function Convert-GitHubIssueToAgentXIssue($issue, [string]$status = '') {
+    return [PSCustomObject]@{
+        number = $issue.number
+        title = $issue.title
+        body = if ($issue.body) { $issue.body } else { '' }
+        state = Convert-GitHubIssueStateToIssueState $(if ($issue.state) { [string]$issue.state } else { '' })
+        url = if ($issue.url) { $issue.url } else { '' }
+        labels = @(($issue.labels ?? @()) | ForEach-Object {
+            if ($_ -is [string]) { $_ } else { $_.name }
+        } | Where-Object { $_ })
+        status = $status
+        comments = @($issue.comments | ForEach-Object {
+            [PSCustomObject]@{ body = $_.body; created = $_.createdAt }
+        })
+    }
+}
+
+function Convert-AdoStateToIssueState([string]$state) {
+    $normalized = if ($state) { $state.Trim().ToLowerInvariant() } else { '' }
+    if ($normalized -in @('closed', 'done', 'completed', 'removed')) { return 'closed' }
+    return 'open'
+}
+
+function Convert-AdoWorkItemToAgentXIssue($item) {
+    $fields = if ($item.fields) { $item.fields } else { [PSCustomObject]@{} }
+    $tagsRaw = ''
+    $tagsProp = $fields.PSObject.Properties['System.Tags']
+    if ($tagsProp) { $tagsRaw = [string]$tagsProp.Value }
+    $labels = @($tagsRaw -split ';' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+    $stateProp = $fields.PSObject.Properties['System.State']
+    $titleProp = $fields.PSObject.Properties['System.Title']
+    $descriptionProp = $fields.PSObject.Properties['System.Description']
+
+    return [PSCustomObject]@{
+        number = [int]$item.id
+        title = if ($titleProp) { [string]$titleProp.Value } else { "Work item $($item.id)" }
+        body = if ($descriptionProp) { [string]$descriptionProp.Value } else { '' }
+        state = Convert-AdoStateToIssueState $(if ($stateProp) { [string]$stateProp.Value } else { '' })
+        labels = $labels
+        status = if ($stateProp) { [string]$stateProp.Value } else { '' }
+        comments = @()
+    }
+}
+
+function Get-GitHubIssue([int]$num) {
+    $json = & gh issue view $num --json number,title,body,state,url,labels,comments 2>$null
+    if (-not $json) { return $null }
+    return Convert-GitHubIssueToAgentXIssue ($json | ConvertFrom-Json)
+}
+
+function Invoke-GitHubCli([string[]]$arguments, [string]$failureMessage, [switch]$AllowEmptyOutput) {
+    Assert-GitHubCliAvailable
+    $output = & gh @arguments 2>&1
+    $exitCode = if (Test-Path variable:LASTEXITCODE) { $LASTEXITCODE } else { 0 }
+    $outputText = ($output | Out-String).Trim()
+
+    if ($exitCode -ne 0) {
+        if ($outputText) {
+            throw "$failureMessage $outputText"
+        }
+        throw $failureMessage
+    }
+
+    if (-not $AllowEmptyOutput -and [string]::IsNullOrWhiteSpace($outputText)) {
+        throw $failureMessage
+    }
+
+    return $output
+}
+
+function Get-GitHubRepoSlug {
+    $cfg = Get-AgentXConfig
+    $repo = [string](Get-ConfigValue $cfg 'repo' '')
+    if (-not [string]::IsNullOrWhiteSpace($repo)) { return $repo }
+
+    try {
+        $remoteUrl = (& git -C $Script:ROOT remote get-url origin 2>$null | Out-String).Trim()
+        if ($remoteUrl -match 'github\.com[:/]([^/]+/[^/.]+)') {
+            return $Matches[1].Trim()
+        }
+    } catch { }
+
+    return ''
+}
+
+function Get-GitHubProjectOwner {
+    $cfg = Get-AgentXConfig
+    $owner = [string](Get-ConfigValue $cfg 'projectOwner' '')
+    if (-not [string]::IsNullOrWhiteSpace($owner)) { return $owner }
+
+    $repo = Get-GitHubRepoSlug
+    if ($repo -match '^([^/]+)/') { return $Matches[1] }
+    return ''
+}
+
+function Get-GitHubProjectNumber {
+    $cfg = Get-AgentXConfig
+    $project = Get-ConfigValue $cfg 'project'
+    if ($project -is [int]) { return $project }
+    if ($project -and "$project" -match '^\d+$') { return [int]$project }
+    return 0
+}
+
+function Test-GitHubProjectConfigured {
+    return (Get-GitHubProjectNumber) -gt 0
+}
+
+function Resolve-GitHubProjectStatusName([string]$status) {
+    $cfg = Get-AgentXConfig
+    $customMap = Get-ConfigValue $cfg 'githubProjectStatusMap'
+    if ($customMap) {
+        if ($customMap -is [hashtable]) {
+            if ($customMap.ContainsKey($status)) { return [string]$customMap[$status] }
+        } else {
+            $prop = $customMap.PSObject.Properties[$status]
+            if ($prop) { return [string]$prop.Value }
+        }
+    }
+
+    switch ($status) {
+        'Backlog' { return 'Backlog' }
+        'Ready' { return 'Ready' }
+        'In Progress' { return 'In progress' }
+        'In Review' { return 'In review' }
+        'Validating' { return 'In review' }
+        'Done' { return 'Done' }
+        default { return $status }
+    }
+}
+
+function Get-GitHubProjectView {
+    $projectNumber = Get-GitHubProjectNumber
+    $owner = Get-GitHubProjectOwner
+    if ($projectNumber -le 0 -or [string]::IsNullOrWhiteSpace($owner)) { return $null }
+
+    $json = & gh project view $projectNumber --owner $owner --format json 2>$null
+    if (-not $json) { return $null }
+    $result = $json | ConvertFrom-Json
+    if ($result.PSObject.Properties['id']) { return $result }
+    if ($result.PSObject.Properties['project']) { return $result.project }
+    return $result
+}
+
+function Get-GitHubProjectStatusField {
+    Assert-GitHubCliAvailable
+    $projectNumber = Get-GitHubProjectNumber
+    $owner = Get-GitHubProjectOwner
+    if ($projectNumber -le 0 -or [string]::IsNullOrWhiteSpace($owner)) { return $null }
+
+    $json = & gh project field-list $projectNumber --owner $owner --format json 2>$null
+    if (-not $json) { return $null }
+    $result = $json | ConvertFrom-Json
+    $fields = if ($result.PSObject.Properties['fields']) { @($result.fields) } else { @($result) }
+    return ($fields | Where-Object { $_.name -eq 'Status' } | Select-Object -First 1)
+}
+
+function Get-GitHubProjectIssueItem([int]$issueNumber) {
+    Assert-GitHubCliAvailable
+    $projectNumber = Get-GitHubProjectNumber
+    $owner = Get-GitHubProjectOwner
+    $repo = Get-GitHubRepoSlug
+    if ($projectNumber -le 0 -or [string]::IsNullOrWhiteSpace($owner)) { return $null }
+
+    $json = & gh project item-list $projectNumber --owner $owner --limit 500 --format json 2>$null
+    if (-not $json) { return $null }
+    $result = $json | ConvertFrom-Json
+    $items = if ($result.PSObject.Properties['items']) { @($result.items) } else { @($result) }
+
+    return ($items | Where-Object {
+        $content = $_.content
+        if (-not $content) { return $false }
+        $matchesNumber = ($content.PSObject.Properties['number'] -and [int]$content.number -eq $issueNumber)
+        if (-not $matchesNumber) { return $false }
+        if ([string]::IsNullOrWhiteSpace($repo)) { return $true }
+        return ($content.repository -eq $repo) -or ($content.url -like "*/issues/$issueNumber")
+    } | Select-Object -First 1)
+}
+
+function Get-GitHubProjectIssueStatusMap {
+    $map = @{}
+    $projectNumber = Get-GitHubProjectNumber
+    $owner = Get-GitHubProjectOwner
+    $repo = Get-GitHubRepoSlug
+    if ($projectNumber -le 0 -or [string]::IsNullOrWhiteSpace($owner)) { return $map }
+
+    $json = & gh project item-list $projectNumber --owner $owner --limit 500 --format json 2>$null
+    if (-not $json) { return $map }
+    $result = $json | ConvertFrom-Json
+    $items = if ($result.PSObject.Properties['items']) { @($result.items) } else { @($result) }
+
+    foreach ($item in $items) {
+        $content = $item.content
+        if (-not $content) { continue }
+        if (-not $content.PSObject.Properties['number']) { continue }
+        $issueNumber = [int]$content.number
+        if ($issueNumber -le 0) { continue }
+        if (-not [string]::IsNullOrWhiteSpace($repo)) {
+            $matchesRepo = ($content.repository -eq $repo) -or ($content.url -like "*/issues/$issueNumber")
+            if (-not $matchesRepo) { continue }
+        }
+        $map[$issueNumber] = if ($item.PSObject.Properties['status']) { [string]$item.status } else { '' }
+    }
+
+    return $map
+}
+
+function Ensure-GitHubIssueInProject([int]$issueNumber) {
+    $existing = Get-GitHubProjectIssueItem $issueNumber
+    if ($existing) { return $existing }
+
+    $projectNumber = Get-GitHubProjectNumber
+    $owner = Get-GitHubProjectOwner
+    $repo = Get-GitHubRepoSlug
+    if ($projectNumber -le 0 -or [string]::IsNullOrWhiteSpace($owner) -or [string]::IsNullOrWhiteSpace($repo)) { return $null }
+
+    $issueUrl = "https://github.com/$repo/issues/$issueNumber"
+    try {
+        $args = @('project', 'item-add', "$projectNumber", '--owner', $owner, '--url', $issueUrl)
+        $null = Invoke-GitHubCli $args "Failed to add GitHub issue #$issueNumber to project $projectNumber." -AllowEmptyOutput
+    } catch {
+        return $null
+    }
+    return Get-GitHubProjectIssueItem $issueNumber
+}
+
+function Set-GitHubProjectIssueStatus([int]$issueNumber, [string]$status, [bool]$addIfMissing = $false) {
+    $projectInfo = Get-GitHubProjectView
+    if (-not $projectInfo) { return $false }
+
+    $statusField = Get-GitHubProjectStatusField
+    if (-not $statusField) { return $false }
+
+    $targetStatusName = Resolve-GitHubProjectStatusName $status
+    $targetOption = ($statusField.options | Where-Object { $_.name -ieq $targetStatusName } | Select-Object -First 1)
+    if (-not $targetOption) { return $false }
+
+    $item = if ($addIfMissing) { Ensure-GitHubIssueInProject $issueNumber } else { Get-GitHubProjectIssueItem $issueNumber }
+    if (-not $item) { return $false }
+
+    try {
+        $args = @('project', 'item-edit', '--id', $item.id, '--project-id', $projectInfo.id, '--field-id', $statusField.id, '--single-select-option-id', $targetOption.id)
+        $null = Invoke-GitHubCli $args "Failed to set GitHub project status for issue #$issueNumber." -AllowEmptyOutput
+        return $true
+    } catch {
+        return $false
+    }
+}
+
+function Get-AdoIssue([int]$num) {
+    Assert-AdoCliAvailable
+    $orgUrl = Get-AdoOrganizationUrl
+    $project = Get-AdoProjectName
+    if ([string]::IsNullOrWhiteSpace($orgUrl) -or [string]::IsNullOrWhiteSpace($project)) {
+        throw 'ADO provider requires organization and project in .agentx/config.json.'
+    }
+    $json = & az boards work-item show --id $num --organization $orgUrl --project $project --output json 2>$null
+    if (-not $json) { return $null }
+    return Convert-AdoWorkItemToAgentXIssue ($json | ConvertFrom-Json)
+}
+
+function Assert-GitHubCliAvailable {
+    if (-not (Test-CommandAvailable 'gh')) {
+        throw 'GitHub CLI is required for GitHub provider support. Install gh and run gh auth login.'
+    }
+}
+
+function ConvertTo-IssueLabels([string]$labelStr) {
+    if (-not $labelStr) { return @() }
+    return @(($labelStr -split ',') | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+}
+
+function Get-IssueTypeFromLabels([string[]]$labels) {
+    foreach ($label in @($labels)) {
+        if ($label -match '^type:(.+)$') { return $Matches[1].Trim().ToLowerInvariant() }
+    }
+    return 'story'
+}
+
+function Convert-AgentXTypeToAdoWorkItemType([string[]]$labels) {
+    switch (Get-IssueTypeFromLabels $labels) {
+        'epic' { return 'Epic' }
+        'feature' { return 'Feature' }
+        'bug' { return 'Bug' }
+        'story' { return 'User Story' }
+        default { return 'Task' }
+    }
+}
+
+function Convert-AgentXStatusToAdoState([string]$status) {
+    $cfg = Get-AgentXConfig
+    $customMap = Get-ConfigValue $cfg 'adoStateMap'
+    if ($customMap) {
+        if ($customMap -is [hashtable]) {
+            if ($customMap.ContainsKey($status)) { return [string]$customMap[$status] }
+        } else {
+            $prop = $customMap.PSObject.Properties[$status]
+            if ($prop) { return [string]$prop.Value }
+        }
+    }
+
+    switch ($status) {
+        'Backlog' { return 'New' }
+        'Ready' { return 'New' }
+        'In Progress' { return 'Active' }
+        'In Review' { return 'Resolved' }
+        'Validating' { return 'Resolved' }
+        'Done' { return 'Closed' }
+        default { return $status }
+    }
+}
+
 function Save-Issue($issue) {
     if ((Get-PersistenceMode) -eq 'git') {
         Write-GitJson "issues/$($issue.number).json" $issue "issue: update #$($issue.number) - $($issue.title)"
@@ -416,12 +874,73 @@ function Save-Issue($issue) {
 }
 
 function Invoke-IssueCreate {
+    $provider = Get-AgentXProvider
     $title = Get-Flag @('-t', '--title')
     $body = Get-Flag @('-b', '--body')
     $labelStr = Get-Flag @('-l', '--labels')
     if (-not $title) { Write-Host 'Error: --title is required'; exit 1 }
 
-    $labels = if ($labelStr) { ($labelStr -split ',') | ForEach-Object { $_.Trim() } | Where-Object { $_ } } else { @() }
+    $labels = ConvertTo-IssueLabels $labelStr
+
+    if ($provider -eq 'github') {
+        $args = @('issue', 'create', '--title', $title)
+        if ($body) { $args += @('--body', $body) }
+        foreach ($label in $labels) {
+            $args += @('--label', $label)
+        }
+
+        try {
+            $result = Invoke-GitHubCli $args "Failed to create GitHub issue '$title'."
+        } catch {
+            Write-Host "Error: $($_.Exception.Message)"
+            exit 1
+        }
+        $issueNumber = 0
+        $resultText = ($result | Out-String).Trim()
+        if ($resultText -match '/issues/(\d+)') {
+            $issueNumber = [int]$Matches[1]
+        }
+        $issue = if ($issueNumber -gt 0) { Get-GitHubIssue $issueNumber } else { $null }
+        if (-not $issue) {
+            Write-Host "Error: GitHub issue was created but could not be read back for verification."
+            exit 1
+        }
+        if (Test-GitHubProjectConfigured) {
+            if (-not (Set-GitHubProjectIssueStatus $issue.number 'Backlog' $true)) {
+                Write-Host "$($C.y)GitHub project status was not updated for issue #$($issue.number). Ensure the configured project is accessible and has a matching Status option.$($C.n)"
+            }
+        }
+        Write-Host "$($C.g)Created issue #$($issue.number): $($issue.title)$($C.n)"
+        if ($Script:JsonOutput) { $issue | ConvertTo-Json -Depth 5 }
+        return
+    }
+
+    if ($provider -eq 'ado') {
+        Assert-AdoCliAvailable
+        $orgUrl = Get-AdoOrganizationUrl
+        $project = Get-AdoProjectName
+        if ([string]::IsNullOrWhiteSpace($orgUrl) -or [string]::IsNullOrWhiteSpace($project)) {
+            Write-Host 'Error: ADO provider requires organization and project in .agentx/config.json'; exit 1
+        }
+
+        $workItemType = Get-Flag @('--type')
+        if (-not $workItemType) { $workItemType = Convert-AgentXTypeToAdoWorkItemType $labels }
+
+        $args = @('boards', 'work-item', 'create', '--title', $title, '--type', $workItemType, '--organization', $orgUrl, '--project', $project, '--output', 'json')
+        if ($body) { $args += @('--description', $body) }
+        if ($labels.Count -gt 0) { $args += @('--fields', "System.Tags=$($labels -join '; ')") }
+
+        $json = & az @args 2>$null
+        $issue = if ($json) { Convert-AdoWorkItemToAgentXIssue ($json | ConvertFrom-Json) } else { $null }
+        if (-not $issue) {
+            Write-Host "$($C.g)Created ADO work item: $title$($C.n)"
+            return
+        }
+        Write-Host "$($C.g)Created issue #$($issue.number): $($issue.title)$($C.n)"
+        if ($Script:JsonOutput) { $issue | ConvertTo-Json -Depth 5 }
+        return
+    }
+
     $num = Get-NextIssueNumber
 
     $issue = [PSCustomObject]@{
@@ -441,17 +960,105 @@ function Invoke-IssueCreate {
 }
 
 function Invoke-IssueUpdate {
+    $provider = Get-AgentXProvider
     $num = [int](Get-Flag @('-n', '--number') '0')
     if (-not $num) { Write-Host 'Error: --number required'; exit 1 }
-    $issue = Get-Issue $num
+    $issue = if ($provider -eq 'github') { Get-GitHubIssue $num } elseif ($provider -eq 'ado') { Get-AdoIssue $num } else { Get-Issue $num }
     if (-not $issue) { Write-Host "Error: Issue #$num not found"; exit 1 }
 
     $title = Get-Flag @('-t', '--title')
+    $body = Get-Flag @('-b', '--body')
     $status = Get-Flag @('-s', '--status')
     $labelStr = Get-Flag @('-l', '--labels')
+
+    if ($provider -eq 'github') {
+        $args = @('issue', 'edit', "$num")
+        $hasEdit = $false
+
+        if ($title) {
+            $args += @('--title', $title)
+            $hasEdit = $true
+        }
+        if ($body) {
+            $args += @('--body', $body)
+            $hasEdit = $true
+        }
+        if ($labelStr) {
+            $newLabels = ConvertTo-IssueLabels $labelStr
+            $existingLabels = @($issue.labels)
+            foreach ($label in $newLabels | Where-Object { $_ -notin $existingLabels }) {
+                $args += @('--add-label', $label)
+                $hasEdit = $true
+            }
+            foreach ($label in $existingLabels | Where-Object { $_ -notin $newLabels }) {
+                $args += @('--remove-label', $label)
+                $hasEdit = $true
+            }
+        }
+
+        if ($hasEdit) {
+            try {
+                $null = Invoke-GitHubCli $args "Failed to update GitHub issue #$num." -AllowEmptyOutput
+            } catch {
+                Write-Host "Error: $($_.Exception.Message)"
+                exit 1
+            }
+        }
+        if ($status) {
+            if (-not (Set-GitHubProjectIssueStatus $num $status $false)) {
+                if (Test-GitHubProjectConfigured) {
+                    Write-Host "$($C.y)GitHub project status was not updated for issue #${num}. Ensure the issue is added to the configured project and the project has a matching Status option.$($C.n)"
+                } else {
+                    Write-Host "$($C.y)GitHub project status was not updated because no project number is configured. Set .agentx/config.json `project` to enable Project V2 status sync.$($C.n)"
+                }
+            }
+        }
+
+        $updatedIssue = Get-GitHubIssue $num
+        Write-Host "$($C.g)Updated issue #${num}$($C.n)"
+        if ($Script:JsonOutput) { $updatedIssue | ConvertTo-Json -Depth 5 }
+        return
+    }
+
+    if ($provider -eq 'ado') {
+        Assert-AdoCliAvailable
+        $orgUrl = Get-AdoOrganizationUrl
+        $project = Get-AdoProjectName
+        $args = @('boards', 'work-item', 'update', '--id', "$num", '--organization', $orgUrl, '--project', $project, '--output', 'json')
+        $hasEdit = $false
+
+        if ($title) {
+            $args += @('--title', $title)
+            $hasEdit = $true
+        }
+        if ($body) {
+            $args += @('--description', $body)
+            $hasEdit = $true
+        }
+        if ($status) {
+            $args += @('--state', (Convert-AgentXStatusToAdoState $status))
+            $hasEdit = $true
+        }
+        if ($labelStr) {
+            $labels = ConvertTo-IssueLabels $labelStr
+            $args += @('--fields', "System.Tags=$($labels -join '; ')")
+            $hasEdit = $true
+        }
+
+        if ($hasEdit) {
+            $null = & az @args 2>$null
+        }
+
+        $updatedIssue = Get-AdoIssue $num
+        Write-Host "$($C.g)Updated issue #${num}$($C.n)"
+        if ($Script:JsonOutput) { $updatedIssue | ConvertTo-Json -Depth 5 }
+        return
+    }
+
     if ($title) { $issue.title = $title }
     if ($status) { $issue.status = $status }
-    if ($labelStr) { $issue.labels = @(($labelStr -split ',') | ForEach-Object { $_.Trim() } | Where-Object { $_ }) }
+    if ($body) { $issue.body = $body }
+    if ($labelStr) { $issue.labels = @(ConvertTo-IssueLabels $labelStr) }
     $issue.updated = Get-Timestamp
     Save-Issue $issue
     Write-Host "$($C.g)Updated issue #${num}$($C.n)"
@@ -459,9 +1066,45 @@ function Invoke-IssueUpdate {
 }
 
 function Invoke-IssueClose {
+    $provider = Get-AgentXProvider
     $num = [int](Get-Flag @('-n', '--number') '')
     if (-not $num -and $Script:SubArgs.Count -gt 0) { $num = [int]$Script:SubArgs[0] }
     if (-not $num) { Write-Host 'Error: issue number required'; exit 1 }
+
+    if ($provider -eq 'github') {
+        try {
+            $args = @('issue', 'close', "$num", '--reason', 'completed')
+            $null = Invoke-GitHubCli $args "Failed to close GitHub issue #$num." -AllowEmptyOutput
+        } catch {
+            Write-Host "Error: $($_.Exception.Message)"
+            exit 1
+        }
+        if (Test-GitHubProjectConfigured) {
+            if (-not (Set-GitHubProjectIssueStatus $num 'Done' $false)) {
+                Write-Host "$($C.y)GitHub issue #${num} was closed, but the configured project status could not be updated to Done.$($C.n)"
+            }
+        }
+        Write-Host "$($C.g)Closed issue #${num}$($C.n)"
+        if ($Script:JsonOutput) {
+            $issue = Get-GitHubIssue $num
+            if ($issue) { $issue | ConvertTo-Json -Depth 5 }
+        }
+        return
+    }
+
+    if ($provider -eq 'ado') {
+        Assert-AdoCliAvailable
+        $orgUrl = Get-AdoOrganizationUrl
+        $project = Get-AdoProjectName
+        $null = & az boards work-item update --id $num --state Closed --organization $orgUrl --project $project --output json 2>$null
+        Write-Host "$($C.g)Closed issue #${num}$($C.n)"
+        if ($Script:JsonOutput) {
+            $issue = Get-AdoIssue $num
+            if ($issue) { $issue | ConvertTo-Json -Depth 5 }
+        }
+        return
+    }
+
     $issue = Get-Issue $num
     if (-not $issue) { Write-Host "Error: Issue #$num not found"; exit 1 }
     $issue.state = 'closed'; $issue.status = 'Done'; $issue.updated = Get-Timestamp
@@ -470,18 +1113,50 @@ function Invoke-IssueClose {
 }
 
 function Invoke-IssueGet {
+    $provider = Get-AgentXProvider
     $num = [int](Get-Flag @('-n', '--number') '')
     if (-not $num -and $Script:SubArgs.Count -gt 0) { $num = [int]$Script:SubArgs[0] }
     if (-not $num) { Write-Host 'Error: issue number required'; exit 1 }
-    $issue = Get-Issue $num
+    $issue = if ($provider -eq 'github') { Get-GitHubIssue $num } elseif ($provider -eq 'ado') { Get-AdoIssue $num } else { Get-Issue $num }
     if (-not $issue) { Write-Host "Error: Issue #$num not found"; exit 1 }
     $issue | ConvertTo-Json -Depth 5
 }
 
 function Invoke-IssueComment {
+    $provider = Get-AgentXProvider
     $num = [int](Get-Flag @('-n', '--number') '0')
     $body = Get-Flag @('-c', '--comment', '-b', '--body')
     if (-not $num -or -not $body) { Write-Host 'Error: --number and --comment required'; exit 1 }
+
+    if ($provider -eq 'github') {
+        try {
+            $args = @('issue', 'comment', "$num", '--body', $body)
+            $null = Invoke-GitHubCli $args "Failed to add a comment to GitHub issue #$num." -AllowEmptyOutput
+        } catch {
+            Write-Host "Error: $($_.Exception.Message)"
+            exit 1
+        }
+        Write-Host "$($C.g)Added comment to issue #${num}$($C.n)"
+        if ($Script:JsonOutput) {
+            $issue = Get-GitHubIssue $num
+            if ($issue) { $issue | ConvertTo-Json -Depth 5 }
+        }
+        return
+    }
+
+    if ($provider -eq 'ado') {
+        Assert-AdoCliAvailable
+        $orgUrl = Get-AdoOrganizationUrl
+        $project = Get-AdoProjectName
+        $null = & az boards work-item update --id $num --discussion $body --organization $orgUrl --project $project --output json 2>$null
+        Write-Host "$($C.g)Added comment to issue #${num}$($C.n)"
+        if ($Script:JsonOutput) {
+            $issue = Get-AdoIssue $num
+            if ($issue) { $issue | ConvertTo-Json -Depth 5 }
+        }
+        return
+    }
+
     $issue = Get-Issue $num
     if (-not $issue) { Write-Host "Error: Issue #$num not found"; exit 1 }
     $comment = [PSCustomObject]@{ body = $body; created = Get-Timestamp }
@@ -492,15 +1167,12 @@ function Invoke-IssueComment {
 }
 
 function Invoke-IssueList {
-    if (-not (Test-Path $Script:ISSUES_DIR)) { Write-Host 'No issues found.'; return }
-    $files = Get-ChildItem $Script:ISSUES_DIR -Filter '*.json'
-    $issues = @($files | ForEach-Object { Read-JsonFile $_.FullName } | Where-Object { $_ })
-    $issues = @($issues | Sort-Object -Property number -Descending)
+    $issues = @(Get-AllIssues | Sort-Object -Property number -Descending)
 
     if ($Script:JsonOutput) { $issues | ConvertTo-Json -Depth 5; return }
     if ($issues.Count -eq 0) { Write-Host "$($C.y)No issues found.$($C.n)"; return }
 
-    Write-Host "`n$($C.c)Local Issues:$($C.n)"
+    Write-Host "`n$($C.c)Issues [$((Get-AgentXProviderInfo).name)]:$($C.n)"
     Write-Host "$($C.c)===========================================================$($C.n)"
     foreach ($i in $issues) {
         $icon = if ($i.state -eq 'open') { '( )' } else { '(*)' }
@@ -515,22 +1187,48 @@ function Invoke-IssueList {
 # ---------------------------------------------------------------------------
 
 function Get-AllIssues {
-    $mode = Get-AgentXMode
-    if ($mode -eq 'github') {
+    $provider = Get-AgentXProvider
+    if ($provider -eq 'github') {
         try {
-            $json = & gh issue list --state open --json number,title,labels,body,state --limit 200 2>$null
+            $json = & gh issue list --state all --json number,title,labels,body,state --limit 200 2>$null
             if ($json) {
                 $raw = $json | ConvertFrom-Json
+                $statusByIssue = if (Test-GitHubProjectConfigured) { Get-GitHubProjectIssueStatusMap } else { @{} }
                 return @($raw | ForEach-Object {
-                    [PSCustomObject]@{
-                        number = $_.number
-                        title  = $_.title
-                        body   = $_.body ?? ''
-                        state  = $_.state
-                        labels = @(($_.labels ?? @()) | ForEach-Object { $_.name })
-                        status = ''
+                    $status = ''
+                    $issueNumber = [int]$_.number
+                    if ($statusByIssue.ContainsKey($issueNumber)) {
+                        $status = [string]$statusByIssue[$issueNumber]
                     }
+                    Convert-GitHubIssueToAgentXIssue $_ $status
                 })
+            }
+        } catch { <# fall through to local #> }
+    }
+    if ($provider -eq 'ado') {
+        try {
+            Assert-AdoCliAvailable
+            $orgUrl = Get-AdoOrganizationUrl
+            $project = Get-AdoProjectName
+            if (-not [string]::IsNullOrWhiteSpace($orgUrl) -and -not [string]::IsNullOrWhiteSpace($project)) {
+                $wiql = "Select [System.Id] From WorkItems Where [System.TeamProject] = '$project' Order By [System.ChangedDate] Desc"
+                $json = & az boards query --wiql $wiql --organization $orgUrl --project $project --output json 2>$null
+                if ($json) {
+                    $queryResult = $json | ConvertFrom-Json
+                    $refs = @()
+                    if ($queryResult.workItems) { $refs = @($queryResult.workItems) }
+                    elseif ($queryResult.value) { $refs = @($queryResult.value) }
+                    else { $refs = @($queryResult) }
+
+                    $issues = @()
+                    foreach ($ref in ($refs | Select-Object -First 200)) {
+                        $workItemId = if ($ref.id) { [int]$ref.id } elseif ($ref.fields.'System.Id') { [int]$ref.fields.'System.Id' } else { 0 }
+                        if ($workItemId -le 0) { continue }
+                        $issue = Get-AdoIssue $workItemId
+                        if ($issue) { $issues += $issue }
+                    }
+                    if ($issues.Count -gt 0) { return $issues }
+                }
             }
         } catch { <# fall through to local #> }
     }
@@ -583,8 +1281,9 @@ function Get-IssueType($issue) {
 
 function Invoke-ReadyCmd {
     $all = Get-AllIssues
-    $mode = Get-AgentXMode
-    $open = if ($mode -eq 'local') {
+    $providerInfo = Get-AgentXProviderInfo
+    $usesExplicitReadyState = $providerInfo.readyUsesExplicitReadyState -or ($providerInfo.name -eq 'github' -and (Test-GitHubProjectConfigured))
+    $open = if ($usesExplicitReadyState) {
         @($all | Where-Object { $_.state -eq 'open' -and $_.status -eq 'Ready' })
     } else {
         @($all | Where-Object { $_.state -eq 'open' })
@@ -1031,8 +1730,15 @@ function Invoke-ConfigCmd {
     switch ($action) {
         'show' {
             $cfg = Get-AgentXConfig
-            if ($Script:JSON) {
-                $cfg | ConvertTo-Json | Write-Host
+            $providerInfo = Get-AgentXProviderInfo
+            if ($Script:JsonOutput) {
+                [PSCustomObject]@{
+                    config = $cfg
+                    activeProvider = $providerInfo.name
+                    providerSource = $providerInfo.source
+                    providerInferred = $providerInfo.inferred
+                    providerWarning = $providerInfo.warning
+                } | ConvertTo-Json -Depth 10 | Write-Host
             } else {
                 Write-Host "$($C.c)  AgentX Configuration$($C.n)"
                 Write-Host "$($C.d)  -----------------------------------$($C.n)"
@@ -1040,6 +1746,11 @@ function Invoke-ConfigCmd {
                     $k = if ($key -is [string]) { $key } else { $key.Name }
                     $v = $cfg.$k
                     Write-Host "  $($C.w)$k$($C.n) = $v"
+                }
+                Write-Host "  $($C.w)activeProvider$($C.n) = $($providerInfo.name)"
+                Write-Host "  $($C.w)providerSource$($C.n) = $($providerInfo.source)"
+                if ($providerInfo.inferred) {
+                    Write-Host "$($C.y)  [WARN] $($providerInfo.warning)$($C.n)"
                 }
             }
         }
@@ -1094,8 +1805,9 @@ function Invoke-VersionCmd {
     if (-not $ver) { Write-Host 'AgentX version unknown.'; return }
     if ($Script:JsonOutput) { $ver | ConvertTo-Json -Depth 5; return }
     $installed = if ($ver.installedAt) { "$($ver.installedAt)".Substring(0, 10) } else { '?' }
+    $provider = Get-AgentXProvider
     Write-Host "`n$($C.c)  AgentX $($ver.version)$($C.n)"
-    Write-Host "$($C.d)  Mode: $($ver.mode)  |  Installed: $installed$($C.n)`n"
+    Write-Host "$($C.d)  Provider: $provider  |  Installed: $installed$($C.n)`n"
 }
 
 
@@ -1170,6 +1882,8 @@ function Invoke-RunCmd {
     $model = Get-Flag @('-m', '--model')
     $max = [int](Get-Flag @('--max', '-n') '30')
     $issue = [int](Get-Flag @('-i', '--issue') '0')
+    $resumeSession = Get-Flag @('--resume-session')
+    $clarificationResponse = Get-Flag @('--clarification-response')
 
     if (-not $agent -and $Script:SubArgs.Count -gt 0 -and $Script:SubArgs[0] -notmatch '^-') {
         $agent = $Script:SubArgs[0]
@@ -1184,7 +1898,7 @@ function Invoke-RunCmd {
         if ($promptParts.Count -gt 0) { $prompt = $promptParts -join ' ' }
     }
 
-    if (-not $agent) {
+    if (-not $agent -and -not $resumeSession) {
         Write-Host "`n$($C.c)  AgentX Run - Agentic Loop (LLM + Tools)$($C.n)"
         Write-Host "$($C.d)  Auto-detects: Copilot API (all models) or GitHub Models (GPT only).$($C.n)"
         Write-Host "$($C.d)  To unlock Claude/Gemini/o-series: gh auth refresh -s copilot$($C.n)`n"
@@ -1193,6 +1907,7 @@ function Invoke-RunCmd {
         Write-Host '  agentx run -a engineer -p "Fix the failing tests"'
         Write-Host '  agentx run architect "Design the auth system" -i 42'
         Write-Host '  agentx run engineer "Implement login" --max 20 -m gpt-4.1'
+        Write-Host '  agentx run --resume-session <session-id> --clarification-response "Use the existing auth flow"'
         Write-Host "`n$($C.w)  Available agents:$($C.n)"
         $agentsDir = Join-Path $Script:ROOT '.github' 'agents'
         if (Test-Path $agentsDir) {
@@ -1205,7 +1920,22 @@ function Invoke-RunCmd {
         return
     }
 
-    if (-not $prompt) {
+    if ($resumeSession) {
+        $session = Read-Session -sessionId $resumeSession -root $Script:ROOT
+        if (-not $session) {
+            Write-Host "$($C.r)  [FAIL] Session '$resumeSession' not found.$($C.n)"
+            return
+        }
+
+        if (-not $agent) {
+            $agent = [string]$session.meta.agentName
+        }
+
+        if (-not $clarificationResponse) {
+            Write-Host "$($C.r)  [FAIL] Clarification response required. Use: agentx run --resume-session $resumeSession --clarification-response \"your guidance\"$($C.n)"
+            return
+        }
+    } elseif (-not $prompt) {
         Write-Host "$($C.r)  [FAIL] Prompt required. Use: agentx run $agent \"your prompt\"$($C.n)"
         return
     }
@@ -1219,13 +1949,22 @@ function Invoke-RunCmd {
         return
     }
 
-    Write-Host "`n$($C.c)  Starting agentic loop...$($C.n)`n"
+    if ($resumeSession) {
+        Write-Host "`n$($C.c)  Resuming agentic loop...$($C.n)`n"
+    } else {
+        Write-Host "`n$($C.c)  Starting agentic loop...$($C.n)`n"
+    }
 
     $params = @{
         Agent = $agent
-        Prompt = $prompt
         MaxIterations = $max
         WorkspaceRoot = $Script:ROOT
+    }
+    if ($resumeSession) {
+        $params['ResumeSessionId'] = $resumeSession
+        $params['HumanClarificationResponse'] = $clarificationResponse
+    } else {
+        $params['Prompt'] = $prompt
     }
     if ($issue) { $params['IssueNumber'] = $issue }
     if ($model) { $params['Model'] = $model }

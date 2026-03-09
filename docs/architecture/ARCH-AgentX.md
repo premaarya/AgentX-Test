@@ -5,6 +5,7 @@
 > that were **deleted during the v8.0.0 declarative migration**. The current architecture
 > is documented in [AGENTS.md](../../AGENTS.md) (Runtime Implementation Reference section).
 > Migration journey: [MIGRATION-PLAN.md](MIGRATION-PLAN.md).
+> Treat the remainder of this file as archival design context, not the current runtime contract.
 
 **Author**: Solution Architect Agent
 **Last Updated**: 2026-03-06

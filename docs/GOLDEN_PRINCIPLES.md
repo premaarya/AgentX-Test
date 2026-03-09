@@ -60,6 +60,69 @@ Every template MUST declare its input variables in a comment block at the top:
 
 ---
 
+## Execution Plan Requirement
+
+Complex work MUST have a living execution plan.
+
+| Work Type | Requirement | Source of Truth |
+|-----------|-------------|-----------------|
+| Simple task | Plan optional | Issue + changed files |
+| Complex / multi-phase task | Execution plan required before implementation | Execution plan document derived from `.github/templates/EXEC-PLAN-TEMPLATE.md` |
+| Resumable long-running task | Execution plan and progress updates required | Execution plan + progress log |
+
+**Rule**: If a task is complex enough to require multiple phases, meaningful design decisions, or resumable context, it does not pass review without a current execution plan.
+
+---
+
+## Living Plan Sections
+
+Every execution plan for a complex task MUST include and maintain these sections:
+
+- Purpose / Big Picture
+- Progress
+- Surprises & Discoveries
+- Decision Log
+- Context and Orientation
+- Plan of Work
+- Concrete Steps
+- Validation and Acceptance
+- Idempotence and Recovery
+- Artifacts and Notes
+- Outcomes & Retrospective
+
+**Rule**: A plan that exists but is not updated as work proceeds is considered invalid.
+
+---
+
+## Evidence-Backed Validation
+
+Validation for complex tasks MUST be backed by observable evidence, not only narrative claims.
+
+| Validation Type | Minimum Evidence |
+|-----------------|------------------|
+| Build or test claim | Command output, summary, or linked result artifact |
+| Review claim | Structured findings or approval result |
+| Multi-phase completion claim | Updated progress log with completed and remaining items |
+| Recovery safety claim | Rollback or retry guidance recorded in the plan |
+
+**Rule**: For complex work, "done" means both the change and the proof of the change are present in repo-local artifacts.
+
+---
+
+## Documentation And Runtime Consistency
+
+Architecture and workflow documentation MUST NOT materially overstate implemented runtime behavior.
+
+| Artifact Type | Consistency Expectation |
+|---------------|-------------------------|
+| ADR / Spec | Distinguish current state from target state clearly |
+| Workflow doc | Reflect actual enforced behavior or mark future behavior explicitly |
+| Quality score | Grades must match current implementation maturity |
+
+**Rule**: If documentation describes a capability as current when it is only planned or partial, the documentation fails review.
+
+---
+
 ## Doc Count Accuracy
 
 Documented counts of agents, skills, instructions, templates, and prompts MUST match actual file counts.

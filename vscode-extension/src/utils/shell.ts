@@ -1,4 +1,4 @@
-import { exec, execSync } from 'child_process';
+import { exec, execSync, spawn } from 'child_process';
 
 /**
  * Cached result of PowerShell availability check.
@@ -89,5 +89,98 @@ export function execShell(
  }
  resolve(stdout.trim());
  });
+ });
+}
+
+/**
+ * Execute a shell command and stream stdout/stderr line-by-line while also
+ * returning the final stdout payload.
+ */
+export function execShellStreaming(
+ command: string,
+ cwd: string,
+ shell: 'pwsh' | 'bash' = 'pwsh',
+ onLine?: (line: string, source: 'stdout' | 'stderr') => void,
+ envOverrides?: NodeJS.ProcessEnv,
+): Promise<string> {
+ return new Promise((resolve, reject) => {
+  let shellPath: string;
+
+  if (shell === 'bash') {
+   shellPath = '/bin/bash';
+  } else {
+   const resolved = resolveWindowsShell();
+   if (!resolved) {
+    reject(new Error(
+      'PowerShell is not installed. Install PowerShell 7+ (pwsh) from '
+      + 'https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell '
+      + 'or ensure Windows PowerShell (powershell.exe) is available.'
+    ));
+    return;
+   }
+   shellPath = resolved;
+  }
+
+  const args = shell === 'bash'
+   ? ['-lc', command]
+   : ['-NoProfile', '-Command', command];
+
+  const child = spawn(shellPath, args, {
+   cwd,
+    env: { ...process.env, ...envOverrides, NO_COLOR: '1' },
+   stdio: ['ignore', 'pipe', 'pipe'],
+  });
+
+  const stdoutChunks: string[] = [];
+  const stderrChunks: string[] = [];
+  let stdoutBuffer = '';
+  let stderrBuffer = '';
+
+  const flushBuffer = (buffer: string, source: 'stdout' | 'stderr'): string => {
+   const normalized = buffer.replace(/\r/g, '');
+   const lines = normalized.split('\n');
+   const remainder = lines.pop() ?? '';
+   for (const line of lines) {
+    if (line.length > 0) {
+      onLine?.(line, source);
+    }
+   }
+   return remainder;
+  };
+
+  child.stdout.on('data', (chunk: Buffer | string) => {
+   const text = chunk.toString();
+   stdoutChunks.push(text);
+   stdoutBuffer += text;
+   stdoutBuffer = flushBuffer(stdoutBuffer, 'stdout');
+  });
+
+  child.stderr.on('data', (chunk: Buffer | string) => {
+   const text = chunk.toString();
+   stderrChunks.push(text);
+   stderrBuffer += text;
+   stderrBuffer = flushBuffer(stderrBuffer, 'stderr');
+  });
+
+  child.on('error', (error) => {
+   reject(new Error(`Command failed: ${error.message}`));
+  });
+
+  child.on('close', (code) => {
+   if (stdoutBuffer.trim().length > 0) {
+    onLine?.(stdoutBuffer.trim(), 'stdout');
+   }
+   if (stderrBuffer.trim().length > 0) {
+    onLine?.(stderrBuffer.trim(), 'stderr');
+   }
+
+  const stdout = stdoutChunks.join('').replace(/\r/g, '');
+  const stderr = stderrChunks.join('').replace(/\r/g, '');
+   if (code && code !== 0) {
+    reject(new Error(`Command failed: exit code ${code}\n${stderr}`));
+    return;
+   }
+   resolve(stdout.trim());
+  });
  });
 }

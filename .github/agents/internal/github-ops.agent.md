@@ -1,7 +1,7 @@
 ---
 description: 'Orchestrate GitHub Issues and Pull Requests. Triage, discover, plan sprints, execute work items, and manage backlog operations.'
 visibility: internal
-model: Claude Sonnet 4 (copilot)
+model: GPT-5.4 (copilot)
 constraints:
   - "MUST classify user intent before dispatching any workflow"
   - "MUST persist workflow state to .copilot-tracking/github-issues/ for resumability"

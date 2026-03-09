@@ -14,6 +14,8 @@ import { clearInstructionCache } from './chat/agentContextLoader';
 import { runSetupWizard, runSilentInstall } from './commands/setupWizard';
 import { silentVersionSync } from './utils/versionChecker';
 import { checkCompanionExtensions } from './utils/companionExtensions';
+import { getQualityStateDisplay } from './utils/loopStateChecker';
+import { readHarnessState } from './utils/harnessState';
 
 let agentxContext: AgentXContext;
 
@@ -21,6 +23,31 @@ export function activate(context: vscode.ExtensionContext) {
  console.log('AgentX extension activating...');
 
  agentxContext = new AgentXContext(context);
+
+ const statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 50);
+ statusBar.text = '$(hubot) AgentX';
+ statusBar.tooltip = 'AgentX - Multi-Agent Orchestration';
+ statusBar.command = 'agentx.showStatus';
+ statusBar.show();
+ context.subscriptions.push(statusBar);
+
+ const updateUiState = async (): Promise<void> => {
+  const initialized = await agentxContext.checkInitialized();
+  const root = agentxContext.workspaceRoot;
+  const qualityState = root ? getQualityStateDisplay(root) : 'No workspace';
+  const harnessState = root ? readHarnessState(root) : undefined;
+  const harnessActive = harnessState
+   ? harnessState.threads.some((thread) => thread.status === 'active')
+   : false;
+
+  statusBar.text = '$(hubot) AgentX';
+  statusBar.tooltip = `AgentX - Multi-Agent Orchestration\n${qualityState}`;
+
+  await vscode.commands.executeCommand('setContext', 'agentx.initialized', initialized);
+  await vscode.commands.executeCommand('setContext', 'agentx.githubConnected', agentxContext.githubConnected);
+  await vscode.commands.executeCommand('setContext', 'agentx.adoConnected', agentxContext.adoConnected);
+  await vscode.commands.executeCommand('setContext', 'agentx.harnessActive', harnessActive);
+ };
 
  // Register sidebar tree view providers (VS Code-only value)
  const agentTreeProvider = new AgentTreeProvider(agentxContext);
@@ -47,11 +74,7 @@ export function activate(context: vscode.ExtensionContext) {
    agentTreeProvider.refresh();
    templateProvider.refresh();
    clearInstructionCache();
-   agentxContext.checkInitialized().then((initialized: boolean) => {
-    vscode.commands.executeCommand('setContext', 'agentx.initialized', initialized);
-    vscode.commands.executeCommand('setContext', 'agentx.githubConnected', agentxContext.githubConnected);
-    vscode.commands.executeCommand('setContext', 'agentx.adoConnected', agentxContext.adoConnected);
-   });
+    void updateUiState();
    vscode.window.showInformationMessage('AgentX: Refreshed all views.');
   })
  );
@@ -74,14 +97,11 @@ export function activate(context: vscode.ExtensionContext) {
  const onConfigChange = () => {
   agentxContext.invalidateCache();
   clearInstructionCache();
-  agentxContext.checkInitialized().then((initialized: boolean) => {
-   vscode.commands.executeCommand('setContext', 'agentx.initialized', initialized);
-   vscode.commands.executeCommand('setContext', 'agentx.githubConnected', agentxContext.githubConnected);
-   vscode.commands.executeCommand('setContext', 'agentx.adoConnected', agentxContext.adoConnected);
-   if (initialized) {
-    agentTreeProvider.refresh();
-   }
-  });
+    updateUiState().then(() => {
+     if (agentxContext.workspaceRoot) {
+        agentTreeProvider.refresh();
+     }
+    });
  };
  configWatcher.onDidCreate(onConfigChange);
  configWatcher.onDidDelete(onConfigChange);
@@ -89,14 +109,6 @@ export function activate(context: vscode.ExtensionContext) {
  mcpWatcher.onDidChange(onConfigChange);
  mcpWatcher.onDidDelete(onConfigChange);
  context.subscriptions.push(configWatcher, mcpWatcher);
-
- // Status bar
- const statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 50);
- statusBar.text = '$(hubot) AgentX';
- statusBar.tooltip = 'AgentX - Multi-Agent Orchestration';
- statusBar.command = 'agentx.showStatus';
- statusBar.show();
- context.subscriptions.push(statusBar);
 
  // Silently sync workspace version.json to match extension version (non-blocking)
  silentVersionSync(
@@ -112,11 +124,7 @@ export function activate(context: vscode.ExtensionContext) {
  checkCompanionExtensions().catch(() => { /* ignore */ });
 
  // Set initial context flags
- agentxContext.checkInitialized().then((initialized: boolean) => {
-  vscode.commands.executeCommand('setContext', 'agentx.initialized', initialized);
-  vscode.commands.executeCommand('setContext', 'agentx.githubConnected', agentxContext.githubConnected);
-  vscode.commands.executeCommand('setContext', 'agentx.adoConnected', agentxContext.adoConnected);
- });
+ void updateUiState();
 
  console.log('AgentX extension activated.');
 }

@@ -34,6 +34,7 @@ Set-StrictMode -Version Latest
 $Script:GITHUB_MODELS_URL = 'https://models.inference.ai.azure.com/chat/completions'
 $Script:COPILOT_API_URL = 'https://api.githubcopilot.com/chat/completions'
 $Script:DEFAULT_MODEL = 'gpt-4o'
+$Script:COMPACTION_THRESHOLD_PERCENT = 0.70
 $Script:MAX_ITERATIONS = 30
 $Script:MAX_TOOL_RESULT_CHARS = 8000
 $Script:SESSION_DIR = $null
@@ -44,6 +45,23 @@ $Script:SELF_REVIEW_MAX_ITERATIONS = 15
 $Script:SELF_REVIEW_REVIEWER_MAX_ITERATIONS = 8
 $Script:CLARIFICATION_MAX_ITERATIONS = 6
 $Script:CLARIFICATION_RESPONDER_MAX_ITERATIONS = 5
+
+$Script:MODEL_CONTEXT_WINDOWS = @{
+    'claude-opus-4.6'   = 200000
+    'claude-sonnet-4.6' = 200000
+    'claude-sonnet-4.5' = 200000
+    'claude-sonnet-4'   = 200000
+    'claude-haiku-4.5'  = 200000
+    'gpt-5.2-codex'     = 272000
+    'gpt-5.1'           = 200000
+    'gpt-5-mini'        = 200000
+    'gpt-4o'            = 128000
+    'gpt-4.1'           = 128000
+    'gpt-4.1-mini'      = 128000
+    'gpt-4.1-nano'      = 128000
+    'gpt-4o-mini'       = 128000
+    'gemini-2.5-pro'    = 1000000
+}
 
 # All models mapped: agent frontmatter name -> Copilot API model ID
 # Copilot API has the full catalog; GitHub Models has limited GPT-only.
@@ -141,12 +159,140 @@ function Resolve-ModelId([string]$agentModel) {
     if (-not $agentModel) { return $Script:DEFAULT_MODEL }
     $lower = $agentModel.ToLower() -replace '\(copilot\)', '' | ForEach-Object { $_.Trim() }
     $map = if ($Script:ApiMode -eq 'copilot') { $Script:MODEL_MAP_COPILOT } else { $Script:MODEL_MAP_GHMODELS }
-    foreach ($key in $map.Keys) {
+    foreach ($key in @($map.Keys | Sort-Object Length -Descending)) {
         if ($lower -like "*$key*") {
             return $map[$key]
         }
     }
     return $Script:DEFAULT_MODEL
+}
+
+function Parse-ModelFallbackList([string]$modelFallback) {
+    if (-not $modelFallback) { return @() }
+
+    $trimmed = $modelFallback.Trim()
+    if (-not $trimmed) { return @() }
+
+    if ($trimmed.StartsWith('[') -and $trimmed.EndsWith(']')) {
+        $trimmed = $trimmed.Substring(1, $trimmed.Length - 2)
+    }
+
+    return @(
+        $trimmed -split ',' |
+            ForEach-Object { $_.Trim().Trim(@([char]39, [char]34)) } |
+            Where-Object { $_ }
+    )
+}
+
+function Get-ModelCandidates([string]$preferredModel, [string]$modelFallback) {
+    $labels = @()
+    if ($preferredModel) {
+        $labels += $preferredModel
+    }
+    $labels += @(Parse-ModelFallbackList -modelFallback $modelFallback)
+    $labels += $Script:DEFAULT_MODEL
+
+    $candidates = New-Object System.Collections.Generic.List[string]
+    foreach ($label in $labels) {
+        $resolved = Resolve-ModelId $label
+        if (-not [string]::IsNullOrWhiteSpace($resolved) -and -not $candidates.Contains($resolved)) {
+            $candidates.Add($resolved)
+        }
+    }
+
+    return @($candidates)
+}
+
+function Test-IsModelAvailabilityError([string]$errorText) {
+    if (-not $errorText) { return $false }
+
+    return $errorText -match 'HTTP\s+(400|404|422)|model.+(not found|unsupported|unavailable|does not exist|not available)|deployment.+not found|unknown model|invalid model'
+}
+
+function Get-ModelContextWindow([string]$modelId) {
+    if (-not $modelId) { return 128000 }
+
+    $normalized = $modelId.Trim().ToLower()
+    if ($Script:MODEL_CONTEXT_WINDOWS.ContainsKey($normalized)) {
+        return $Script:MODEL_CONTEXT_WINDOWS[$normalized]
+    }
+
+    foreach ($key in $Script:MODEL_CONTEXT_WINDOWS.Keys) {
+        if ($normalized -like "*$key*") {
+            return $Script:MODEL_CONTEXT_WINDOWS[$key]
+        }
+    }
+
+    return 128000
+}
+
+function Get-MessageFieldValue([object]$Message, [string]$Name) {
+    if ($null -eq $Message) { return $null }
+
+    if ($Message -is [hashtable]) {
+        if ($Message.ContainsKey($Name)) { return $Message[$Name] }
+        return $null
+    }
+
+    $property = $Message.PSObject.Properties[$Name]
+    if ($null -ne $property) {
+        return $property.Value
+    }
+
+    return $null
+}
+
+function Get-ApproxTokenCount([AllowNull()][object]$Value) {
+    if ($null -eq $Value) { return 0 }
+
+    $text = ''
+    if ($Value -is [string]) {
+        $text = $Value
+    } else {
+        try {
+            $text = $Value | ConvertTo-Json -Depth 20 -Compress
+        } catch {
+            $text = [string]$Value
+        }
+    }
+
+    if (-not $text) { return 0 }
+    return [int][Math]::Ceiling($text.Length / 4.0)
+}
+
+function Get-ApproxMessageTokens([object]$Message) {
+    if ($null -eq $Message) { return 0 }
+
+    $tokens = 4
+    foreach ($field in @('role', 'content', 'name', 'tool_call_id')) {
+        $tokens += Get-ApproxTokenCount (Get-MessageFieldValue -Message $Message -Name $field)
+    }
+
+    $tokens += Get-ApproxTokenCount (Get-MessageFieldValue -Message $Message -Name 'tool_calls')
+    return $tokens
+}
+
+function Get-ConversationTokenUsage {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][array]$Messages,
+        [string]$ModelId = '',
+        [double]$ThresholdPercent = $Script:COMPACTION_THRESHOLD_PERCENT
+    )
+
+    $window = Get-ModelContextWindow -modelId $ModelId
+    $thresholdTokens = [int][Math]::Floor($window * $ThresholdPercent)
+    $totalTokens = 0
+    foreach ($message in $Messages) {
+        $totalTokens += Get-ApproxMessageTokens -Message $message
+    }
+
+    return @{
+        totalTokens = $totalTokens
+        thresholdTokens = $thresholdTokens
+        contextWindow = $window
+        thresholdPercent = $ThresholdPercent
+    }
 }
 
 # ---------------------------------------------------------------------------
@@ -518,9 +664,9 @@ function New-LoopDetector {
 }
 
 function Add-LoopRecord([hashtable]$detector, [string]$toolName, [string]$paramsJson, [string]$resultSnippet) {
-    $input = "$toolName::$paramsJson"
+    $recordInput = "$toolName::$paramsJson"
     $hash = [System.Security.Cryptography.SHA256]::Create()
-    $callHash = [System.BitConverter]::ToString($hash.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($input))).Replace('-','').Substring(0,16)
+    $callHash = [System.BitConverter]::ToString($hash.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($recordInput))).Replace('-','').Substring(0,16)
     $resHash  = [System.BitConverter]::ToString($hash.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($resultSnippet))).Replace('-','').Substring(0,16)
 
     $detector.history.Add(@{ callHash = $callHash; resultHash = $resHash; tool = $toolName }) | Out-Null
@@ -561,13 +707,25 @@ function Save-Session([string]$sessionId, [array]$messages, [hashtable]$meta, [s
     $data | ConvertTo-Json -Depth 15 | Set-Content $file -Encoding utf8
 }
 
+function Read-Session([string]$sessionId, [string]$root) {
+    if (-not $sessionId -or -not $root) { return $null }
+    $file = Join-Path (Join-Path $root '.agentx' 'sessions') "$sessionId.json"
+    if (-not (Test-Path $file)) { return $null }
+    try {
+        return Get-Content $file -Raw -Encoding utf8 | ConvertFrom-Json -Depth 20
+    } catch {
+        return $null
+    }
+}
+
 # ---------------------------------------------------------------------------
 # Context Compaction (prevents unbounded message growth)
 # ---------------------------------------------------------------------------
-# Mirrors the TypeScript contextCompactor.ts behavior:
-#   - Prunes oldest non-system messages when count exceeds $MaxMessages
+# Token-threshold driven behavior:
+#   - Triggers when approximate prompt tokens exceed the configured threshold
 #   - System messages (role='system') are NEVER pruned
-#   - Keeps the most recent $KeepRecent messages intact
+#   - Prefers to keep the most recent $KeepRecent messages intact
+#   - Falls back to $MinRecent when required to get back under budget
 #   - Returns the compacted messages array
 # ---------------------------------------------------------------------------
 
@@ -575,11 +733,14 @@ function Invoke-ContextCompaction {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][array]$Messages,
-        [int]$MaxMessages = 200,
-        [int]$KeepRecent = 40
+        [string]$ModelId = '',
+        [int]$KeepRecent = 40,
+        [int]$MinRecent = 10,
+        [double]$ThresholdPercent = $Script:COMPACTION_THRESHOLD_PERCENT
     )
 
-    if ($Messages.Count -le $MaxMessages) {
+    $usage = Get-ConversationTokenUsage -Messages $Messages -ModelId $ModelId -ThresholdPercent $ThresholdPercent
+    if ($usage.totalTokens -le $usage.thresholdTokens) {
         return $Messages
     }
 
@@ -587,24 +748,39 @@ function Invoke-ContextCompaction {
     $systemMsgs = @($Messages | Where-Object { $_.role -eq 'system' })
     $nonSystemMsgs = @($Messages | Where-Object { $_.role -ne 'system' })
 
-    if ($nonSystemMsgs.Count -le $KeepRecent) {
+    if ($nonSystemMsgs.Count -le 1) {
         return $Messages
     }
 
-    # Keep only the most recent non-system messages
-    $kept = $nonSystemMsgs[($nonSystemMsgs.Count - $KeepRecent)..($nonSystemMsgs.Count - 1)]
-    $pruned = $nonSystemMsgs.Count - $KeepRecent
+    $initialKeepCount = [Math]::Min([Math]::Max(1, $KeepRecent), $nonSystemMsgs.Count)
+    $kept = @($nonSystemMsgs[($nonSystemMsgs.Count - $initialKeepCount)..($nonSystemMsgs.Count - 1)])
+    $pruned = $nonSystemMsgs.Count - $initialKeepCount
 
-    # Insert a compaction summary as the first non-system message
-    $compactionMsg = @{
-        role = 'user'
-        content = "[Context Compaction] $pruned older messages were pruned to stay within token budget. " +
-                  "Focus on the remaining conversation context."
+    $minRecentCount = [Math]::Min([Math]::Max(1, $MinRecent), $nonSystemMsgs.Count)
+
+    $buildResult = {
+        param([array]$CurrentKept, [int]$CurrentPruned)
+
+        $currentUsage = Get-ConversationTokenUsage -Messages (@($systemMsgs) + @($CurrentKept)) -ModelId $ModelId -ThresholdPercent $ThresholdPercent
+        $compactionMsg = @{
+            role = 'user'
+            content = "[Context Compaction] $CurrentPruned older messages were pruned. Approx prompt tokens: $($currentUsage.totalTokens)/$($currentUsage.contextWindow) with threshold $($currentUsage.thresholdTokens). Focus on the remaining conversation context and recorded summaries."
+        }
+
+        return @($systemMsgs) + @($compactionMsg) + @($CurrentKept)
     }
 
-    $result = @($systemMsgs) + @($compactionMsg) + @($kept)
+    $result = & $buildResult $kept $pruned
+    $resultUsage = Get-ConversationTokenUsage -Messages $result -ModelId $ModelId -ThresholdPercent $ThresholdPercent
 
-    Write-Host "`e[90m  [COMPACTION] $pruned messages pruned ($($Messages.Count) -> $($result.Count))`e[0m"
+    while ($resultUsage.totalTokens -gt $resultUsage.thresholdTokens -and $kept.Count -gt $minRecentCount) {
+        $kept = @($kept[1..($kept.Count - 1)])
+        $pruned++
+        $result = & $buildResult $kept $pruned
+        $resultUsage = Get-ConversationTokenUsage -Messages $result -ModelId $ModelId -ThresholdPercent $ThresholdPercent
+    }
+
+    Write-Host "`e[90m  [COMPACTION] $pruned messages pruned ($($Messages.Count) -> $($result.Count), approx tokens $($resultUsage.totalTokens)/$($resultUsage.thresholdTokens))`e[0m"
 
     return $result
 }
@@ -715,6 +891,64 @@ function Find-ClarificationRequest([string]$text, [string[]]$canClarify) {
     $topic = $match.Groups[2].Value.Trim()
     if ($target -notin $canClarify) { return $null }
     return @{ targetAgent = $target; topic = $topic; question = $text }
+}
+
+function Format-ClarificationHistory {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][array]$Exchanges,
+        [int]$MaxItems = 3
+    )
+
+    if ($Exchanges.Count -eq 0) {
+        return 'No prior discussion.'
+    }
+
+    $start = [Math]::Max(0, $Exchanges.Count - $MaxItems)
+    $recent = @($Exchanges[$start..($Exchanges.Count - 1)])
+    $lines = @()
+    foreach ($exchange in $recent) {
+        $question = [string]$exchange.question
+        $response = [string]$exchange.response
+        if ($question.Length -gt 140) { $question = $question.Substring(0, 140) + '...' }
+        if ($response.Length -gt 220) { $response = $response.Substring(0, 220) + '...' }
+        $lines += "- Iteration $($exchange.iteration) [$($exchange.respondedBy)]: Q: $question | A: $response"
+    }
+
+    return ($lines -join "`n")
+}
+
+function Build-ClarificationSummary {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$FromAgent,
+        [Parameter(Mandatory)][string]$TargetAgent,
+        [Parameter(Mandatory)][string]$Topic,
+        [Parameter(Mandatory)][array]$Exchanges,
+        [Parameter(Mandatory)][string]$FinalAnswer,
+        [Parameter(Mandatory)][bool]$Resolved,
+        [Parameter(Mandatory)][bool]$EscalatedToHuman
+    )
+
+    $status = if ($Resolved) { 'resolved' } elseif ($EscalatedToHuman) { 'needs human follow-up' } else { 'unresolved' }
+    $answerText = if ($FinalAnswer) { $FinalAnswer.Trim() } else { '(No answer recorded)' }
+    if ($answerText.Length -gt 600) {
+        $answerText = $answerText.Substring(0, 600) + '...'
+    }
+
+    $parts = @(
+        '[Clarification Handoff]',
+        "From: $FromAgent",
+        "To: $TargetAgent",
+        "Topic: $Topic",
+        "Status: $status",
+        'Recent discussion:',
+        (Format-ClarificationHistory -Exchanges $Exchanges -MaxItems 3),
+        'Final guidance:',
+        $answerText
+    )
+
+    return ($parts -join "`n")
 }
 
 # ---------------------------------------------------------------------------
@@ -956,7 +1190,8 @@ function Invoke-ClarificationLoop {
         [Parameter(Mandatory)][string]$Token,
         [Parameter(Mandatory)][string]$ModelId,
         [Parameter(Mandatory)][string]$WorkspaceRoot,
-        [int]$MaxIterations = $Script:CLARIFICATION_MAX_ITERATIONS
+        [int]$MaxIterations = $Script:CLARIFICATION_MAX_ITERATIONS,
+        [switch]$NonInteractiveHumanEscalation
     )
 
     $currentQuestion = $Question
@@ -965,10 +1200,26 @@ function Invoke-ClarificationLoop {
     for ($i = 1; $i -le $MaxIterations; $i++) {
         Write-Host "`e[33m  [CLARIFY $i/$MaxIterations] Asking $TargetAgent about: $Topic`e[0m"
 
+        $discussionHistory = Format-ClarificationHistory -Exchanges $exchanges -MaxItems 3
+        $clarificationPrompt = @(
+            "You are being asked a clarification question by the $FromAgent agent.",
+            "Topic: $Topic",
+            "Current question: $currentQuestion",
+            '',
+            'Discussion so far:',
+            $discussionHistory,
+            '',
+            "Respond as the $TargetAgent agent. Use workspace tools to research if needed.",
+            'Provide:',
+            '1. A direct answer.',
+            '2. Key evidence, assumptions, or constraints.',
+            '3. Any remaining uncertainty that the requesting agent should know.'
+        ) -join "`n"
+
         # Run a sub-agent loop as the target agent
         $subResult = Invoke-AgenticLoop `
             -Agent $TargetAgent `
-            -Prompt "You are being asked a clarification question by the $FromAgent agent.`nTopic: $Topic`nQuestion: $currentQuestion`n`nAnswer from your perspective as the $TargetAgent. Use workspace tools to research if needed." `
+            -Prompt $clarificationPrompt `
             -MaxIterations $Script:CLARIFICATION_RESPONDER_MAX_ITERATIONS `
             -WorkspaceRoot $WorkspaceRoot `
             -Model $ModelId
@@ -983,6 +1234,13 @@ function Invoke-ClarificationLoop {
         }
 
         Write-Host "`e[32m  [CLARIFY RESPONSE] $TargetAgent answered ($($answer.Length) chars)`e[0m"
+        $answerPreview = ($answer -replace '\s+', ' ').Trim()
+        if ($answerPreview.Length -gt 220) {
+            $answerPreview = $answerPreview.Substring(0, 220) + '...'
+        }
+        if ($answerPreview) {
+            Write-Host "`e[90m  [CLARIFY DETAIL] $answerPreview`e[0m"
+        }
 
         # Evaluate the answer using heuristics
         $isNonAnswer = $answer -match "I don't know|I'm not sure|I cannot|unable to|no information|cannot determine"
@@ -996,6 +1254,7 @@ function Invoke-ClarificationLoop {
                 iterations = $i
                 escalatedToHuman = $false
                 exchanges = $exchanges
+                summary = (Build-ClarificationSummary -FromAgent $FromAgent -TargetAgent $TargetAgent -Topic $Topic -Exchanges $exchanges -FinalAnswer $answer -Resolved $true -EscalatedToHuman $false)
             }
         }
 
@@ -1013,13 +1272,18 @@ function Invoke-ClarificationLoop {
 
     Write-Host "`e[35m  [HUMAN REQUIRED]`n$escalationContext`e[0m"
 
-    # In CLI mode, prompt the human interactively
     $humanAnswer = ''
-    try {
-        Write-Host "`e[35m  Please provide guidance (or press Enter to skip):`e[0m"
-        $humanAnswer = Read-Host '  > '
-    } catch {
-        $humanAnswer = '(Human escalation -- no response in non-interactive mode)'
+    $awaitingHuman = $false
+    if ($NonInteractiveHumanEscalation) {
+        $humanAnswer = '(Human escalation -- awaiting response)'
+        $awaitingHuman = $true
+    } else {
+        try {
+            Write-Host "`e[35m  Please provide guidance (or press Enter to skip):`e[0m"
+            $humanAnswer = Read-Host '  > '
+        } catch {
+            $humanAnswer = '(Human escalation -- no response in non-interactive mode)'
+        }
     }
 
     if (-not $humanAnswer) {
@@ -1033,12 +1297,30 @@ function Invoke-ClarificationLoop {
         respondedBy = 'human'
     }
 
+    $humanPreview = ($humanAnswer -replace '\s+', ' ').Trim()
+    if ($humanPreview.Length -gt 220) {
+        $humanPreview = $humanPreview.Substring(0, 220) + '...'
+    }
+    if ($humanPreview) {
+        Write-Host "`e[90m  [HUMAN RESPONSE] $humanPreview`e[0m"
+    }
+
     return @{
         resolved = ($humanAnswer -and $humanAnswer -ne '(Human escalation -- awaiting response)')
         answer = $humanAnswer
         iterations = $MaxIterations + 1
         escalatedToHuman = $true
+        awaitingHuman = $awaitingHuman
+        humanPrompt = $escalationContext
+        pendingClarification = @{
+            fromAgent = $FromAgent
+            targetAgent = $TargetAgent
+            topic = $Topic
+            question = $Question
+            exchanges = $exchanges
+        }
         exchanges = $exchanges
+        summary = (Build-ClarificationSummary -FromAgent $FromAgent -TargetAgent $TargetAgent -Topic $Topic -Exchanges $exchanges -FinalAnswer $humanAnswer -Resolved ($humanAnswer -and $humanAnswer -ne '(Human escalation -- awaiting response)') -EscalatedToHuman $true)
     }
 }
 
@@ -1075,11 +1357,13 @@ function Invoke-AgenticLoop {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$Agent,
-        [Parameter(Mandatory)][string]$Prompt,
+        [string]$Prompt,
         [int]$MaxIterations = $Script:MAX_ITERATIONS,
         [int]$IssueNumber = 0,
         [string]$Model = '',
-        [string]$WorkspaceRoot = ''
+        [string]$WorkspaceRoot = '',
+        [string]$ResumeSessionId = '',
+        [string]$HumanClarificationResponse = ''
     )
 
     $startTime = Get-Date
@@ -1089,11 +1373,22 @@ function Invoke-AgenticLoop {
         $WorkspaceRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
     }
 
+    $isResume = -not [string]::IsNullOrWhiteSpace($ResumeSessionId)
+    $resumedSession = $null
+
     # Get GitHub token
     $token = Get-GitHubToken
     if (-not $token) {
         Write-Host "`e[31m  [FAIL] GitHub CLI not authenticated. Run: gh auth login`e[0m"
         return @{ sessionId = ''; iterations = 0; toolCalls = 0; finalText = 'Auth failed'; exitReason = 'error' }
+    }
+
+    if ($isResume) {
+        $resumedSession = Read-Session -sessionId $ResumeSessionId -root $WorkspaceRoot
+        if (-not $resumedSession) {
+            Write-Host "`e[31m  [FAIL] Session '$ResumeSessionId' not found.`e[0m"
+            return @{ sessionId = $ResumeSessionId; iterations = 0; toolCalls = 0; finalText = 'Session not found'; exitReason = 'error' }
+        }
     }
 
     # Detect API mode (Copilot vs GitHub Models)
@@ -1106,9 +1401,20 @@ function Invoke-AgenticLoop {
         $agentDef = @{ name = $Agent; description = ''; model = ''; body = '' }
     }
 
-    # Resolve model (uses correct map based on API mode)
-    $modelId = if ($Model) { $Model } else { Resolve-ModelId $agentDef.model }
+    # Resolve model candidates (primary -> frontmatter fallbacks -> default)
+    $preferredModel = if ($Model) {
+        $Model
+    } elseif ($isResume -and $resumedSession -and $resumedSession.meta.modelId) {
+        [string]$resumedSession.meta.modelId
+    } else {
+        $agentDef.model
+    }
+    $modelCandidates = @(Get-ModelCandidates -preferredModel $preferredModel -modelFallback $agentDef.modelFallback)
+    $modelId = $modelCandidates[0]
     Write-Host "`e[36m  Agent: $($agentDef.name ?? $Agent) | Model: $modelId ($Script:ApiMode mode)`e[0m"
+    if ($modelCandidates.Count -gt 1) {
+        Write-Host "`e[90m  Model fallback chain: $($modelCandidates -join ' -> ')`e[0m"
+    }
 
     # Build system prompt
     $systemPrompt = Build-SystemPrompt -agentDef $agentDef -agentName $Agent
@@ -1132,7 +1438,7 @@ function Invoke-AgenticLoop {
     }
 
     # Initialize session
-    $sessionId = "$Agent-$(Get-Date -Format 'yyyyMMddHHmmss')-$([System.IO.Path]::GetRandomFileName().Substring(0,4))"
+    $sessionId = if ($isResume) { $ResumeSessionId } else { "$Agent-$(Get-Date -Format 'yyyyMMddHHmmss')-$([System.IO.Path]::GetRandomFileName().Substring(0,4))" }
     $tools = Get-ToolSchemas
     $loopDetector = New-LoopDetector
 
@@ -1143,10 +1449,38 @@ function Invoke-AgenticLoop {
     }
 
     # Conversation messages
-    $messages = @(
-        @{ role = 'system'; content = $systemPrompt }
-        @{ role = 'user'; content = $Prompt }
-    )
+    $messages = @()
+    $pendingHumanClarification = $null
+    if ($isResume) {
+        $messages = @($resumedSession.messages)
+        $pendingHumanClarification = $resumedSession.meta.pendingHumanClarification
+        if (-not $pendingHumanClarification) {
+            Write-Host "`e[31m  [FAIL] Session '$ResumeSessionId' has no pending human clarification.`e[0m"
+            return @{ sessionId = $sessionId; iterations = 0; toolCalls = 0; finalText = 'No pending clarification'; exitReason = 'error' }
+        }
+        if (-not $HumanClarificationResponse) {
+            Write-Host "`e[31m  [FAIL] Human clarification response required to resume session '$ResumeSessionId'.`e[0m"
+            return @{ sessionId = $sessionId; iterations = 0; toolCalls = 0; finalText = 'Clarification response required'; exitReason = 'error' }
+        }
+
+        $resumeSummary = Build-ClarificationSummary `
+            -FromAgent ([string]$pendingHumanClarification.fromAgent) `
+            -TargetAgent ([string]$pendingHumanClarification.targetAgent) `
+            -Topic ([string]$pendingHumanClarification.topic) `
+            -Exchanges @($pendingHumanClarification.exchanges) `
+            -FinalAnswer $HumanClarificationResponse `
+            -Resolved $true `
+            -EscalatedToHuman $true
+
+        $messages += @{ role = 'user'; content = "[Clarification from human]`n$resumeSummary" }
+        Write-Host "`e[35m  [HUMAN RESPONSE] Resuming session $sessionId with provided guidance.`e[0m"
+        $pendingHumanClarification = $null
+    } else {
+        $messages = @(
+            @{ role = 'system'; content = $systemPrompt }
+            @{ role = 'user'; content = $Prompt }
+        )
+    }
 
     $iterations = 0
     $totalToolCalls = 0
@@ -1164,11 +1498,25 @@ function Invoke-AgenticLoop {
         $iterations++
         Write-Host "`e[90m  Iteration $iterations/$MaxIterations...`e[0m"
 
+        # Context compaction: compact before each LLM call based on token budget
+        $messages = @(Invoke-ContextCompaction -Messages $messages -ModelId $modelId -KeepRecent 40 -MinRecent 10 -ThresholdPercent $Script:COMPACTION_THRESHOLD_PERCENT)
+
         # Call LLM
         try {
             $response = Invoke-LlmChat -token $token -modelId $modelId -messages $messages -tools $tools
         } catch {
-            $finalText = "LLM error: $_"
+            $errorText = "$_"
+            $currentModelIndex = [array]::IndexOf($modelCandidates, $modelId)
+            $hasNextModel = $currentModelIndex -ge 0 -and $currentModelIndex -lt ($modelCandidates.Count - 1)
+
+            if ($hasNextModel -and (Test-IsModelAvailabilityError -errorText $errorText)) {
+                $nextModelId = $modelCandidates[$currentModelIndex + 1]
+                Write-Host "`e[33m  [MODEL FALLBACK] $modelId unavailable. Retrying with $nextModelId`e[0m"
+                $modelId = $nextModelId
+                continue
+            }
+
+            $finalText = "LLM error: $errorText"
             $exitReason = 'error'
             Write-Host "`e[31m  [FAIL] $finalText`e[0m"
             break
@@ -1205,13 +1553,23 @@ function Invoke-AgenticLoop {
                     -Question $clarifyReq.question `
                     -Token $token `
                     -ModelId $modelId `
-                    -WorkspaceRoot $WorkspaceRoot
+                    -WorkspaceRoot $WorkspaceRoot `
+                    -NonInteractiveHumanEscalation:($env:AGENTX_NONINTERACTIVE_HUMAN -eq '1')
+
+                if ($clarifyResult.awaitingHuman) {
+                    $pendingHumanClarification = $clarifyResult.pendingClarification
+                    $finalText = $clarifyResult.humanPrompt
+                    $exitReason = 'human_required'
+                    Write-Host "`e[35m  [HUMAN REQUIRED SESSION] $sessionId`e[0m"
+                    break
+                }
 
                 $answer = if ($clarifyResult.answer) { $clarifyResult.answer } else { '(No resolution)' }
+                $clarifySummary = if ($clarifyResult.summary) { $clarifyResult.summary } else { $answer }
                 $source = if ($clarifyResult.escalatedToHuman) { 'human' } else { $clarifyReq.targetAgent }
 
                 # Feed answer back and continue
-                $messages += @{ role = 'user'; content = "[Clarification from $source]: $answer" }
+                $messages += @{ role = 'user'; content = "[Clarification from $source]`n$clarifySummary" }
                 $finalText = ''
                 continue
             }
@@ -1302,9 +1660,6 @@ function Invoke-AgenticLoop {
         if ($loopResult.severity -eq 'warning') {
             Write-Host "`e[33m  [LOOP WARNING] $($loopResult.message)`e[0m"
         }
-
-        # Context compaction: prune old messages to prevent unbounded growth
-        $messages = @(Invoke-ContextCompaction -Messages $messages -MaxMessages 200 -KeepRecent 40)
     }
 
     if ($iterations -ge $MaxIterations -and -not $finalText) {
@@ -1323,6 +1678,8 @@ function Invoke-AgenticLoop {
         exitReason = $exitReason
         durationMs = [int]$duration
         createdAt = $startTime.ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
+        pendingHumanClarification = $pendingHumanClarification
+        resumedFromSession = $isResume
     }
     Save-Session -sessionId $sessionId -messages $messages -meta $meta -root $WorkspaceRoot
 
@@ -1340,5 +1697,6 @@ function Invoke-AgenticLoop {
         finalText  = $finalText
         exitReason = $exitReason
         durationMs = [int]$duration
+        pendingHumanClarification = ($null -ne $pendingHumanClarification)
     }
 }

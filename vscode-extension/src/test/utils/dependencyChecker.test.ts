@@ -22,7 +22,7 @@ describe('dependencyChecker', () => {
     it('should return EnvironmentReport shape', () => {
       assert.ok(report.timestamp, 'timestamp should be set');
       assert.ok(Array.isArray(report.results), 'results should be an array');
-      assert.strictEqual(report.results.length, 4, 'should check 4 dependencies');
+      assert.strictEqual(report.results.length, 5, 'should check 5 dependencies');
       assert.strictEqual(typeof report.healthy, 'boolean');
       assert.strictEqual(typeof report.criticalCount, 'number');
       assert.strictEqual(typeof report.warningCount, 'number');

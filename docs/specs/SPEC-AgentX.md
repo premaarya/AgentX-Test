@@ -5,6 +5,7 @@
 > Agentic Loop, Security Hardening, Learning Loop, Cognitive Foundation, Proactive Intelligence)
 > describe code that was **deleted during the v8.0.0 declarative migration**.
 > Current architecture: [AGENTS.md](../../AGENTS.md) | Migration plan: [MIGRATION-PLAN.md](../architecture/MIGRATION-PLAN.md).
+> Treat the remainder of this file as archival implementation context, not the current runtime contract.
 
 **Author**: Solution Architect Agent
 **Last Updated**: 2026-03-06

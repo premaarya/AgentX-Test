@@ -1,0 +1,17 @@
+- 2026-03-08: Execution plans for complex work currently live under `docs/plans/` and progress logs under `docs/progress/`.
+- 2026-03-08: Extension harness state starts with thread, turn, item, and evidence primitives and is currently driven by iterative-loop command lifecycle events.
+- 2026-03-08: Workspace initialization should write both `provider` and `integration` during the migration window, but CLI behavior resolves from `provider` first.
+- 2026-03-08: Use `provider` as the canonical config field in docs and code examples; mention `integration` and `mode` only as compatibility fallbacks.
+- 2026-03-08: GitHub Project status sync expects `.agentx/config.json` to contain `provider: github`, `repo`, and numeric `project`; derive `projectOwner` from the repo owner unless explicitly overridden.
+- 2026-03-08: For PowerShell behavior tests, launch `.agentx/agentx.ps1` with `System.Diagnostics.ProcessStartInfo.ArgumentList` to preserve argument boundaries and capture exit codes reliably.
+- 2026-03-08: Keep Agent X wording aligned across `.github/agents/agent-x.agent.md`, `.claude/commands/agent-x.md`, `AGENTS.md`, `docs/WORKFLOW.md`, and onboarding docs; stale delegation-only language in any one of these files causes behavior drift.
+- 2026-03-08: When self-tests assert repo contracts, prefer durable section or phrase checks (for example `## PRD Intent Validation` or `For GenAI features`) over obsolete internal helper names like `classifyDomain`.
+- 2026-03-09: When a historical architecture or migration document is kept for traceability, add an explicit archival warning at the top rather than trying to keep all old internal file references current.
+- 2026-03-09: For agent frontmatter parsing in the extension, keep regression tests for multiline YAML list fields (`tools`, `constraints`, `agents`) because they are easy to break with string-built regexes.
+- 2026-03-09: If the user wants autonomous-mode branding without renaming the product, rename only the top-level orchestrator frontmatter and execution-facing command text to `AgentX Auto`; do not rename `.agentx`, `agentx.*` command ids, package names, or general product docs.
+- 2026-03-09: In `.agentx/agentic-runner.ps1`, only trigger automatic model failover for model-availability errors; do not silently retry generic API failures with a different model.
+- 2026-03-09: Keep CLI compaction token-aware by estimating message tokens from serialized content and model-specific context windows; preserve all system prompts and at least a small recent window even when still near threshold.
+- 2026-03-09: Run CLI context compaction immediately before each model call so text-only, clarification, and self-review turns all see the same token-budget enforcement.
+- 2026-03-09: Prefer structured clarification handoff summaries over raw answer injection so the requesting agent gets participants, topic, status, recent exchanges, and final guidance in one context block.
+- 2026-03-09: For chat/CLI parity in the extension, prefer streaming the live CLI runner output into chat progress rather than rebuilding a second agent runtime in TypeScript.
+- 2026-03-09: When a CLI flow needs human input inside Copilot Chat, persist a resumable session and continue it with an explicit `@agentx continue "..."` turn instead of relying on stdin prompts.

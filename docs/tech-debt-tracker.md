@@ -11,9 +11,11 @@
 
 | ID | Area | Description | Impact | Added |
 |----|------|-------------|--------|-------|
-| TD-001 | VS Code Extension | Test coverage gaps in `agentic/`, `chat/`, and `memory/` modules | Regressions may go undetected | v8.0.0 |
+| TD-001 | VS Code Extension | Test coverage gaps remain in `chat/`, `commands/`, and current harness integration paths | Regressions may go undetected in the live extension runtime | v8.0.0 |
 | TD-002 | Bash CLI | `agentx.sh` missing parity with `agentx.ps1` (config, loop, workflow commands) | Linux/macOS users have reduced CLI functionality | v8.0.0 |
 | TD-004 | Documentation | No automated doc count validation in CI -- counts can drift from reality | Agents given wrong counts, confusion in routing | v8.0.0 |
+| TD-012 | Harness Enforcement | Complex-task execution plan policy exists in docs but is not yet enforced by CI or workflow automation | Plan-first workflow can drift or be skipped | v8.2.0 |
+| TD-013 | Harness Runtime | No explicit thread/turn/item/evidence runtime model in the visible extension and CLI surfaces | Limits durable progress tracking and rich agent legibility | v8.2.0 |
 
 ### Medium Priority
 
@@ -21,6 +23,8 @@
 |----|------|-------------|--------|-------|
 | TD-005 | Preview Agents | 7 internal sub-agents (GitHub Ops, ADO Ops, etc.) need field-testing hardening | Edge cases may cause unexpected behavior | v8.0.0 |
 | TD-008 | Template Inputs | Not all templates declare `<!-- Inputs: -->` comment blocks | Agents may fill templates incorrectly | v8.0.0 |
+| TD-014 | Entropy Cleanup | Weekly health reporting exists but doc-gardening, archival marking, and targeted cleanup automation are not implemented | Stale docs and agent drift may compound over time | v8.2.0 |
+| TD-015 | Validation Evidence | Evidence-backed validation is now specified but not yet captured or checked consistently across workflows | Reviews remain partially narrative instead of evidence-driven | v8.2.0 |
 
 ### Low Priority
 
@@ -57,4 +61,4 @@ When resolving debt, move the row to the Resolved section with the version and r
 
 ---
 
-**See Also**: [QUALITY_SCORE.md](QUALITY_SCORE.md) | [GOLDEN_PRINCIPLES.md](GOLDEN_PRINCIPLES.md) | [AGENTS.md](../AGENTS.md)
+**See Also**: [QUALITY_SCORE.md](QUALITY_SCORE.md) | [GOLDEN_PRINCIPLES.md](GOLDEN_PRINCIPLES.md) | [AGENTS.md](../AGENTS.md) | [ADR-Harness-Engineering.md](adr/ADR-Harness-Engineering.md) | [SPEC-Harness-Engineering.md](specs/SPEC-Harness-Engineering.md)

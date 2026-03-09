@@ -1,7 +1,7 @@
 ---
 description: 'Orchestrate Azure DevOps work items, backlogs, and sprints. Triage, plan, execute, and manage ADO boards and pipelines.'
 visibility: internal
-model: Claude Sonnet 4 (copilot)
+model: GPT-5.4 (copilot)
 constraints:
   - "MUST classify user intent before dispatching any workflow"
   - "MUST persist workflow state to .copilot-tracking/ado-items/ for resumability"

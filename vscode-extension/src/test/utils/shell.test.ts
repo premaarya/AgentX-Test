@@ -1,5 +1,5 @@
 import { strict as assert } from 'assert';
-import { execShell, resolveWindowsShell, resetShellCache } from '../../utils/shell';
+import { execShell, execShellStreaming, resolveWindowsShell, resetShellCache } from '../../utils/shell';
 
 describe('shell - resolveWindowsShell', () => {
 
@@ -79,5 +79,18 @@ describe('shell - execShell', () => {
     const result = await execShell(cmd, cwd, shell);
     // The output should contain the temp directory path
     assert.ok(result.length > 0, 'should return a path');
+  });
+
+  it('should stream line output while returning final stdout', async () => {
+    const shell = process.platform === 'win32' ? 'pwsh' as const : 'bash' as const;
+    const cmd = process.platform === 'win32'
+      ? 'Write-Output "line one"; Write-Output "line two"'
+      : 'printf "line one\\nline two\\n"';
+
+    const lines: string[] = [];
+    const result = await execShellStreaming(cmd, process.cwd(), shell, (line) => lines.push(line));
+
+    assert.deepEqual(lines, ['line one', 'line two']);
+    assert.equal(result, 'line one\nline two');
   });
 });

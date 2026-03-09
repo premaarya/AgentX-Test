@@ -1,0 +1,42 @@
+trigger:
+- master
+
+pr:
+- master
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  node_version: '20.x'
+
+stages:
+- stage: validate
+  displayName: Validate AgentX
+  jobs:
+  - job: quality_gates
+    displayName: Run shared validation gates
+    steps:
+    - checkout: self
+      fetchDepth: 0
+
+    - task: NodeTool@0
+      displayName: Use Node.js $(node_version)
+      inputs:
+        versionSpec: $(node_version)
+
+    - task: PowerShell@2
+      displayName: Harness plan and evidence check
+      inputs:
+        pwsh: true
+        targetType: filePath
+        filePath: scripts/check-harness-compliance.ps1
+        arguments: -BaseRef "$(System.PullRequest.TargetBranch)"
+
+    - script: npm ci
+      displayName: Install extension dependencies
+      workingDirectory: vscode-extension
+
+    - script: npm test
+      displayName: Run extension tests
+      workingDirectory: vscode-extension

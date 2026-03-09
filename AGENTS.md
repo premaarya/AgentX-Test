@@ -5,6 +5,8 @@ applyTo: '**'
 
 # AI Agent Guidelines
 
+> **Single source of truth for repository workflow guidance.**
+
 > **Map to all AgentX resources.** For workflow details, see [docs/WORKFLOW.md](docs/WORKFLOW.md).
 > For agent role definitions, see individual files in `.github/agents/`.
 
@@ -90,7 +92,7 @@ Agent definitions live in `.github/agents/*.agent.md` (13 visible) and `.github/
 
 | Agent | File | Deliverable |
 |-------|------|-------------|
-| Agent X (Hub) | `agent-x.agent.md` | Routing decisions (delegation-only -- never performs work itself) |
+| Agent X (Hub) | `agent-x.agent.md` | Autonomous orchestration and direct execution across the full workflow |
 | Product Manager | `product-manager.agent.md` | PRD at `docs/prd/` |
 | UX Designer | `ux-designer.agent.md` | Wireframes + HTML prototypes at `docs/ux/` |
 | Architect | `architect.agent.md` | ADR + Tech Specs at `docs/adr/`, `docs/specs/` |

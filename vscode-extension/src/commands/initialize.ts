@@ -309,12 +309,13 @@ export function registerInitializeCommand(
  fs.writeFileSync(statusFile, JSON.stringify(agentStatus, null, 2));
  }
 
- // Mode config (metadata without mode field)
+ // Provider config (keep legacy-compatible metadata during migration)
  const configDir = path.join(root, '.agentx');
  const configFile = path.join(configDir, 'config.json');
  if (mode.label === 'ado') {
  fs.writeFileSync(configFile, JSON.stringify({
  integration: 'ado',
+ provider: 'ado',
  organization: adoOrg || null,
  project: adoProject || null,
  created: new Date().toISOString(),
@@ -322,6 +323,7 @@ export function registerInitializeCommand(
  } else {
  fs.writeFileSync(configFile, JSON.stringify({
  integration: 'github',
+ provider: 'github',
  repo: repoSlug || null,
  project: projectNum || null,
  created: new Date().toISOString(),

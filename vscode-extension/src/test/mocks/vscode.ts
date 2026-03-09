@@ -268,6 +268,7 @@ export const chat = {
   createChatParticipant: (_id: string, _handler: unknown) => ({
     iconPath: undefined as unknown,
     followupProvider: undefined as unknown,
+    handler: _handler,
   }),
 };
 

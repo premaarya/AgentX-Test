@@ -210,6 +210,45 @@ async function checkGitHubCli(): Promise<DependencyResult> {
 }
 
 /**
+ * Check if Azure CLI with Azure DevOps support is installed.
+ */
+async function checkAzureCli(): Promise<DependencyResult> {
+  const raw = await tryExec('az --version');
+  const found = raw.length > 0;
+  const version = found ? parseVersion(raw) : '';
+
+  let extensionInstalled = false;
+  if (found) {
+    const extRaw = await tryExec('az extension show --name azure-devops --output json');
+    extensionInstalled = extRaw.length > 0;
+  }
+
+  let message = '';
+  if (!found) {
+    message = 'Azure CLI not installed. Required for Azure DevOps provider operations.';
+  } else if (!extensionInstalled) {
+    message = `Azure CLI ${version} found but azure-devops extension is missing. Run: az extension add --name azure-devops`;
+  } else {
+    message = `Azure CLI ${version} detected with azure-devops extension.`;
+  }
+
+  return {
+    name: 'Azure CLI (az)',
+    found: found && extensionInstalled,
+    version,
+    severity: 'recommended',
+    message,
+    fixUrl: 'https://learn.microsoft.com/cli/azure/install-azure-cli',
+    fixLabel: 'Install Azure CLI',
+    fixCommand: process.platform === 'win32'
+      ? 'winget install Microsoft.AzureCLI'
+      : process.platform === 'darwin'
+        ? 'brew install azure-cli'
+        : 'curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash',
+  };
+}
+
+/**
  * Run all dependency checks and return a full environment report.
  *
  * @param integrations - Provider with githubConnected / adoConnected flags.
@@ -230,6 +269,7 @@ export async function checkAllDependencies(
     checkPowerShell(),
     checkGit(),
     checkGitHubCli(),
+    checkAzureCli(),
   ]);
 
   // Adjust severity based on active integrations
@@ -237,6 +277,9 @@ export async function checkAllDependencies(
     // GitHub CLI is required when GitHub integration is configured
     if (r.name === 'GitHub CLI (gh)') {
       r.severity = github ? 'required' : 'optional';
+    }
+    if (r.name === 'Azure CLI (az)') {
+      r.severity = ado ? 'required' : 'optional';
     }
     // PowerShell on non-Windows without any integration is optional (bash works)
     if (r.name === 'PowerShell' && process.platform !== 'win32' && !github && !ado) {

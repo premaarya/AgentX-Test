@@ -66,7 +66,7 @@ AgentX is a **multi-agent orchestration framework** that enables AI coding assis
 <tr>
 <td width="50%">
 
-### 63 Production Skills
+### 66 Production Skills
 - **10 categories**: architecture, development, languages, operations, infrastructure, data, ai-systems, design, testing, domain
 - Retrieval-led reasoning -- agents read skills before generating
 - 30 executable scripts across 17 skills
@@ -89,7 +89,7 @@ AgentX is a **multi-agent orchestration framework** that enables AI coding assis
 ### Copilot-Native Orchestration
 - **Copilot's native agentic loop** -- agents call tools, read files, run commands
 - Body text instructions drive self-review, quality loops, and handoffs
-- `runSubagent` for agent-to-agent delegation (Mode 1: Agent X Hub)
+- Agent X autonomous execution in one session, with specialist phases applied internally when needed
 - `handoffs:` frontmatter for workflow routing (Mode 2: Human-Orchestrated)
 
 </td>
@@ -106,9 +106,10 @@ AgentX is a **multi-agent orchestration framework** that enables AI coding assis
 <tr>
 <td width="50%">
 
-### Dual-Mode CLI
-- **GitHub Mode**: Full GitHub Actions, PRs, Projects integration
-- **Local Mode**: Filesystem-based issue tracking, offline-capable
+### Provider-Aware CLI
+- **GitHub Provider**: Full GitHub Actions, PRs, issue operations, and Project V2 status sync through `gh` plus MCP integrations
+- **ADO Provider**: Azure DevOps work items and Azure Pipelines parity for shared harness validation
+- **Local Provider**: Filesystem-based issue tracking, offline-capable
 - 10 subcommands: ready, state, deps, digest, workflow, hook + more
 - PowerShell + Bash parity across all commands
 
@@ -251,10 +252,11 @@ curl -fsSL https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.sh |
 
 ### Choose Your Mode
 
-| Mode | Default? | Best For | Features |
-|------|----------|----------|----------|
-| **Local Mode** | ✅ Yes | Solo/offline work | Filesystem-based issue tracking, zero prompts |
-| **GitHub Mode** | — | Team projects | Full features: Actions, PRs, Projects (asks for repo/project) |
+| Provider | Default? | Best For | Features |
+|----------|----------|----------|----------|
+| **Local** | ✅ Yes | Solo/offline work | Filesystem-based issue tracking, zero prompts |
+| **GitHub** | — | Team projects | Actions, PRs, issue operations, Projects-aware workflows |
+| **Azure DevOps** | — | Teams standardizing on ADO | Work items, boards, Azure Pipelines validation parity |
 
 > 📖 **Local Mode Guide**: [docs/GUIDE.md](docs/GUIDE.md#local-mode-no-github)
 
@@ -419,7 +421,7 @@ Bug-fix loop: Validating -> In Progress (Engineer) when Tester reports defects.
 ```
 AgentX/
 ├── 📄 AGENTS.md              # Quick-reference map (points to detailed docs)
-├── 📄 Skills.md              # 63 production skills index
+├── 📄 Skills.md              # 66 production skills index
 ├── 📄 CONTRIBUTING.md        # Contributor guide
 │
 ├── 📁 .github/
@@ -467,7 +469,7 @@ AgentX/
 |----------|-------------|
 | [AGENTS.md](AGENTS.md) | Quick-reference map of all resources |
 | [docs/WORKFLOW.md](docs/WORKFLOW.md) | Workflow, routing, handoff rules, architecture |
-| [Skills.md](Skills.md) | 63 production skills across 10 categories |
+| [Skills.md](Skills.md) | 66 production skills across 10 categories |
 | [**Guide**](docs/GUIDE.md) | **Quickstart, setup, local mode, MCP server, troubleshooting** |
 | [docs/QUALITY_SCORE.md](docs/QUALITY_SCORE.md) | Graded quality assessment of every component |
 | [docs/GOLDEN_PRINCIPLES.md](docs/GOLDEN_PRINCIPLES.md) | Mechanical rules enforced by linters |

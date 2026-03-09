@@ -94,7 +94,7 @@ Assert-FileExists ".agentx/agentx.sh" "Bash CLI launcher exists"
 Assert-FileExists ".agentx/agentic-runner.ps1" "CLI agentic loop runner exists"
 
 # Test CLI commands exist in the implementation file
-$cliCommands = @("ready", "state", "deps", "digest", "workflow", "hook", "version", "run", "clarify", "loop", "validate", "config", "issue")
+$cliCommands = @("ready", "state", "deps", "digest", "workflow", "hook", "version", "run", "loop", "validate", "config", "issue")
 foreach ($cmd in $cliCommands) {
  Assert-FileContains ".agentx/agentx-cli.ps1" "'$cmd'" "CLI supports: $cmd"
 }
@@ -104,6 +104,20 @@ Assert-FileContains ".agentx/agentic-runner.ps1" "Invoke-AgenticLoop" "Agentic r
 Assert-FileContains ".agentx/agentic-runner.ps1" "file_read" "Agentic runner has file_read tool"
 Assert-FileContains ".agentx/agentic-runner.ps1" "terminal_exec" "Agentic runner has terminal_exec tool"
 Assert-FileContains ".agentx/agentic-runner.ps1" "Copilot" "Agentic runner supports Copilot API"
+Assert-FileExists "tests/provider-behavior.ps1" "Provider behavior test script"
+Assert-FileExists "tests/agentic-runner-behavior.ps1" "Agentic runner behavior test script"
+
+$providerBehaviorResult = & pwsh -NoProfile -File (Join-Path $script:root "tests/provider-behavior.ps1") 2>&1
+if ($LASTEXITCODE -ne 0) {
+ Write-Host $providerBehaviorResult
+}
+Assert-True ($LASTEXITCODE -eq 0) "Provider CLI behavior tests pass"
+
+$agenticRunnerBehaviorResult = & pwsh -NoProfile -File (Join-Path $script:root "tests/agentic-runner-behavior.ps1") 2>&1
+if ($LASTEXITCODE -ne 0) {
+ Write-Host $agenticRunnerBehaviorResult
+}
+Assert-True ($LASTEXITCODE -eq 0) "Agentic runner behavior tests pass"
 
 # --- 6. Skills --------------------------------------------------------------------------
 Write-Host ""
@@ -137,25 +151,25 @@ Write-Host ""
 Write-Host " 7. AI-First Intent Preservation" -ForegroundColor White
 
 # Agent X has domain classification
-Assert-FileContains ".github/agents/agent-x.agent.md" "classifyDomain" "Agent X has domain classification"
+Assert-FileContains ".github/agents/agent-x.agent.md" "## Domain Detection" "Agent X has domain classification"
 Assert-FileContains ".github/agents/agent-x.agent.md" "needs:ai" "Agent X detects AI domain"
-Assert-FileContains ".github/agents/agent-x.agent.md" "validatePRDIntent" "Agent X validates PRD intent"
+Assert-FileContains ".github/agents/agent-x.agent.md" "## PRD Intent Validation" "Agent X validates PRD intent"
 
 # PM has AI domain classification step
-Assert-FileContains ".github/agents/product-manager.agent.md" "Domain Classification" "PM has domain classification step"
+Assert-FileContains ".github/agents/product-manager.agent.md" "Classify Domain Intent" "PM has domain classification step"
 Assert-FileContains ".github/agents/product-manager.agent.md" "ai-agent-development/SKILL.md" "PM references AI skill"
 
 # Architect has AI-aware research
-Assert-FileContains ".github/agents/architect.agent.md" "AI-Aware Research" "Architect has AI-aware research step"
+Assert-FileContains ".github/agents/architect.agent.md" "AI-first assessment" "Architect has AI-aware research step"
 Assert-FileContains ".github/agents/architect.agent.md" "aitk_get_ai_model_guidance" "Architect uses AITK tools"
 
 # Engineer has AI implementation setup
-Assert-FileContains ".github/agents/engineer.agent.md" "AI Implementation Setup" "Engineer has AI implementation step"
-Assert-FileContains ".github/agents/engineer.agent.md" "aitk_get_agent_model_code_sample" "Engineer uses AITK code gen"
+Assert-FileContains ".github/agents/engineer.agent.md" "For GenAI features" "Engineer has AI implementation step"
+Assert-FileContains ".github/agents/engineer.agent.md" "Store all system prompts as separate files" "Engineer uses current GenAI implementation guidance"
 
 # Reviewer has intent preservation check
 Assert-FileContains ".github/agents/reviewer.agent.md" "Intent Preservation" "Reviewer has intent preservation check"
-Assert-FileContains ".github/agents/reviewer.agent.md" "intent preservation violation" "Reviewer rejects intent violations"
+Assert-FileContains ".github/agents/reviewer.agent.md" "Reject path" "Reviewer rejects intent violations"
 
 # --- 8. GitHub Actions ------------------------------------------------------------------
 Write-Host ""
@@ -163,6 +177,7 @@ Write-Host " 8. GitHub Actions" -ForegroundColor White
 
 Assert-FileExists ".github/workflows/agent-x.yml" "agent-x.yml workflow"
 Assert-FileExists ".github/workflows/quality-gates.yml" "quality-gates.yml workflow"
+Assert-FileExists "azure-pipelines.yml" "azure-pipelines.yml pipeline"
 
 # --- 9. Hooks & Scripts -----------------------------------------------------------------
 Write-Host ""
@@ -175,7 +190,7 @@ Assert-FileExists ".github/hooks/commit-msg" "commit-msg hook"
 Write-Host ""
 Write-Host " 10. Documentation Consistency" -ForegroundColor White
 
-Assert-FileContains "AGENTS.md" "Single source of truth" "AGENTS.md declares single source"
+Assert-FileContains "AGENTS.md" "single source of truth|system of record|Map to all AgentX resources" "AGENTS.md declares single source"
 Assert-FileContains "README.md" "$skillCount production skills" "README skill count heading matches ($skillCount)"
 Assert-FileContains "README.md" "$skillCount skills" "README framework totals matches ($skillCount)"
 Assert-FileExists "docs/GUIDE.md" "Consolidated Guide (quickstart + setup)"

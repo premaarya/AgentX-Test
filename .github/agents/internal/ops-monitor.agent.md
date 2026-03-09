@@ -1,7 +1,7 @@
 ---
 description: 'Monitor AgentOps tracing, detect model/data drift, track cost/latency, and manage alerting for production AI systems. Invisible sub-agent spawned by Data Scientist and DevOps.'
 visibility: internal
-model: Claude Sonnet 4 (copilot)
+model: GPT-5.4 (copilot)
 constraints:
   - "MUST establish baselines before configuring drift alerts"
   - "MUST use OpenTelemetry for tracing instrumentation"

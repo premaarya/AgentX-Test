@@ -13,6 +13,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { getHarnessStatusDisplay } from './harnessState';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -147,4 +148,13 @@ export function getLoopStatusDisplay(workspaceRoot: string): string {
     return `Loop ${state.iteration}/${state.maxIterations} [${state.completionCriteria}]`;
   }
   return `Loop ${state.status} (${state.iteration} iterations)`;
+}
+
+/**
+ * Get a combined quality and harness status string for compact UI display.
+ */
+export function getQualityStateDisplay(workspaceRoot: string): string {
+  const loop = getLoopStatusDisplay(workspaceRoot);
+  const harness = getHarnessStatusDisplay(workspaceRoot);
+  return `${loop} | ${harness}`;
 }

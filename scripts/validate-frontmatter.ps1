@@ -37,11 +37,27 @@ function Get-Frontmatter([string]$FilePath) {
  if ($content -match '(?s)^---\s*\n(.*?)\n---') {
  $yaml = $Matches[1]
  $result = @{}
- foreach ($line in ($yaml -split "`n")) {
- $line = $line.Trim()
- if ($line -match '^(\w[\w-]*):\s*(.+)$') {
+ $lines = @($yaml -split "`n")
+ for ($i = 0; $i -lt $lines.Count; $i++) {
+ $line = $lines[$i].TrimEnd("`r")
+ $trimmed = $line.Trim()
+ if ($trimmed -match '^(\w[\w-]*):\s*(.+)$') {
  $key = $Matches[1]
- $value = $Matches[2].Trim().Trim("'").Trim('"')
+ $rawValue = $Matches[2].Trim()
+
+ if ($rawValue -in @('>-', '|-', '>', '|')) {
+ $parts = @()
+ while (($i + 1) -lt $lines.Count) {
+ $nextLine = $lines[$i + 1].TrimEnd("`r")
+ if ($nextLine -match '^\S') { break }
+ $i++
+ $parts += $nextLine.Trim()
+ }
+ $result[$key] = (($parts -join ' ').Trim().Trim("'").Trim('"'))
+ continue
+ }
+
+ $value = $rawValue.Trim("'").Trim('"')
  $result[$key] = $value
  }
  }

@@ -1,0 +1,17 @@
+- 2026-03-08: First harness runtime slice uses `.agentx/state/harness-state.json` beside the existing loop state file instead of replacing loop-state handling.
+- 2026-03-08: Complex-work harness enforcement is centralized in `scripts/check-harness-compliance.ps1` and invoked by `.github/workflows/quality-gates.yml`.
+- 2026-03-08: Provider selection is now normalized through `provider` with fallback to legacy `integration` and `mode` fields to preserve old workspaces.
+- 2026-03-08: Provider-aware issue mutations now execute against GitHub (`gh`) and ADO (`az boards work-item`) instead of degrading to local issue files; live ADO validation remains environment-dependent.
+- 2026-03-08: GitHub Project V2 status sync is handled in CLI scope only for the `Status` single-select field and only when a GitHub project number is explicitly configured.
+- 2026-03-08: `.agentx/agentx.ps1` now explicitly propagates child exit codes from `.agentx/agentx-cli.ps1` so wrapper-based automation can detect GitHub and local failure paths correctly.
+- 2026-03-08: Agent X is no longer modeled as delegation-only. The repo contract now treats Agent X as the autonomous top-level executor that applies specialist phases internally and only falls back to manual switching when isolation or platform behavior requires it.
+- 2026-03-08: `scripts/validate-frontmatter.ps1` now treats YAML block scalars like `description: >-` as first-class frontmatter values instead of truncating them, so skill validation reflects actual metadata rather than parser artifacts.
+- 2026-03-09: `vscode-extension/src/agentxContext.ts` remains a live runtime surface and must parse multiline frontmatter lists correctly; the `getList()` regex now uses escaped whitespace tokens and is covered by a regression test.
+- 2026-03-09: Historical architecture docs remain in-repo for traceability, but current runtime truth lives in `AGENTS.md`, `docs/WORKFLOW.md`, `docs/GUIDE.md`, and the live `vscode-extension/src/` tree; superseded migration/spec/ADR/PRD docs should be clearly marked as archival only.
+- 2026-03-09: `AgentX Auto` is the autonomous execution mode name for the top-level orchestrator only; product branding, CLI ids, package ids, repo paths, and `.agentx/` technical identifiers remain `AgentX`.
+- 2026-03-09: `.agentx/agentic-runner.ps1` now honors frontmatter `modelFallback` as a real fallback chain for model-availability failures: preferred model -> fallback list -> default model.
+- 2026-03-09: CLI context compaction in `.agentx/agentic-runner.ps1` is now token-threshold aware using approximate token estimation and a default 70% context-window trigger keyed off the active model id, while still preserving recent messages and system prompts.
+- 2026-03-09: CLI context compaction is now applied before every LLM call and is driven only by the 70% token budget threshold, not by message-count limits.
+- 2026-03-09: Clarification loops now return a structured clarification handoff summary, not just the raw answer, and responder prompts include recent discussion history to support richer inter-agent follow-up.
+- 2026-03-09: VS Code chat now streams live CLI runner events instead of buffering them until completion, so compaction, clarification, tool activity, and self-review are visible in chat with the same runtime path as the CLI.
+- 2026-03-09: Human clarification in VS Code chat now uses resumable AgentX sessions instead of terminal stdin, preserving the CLI clarification workflow while adapting it to Copilot Chat's non-interactive process model.

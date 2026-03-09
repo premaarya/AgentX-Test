@@ -1,7 +1,7 @@
 ---
 name: AgentX Auto-Fix Reviewer
 description: 'Review code AND auto-apply safe fixes (formatting, imports, naming, null checks, docs). Suggest complex changes for human approval.'
-model: Claude Sonnet 4 (copilot)
+model: Claude Sonnet 4.6 (copilot)
 constraints:
   - "MUST read the Tech Spec and PRD before reviewing"
   - "MUST verify the Engineer's quality loop reached status=complete before reviewing"

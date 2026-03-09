@@ -1,7 +1,7 @@
 ---
 name: AgentX Engineer
 description: 'Implement code, tests (80% coverage), and documentation through iterative quality loops.'
-model: Claude Sonnet 4 (copilot)
+model: GPT-5.4 (copilot)
 constraints:
   - "MUST read the Tech Spec, PRD, and existing codebase before writing any code"
   - "MUST start a quality loop after first implementation commit: `.agentx/agentx.ps1 loop start <issue>`"

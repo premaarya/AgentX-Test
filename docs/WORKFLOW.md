@@ -13,8 +13,10 @@
 1. **Research** codebase (`semantic_search`, `grep_search`, `file_search`)
 2. **Classify** request (Epic/Feature/Story/Bug/Spike/Docs)
 3. **Create Issue** with type label
-4. **Execute** role-specific work
-5. **Update Status** in GitHub Projects V2 (or local file in Local Mode)
+4. **Assess Complexity** (simple vs. complex / multi-phase)
+5. **Create Execution Plan** for complex work before implementation or long-running loops
+6. **Execute** role-specific work
+7. **Update Status** in GitHub Projects V2 (or local file in Local Mode)
 
 ### Issue-First Flow
 
@@ -55,6 +57,31 @@ git commit -m "fix: resolve login timeout (#1)"
 
 > **Status Tracking**: Use GitHub Projects V2 **Status** field (GitHub mode) or local JSON status (Local mode).
 > See [GUIDE.md](GUIDE.md#local-mode-no-github) for local mode details.
+
+### Execution Plans For Complex Work
+
+For simple work, the standard issue-first flow is sufficient. For complex work, the issue-first flow is necessary but not sufficient.
+
+**Complex work** includes any task with one or more of the following characteristics:
+
+- Multi-phase implementation or investigation
+- Multiple subsystems, agents, or deliverables touched in one effort
+- Significant ambiguity or meaningful design decisions to record
+- Expected duration beyond a short interactive session
+- Work that must be resumable by a different agent or after context loss
+
+When a task is complex, agents **MUST** create and maintain an execution plan using [.github/templates/EXEC-PLAN-TEMPLATE.md](../.github/templates/EXEC-PLAN-TEMPLATE.md) before starting implementation.
+
+**Current enforcement state:** This is a workflow policy today. Mechanical enforcement is partial until the quality gates and automation are extended to check plan presence, freshness, and evidence links.
+
+**Execution plan requirements:**
+
+- Plans are living documents, not one-time approvals
+- Plans must record progress, decisions, blockers, validation steps, and recovery guidance
+- Plans must be detailed enough that a new agent can resume from the plan and current repo state alone
+- Plans must be updated at meaningful stopping points, not only at the end of work
+
+**Why this exists:** Harness-oriented workflows depend on durable, repo-local state. If a complex task cannot be resumed from artifacts in the repository, it is not yet legible enough for reliable agent execution.
 
 ---
 
@@ -124,7 +151,7 @@ AgentX uses a **Hub-and-Spoke architecture** for agent coordination:
 
 **Key Principles:**
 
-1. **Centralized Coordination** - Agent X delegates ALL work to specialist agents -- it NEVER performs tasks itself (no coding, no docs, no analysis). It tells the user which agent to switch to.
+1. **Centralized Coordination** - Agent X is the top-level autonomous executor. It SHOULD complete work in one session whenever feasible and use specialist stages as internal workflow phases. Manual agent switching is a fallback for isolation or platform limitations.
 2. **Strict Role Separation** - Each agent produces one deliverable type (PRD, ADR, Code, Review)
 3. **Universal Tool Access** - All agents have access to all tools for maximum flexibility
 4. **Status-Driven** - GitHub Projects V2 Status field is the source of truth
@@ -188,22 +215,29 @@ In Review + needs:testing -> Tester (pre-release certification)
 - Tester: Test suites pass, certification report complete
 - Power BI Analyst: Semantic model validated, DAX measures tested, report spec documented
 
+**Harness-oriented validation additions:**
+- Complex tasks: execution plan exists and is current
+- Multi-phase work: progress log reflects actual current state
+- Validation-heavy work: evidence artifacts or summaries are linked from the plan or progress log
+- Architecture/runtime changes: docs and implementation claims do not materially drift
+
+These checks are the target validation model. Where automation is not yet present, reviewers and role agents are expected to enforce them manually.
+
 ---
 
 ## Orchestration Modes
 
 | Mode | How It Works | Platform |
 |------|-------------|----------|
-| **Mode 1: Agent X Hub** | Agent X classifies and routes work, telling the user which agent to switch to: PM -> [Architect, UX, Data Scientist] -> Engineer -> Reviewer -> [DevOps, Tester] | VS Code, Claude Code |
+| **Mode 1: Agent X Autonomous** | Agent X classifies work and executes it end to end in one session, applying PM -> [Architect, UX, Data Scientist] -> Engineer -> Reviewer -> [DevOps, Tester] as internal phases when needed | VS Code, Claude Code |
 | **Mode 2: Human-Orchestrated** | User picks agent from Copilot agent picker; `handoffs:` frontmatter renders "Hand off to X" buttons | VS Code |
 | **CLI Standalone** | `agentx.ps1 run <agent> <task>` runs agent via GitHub Models API; no sub-agent chaining | CLI |
 
 ### Agent-to-Agent Communication
 
-Agents communicate through the user. When an agent needs input from another specialist,
-it asks the user to switch to the relevant agent with full context. The user picks the
-target agent from the Copilot agent picker (VS Code) or slash command (Claude Code).
-Scope is controlled by `agents:` frontmatter (which agents can be referenced).
+Agent X SHOULD keep work in one session by applying specialist constraints internally.
+When strict role isolation or platform behavior requires it, agents MAY still communicate
+through the user and ask for a manual switch to the relevant specialist.
 
 ### Self-Review Loop
 
@@ -211,15 +245,17 @@ Body text in every agent instructs: "Before handoff, re-check your work against 
 The agent evaluates with structured findings ([HIGH], [MEDIUM], [LOW]) and addresses HIGH/MEDIUM
 findings before completing.
 
+For complex tasks, self-review also checks that the execution plan and progress artifacts remain accurate. A technically correct change with stale plan state is not complete.
+
 ---
 
 ## Handoff Flow
 
 ```
-PM -> [Architect, Data Scientist, UX] (parallel) -> Engineer -> Reviewer -> [DevOps, Tester] (parallel) -> Engineer (bug fixes)
+Discover/Plan -> [Architect, Data Scientist, UX] -> Engineer -> Reviewer -> [DevOps, Tester] -> Engineer (bug fixes if needed)
 ```
 
-**Parallel Design Phase**: Architect, Data Scientist, and UX Designer work simultaneously after PM completes PRD.
+**Design Phase**: Architect, Data Scientist, and UX inputs are applied before implementation when complexity requires them.
 **Parallel Validation Phase**: DevOps Engineer and Tester validate in parallel after Reviewer approves.
 **Bug-Fix Feedback Loop**: Tester defects route back to Engineer for resolution before closing.
 

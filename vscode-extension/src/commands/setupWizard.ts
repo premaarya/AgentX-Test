@@ -81,7 +81,7 @@ export async function runStartupCheck(agentx: AgentXContext): Promise<void> {
  * via a hidden terminal. A progress notification tracks the install. If all
  * tools are already present, resolves immediately with `passed: true`.
  *
- * @param mode - The AgentX operating mode ('local' or 'github').
+ * @param mode - The AgentX operating provider ('local', 'github', or 'ado').
  * @returns PreCheckResult - `passed` is true when all required deps
  *   are satisfied after the silent install attempt.
  */

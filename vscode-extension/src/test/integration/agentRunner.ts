@@ -104,35 +104,38 @@ export function validateTokenBudgets(
 }
 
 /**
- * Verify that Agent X does not have implementation tools (coding, file creation).
+ * Verify that Agent X is equipped for autonomous orchestration and direct execution.
  */
-export function validateAgentXDelegationOnly(agents: AgentDef[]): AgentCheckResult[] {
+export function validateAgentXAutonomous(agents: AgentDef[]): AgentCheckResult[] {
   const results: AgentCheckResult[] = [];
-  const agentX = agents.find((a) => a.name.toLowerCase().includes('agent-x'));
+  const agentX = agents.find((a) => {
+    const normalized = a.name.toLowerCase();
+    return normalized.includes('agent-x') || normalized.includes('agentx auto');
+  });
 
   if (!agentX) {
     results.push({
       agent: 'agent-x',
-      check: 'delegation-only',
+      check: 'autonomous-capability',
       passed: false,
-      detail: 'Agent X definition not found',
+      detail: 'AgentX Auto definition not found',
     });
     return results;
   }
 
-  // Agent X should not have file-editing tools
-  const forbiddenTools = ['editFiles', 'createFile', 'runTerminal'];
-  for (const tool of forbiddenTools) {
+  // Agent X should have the core tools required for direct execution.
+  const requiredTools = ['editFiles', 'runCommands'];
+  for (const tool of requiredTools) {
     const hasTool = agentX.tools.some(
       (t) => t.toLowerCase().includes(tool.toLowerCase())
     );
     results.push({
       agent: agentX.name,
-      check: 'no-implementation-tools',
-      passed: !hasTool,
+      check: 'autonomous-tools',
+      passed: hasTool,
       detail: hasTool
-        ? `Agent X has forbidden tool: ${tool}`
-        : `Correctly excludes ${tool}`,
+        ? `AgentX Auto includes required tool: ${tool}`
+        : `AgentX Auto is missing required tool: ${tool}`,
     });
   }
 

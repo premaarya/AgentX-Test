@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { execShell } from './utils/shell';
+import { execShell, execShellStreaming } from './utils/shell';
 
 /**
  * Parsed MCP server configuration from .vscode/mcp.json.
@@ -9,6 +9,15 @@ import { execShell } from './utils/shell';
 interface McpConfig {
  servers?: Record<string, { type?: string; url?: string; command?: string }>;
 }
+
+export interface PendingClarificationState {
+ sessionId: string;
+ agentName: string;
+ prompt: string;
+ humanPrompt?: string;
+}
+
+const PENDING_CLARIFICATION_KEY = 'agentx.pendingClarification';
 
 /**
  * Read .vscode/mcp.json from a workspace root and return parsed config.
@@ -80,6 +89,21 @@ function findCliRuntimeInDir(dir: string, depth: number): string | undefined {
   if (found) { return found; }
  }
  return undefined;
+}
+
+function collectMatchingFiles(dir: string, predicate: (name: string) => boolean, results: string[]): void {
+ if (!fs.existsSync(dir)) { return; }
+
+ for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+  const fullPath = path.join(dir, entry.name);
+  if (entry.isDirectory()) {
+   collectMatchingFiles(fullPath, predicate, results);
+   continue;
+  }
+  if (entry.isFile() && predicate(entry.name)) {
+   results.push(fullPath);
+  }
+ }
 }
 
 /**
@@ -240,6 +264,66 @@ export class AgentXContext {
   return execShell(cmd, root, isPwsh ? 'pwsh' : 'bash');
  }
 
+ /**
+  * Execute an AgentX CLI subcommand and stream line output in real time.
+  */
+ async runCliStreaming(
+  subcommand: string,
+  cliArgs: string[] = [],
+  onLine?: (line: string, source: 'stdout' | 'stderr') => void,
+  envOverrides?: NodeJS.ProcessEnv,
+ ): Promise<string> {
+  const root = this.workspaceRoot;
+  if (!root) { throw new Error('No workspace open.'); }
+
+  const cliPath = this.getCliCommand();
+  const shell = this.getShell();
+  const isPwsh = shell === 'pwsh' || (shell === 'auto' && process.platform === 'win32');
+
+  const argStr = cliArgs.length > 0 ? ' ' + cliArgs.join(' ') : '';
+  const cmd = isPwsh
+   ? `& "${cliPath}" ${subcommand}${argStr}`
+   : `bash "${cliPath}" ${subcommand}${argStr}`;
+
+  return execShellStreaming(cmd, root, isPwsh ? 'pwsh' : 'bash', onLine, envOverrides);
+ }
+
+ async getPendingClarification(): Promise<PendingClarificationState | undefined> {
+  return this.extensionContext.workspaceState.get<PendingClarificationState>(PENDING_CLARIFICATION_KEY);
+ }
+
+ async setPendingClarification(state: PendingClarificationState): Promise<void> {
+  await this.extensionContext.workspaceState.update(PENDING_CLARIFICATION_KEY, state);
+ }
+
+ async clearPendingClarification(): Promise<void> {
+  await this.extensionContext.workspaceState.update(PENDING_CLARIFICATION_KEY, undefined);
+ }
+
+ /** Resolve a file path under .agentx/state for the current workspace. */
+ getStatePath(fileName: string): string | undefined {
+  const root = this.workspaceRoot;
+  if (!root) { return undefined; }
+  return path.join(root, '.agentx', 'state', fileName);
+ }
+
+ /** List known execution plan files relative to the workspace root. */
+ listExecutionPlanFiles(): string[] {
+  const root = this.workspaceRoot;
+  if (!root) { return []; }
+
+  const candidates: string[] = [];
+  collectMatchingFiles(path.join(root, 'docs', 'plans'), (name) => name.endsWith('.md'), candidates);
+  collectMatchingFiles(path.join(root, 'docs'), (name) => /^EXEC-PLAN.+\.md$/i.test(name), candidates);
+
+  const relative = candidates
+   .map((candidate) => path.relative(root, candidate).replace(/\\/g, '/'))
+   .filter((candidate, index, all) => all.indexOf(candidate) === index)
+   .sort();
+
+  return relative;
+ }
+
  /** Read an agent definition file and return parsed frontmatter fields.
   *  Looks in workspace first, then falls back to extension-bundled agents.
   *  Also checks internal/ subdirectories for invisible sub-agents. */
@@ -266,7 +350,7 @@ export class AgentXContext {
   };
 
   const getList = (key: string): string[] => {
-   const re = new RegExp(`^${key}:\s*\n((?:\s+-\s+.+\n?)*)`, 'm');
+    const re = new RegExp(`^${key}:\\s*\\n((?:\\s+-\\s+.+\\n?)*)`, 'm');
    const m = frontmatter.match(re);
    if (!m) { return []; }
    return m[1]

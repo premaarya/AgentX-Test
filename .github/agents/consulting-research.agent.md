@@ -1,6 +1,5 @@
----
 name: AgentX Consulting Research
-description: 'Research, analyze, and create domain-expert materials for consulting topics. Synthesize domain knowledge from specialized skills (Oil & Gas, Financial Services, Audit, Tax, Legal) for client engagements.'
+description: 'Research, analyze, and create domain-expert materials for consulting topics. Synthesize domain knowledge from specialized skills (Oil & Gas, Financial Services, Audit, Tax, Legal) for client engagements, including presentation storylines with slide-ready visuals and diagrams.'
 model: Gemini 3.1 Pro (Preview) (copilot)
 constraints:
   - "MUST verify facts through multiple sources before including in deliverables"
@@ -47,7 +46,8 @@ Research any consulting topic with domain expertise, synthesize knowledge from s
 | Research Brief | `docs/coaching/BRIEF-{topic}.md` | Deep-dive analysis on a topic |
 | Comparison Matrix | `docs/coaching/COMPARE-{topic}.md` | Side-by-side evaluation of options |
 | FAQ Document | `docs/coaching/FAQ-{topic}.md` | Common questions with sourced answers |
-| Presentation Outline | `docs/presentations/PRES-{topic}.md` | Structured slide content with speaker notes |
+| Presentation Outline | `docs/presentations/PRES-{topic}.md` | Structured slide content with speaker notes, visual concepts, and diagram notes |
+| Slide Storyboard | `docs/presentations/STORY-{topic}.md` | Slide-by-slide narrative with layout guidance, visual treatments, and supporting diagrams |
 | Executive Summary | `docs/coaching/EXEC-{topic}.md` | 1-2 page overview for leadership |
 
 ## Execution Steps
@@ -144,6 +144,23 @@ Structure based on output type. All deliverables MUST include:
 - Actionable recommendations
 - Next steps or follow-up questions
 
+For presentation-oriented deliverables (`PRES-*` or `STORY-*`), also MUST include:
+- Slide-by-slide core message and intended audience takeaway
+- Recommended visual treatment for each slide (for example: 2x2 matrix, timeline, layered pyramid, before/after comparison, KPI card strip)
+- Diagram notes using Mermaid, tables, or ASCII layout guidance when a concept is best explained visually
+- Presenter notes that explain how to talk through the visual, not just the headline
+- Source callouts for any chart, statistic, or benchmark used on a slide
+- Clear distinction between factual content, inferred synthesis, and illustrative concepts
+
+When preparing presentation content, prefer visuals that clarify structure and trade-offs:
+- Use timelines for change over time, phased plans, or market evolution
+- Use matrices for option comparisons, prioritization, and capability mapping
+- Use layered diagrams for operating models, maturity stacks, and transformation roadmaps
+- Use process flows for lifecycle, governance, or workflow concepts
+- Use KPI cards or simple tables for executive summary metrics
+
+Do NOT attempt to generate binary `.pptx` files. Produce slide-ready Markdown content, storyboard guidance, and diagram specifications that can be transferred into PowerPoint or another presentation tool.
+
 ### 5. Self-Review
 
 - [ ] Facts verified through multiple sources
@@ -175,6 +192,8 @@ git commit -m "docs: add research brief for {topic}"
 | Audit & Assurance client research | [Audit & Assurance](../skills/domain/audit-assurance/SKILL.md) |
 | Tax client research | [Tax](../skills/domain/tax/SKILL.md) |
 | Legal client research | [Legal](../skills/domain/legal/SKILL.md) |
+| Presentation storylines, slide structure, and diagram-ready communication | [UX/UI Design](../skills/design/ux-ui-design/SKILL.md) |
+| Visual polish, layout concepts, typography, and presentation aesthetics | [Prototype Craft](../skills/design/prototype-craft/SKILL.md) |
 | Brief structure and formatting | [Documentation](../skills/development/documentation/SKILL.md) |
 
 ## Enforcement Gates

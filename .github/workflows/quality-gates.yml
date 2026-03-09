@@ -104,6 +104,11 @@ jobs:
 
           echo "[PASS] File structure validation complete"
 
+      - name: Harness Plan and Evidence Check
+        shell: pwsh
+        run: |
+          ./scripts/check-harness-compliance.ps1 -BaseRef "${{ github.base_ref }}"
+
       - name: Token Budget Check
         run: |
           echo "Checking token budgets..."

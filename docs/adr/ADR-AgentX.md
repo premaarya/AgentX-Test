@@ -5,6 +5,7 @@
 > **superseded by the declarative migration** (v8.0.0), which replaced TypeScript
 > implementations with agent body text instructions, `memory.instructions.md`, and
 > Copilot's native agentic loop. See [AGENTS.md](../../AGENTS.md) for current architecture.
+> Treat the remainder of this file as archival decision history, not the current runtime contract.
 
 **Status**: Accepted -> Superseded
 **Author**: Solution Architect Agent

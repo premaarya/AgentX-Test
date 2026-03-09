@@ -87,18 +87,28 @@
 | Extension core (extension.ts) | A | Clean activation, command registration |
 | Agent Tree View | A | Reads .agent.md frontmatter |
 | Template Tree View | A | Lists templates |
-| Workflow Tree View | A | Agent handoff chain visualization |
+| Workflow command | A- | Workflow entrypoint is stable; workflow visualization now lives in commands and chat guidance rather than a dedicated tree view |
 | Chat participant | B | Functional but context loading could be more selective |
-| Agentic loop | B | Works end-to-end, boundary hooks and tool loop detection need field testing |
-| Memory system | B | Git-backed observation store functional, compaction untested at scale |
-| Test coverage | C | Tests exist but coverage gaps in agentic/, chat/, and memory/ |
+| Harness state utilities | B | File-backed harness state and loop gating are active, but the richer evidence model remains partial |
+| Test coverage | C | Tests exist, but chat flows, workflow commands, and harness integration paths still need broader regression coverage |
+
+### Harness Maturity
+
+| Component | Grade | Notes |
+|-----------|-------|-------|
+| Repo knowledge as system of record | A- | Strong AGENTS, WORKFLOW, skills, templates, and ADR/spec patterns in-repo |
+| Execution plan discipline | B | Policy and template strengthened; mechanical enforcement still partial |
+| Validation evidence model | C | Evidence-backed validation now documented; repo-wide evidence capture and gates not yet implemented |
+| Runtime harness primitives | C | Loop state and command safety exist; explicit thread/turn/item/evidence model not yet implemented in visible runtime |
+| Drift cleanup automation | C | Weekly reporting exists, but doc-gardening and entropy remediation are not yet automated |
+| Documentation/runtime consistency | B- | Improved with current ADR/spec work, but some architecture claims still describe target-state behavior |
 
 ### Documentation
 
 | Document | Grade | Notes |
 |----------|-------|-------|
 | AGENTS.md | A | Slim TOC/map (v8.1.4) |
-| WORKFLOW.md | A | Complete workflow reference extracted from AGENTS.md |
+| WORKFLOW.md | A- | Complete workflow reference with harness-oriented policy additions; enforcement is still partial |
 | Skills.md | A | Compressed index, Quick Reference table |
 | GUIDE.md | B | Quickstart solid, troubleshooting section could expand |
 | CLAUDE.md | A | Claude Code entry point with all pointers |
@@ -139,10 +149,10 @@
 
 | Workflow | Grade | Notes |
 |----------|-------|-------|
-| quality-gates.yml | A | 9 check steps: secrets, commits, docs, structure, tokens, skill validation, references, extension, agent validation |
+| quality-gates.yml | B+ | Strong baseline gate set; harness-oriented plan and evidence enforcement not yet implemented |
 | issue-triage.yml | B | Auto-classifies issues by type and domain, posts routing comment |
 | skill-factory.yml | B | Scaffolds new skills from labeled issues, creates PR |
-| weekly-status.yml | B | Automated health report: counts, token budget, broken links |
+| weekly-status.yml | B | Automated health report exists; entropy tracking and cleanup automation not yet implemented |
 
 ---
 
@@ -150,7 +160,7 @@
 
 **Strengths**: Comprehensive agent definitions, rich skill library, declarative architecture, cross-platform CLI.
 
-**Areas for improvement**: VS Code extension test coverage, Preview agent field testing, documentation freshness automation.
+**Areas for improvement**: VS Code extension test coverage, Preview agent field testing, documentation freshness automation, harness enforcement, runtime harness primitives.
 
 ---
 

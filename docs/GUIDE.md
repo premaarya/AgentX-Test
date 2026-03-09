@@ -66,17 +66,17 @@ gh issue create --title "[Story] Add /health endpoint" --label "type:story"
 .\.agentx\local-issue-manager.ps1 -Action create -Title "[Story] Add /health endpoint" -Labels "type:story"
 ```
 
-Agent X classifies this as a `type:story` (simple, <=3 files) and routes it **directly to Engineer** -- skipping PM and Architect.
+Agent X classifies this as a `type:story` (simple, <=3 files) and can complete it directly in the current session, using the Engineer workflow internally.
 
-### Step 3: Implement with Engineer Agent (2 minutes)
+### Step 3: Implement with Agent X or Engineer (2 minutes)
 
-Switch to the **Engineer** agent in Copilot Chat:
+Stay in **Agent X** for end-to-end execution, or switch to **Engineer** if you want strict manual role isolation:
 
 ```
 @Engineer Implement the health endpoint for issue #1
 ```
 
-The Engineer agent will:
+The implementation workflow will:
 
 1. **Read the issue** and check prerequisites
 2. **Load the right skills** automatically (`api-design`, `testing`, `error-handling`)
@@ -163,11 +163,11 @@ Control what gets installed with the `-Profile` flag:
 
 | Profile | Skills | Instructions | Prompts | Hooks | VS Code |
 |---------|--------|-------------|---------|-------|---------|
-| **full** (default) | All 63 | All 7 | [PASS] | [PASS] | [PASS] |
-| **minimal** | None | None | [FAIL] | [FAIL] | [FAIL] |
-| **python** | Python, testing, data, architecture | python, api | [PASS] | [PASS] | [PASS] |
-| **dotnet** | C#, Blazor, Azure, SQL, architecture | csharp, blazor, api | [PASS] | [PASS] | [PASS] |
-| **react** | React, TypeScript, UI, design, architecture | react, api | [PASS] | [PASS] | [PASS] |
+| **full** (default) | All 63 | All 7 | Yes | Yes | Yes |
+| **minimal** | None | None | No | No | No |
+| **python** | Python, testing, data, architecture | python, api | Yes | Yes | Yes |
+| **dotnet** | C#, Blazor, Azure, SQL, architecture | csharp, blazor, api | Yes | Yes | Yes |
+| **react** | React, TypeScript, UI, design, architecture | react, api | Yes | Yes | Yes |
 
 **All profiles always include**: agents, templates, CLI, instructions, issue templates, documentation.
 
@@ -205,7 +205,7 @@ AgentX works with companion extensions that provide complementary capabilities. 
 
 | Extension | ID | Purpose | Auto-Installed |
 |-----------|-----|---------|----------------|
-| **GitHub Copilot for Azure** | `ms-azuretools.vscode-azure-github-copilot` | Operational Foundry playbooks: create, deploy, invoke, trace, troubleshoot agents | [PASS] Yes |
+| **GitHub Copilot for Azure** | `ms-azuretools.vscode-azure-github-copilot` | Operational Foundry playbooks: create, deploy, invoke, trace, troubleshoot agents | Yes |
 | **GitHub Copilot** | `GitHub.copilot` | AI code completions (required for Copilot Chat) | Prerequisite |
 | **GitHub Copilot Chat** | `GitHub.copilot-chat` | Chat interface for agent interactions | Prerequisite |
 
@@ -231,6 +231,16 @@ code --install-extension ms-azuretools.vscode-azure-github-copilot
 ### Workspace Recommendations
 
 AgentX includes a `.vscode/extensions.json` that recommends companion extensions. VS Code will prompt users to install them when opening the workspace.
+
+### Provider Configuration
+
+AgentX now resolves runtime behavior from `.agentx/config.json` in this order:
+
+1. `provider` (canonical)
+2. `integration` (migration compatibility)
+3. `mode` (legacy compatibility)
+
+Use `provider` for new workspaces. Older fields are still read so existing repos continue to work.
 
 ---
 
@@ -264,6 +274,39 @@ In your project settings, create a **Status** field (Single Select) with these v
 1. Go to Project Settings -> Manage Access
 2. Add repository: `<OWNER>/<REPO>`
 3. Issues automatically sync to project board
+
+### 4. Configure AgentX CLI Status Sync
+
+To let `agentx issue update -s ...` keep GitHub Project V2 status in sync, set these values in `.agentx/config.json`:
+
+```json
+{
+  "provider": "github",
+  "repo": "OWNER/REPO",
+  "project": 4
+}
+```
+
+Optional:
+- `projectOwner`: override the project owner if it differs from the repo owner
+- `githubProjectStatusMap`: override status-name mapping if your project uses custom option names
+
+Default AgentX -> GitHub Project status mapping:
+
+| AgentX Status | GitHub Project Status |
+|---------------|-----------------------|
+| Backlog | Backlog |
+| Ready | Ready |
+| In Progress | In progress |
+| In Review | In review |
+| Validating | In review |
+| Done | Done |
+
+When a GitHub project number is configured, the CLI will:
+- add newly created GitHub issues to that project
+- set new issues to `Backlog`
+- update Project V2 status when `agentx issue update -s ...` is used
+- set Project V2 status to `Done` before `agentx issue close`
 
 ### Status Transitions
 
@@ -324,8 +367,10 @@ None"
 .\.agentx\agentx.ps1 ready
 
 # Step 3: Update status as work progresses
-# (Agents do this automatically when using @Engineer, @Reviewer, etc.)
-# Backlog -> In Progress -> In Review -> Done
+# If .agentx/config.json includes a GitHub project number, the CLI also syncs
+# the Project V2 Status field for these transitions.
+.\.agentx\agentx.ps1 issue update -n 42 -s "In Progress"
+.\.agentx\agentx.ps1 issue update -n 42 -s "In Review"
 
 # Step 4: Commit with issue reference
 git commit -m "feat: add health endpoint (#42)"
@@ -366,8 +411,8 @@ Use AgentX without GitHub -- filesystem-based issue tracking and agent coordinat
 
 ### When to Use
 
-[PASS] Personal projects, learning AgentX, offline development, prototyping
-[FAIL] Team collaboration, CI/CD, code reviews, production workflows
+Recommended: Personal projects, learning AgentX, offline development, prototyping
+Not recommended: Team collaboration, CI/CD, code reviews, production workflows
 
 ### Installation
 
@@ -390,6 +435,8 @@ Use AgentX without GitHub -- filesystem-based issue tracking and agent coordinat
 New-Item -ItemType Directory -Path ".agentx/issues" -Force
 
 @{
+  provider = "local"
+  integration = "local"
     mode = "local"
     enforceIssues = $false
     nextIssueNumber = 1
@@ -454,7 +501,7 @@ function issue { .\.agentx\local-issue-manager.ps1 @args }
 
 ```
 .agentx/
-  config.json                    # Mode configuration (local or github)
+  config.json                    # Provider configuration (`provider` is canonical)
   agentx.ps1                     # PowerShell CLI launcher
   agentx.sh                      # Bash CLI launcher
   agentx-cli.ps1                 # CLI implementation (all subcommands)
@@ -471,7 +518,7 @@ function issue { .\.agentx\local-issue-manager.ps1 @args }
 
 ### AgentX CLI Commands
 
-The CLI works in both Local and GitHub modes (auto-detects from `config.json`):
+The CLI works across Local, GitHub, and ADO providers. It resolves the active platform from `.agentx/config.json`, preferring `provider` and falling back to legacy `integration` and `mode` fields.
 
 ```powershell
 # PowerShell
@@ -625,9 +672,34 @@ Get-ChildItem .agentx/issues/*.json | ForEach-Object {
 # 4. Push and update config
 git push -u origin master
 $config = Get-Content .agentx/config.json | ConvertFrom-Json
+$config.provider = "github"
+$config.integration = "github"
 $config.mode = "github"
 $config | ConvertTo-Json | Set-Content .agentx/config.json
 ```
+
+### Azure DevOps Provider
+
+Use the ADO provider when your team tracks work in Azure DevOps instead of GitHub issues.
+
+Requirements:
+- Azure CLI installed
+- `azure-devops` CLI extension available
+- `.agentx/config.json` contains `provider = "ado"`, `organization`, and `project`
+
+Example config:
+
+```json
+{
+  "provider": "ado",
+  "integration": "ado",
+  "organization": "myorg",
+  "project": "MyProject",
+  "created": "2026-03-08T12:00:00Z"
+}
+```
+
+The same harness compliance script runs locally, in GitHub Actions, and in Azure Pipelines so plan/evidence checks stay aligned across providers.
 
 ---
 

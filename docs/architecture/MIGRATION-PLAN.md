@@ -4,6 +4,7 @@
 > **Status**: COMPLETE
 > **Date**: 2026-03-06
 > **Completed**: 2026-03-07
+> **Historical record only**: This file captures the migration intent and cutover work. The inventories, deletion lists, and target-state comparisons below are not maintained as the live runtime reference after v8.0.0. Use [AGENTS.md](../../AGENTS.md), [docs/WORKFLOW.md](../WORKFLOW.md), [docs/GUIDE.md](../GUIDE.md), and the current `vscode-extension/src/` tree for current behavior.
 
 ---
 
