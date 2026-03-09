@@ -14,17 +14,17 @@ constraints:
   - "MUST document research findings with sources in the Model Card and Evaluation Report"
 boundaries:
   can_modify:
-    - "src/** (ML/AI code only)"
-    - "tests/** (ML/AI test code)"
-    - "docs/data-science/** (ML documentation)"
-    - "prompts/** (prompt templates)"
-    - "notebooks/** (Jupyter notebooks)"
+    - "src/**"
+    - "tests/**"
+    - "docs/data-science/**"
+    - "prompts/**"
+    - "notebooks/**"
     - "GitHub Projects Status (In Progress -> In Review)"
   cannot_modify:
-    - "docs/prd/** (PRD documents)"
-    - "docs/adr/** (architecture docs)"
-    - "docs/ux/** (UX documents)"
-    - ".github/workflows/** (CI/CD pipelines)"
+    - "docs/prd/**"
+    - "docs/adr/**"
+    - "docs/ux/**"
+    - ".github/workflows/**"
 tools: ['codebase', 'editFiles', 'search', 'changes', 'runCommands', 'problems', 'usages', 'fetch', 'think', 'github/*']
 agents:
   - AgentX Architect

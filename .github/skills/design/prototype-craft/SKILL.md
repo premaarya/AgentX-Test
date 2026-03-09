@@ -1,7 +1,6 @@
 ---
 name: prototype-craft
 description: 'Craft visually polished, production-quality HTML/CSS prototypes with modern styling, typography, color theory, and micro-interactions. Use when building UX deliverables that need visual polish beyond wireframes, implementing color systems, typography scales, elevation shadows, or smooth transitions for interactive prototypes.'
-category: design
 ---
 
 # Prototype Craft

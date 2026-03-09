@@ -12,14 +12,14 @@ constraints:
   - "MUST NOT skip the confirmation step before finalizing a story"
 boundaries:
   can_modify:
-    - "docs/coaching/** (story drafts and refinement notes)"
+    - "docs/coaching/**"
   cannot_modify:
-    - "src/** (source code)"
-    - "docs/prd/** (PRD documents)"
-    - "docs/adr/** (architecture docs)"
-    - "docs/ux/** (UX designs)"
-    - "tests/** (test code)"
-    - ".github/workflows/** (CI/CD pipelines)"
+    - "src/**"
+    - "docs/prd/**"
+    - "docs/adr/**"
+    - "docs/ux/**"
+    - "tests/**"
+    - ".github/workflows/**"
 tools: ['codebase', 'editFiles', 'search', 'fetch', 'think']
 ---
 

@@ -13,14 +13,14 @@ constraints:
   - "MUST revert auto-fixes if tests fail after applying them"
 boundaries:
   can_modify:
-    - "src/** (safe fixes only: formatting, imports, naming, null checks)"
-    - "tests/** (safe fixes only)"
-    - "docs/reviews/** (review documents)"
+    - "src/**"
+    - "tests/**"
+    - "docs/reviews/**"
     - "GitHub Issues (comments, labels, status)"
   cannot_modify:
-    - "docs/prd/** (PRD documents)"
-    - "docs/adr/** (architecture docs)"
-    - ".github/workflows/** (CI/CD pipelines)"
+    - "docs/prd/**"
+    - "docs/adr/**"
+    - ".github/workflows/**"
 tools: ['codebase', 'editFiles', 'search', 'changes', 'runCommands', 'problems', 'usages', 'fetch', 'think', 'github/*']
 agents:
   - AgentX Engineer

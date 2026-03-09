@@ -13,16 +13,16 @@ constraints:
   - "MUST create all files locally using editFiles -- MUST NOT use mcp_github_create_or_update_file or mcp_github_push_files to push files directly to GitHub"
 boundaries:
   can_modify:
-    - "tests/** (test code)"
-    - "e2e/** (end-to-end tests)"
-    - "docs/testing/** (certification reports)"
-    - "scripts/test/** (test automation scripts)"
-    - ".github/workflows/*test* (test pipeline configuration)"
+    - "tests/**"
+    - "e2e/**"
+    - "docs/testing/**"
+    - "scripts/test/**"
+    - ".github/workflows/*test*"
   cannot_modify:
-    - "src/** (application source code)"
-    - "docs/prd/** (PRD documents)"
-    - "docs/adr/** (architecture docs)"
-    - "docs/ux/** (UX documents)"
+    - "src/**"
+    - "docs/prd/**"
+    - "docs/adr/**"
+    - "docs/ux/**"
 tools: ['codebase', 'editFiles', 'search', 'changes', 'runCommands', 'problems', 'usages', 'fetch', 'think', 'github/*']
 agents:
   - AgentX Engineer

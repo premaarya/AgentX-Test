@@ -15,17 +15,17 @@ constraints:
   - "MUST include only original DAX, M (Power Query), and report layout guidance -- no copyrighted visuals or templates"
 boundaries:
   can_modify:
-    - "reports/** (Power BI report definitions, PBIP files)"
-    - "datasets/** (semantic model definitions, TMDL files)"
-    - "docs/powerbi/** (Power BI documentation, data dictionaries)"
-    - "scripts/powerbi/** (deployment and refresh scripts)"
+    - "reports/**"
+    - "datasets/**"
+    - "docs/powerbi/**"
+    - "scripts/powerbi/**"
     - "GitHub Projects Status (In Progress -> In Review)"
   cannot_modify:
-    - "src/** (application source code)"
-    - "docs/prd/** (PRD documents)"
-    - "docs/adr/** (architecture docs)"
-    - "docs/ux/** (UX documents)"
-    - ".github/workflows/** (CI/CD pipelines)"
+    - "src/**"
+    - "docs/prd/**"
+    - "docs/adr/**"
+    - "docs/ux/**"
+    - ".github/workflows/**"
 tools: ['codebase', 'editFiles', 'search', 'changes', 'problems', 'usages', 'fetch', 'think', 'github/*']
 agents:
   - AgentX Data Scientist

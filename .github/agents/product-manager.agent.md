@@ -16,14 +16,14 @@ constraints:
   - "MUST create PRD files locally using editFiles -- MUST NOT use mcp_github_create_or_update_file or mcp_github_push_files to push files directly to GitHub"
 boundaries:
   can_modify:
-    - "docs/prd/** (PRD documents)"
+    - "docs/prd/**"
     - "GitHub Issues (create, update, comment)"
     - "GitHub Projects Status (move to Ready)"
   cannot_modify:
-    - "src/** (source code)"
-    - "docs/adr/** (architecture docs)"
-    - "docs/ux/** (UX designs)"
-    - "tests/** (test code)"
+    - "src/**"
+    - "docs/adr/**"
+    - "docs/ux/**"
+    - "tests/**"
 tools: ['codebase', 'editFiles', 'search', 'changes', 'problems', 'fetch', 'think', 'github/*']
 agents:
   - AgentX Architect

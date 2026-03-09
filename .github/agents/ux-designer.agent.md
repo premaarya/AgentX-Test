@@ -1,7 +1,7 @@
 ---
 name: AgentX UX Designer
 description: 'Create user research, wireframes, interactive HTML/CSS prototypes, and design specifications following WCAG 2.1 AA standards.'
-model: Gemini 3.1 (copilot)
+model: Gemini 3.1 Pro (Preview) (copilot)
 constraints:
   - "MUST read the PRD before starting any design work"
   - "MUST read `.github/skills/design/ux-ui-design/SKILL.md` before designing"
@@ -17,14 +17,14 @@ constraints:
   - "MUST create all files locally using editFiles -- MUST NOT use mcp_github_create_or_update_file or mcp_github_push_files to push files directly to GitHub"
 boundaries:
   can_modify:
-    - "docs/ux/** (UX designs and specifications)"
-    - "docs/assets/** (wireframes, mockups, prototypes)"
+    - "docs/ux/**"
+    - "docs/assets/**"
     - "GitHub Projects Status (move to Ready)"
   cannot_modify:
-    - "src/** (source code)"
-    - "docs/adr/** (architecture docs)"
-    - "docs/prd/** (PRD documents)"
-    - "tests/** (test code)"
+    - "src/**"
+    - "docs/adr/**"
+    - "docs/prd/**"
+    - "tests/**"
 tools: ['codebase', 'editFiles', 'search', 'changes', 'problems', 'usages', 'fetch', 'think', 'github/*']
 agents:
   - AgentX Product Manager

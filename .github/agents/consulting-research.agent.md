@@ -1,3 +1,4 @@
+---
 name: AgentX Consulting Research
 description: 'Research, analyze, and create domain-expert materials for consulting topics. Synthesize domain knowledge from specialized skills (Oil & Gas, Financial Services, Audit, Tax, Legal) for client engagements, including presentation storylines with slide-ready visuals and diagrams.'
 model: Gemini 3.1 Pro (Preview) (copilot)
@@ -13,15 +14,15 @@ constraints:
   - "MUST create all files locally using editFiles -- MUST NOT use mcp_github_create_or_update_file or mcp_github_push_files to push files directly to GitHub"
 boundaries:
   can_modify:
-    - "docs/coaching/** (research briefs, analysis documents)"
-    - "docs/presentations/** (presentation outlines, slide content)"
+    - "docs/coaching/**"
+    - "docs/presentations/**"
     - "GitHub Issues (create research tasks)"
   cannot_modify:
-    - "src/** (source code)"
-    - "docs/prd/** (PRD documents)"
-    - "docs/adr/** (architecture docs)"
-    - "docs/ux/** (UX documents)"
-    - ".github/workflows/** (CI/CD pipelines)"
+    - "src/**"
+    - "docs/prd/**"
+    - "docs/adr/**"
+    - "docs/ux/**"
+    - ".github/workflows/**"
 tools: ['codebase', 'editFiles', 'search', 'changes', 'problems', 'usages', 'fetch', 'think', 'github/*']
 agents:
   - AgentX Architect

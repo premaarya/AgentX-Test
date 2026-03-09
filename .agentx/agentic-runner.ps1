@@ -81,6 +81,7 @@ $Script:MODEL_MAP_COPILOT = @{
     'gpt-4.1'          = 'gpt-4.1'
     'gpt-4o-mini'      = 'gpt-4o-mini'
     'gemini 2.5 pro'   = 'gemini-2.5-pro'
+    'gemini 3.1 pro (preview)' = 'gemini-2.5-pro'
     'gemini 3 pro'     = 'gemini-2.5-pro'
     'gemini 3.1 pro'   = 'gemini-2.5-pro'
     'o4-mini'          = 'gpt-5-mini'
@@ -101,6 +102,7 @@ $Script:MODEL_MAP_GHMODELS = @{
     'gpt-4.1-mini'     = 'gpt-4.1-mini'
     'gpt-4.1-nano'     = 'gpt-4.1-nano'
     'gpt-4o-mini'      = 'gpt-4o-mini'
+    'gemini 3.1 pro (preview)' = 'gpt-4.1'
     'gemini 3 pro'     = 'gpt-4.1'
     'gemini 3.1 pro'   = 'gpt-4.1'
     'gemini 2.5 pro'   = 'gpt-4.1'
@@ -157,7 +159,7 @@ function Initialize-ApiMode([string]$ghToken) {
 
 function Resolve-ModelId([string]$agentModel) {
     if (-not $agentModel) { return $Script:DEFAULT_MODEL }
-    $lower = $agentModel.ToLower() -replace '\(copilot\)', '' | ForEach-Object { $_.Trim() }
+    $lower = $agentModel.ToLower() -replace '\(copilot\)', '' -replace '\s+', ' ' | ForEach-Object { $_.Trim() }
     $map = if ($Script:ApiMode -eq 'copilot') { $Script:MODEL_MAP_COPILOT } else { $Script:MODEL_MAP_GHMODELS }
     foreach ($key in @($map.Keys | Sort-Object Length -Descending)) {
         if ($lower -like "*$key*") {

@@ -17,15 +17,15 @@ constraints:
   - "MUST document research findings with sources in the ADR Context section"
 boundaries:
   can_modify:
-    - "docs/adr/** (Architecture Decision Records)"
-    - "docs/specs/** (Technical Specifications)"
-    - "docs/architecture/** (Architecture documents)"
+    - "docs/adr/**"
+    - "docs/specs/**"
+    - "docs/architecture/**"
     - "GitHub Projects Status (move to Ready)"
   cannot_modify:
-    - "src/** (source code)"
-    - "docs/prd/** (PRD documents)"
-    - "docs/ux/** (UX documents)"
-    - "tests/** (test code)"
+    - "src/**"
+    - "docs/prd/**"
+    - "docs/ux/**"
+    - "tests/**"
 tools: ['codebase', 'editFiles', 'search', 'changes', 'problems', 'usages', 'fetch', 'think', 'github/*']
 agents:
   - AgentX Product Manager

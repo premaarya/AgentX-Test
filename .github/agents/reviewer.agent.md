@@ -12,14 +12,14 @@ constraints:
   - "MUST create all files locally using editFiles -- MUST NOT use mcp_github_create_or_update_file or mcp_github_push_files to push files directly to GitHub"
 boundaries:
   can_modify:
-    - "docs/reviews/** (review documents)"
+    - "docs/reviews/**"
     - "GitHub Issues (comments, labels, status)"
     - "GitHub Projects Status (In Review -> Validating or In Progress)"
   cannot_modify:
-    - "src/** (source code)"
-    - "tests/** (test code)"
-    - "docs/prd/** (PRD documents)"
-    - "docs/adr/** (architecture docs)"
+    - "src/**"
+    - "tests/**"
+    - "docs/prd/**"
+    - "docs/adr/**"
 tools: ['codebase', 'editFiles', 'search', 'changes', 'problems', 'usages', 'fetch', 'think', 'github/*']
 agents:
   - AgentX Engineer

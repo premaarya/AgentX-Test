@@ -38,10 +38,9 @@ Designing agent cognition?
 
 ## Table of Contents
 
-1. [Cognitive Components](#cognitive-components)
-2. [RAG Patterns](#rag-patterns)
-3. [Memory Architectures](#memory-architectures)
-4. [References](#references)
+1. Cognitive Components
+2. Reference Patterns
+3. Troubleshooting
 
 ---
 
@@ -85,8 +84,8 @@ A complete agent "brain" consists of three layers:
 
 | Pattern | Description | File |
 |---------|-------------|------|
-| **RAG Pipeline** | Standard for ingesting and retrieving knowledge. | [pattern-rag-pipeline.md](pattern-rag-pipeline.md) |
-| **Memory System** | Schema for short-term and long-term memory. | [pattern-memory-systems.md](pattern-memory-systems.md) |
+| **RAG Pipeline** | Standard for ingesting and retrieving knowledge. | [pattern-rag-pipeline.md](references/pattern-rag-pipeline.md) |
+| **Memory System** | Schema for short-term and long-term memory. | [pattern-memory-systems.md](references/pattern-memory-systems.md) |
 
 ---
 

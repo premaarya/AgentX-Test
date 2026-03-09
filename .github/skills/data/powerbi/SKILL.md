@@ -10,15 +10,17 @@ compatibility:
   languages: ["dax", "m", "sql", "python"]
   frameworks: ["power-bi", "microsoft-fabric", "tabular-model", "xmla"]
   platforms: ["windows", "linux", "macos"]
-prerequisites:
-  - "Power BI Desktop or Power BI Service workspace"
-  - "Data source access (SQL Server, Fabric Lakehouse, Azure SQL, etc.)"
-  - "For TMDL/PBIP: Power BI Desktop with PBIP format enabled"
 ---
 
 # Power BI
 
 > Reports, semantic models, DAX measures, and data visualizations for business intelligence.
+
+## Prerequisites
+
+- Power BI Desktop or Power BI Service workspace
+- Data source access (SQL Server, Fabric Lakehouse, Azure SQL, etc.)
+- For TMDL/PBIP: Power BI Desktop with PBIP format enabled
 
 ## When to Use
 
