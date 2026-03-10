@@ -16,6 +16,11 @@ const ARCHIVE_URL = `https://github.com/jnPiyush/AgentX/archive/refs/heads/${BRA
  *  runtime files and core repo reference docs need downloading. */
 const ESSENTIAL_DIRS = ['.github/hooks', '.github/workflows', '.github/ISSUE_TEMPLATE'];
 const ESSENTIAL_FILES = [
+ '.agentx/agentx.ps1',
+ '.agentx/agentx-cli.ps1',
+ '.agentx/agentx.sh',
+ '.agentx/local-issue-manager.ps1',
+ '.agentx/local-issue-manager.sh',
  '.github/PULL_REQUEST_TEMPLATE.md',
  '.github/agent-delegation.md',
  '.github/agentx-security.yml',

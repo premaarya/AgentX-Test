@@ -22,6 +22,15 @@ const standaloneFiles = ['agent-delegation.md', 'agentx-security.yml', 'CODEOWNE
 // Root-level reference documents to bundle alongside .github/ assets
 const rootDocs = ['AGENTS.md', 'Skills.md'];
 
+// Root-level runtime files that extension-installed workspaces rely on
+const rootRuntimeFiles = [
+    { src: path.join(repoRoot, '.agentx', 'agentx.ps1'), dest: path.join('.agentx', 'agentx.ps1') },
+    { src: path.join(repoRoot, '.agentx', 'agentx-cli.ps1'), dest: path.join('.agentx', 'agentx-cli.ps1') },
+    { src: path.join(repoRoot, '.agentx', 'agentx.sh'), dest: path.join('.agentx', 'agentx.sh') },
+    { src: path.join(repoRoot, '.agentx', 'local-issue-manager.ps1'), dest: path.join('.agentx', 'local-issue-manager.ps1') },
+    { src: path.join(repoRoot, '.agentx', 'local-issue-manager.sh'), dest: path.join('.agentx', 'local-issue-manager.sh') },
+];
+
 // docs/ reference files referenced by agents (bundled to docs/ subdirectory)
 const docFiles = ['WORKFLOW.md', 'GUIDE.md', 'GOLDEN_PRINCIPLES.md', 'QUALITY_SCORE.md', 'tech-debt-tracker.md'];
 
@@ -83,6 +92,21 @@ for (const file of rootDocs) {
 }
 if (rootDocCount > 0) {
     console.log('  Copied ' + rootDocCount + ' root docs');
+}
+
+// Copy root runtime files
+let runtimeFileCount = 0;
+for (const file of rootRuntimeFiles) {
+    if (fs.existsSync(file.src)) {
+        const destFile = path.join(destRoot, file.dest);
+        fs.mkdirSync(path.dirname(destFile), { recursive: true });
+        fs.copyFileSync(file.src, destFile);
+        totalFiles++;
+        runtimeFileCount++;
+    }
+}
+if (runtimeFileCount > 0) {
+    console.log('  Copied ' + runtimeFileCount + ' runtime files');
 }
 
 // Copy docs/ reference files to docs/ subdirectory
