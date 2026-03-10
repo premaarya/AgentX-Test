@@ -94,7 +94,7 @@ Assert-FileExists ".agentx/agentx.sh" "Bash CLI launcher exists"
 Assert-FileExists ".agentx/agentic-runner.ps1" "CLI agentic loop runner exists"
 
 # Test CLI commands exist in the implementation file
-$cliCommands = @("ready", "state", "deps", "digest", "workflow", "hook", "version", "run", "loop", "validate", "config", "issue")
+$cliCommands = @("ready", "state", "deps", "digest", "workflow", "hook", "version", "run", "loop", "validate", "config", "issue", "backlog-sync")
 foreach ($cmd in $cliCommands) {
  Assert-FileContains ".agentx/agentx-cli.ps1" "'$cmd'" "CLI supports: $cmd"
 }

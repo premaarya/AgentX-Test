@@ -531,6 +531,7 @@ The CLI works across Local, GitHub, and ADO providers. It resolves the active pl
 .\.agentx\agentx.ps1 hook -Phase start -Agent engineer -Issue 42
 .\.agentx\agentx.ps1 run engineer "Fix the tests"   # Run agentic loop (LLM + tools)
 .\.agentx\agentx.ps1 config show                    # View current configuration
+.\.agentx\agentx.ps1 backlog-sync github --force    # Force re-sync local backlog to GitHub
 ```
 
 ```bash
@@ -541,6 +542,16 @@ The CLI works across Local, GitHub, and ADO providers. It resolves the active pl
 ./.agentx/agentx.sh hook start engineer 42
 ./.agentx/agentx.sh run engineer "Fix the tests"
 ```
+
+### Forced GitHub Backlog Re-Sync
+
+If you want to re-apply the current local backlog state to GitHub after the initial migration, run:
+
+```powershell
+.\.agentx\agentx.ps1 backlog-sync github --force
+```
+
+This reuses the stored local-to-remote issue mapping when available, updates remote issue title/body/labels, replays any new local comments that have not been migrated yet, and reapplies the latest local open/closed status plus GitHub Project V2 status.
 
 ### Issue JSON Format
 
@@ -661,22 +672,24 @@ gh label create "type:bug" --color "D73A4A"
 gh label create "type:spike" --color "FBCA04"
 gh label create "type:docs" --color "0075CA"
 
-# 3. Migrate open issues
-Get-ChildItem .agentx/issues/*.json | ForEach-Object {
-    $issue = Get-Content $_.FullName | ConvertFrom-Json
-    if ($issue.state -eq "open") {
-        gh issue create --title "$($issue.title)" --body "$($issue.body)" --label ($issue.labels -join ',')
-    }
-}
+# 3. Trigger AgentX once after GitHub is available
+# AgentX auto-detects the GitHub repo, switches provider, and syncs the full
+# local backlog to GitHub with the latest local status.
+.\.agentx\agentx.ps1 config show
 
-# 4. Push and update config
+# 4. Push and verify config
 git push -u origin master
-$config = Get-Content .agentx/config.json | ConvertFrom-Json
-$config.provider = "github"
-$config.integration = "github"
-$config.mode = "github"
-$config | ConvertTo-Json | Set-Content .agentx/config.json
+Get-Content .agentx/config.json -Raw
 ```
+
+What gets synced automatically:
+- All local backlog items under `.agentx/issues`, not only open issues.
+- Title, body, and labels for each local issue.
+- Latest local workflow status into GitHub Project V2 when `project` is configured.
+- Closed local items are closed remotely after migration.
+- Local comments are copied into the GitHub issue as migrated comments.
+
+If you prefer to switch explicitly before the first auto-detected command, set `repo` or `provider` in `.agentx/config.json` and the same full backlog sync will run on the next AgentX command.
 
 ### Azure DevOps Provider
 
@@ -902,7 +915,7 @@ go install github.com/github/github-mcp-server@latest
 | Problem | Solution |
 |---------|----------|
 | Local issues not creating | Run: `mkdir .agentx/issues -Force` then init config |
-| Switching Local to GitHub | Add remote: `git remote add origin <url>`, migrate issues with `gh issue create` |
+| Switching Local to GitHub | Add remote: `git remote add origin <url>`, then run an AgentX command to auto-switch provider and sync the full local backlog |
 
 ### Common Error Messages
 

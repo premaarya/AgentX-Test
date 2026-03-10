@@ -137,6 +137,15 @@ function Get-ConfigValue($cfg, [string]$name, $default = $null) {
     return $default
 }
 
+function Set-ConfigValue($cfg, [string]$name, $value) {
+    if ($cfg -is [hashtable]) {
+        $cfg[$name] = $value
+        return
+    }
+
+    $cfg | Add-Member -NotePropertyName $name -NotePropertyValue $value -Force
+}
+
 function Get-AgentXConfig {
     $cfg = Read-JsonFile $Script:CONFIG_FILE
     if (-not $cfg) { return @{ provider = 'local'; mode = 'local' } }
@@ -204,25 +213,31 @@ function Test-GitHubCliAuthenticated {
 
 $Script:ProviderInferencePrompted = $false
 
-function Try-PersistInferredProvider([string]$provider, [string]$reason) {
+function Try-PersistInferredProvider([string]$provider, [string]$reason, [string]$repo = '') {
     if ($Script:ProviderInferencePrompted) { return }
     $Script:ProviderInferencePrompted = $true
 
-    if ($Script:JsonOutput -or $env:AGENTX_SUPPRESS_PROVIDER_PROMPT -eq '1' -or -not (Test-InteractiveConsole)) { return }
-
     try {
-        Write-Host "$($C.y)  [WARN] Config says local mode, but $reason.$($C.n)"
-        $answer = Read-Host "  Switch config to provider '$provider' now? [Y/n]"
-        if ([string]::IsNullOrWhiteSpace($answer) -or $answer.Trim().ToLowerInvariant() -in @('y', 'yes')) {
-            Invoke-WithJsonLock $Script:CONFIG_FILE 'cli' {
-                $cfg = Get-AgentXConfig
-                $cfg.provider = $provider
-                Write-JsonFile $Script:CONFIG_FILE $cfg
+        Invoke-WithJsonLock $Script:CONFIG_FILE 'cli' {
+            $cfg = Get-AgentXConfig
+            Set-ConfigValue $cfg 'provider' $provider
+            Set-ConfigValue $cfg 'integration' $provider
+            Set-ConfigValue $cfg 'mode' $provider
+            if ($provider -eq 'github' -and -not [string]::IsNullOrWhiteSpace($repo)) {
+                Set-ConfigValue $cfg 'repo' $repo
             }
-            Write-Host "$($C.g)  Provider updated to '$provider' in .agentx/config.json.$($C.n)"
+            Write-JsonFile $Script:CONFIG_FILE $cfg
+        }
+        if (-not $Script:JsonOutput) {
+            Write-Host "$($C.y)  [WARN] Auto-switched provider to '$provider' because $reason.$($C.n)"
+        }
+        if ($provider -eq 'github' -and -not [string]::IsNullOrWhiteSpace($repo)) {
+            Sync-LocalBacklogToGitHubIfNeeded -Repo $repo -Reason $reason
         }
     } catch {
-        Write-Host "$($C.y)  [WARN] Failed to persist inferred provider '$provider': $_$($C.n)"
+        if (-not $Script:JsonOutput) {
+            Write-Host "$($C.y)  [WARN] Failed to persist inferred provider '$provider': $_$($C.n)"
+        }
     }
 }
 
@@ -235,20 +250,38 @@ function Get-AgentXProviderResolution {
 
     if ($provider) {
         $resolved = Resolve-AgentXProviderName "$provider"
+        if ($resolved -eq 'github') {
+            $repoSlug = Get-GitHubRepoSlug
+            if (-not [string]::IsNullOrWhiteSpace($repoSlug) -and (Test-GitHubCliAuthenticated)) {
+                Sync-LocalBacklogToGitHubIfNeeded -Repo $repoSlug -Reason 'GitHub provider is configured'
+            }
+        }
         return [PSCustomObject]@{ name = $resolved; source = 'provider'; inferred = $false; warning = '' }
     }
 
     if ($integration) {
         $resolved = Resolve-AgentXProviderName "$integration"
+        if ($resolved -eq 'github') {
+            $repoSlug = Get-GitHubRepoSlug
+            if (-not [string]::IsNullOrWhiteSpace($repoSlug) -and (Test-GitHubCliAuthenticated)) {
+                Sync-LocalBacklogToGitHubIfNeeded -Repo $repoSlug -Reason 'GitHub integration is configured'
+            }
+        }
         return [PSCustomObject]@{ name = $resolved; source = 'integration'; inferred = $false; warning = '' }
     }
 
-    if (-not [string]::IsNullOrWhiteSpace($repo) -and (Test-GitHubCliAuthenticated)) {
-        $reason = "repo '$repo' is configured and GitHub CLI authentication is available"
-        if (Resolve-AgentXProviderName "$mode" -eq 'local') {
-            Try-PersistInferredProvider -provider 'github' -reason $reason
+    $repoSlug = Get-GitHubRepoSlug
+    if (-not [string]::IsNullOrWhiteSpace($repoSlug) -and (Test-GitHubCliAuthenticated)) {
+        $source = if (-not [string]::IsNullOrWhiteSpace($repo)) { 'repo' } else { 'remote' }
+        $reason = if ($source -eq 'repo') {
+            "repo '$repoSlug' is configured and GitHub CLI authentication is available"
+        } else {
+            "GitHub remote '$repoSlug' is configured and GitHub CLI authentication is available"
         }
-        return [PSCustomObject]@{ name = 'github'; source = 'repo'; inferred = $true; warning = "Inferred GitHub provider because $reason." }
+        if (Resolve-AgentXProviderName "$mode" -eq 'local') {
+            Try-PersistInferredProvider -provider 'github' -reason $reason -repo $repoSlug
+        }
+        return [PSCustomObject]@{ name = 'github'; source = $source; inferred = $true; warning = "Inferred GitHub provider because $reason." }
     }
 
     $resolved = Resolve-AgentXProviderName "$mode"
@@ -271,6 +304,243 @@ function Get-AgentXProviderInfo {
         warning = $providerResolution.warning
         readyUsesExplicitReadyState = ($provider -eq 'local')
         validationHost = if ($provider -eq 'github') { 'github-actions' } elseif ($provider -eq 'ado') { 'azure-pipelines' } else { 'local' }
+    }
+}
+
+function Get-LocalBacklogIssues {
+    if ((Get-PersistenceMode) -eq 'git') {
+        $files = Get-GitFileList 'issues'
+        return @($files | Where-Object { $_ -match '\.json$' } | ForEach-Object {
+            Read-GitJson "issues/$_"
+        } | Where-Object { $_ } | Sort-Object -Property number)
+    }
+
+    if (-not (Test-Path $Script:ISSUES_DIR)) { return @() }
+    return @(Get-ChildItem $Script:ISSUES_DIR -Filter '*.json' |
+        ForEach-Object { Read-JsonFile $_.FullName } |
+        Where-Object { $_ } |
+        Sort-Object -Property number)
+}
+
+function Get-BacklogSyncStatus($issue) {
+    if ($issue.state -eq 'closed') { return 'Done' }
+    if (-not [string]::IsNullOrWhiteSpace([string]$issue.status)) { return [string]$issue.status }
+    return 'Backlog'
+}
+
+function Get-GitHubBacklogSyncState($cfg, [string]$repo) {
+    $rawState = Get-ConfigValue $cfg 'githubBacklogSync'
+    $issueMap = @{}
+    if ($rawState) {
+        $rawMap = Get-ConfigValue $rawState 'issueMap'
+        if ($rawMap -is [hashtable]) {
+            foreach ($entry in $rawMap.GetEnumerator()) {
+                $issueMap[[string]$entry.Key] = [int]$entry.Value
+            }
+        } elseif ($rawMap) {
+            foreach ($property in $rawMap.PSObject.Properties) {
+                $issueMap[[string]$property.Name] = [int]$property.Value
+            }
+        }
+    }
+
+    $stateRepo = [string](Get-ConfigValue $rawState 'repo' '')
+    if ($stateRepo -and $repo -and $stateRepo -ne $repo) {
+        $issueMap = @{}
+        $rawState = $null
+        $stateRepo = ''
+    }
+
+    return [PSCustomObject]@{
+        repo = if ($stateRepo) { $stateRepo } else { $repo }
+        completed = [bool](Get-ConfigValue $rawState 'completed' $false)
+        issueMap = $issueMap
+        migratedAt = [string](Get-ConfigValue $rawState 'migratedAt' '')
+    }
+}
+
+function Save-GitHubBacklogSyncState($cfg, [string]$repo, [hashtable]$issueMap, [bool]$completed) {
+    $syncState = [PSCustomObject]@{
+        repo = $repo
+        completed = $completed
+        issueMap = $issueMap
+        migratedAt = if ($completed) { Get-Timestamp } else { '' }
+    }
+    Set-ConfigValue $cfg 'githubBacklogSync' $syncState
+}
+
+function Sync-LocalIssueCommentsToGitHub($localIssue, $remoteIssue, [int]$remoteIssueNumber) {
+    $remoteCommentBodies = @{}
+    foreach ($remoteComment in @($remoteIssue.comments)) {
+        $body = [string](Get-ConfigValue $remoteComment 'body' '')
+        if (-not [string]::IsNullOrWhiteSpace($body)) {
+            $remoteCommentBodies[$body] = $true
+        }
+    }
+
+    $syncStatus = Get-BacklogSyncStatus $localIssue
+    $migrationSummary = "[AgentX migration] Migrated from local issue #$($localIssue.number). Original status: $syncStatus. Original state: $($localIssue.state)."
+    if (-not $remoteCommentBodies.ContainsKey($migrationSummary)) {
+        $null = Invoke-GitHubCli @('issue', 'comment', "$remoteIssueNumber", '--body', $migrationSummary) "Failed to write migration summary for GitHub issue #$remoteIssueNumber." -AllowEmptyOutput
+        $remoteCommentBodies[$migrationSummary] = $true
+    }
+
+    foreach ($comment in @($localIssue.comments)) {
+        $commentBody = [string](Get-ConfigValue $comment 'body' '')
+        if ([string]::IsNullOrWhiteSpace($commentBody)) { continue }
+        $createdAt = [string](Get-ConfigValue $comment 'created' '')
+        $prefix = if ($createdAt) {
+            "[Migrated local comment from $createdAt]"
+        } else {
+            '[Migrated local comment]'
+        }
+        $formattedBody = "$prefix`n$commentBody"
+        if ($remoteCommentBodies.ContainsKey($formattedBody)) { continue }
+        $null = Invoke-GitHubCli @('issue', 'comment', "$remoteIssueNumber", '--body', $formattedBody) "Failed to migrate a comment for GitHub issue #$remoteIssueNumber." -AllowEmptyOutput
+        $remoteCommentBodies[$formattedBody] = $true
+    }
+}
+
+function Sync-LocalIssueToGitHub($localIssue, [int]$remoteIssueNumber) {
+    $remoteIssue = Get-GitHubIssue $remoteIssueNumber
+    if (-not $remoteIssue) { return $false }
+
+    $editArgs = @('issue', 'edit', "$remoteIssueNumber")
+    $hasEdit = $false
+    if ($remoteIssue.title -ne $localIssue.title) {
+        $editArgs += @('--title', $localIssue.title)
+        $hasEdit = $true
+    }
+
+    $localBody = if ($localIssue.body) { [string]$localIssue.body } else { '' }
+    $remoteBody = if ($remoteIssue.body) { [string]$remoteIssue.body } else { '' }
+    if ($remoteBody -ne $localBody) {
+        $editArgs += @('--body', $localBody)
+        $hasEdit = $true
+    }
+
+    $localLabels = @($localIssue.labels | ForEach-Object { [string]$_ } | Where-Object { $_ })
+    $remoteLabels = @($remoteIssue.labels | ForEach-Object { [string]$_ } | Where-Object { $_ })
+    foreach ($label in ($localLabels | Where-Object { $_ -notin $remoteLabels })) {
+        $editArgs += @('--add-label', $label)
+        $hasEdit = $true
+    }
+    foreach ($label in ($remoteLabels | Where-Object { $_ -notin $localLabels })) {
+        $editArgs += @('--remove-label', $label)
+        $hasEdit = $true
+    }
+
+    if ($hasEdit) {
+        $null = Invoke-GitHubCli $editArgs "Failed to update migrated GitHub issue #$remoteIssueNumber." -AllowEmptyOutput
+        $remoteIssue = Get-GitHubIssue $remoteIssueNumber
+        if (-not $remoteIssue) { return $false }
+    }
+
+    Sync-LocalIssueCommentsToGitHub $localIssue $remoteIssue $remoteIssueNumber
+
+    $syncStatus = Get-BacklogSyncStatus $localIssue
+    if ($localIssue.state -eq 'closed') {
+        if ($remoteIssue.state -ne 'closed') {
+            $null = Invoke-GitHubCli @('issue', 'close', "$remoteIssueNumber", '--reason', 'completed') "Failed to close migrated GitHub issue #$remoteIssueNumber." -AllowEmptyOutput
+        }
+        if (Test-GitHubProjectConfigured) {
+            $null = Set-GitHubProjectIssueStatus $remoteIssueNumber 'Done' $true
+        }
+        return $true
+    }
+
+    if ($remoteIssue.state -eq 'closed') {
+        $null = Invoke-GitHubCli @('issue', 'reopen', "$remoteIssueNumber") "Failed to reopen migrated GitHub issue #$remoteIssueNumber." -AllowEmptyOutput
+    }
+    if (Test-GitHubProjectConfigured) {
+        $null = Set-GitHubProjectIssueStatus $remoteIssueNumber $syncStatus $true
+    }
+    return $true
+}
+
+function Create-GitHubIssueFromLocalIssue($localIssue, [string]$localIssueNumber) {
+    $createArgs = @('issue', 'create', '--title', $localIssue.title)
+    if ($localIssue.body) { $createArgs += @('--body', $localIssue.body) }
+    foreach ($label in @($localIssue.labels)) {
+        if ($label) { $createArgs += @('--label', [string]$label) }
+    }
+
+    $createResult = Invoke-GitHubCli $createArgs "Failed to migrate local issue #$localIssueNumber to GitHub."
+    $createText = ($createResult | Out-String).Trim()
+    if ($createText -notmatch '/issues/(\d+)') {
+        throw "GitHub migration created local issue #$localIssueNumber but could not determine the remote issue number."
+    }
+
+    return [int]$Matches[1]
+}
+
+function Sync-LocalBacklogToGitHubIfNeeded([string]$Repo, [string]$Reason, [switch]$Force) {
+    if ([string]::IsNullOrWhiteSpace($Repo) -or -not (Test-GitHubCliAuthenticated)) { return }
+
+    $localIssues = @(Get-LocalBacklogIssues)
+    Invoke-WithJsonLock $Script:CONFIG_FILE 'cli' {
+        $cfg = Get-AgentXConfig
+        $syncState = Get-GitHubBacklogSyncState $cfg $Repo
+        Set-ConfigValue $cfg 'provider' 'github'
+        Set-ConfigValue $cfg 'integration' 'github'
+        Set-ConfigValue $cfg 'mode' 'github'
+        Set-ConfigValue $cfg 'repo' $Repo
+        if (-not $syncState.completed) {
+            Save-GitHubBacklogSyncState $cfg $Repo $syncState.issueMap $false
+        }
+        Write-JsonFile $Script:CONFIG_FILE $cfg
+    }
+
+    $cfg = Get-AgentXConfig
+    $syncState = Get-GitHubBacklogSyncState $cfg $Repo
+    if ($syncState.completed -and -not $Force) { return }
+
+    if ($localIssues.Count -eq 0) {
+        Invoke-WithJsonLock $Script:CONFIG_FILE 'cli' {
+            $lockedCfg = Get-AgentXConfig
+            Save-GitHubBacklogSyncState $lockedCfg $Repo $syncState.issueMap $true
+            Write-JsonFile $Script:CONFIG_FILE $lockedCfg
+        }
+        return
+    }
+
+    $migratedCount = 0
+    $syncedCount = 0
+    foreach ($issue in $localIssues) {
+        $localIssueNumber = [string]$issue.number
+        if ($syncState.issueMap.ContainsKey($localIssueNumber)) {
+            $remoteIssueNumber = [int]$syncState.issueMap[$localIssueNumber]
+            if (-not (Sync-LocalIssueToGitHub $issue $remoteIssueNumber)) {
+                $remoteIssueNumber = Create-GitHubIssueFromLocalIssue $issue $localIssueNumber
+                $syncState.issueMap[$localIssueNumber] = $remoteIssueNumber
+                $migratedCount++
+            } else {
+                $syncedCount++
+                continue
+            }
+        } else {
+            $remoteIssueNumber = Create-GitHubIssueFromLocalIssue $issue $localIssueNumber
+            $syncState.issueMap[$localIssueNumber] = $remoteIssueNumber
+            $migratedCount++
+        }
+
+        $null = Sync-LocalIssueToGitHub $issue $remoteIssueNumber
+
+        Invoke-WithJsonLock $Script:CONFIG_FILE 'cli' {
+            $lockedCfg = Get-AgentXConfig
+            Save-GitHubBacklogSyncState $lockedCfg $Repo $syncState.issueMap $false
+            Write-JsonFile $Script:CONFIG_FILE $lockedCfg
+        }
+    }
+
+    Invoke-WithJsonLock $Script:CONFIG_FILE 'cli' {
+        $lockedCfg = Get-AgentXConfig
+        Save-GitHubBacklogSyncState $lockedCfg $Repo $syncState.issueMap $true
+        Write-JsonFile $Script:CONFIG_FILE $lockedCfg
+    }
+
+    if (-not $Script:JsonOutput -and ($migratedCount -gt 0 -or $syncedCount -gt 0)) {
+        Write-Host "$($C.g)  Synced local backlog to GitHub for $Repo. Created: $migratedCount, refreshed: $syncedCount.$($C.n)"
     }
 }
 
@@ -462,6 +732,33 @@ function Invoke-GitSyncCmd {
     }
 }
 
+function Invoke-BacklogSyncCmd {
+    $target = if ($Script:SubArgs.Count -gt 0 -and -not $Script:SubArgs[0].StartsWith('-')) { $Script:SubArgs[0] } else { 'github' }
+    $force = Test-Flag @('--force', '-f')
+
+    switch ($target.ToLowerInvariant()) {
+        'github' {
+            $repo = Get-GitHubRepoSlug
+            if ([string]::IsNullOrWhiteSpace($repo)) {
+                Write-Host 'Error: No GitHub repo configured or detected from origin.'
+                exit 1
+            }
+            if (-not (Test-GitHubCliAuthenticated)) {
+                Write-Host 'Error: GitHub CLI authentication is required to sync backlog to GitHub.'
+                exit 1
+            }
+            Sync-LocalBacklogToGitHubIfNeeded -Repo $repo -Reason 'manual backlog sync request' -Force:$force
+            if (-not $Script:JsonOutput) {
+                Write-Host "$($C.g)  GitHub backlog sync completed for $repo.$($C.n)"
+            }
+        }
+        default {
+            Write-Host "Usage: agentx backlog-sync [github] [--force]"
+            exit 1
+        }
+    }
+}
+
 function Invoke-Shell([string]$cmd) {
     try {
         $result = & $env:COMSPEC /c $cmd 2>$null
@@ -605,6 +902,10 @@ function Get-GitHubIssue([int]$num) {
 
 function Invoke-GitHubCli([string[]]$arguments, [string]$failureMessage, [switch]$AllowEmptyOutput) {
     Assert-GitHubCliAvailable
+    $repo = Get-GitHubRepoSlug
+    if (-not [string]::IsNullOrWhiteSpace($repo) -and $arguments.Count -gt 0 -and $arguments[0] -eq 'issue' -and ('-R' -notin $arguments) -and ('--repo' -notin $arguments)) {
+        $arguments = @($arguments[0], '-R', $repo) + @($arguments[1..($arguments.Count - 1)])
+    }
     $output = & gh @arguments 2>&1
     $exitCode = if (Test-Path variable:LASTEXITCODE) { $LASTEXITCODE } else { 0 }
     $outputText = ($output | Out-String).Trim()
@@ -1771,10 +2072,16 @@ function Invoke-ConfigCmd {
             }
             Invoke-WithJsonLock $Script:CONFIG_FILE 'cli' {
                 $cfg = Get-AgentXConfig
-                $cfg.$key = $value
+                Set-ConfigValue $cfg $key $value
                 Write-JsonFile $Script:CONFIG_FILE $cfg
             }
             Write-Host "$($C.g)  Set $key = $value$($C.n)"
+            if ($key -in @('provider', 'integration', 'mode', 'repo')) {
+                $repoSlug = Get-GitHubRepoSlug
+                if (-not [string]::IsNullOrWhiteSpace($repoSlug) -and (Get-AgentXProvider) -eq 'github' -and (Test-GitHubCliAuthenticated)) {
+                    Sync-LocalBacklogToGitHubIfNeeded -Repo $repoSlug -Reason "config '$key' changed"
+                }
+            }
         }
         'get' {
             if ($Script:SubArgs.Count -lt 2) {
@@ -2280,6 +2587,7 @@ $($C.w)  Commands:$($C.n)
   hooks install                    Install git hooks
   config [show|get|set]            View/update configuration
   issue <create|list|get|update|close|comment>  Issue management
+    backlog-sync [github] [--force]  Force sync local backlog to GitHub on demand
   lessons [list|query|show|stats|promote|archive|clean]  Learning pipeline management
   tokens [count|check|report]      Token budget management
   score <engineer|architect|pm> [issue]  Score agent output quality
@@ -2323,6 +2631,7 @@ switch ($Script:Command) {
     'hooks'    { Invoke-HooksCmd }
     'config'   { Invoke-ConfigCmd }
     'issue'    { Invoke-IssueCmd }
+    'backlog-sync' { Invoke-BacklogSyncCmd }
     'lessons'  { Invoke-LessonsCmd }
     'git-sync' { Invoke-GitSyncCmd }
     'run'      { Invoke-RunCmd }

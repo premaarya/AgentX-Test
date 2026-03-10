@@ -104,6 +104,19 @@ $ErrorActionPreference = 'Stop'
 $statePath = Join-Path $PSScriptRoot 'gh-state.json'
 $state = Get-Content $statePath -Raw | ConvertFrom-Json -Depth 20
 
+    for ($i = 0; $i -lt $Args.Count; $i++) {
+        if (($Args[$i] -eq '-R' -or $Args[$i] -eq '--repo') -and ($i + 1) -lt $Args.Count) {
+            if ($i -eq 0) {
+                $Args = @($Args[2..($Args.Count - 1)])
+            } elseif (($i + 2) -le ($Args.Count - 1)) {
+                $Args = @($Args[0..($i - 1)] + $Args[($i + 2)..($Args.Count - 1)])
+            } else {
+                $Args = @($Args[0..($i - 1)])
+            }
+            break
+        }
+    }
+
 function Save-State {
     $state | ConvertTo-Json -Depth 20 | Set-Content $statePath -Encoding utf8
 }
@@ -193,6 +206,13 @@ switch ($Args[0]) {
                 $issue.state = 'CLOSED'
                 Save-State
             }
+            'reopen' {
+                $number = [int]$Args[2]
+                $issue = Get-Issue $number
+                if (-not $issue) { Write-Error 'Issue not found'; exit 1 }
+                $issue.state = 'OPEN'
+                Save-State
+            }
             'comment' {
                 $number = [int]$Args[2]
                 $body = Get-ArgValue $Args '--body'
@@ -277,6 +297,7 @@ Write-Host ' ================================================' -ForegroundColor 
 $localRoot = $null
 $githubRoot = $null
 $inferredRoot = $null
+$remoteDetectedRoot = $null
 
 try {
     $localRoot = New-TestWorkspace 'local'
@@ -385,7 +406,103 @@ try {
         $configShowJson = $configShow.Output | ConvertFrom-Json -Depth 10
         Assert-True ($configShow.ExitCode -eq 0) 'Config show succeeds for repo-inferred provider'
         Assert-True ($configShowJson.activeProvider -eq 'github') 'Config show reports inferred GitHub provider'
-        Assert-True ($configShowJson.providerSource -eq 'repo' -and $configShowJson.providerInferred) 'Config show reports repo as inferred provider source'
+        $persistedConfig = Get-Content (Join-Path $inferredRoot '.agentx\config.json') -Raw | ConvertFrom-Json -Depth 10
+        Assert-True ($persistedConfig.provider -eq 'github' -and $persistedConfig.repo -eq 'test-owner/test-repo') 'Repo-configured workspace auto-persists GitHub provider settings'
+
+        $remoteDetectedRoot = New-TestWorkspace 'remote-detected-transition'
+        New-Item -ItemType Directory -Path (Join-Path $remoteDetectedRoot '.agentx\issues') -Force | Out-Null
+        Write-Utf8File (Join-Path $remoteDetectedRoot '.agentx\config.json') (@{
+            mode = 'local'
+            project = 4
+            created = '2026-03-08T00:00:00Z'
+            enforceIssues = $false
+            nextIssueNumber = 3
+        } | ConvertTo-Json -Depth 5)
+        Write-Utf8File (Join-Path $remoteDetectedRoot '.agentx\issues\1.json') (@{
+            number = 1
+            title = '[Story] Migrated Open'
+            body = 'Open local backlog item'
+            labels = @('type:story', 'priority:p1')
+            status = 'In Progress'
+            state = 'open'
+            created = '2026-03-08T00:00:00Z'
+            updated = '2026-03-08T00:10:00Z'
+            comments = @(
+                @{ body = 'Investigating locally'; created = '2026-03-08T00:11:00Z' }
+            )
+        } | ConvertTo-Json -Depth 10)
+        Write-Utf8File (Join-Path $remoteDetectedRoot '.agentx\issues\2.json') (@{
+            number = 2
+            title = '[Bug] Migrated Closed'
+            body = 'Closed local backlog item'
+            labels = @('type:bug')
+            status = 'Done'
+            state = 'closed'
+            created = '2026-03-08T00:20:00Z'
+            updated = '2026-03-08T00:30:00Z'
+            comments = @(
+                @{ body = 'Fixed locally'; created = '2026-03-08T00:25:00Z' }
+            )
+        } | ConvertTo-Json -Depth 10)
+
+        $null = & git -C $remoteDetectedRoot init 2>$null
+        $null = & git -C $remoteDetectedRoot remote add origin 'https://github.com/test-owner/test-repo.git' 2>$null
+
+        $transitionRun = Invoke-AgentX $remoteDetectedRoot @('config', 'show', '--json')
+        $transitionJson = $transitionRun.Output | ConvertFrom-Json -Depth 10
+        $state = Get-GitHubMockState $toolsDir
+        $transitionConfig = Get-Content (Join-Path $remoteDetectedRoot '.agentx\config.json') -Raw | ConvertFrom-Json -Depth 20
+        $migratedOpen = @($state.issues | Where-Object { $_.title -eq '[Story] Migrated Open' } | Select-Object -First 1)[0]
+        $migratedClosed = @($state.issues | Where-Object { $_.title -eq '[Bug] Migrated Closed' } | Select-Object -First 1)[0]
+        $migratedOpenItem = @($state.project.items | Where-Object { [int]$_.content.number -eq [int]$migratedOpen.number } | Select-Object -First 1)[0]
+        $migratedClosedItem = @($state.project.items | Where-Object { [int]$_.content.number -eq [int]$migratedClosed.number } | Select-Object -First 1)[0]
+        Assert-True ($transitionRun.ExitCode -eq 0) 'GitHub remote detection transition command succeeds'
+        Assert-True ($transitionJson.activeProvider -eq 'github') 'GitHub remote detection activates GitHub provider'
+        Assert-True ($transitionConfig.provider -eq 'github' -and $transitionConfig.repo -eq 'test-owner/test-repo') 'GitHub remote detection persists provider and repo'
+        Assert-True ($transitionConfig.githubBacklogSync.completed -and $transitionConfig.githubBacklogSync.issueMap.'1' -and $transitionConfig.githubBacklogSync.issueMap.'2') 'GitHub remote detection records completed backlog sync with issue mappings'
+        Assert-True ($migratedOpenItem.status -eq 'In progress') 'Migrated open local issue keeps latest status in GitHub project'
+        Assert-True ($migratedClosed.state -eq 'CLOSED' -and $migratedClosedItem.status -eq 'Done') 'Migrated closed local issue is closed remotely and marked Done'
+        Assert-True (@($migratedOpen.comments).Count -ge 2) 'Migrated open local issue preserves migration summary and local comments'
+
+        Write-Utf8File (Join-Path $remoteDetectedRoot '.agentx\issues\1.json') (@{
+            number = 1
+            title = '[Story] Migrated Open Updated'
+            body = 'Open local backlog item updated'
+            labels = @('type:story', 'priority:p0')
+            status = 'Ready'
+            state = 'open'
+            created = '2026-03-08T00:00:00Z'
+            updated = '2026-03-08T01:00:00Z'
+            comments = @(
+                @{ body = 'Investigating locally'; created = '2026-03-08T00:11:00Z' },
+                @{ body = 'Ready for pickup'; created = '2026-03-08T01:05:00Z' }
+            )
+        } | ConvertTo-Json -Depth 10)
+        Write-Utf8File (Join-Path $remoteDetectedRoot '.agentx\issues\2.json') (@{
+            number = 2
+            title = '[Bug] Migrated Closed Reopened'
+            body = 'Closed local backlog item reopened'
+            labels = @('type:bug', 'priority:p2')
+            status = 'In Review'
+            state = 'open'
+            created = '2026-03-08T00:20:00Z'
+            updated = '2026-03-08T01:10:00Z'
+            comments = @(
+                @{ body = 'Fixed locally'; created = '2026-03-08T00:25:00Z' },
+                @{ body = 'Reopened after regression'; created = '2026-03-08T01:15:00Z' }
+            )
+        } | ConvertTo-Json -Depth 10)
+
+        $forceSync = Invoke-AgentX $remoteDetectedRoot @('backlog-sync', 'github', '--force')
+        $state = Get-GitHubMockState $toolsDir
+        $forceSyncedOpen = @($state.issues | Where-Object { [int]$_.number -eq [int]$transitionConfig.githubBacklogSync.issueMap.'1' } | Select-Object -First 1)[0]
+        $forceSyncedReopened = @($state.issues | Where-Object { [int]$_.number -eq [int]$transitionConfig.githubBacklogSync.issueMap.'2' } | Select-Object -First 1)[0]
+        $forceOpenItem = @($state.project.items | Where-Object { [int]$_.content.number -eq [int]$forceSyncedOpen.number } | Select-Object -First 1)[0]
+        $forceReopenedItem = @($state.project.items | Where-Object { [int]$_.content.number -eq [int]$forceSyncedReopened.number } | Select-Object -First 1)[0]
+        Assert-True ($forceSync.ExitCode -eq 0) 'backlog-sync github --force exits successfully'
+        Assert-True ($forceSyncedOpen.title -eq '[Story] Migrated Open Updated' -and $forceOpenItem.status -eq 'Ready') 'Forced backlog sync refreshes mapped open issues with latest title and status'
+        Assert-True ($forceSyncedReopened.state -eq 'OPEN' -and $forceReopenedItem.status -eq 'In review') 'Forced backlog sync can reopen mapped issues and apply latest status'
+        Assert-True (@($forceSyncedReopened.comments).Count -ge 3) 'Forced backlog sync adds newly introduced local comments without dropping existing migration history'
     } finally {
         $env:PATH = $originalPath
     }
@@ -394,6 +511,7 @@ finally {
     Remove-TestWorkspace $localRoot
     Remove-TestWorkspace $githubRoot
     Remove-TestWorkspace $inferredRoot
+    Remove-TestWorkspace $remoteDetectedRoot
 }
 
 Write-Host ''
