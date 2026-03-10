@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
- Install AgentX v8.2.2 - Download, copy, configure.
+ Install AgentX v8.2.5 - Download, copy, configure.
 
 .PARAMETER Mode
  github - Full features: GitHub Actions, PRs, Projects (asks for repo/project info)
@@ -19,17 +19,25 @@
 .PARAMETER NoSetup
  Skip interactive setup (git init, hooks, username)
 
+.PARAMETER Azure
+ Install Azure companion support when setting up AgentX. This is also auto-detected
+ for existing Azure-oriented workspaces.
+
 .EXAMPLE
  .\install.ps1 # Local mode - no prompts
  .\install.ps1 -Mode github # GitHub mode - asks for repo/project
  .\install.ps1 -Path myproject # Install into a subfolder
  .\install.ps1 -Force # Full reinstall (overwrite)
+ .\install.ps1 -Azure # Force Azure Skills companion install
 
  # One-liner install (local mode, no prompts - auto-detects piped execution)
  irm https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.ps1 | iex
 
  # One-liner for GitHub mode
  $env:AGENTX_MODE="github"; irm https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.ps1 | iex
+
+ # One-liner to include Azure companion support
+ $env:AGENTX_AZURE="true"; irm https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.ps1 | iex
 #>
 
 param(
@@ -37,7 +45,8 @@ param(
  [string]$Path,
  [switch]$Force,
  [switch]$NoSetup,
- [switch]$Local
+ [switch]$Local,
+ [switch]$Azure
 )
 
 # Environment variable overrides (for irm | iex one-liner usage)
@@ -46,6 +55,7 @@ if (-not $Path -and $env:AGENTX_PATH) { $Path = $env:AGENTX_PATH }
 # Legacy: support AGENTX_LOCAL=true -> Mode=local
 if (-not $Mode -and $env:AGENTX_LOCAL -eq "true") { $Mode = "local" }
 if (-not $PSBoundParameters.ContainsKey('NoSetup') -and $env:AGENTX_NOSETUP -eq "true") { $NoSetup = [switch]$true }
+if (-not $PSBoundParameters.ContainsKey('Azure') -and $env:AGENTX_AZURE -eq "true") { $Azure = [switch]$true }
 # -Local switch -> Mode=local shorthand
 if ($Local -and -not $Mode) { $Mode = "local" }
 
@@ -90,6 +100,35 @@ $ARCHIVE = "https://github.com/jnPiyush/AgentX/archive/refs/heads/$BRANCH.zip"
 function Write-OK($m) { Write-Host "[OK] $m" -ForegroundColor Green }
 function Write-Skip($m) { Write-Host "[--] $m" -ForegroundColor DarkGray }
 
+function Test-AzureWorkspace {
+ if ($Azure) { return $true }
+
+ foreach ($dir in @('.azure')) {
+  if (Test-Path $dir) { return $true }
+ }
+
+ foreach ($file in @('azure.yaml', 'azure-pipelines.yml', 'azure-pipelines.yaml', 'host.json', 'local.settings.json')) {
+  if (Test-Path $file) { return $true }
+ }
+
+ try {
+  $azureInfra = Get-ChildItem -Path . -Recurse -File -Include *.bicep, *.bicepparam -ErrorAction SilentlyContinue | Select-Object -First 1
+  if ($azureInfra) { return $true }
+ } catch {}
+
+ foreach ($hintFile in @('README.md', 'package.json', 'pyproject.toml', '.agentx/config.json')) {
+  try {
+   if (-not (Test-Path $hintFile)) { continue }
+   $content = Get-Content $hintFile -Raw
+   if ($content -match '\bazure\b' -or $content -match '\bazd\b' -or $content -match 'Azure Functions' -or $content -match 'Container Apps' -or $content -match 'App Service' -or $content -match 'Static Web Apps') {
+    return $true
+   }
+  } catch {}
+ }
+
+ return $false
+}
+
 # -- Cleanup helper (guaranteed on exit, error, or Ctrl+C) --
 function Invoke-InstallCleanup {
  foreach ($p in @($TMP, $TMPRAW)) {
@@ -113,7 +152,7 @@ try {
 # -- Banner ----------------------------------------------
 Write-Host ""
 Write-Host "+===================================================+" -ForegroundColor Cyan
-Write-Host "| AgentX v8.2.2 - AI Agent Orchestration |" -ForegroundColor Cyan
+Write-Host "| AgentX v8.2.5 - AI Agent Orchestration |" -ForegroundColor Cyan
 Write-Host "+===================================================+" -ForegroundColor Cyan
 Write-Host ""
 
@@ -140,12 +179,12 @@ if (Test-Path ".agentx/version.json") {
  } catch {}
 }
 
-if ($previousVersion -and $previousVersion -ne "8.2.2") {
+if ($previousVersion -and $previousVersion -ne "8.2.5") {
  $majorVersion = 0
  try { $majorVersion = [int]($previousVersion -split '\.')[0] } catch {}
 
  if ($majorVersion -lt 8) {
-    Write-Host "[!] Detected AgentX v$previousVersion - upgrading to v8.2.2..." -ForegroundColor Yellow
+    Write-Host "[!] Detected AgentX v$previousVersion - upgrading to v8.2.5..." -ForegroundColor Yellow
   Write-Host "  Uninstalling v$previousVersion and performing clean install." -ForegroundColor DarkGray
 
   # Back up user data that must survive the upgrade
@@ -280,12 +319,12 @@ Write-Host "[3] Configuring runtime..." -ForegroundColor Cyan
 # Version tracking
 $versionFile = ".agentx/version.json"
 @{
- version = "8.2.2"
+  version = "8.2.5"
  mode = $Mode
  installedAt = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
  updatedAt = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
 } | ConvertTo-Json | Set-Content $versionFile
-Write-OK "Version 8.2.2 recorded"
+Write-OK "Version 8.2.5 recorded"
 
 # Merge AgentX entries into user's .gitignore
 $MARKER_START = "# --- AgentX (auto-generated, do not edit this block) ---"
@@ -488,10 +527,14 @@ if (-not $NoSetup) {
 
 # -- Step 5: Companion Extensions ---------------------
 Write-Host "[5] Companion extensions..." -ForegroundColor Cyan
+$azureCompanionRequested = Test-AzureWorkspace
 $companionExtensions = @(
- @{ id = "ms-azuretools.vscode-azure-github-copilot"; name = "GitHub Copilot for Azure" }
+ @{ id = "ms-azuretools.vscode-azure-mcp-server"; name = "Azure MCP Extension" }
 )
-if (Get-Command code -ErrorAction SilentlyContinue) {
+if (-not $azureCompanionRequested) {
+ Write-Skip "Azure companion skipped (no Azure signals detected)"
+ Write-Host " Re-run with -Azure or set AGENTX_AZURE=true to install Azure Skills support." -ForegroundColor DarkGray
+} elseif (Get-Command code -ErrorAction SilentlyContinue) {
  $installedExts = code --list-extensions 2>$null
  foreach ($ext in $companionExtensions) {
   if ($installedExts -contains $ext.id) {
@@ -500,7 +543,8 @@ if (Get-Command code -ErrorAction SilentlyContinue) {
    Write-Host " Installing $($ext.name)..." -ForegroundColor DarkGray
    code --install-extension $ext.id --force 2>$null
    if ($LASTEXITCODE -eq 0) {
-    Write-OK "$($ext.name) installed"
+  Write-OK "$($ext.name) installed"
+  Write-Host "  Azure Skills plugin support is now available through the Azure MCP extension." -ForegroundColor DarkGray
    } else {
     Write-Host " [--] Could not install $($ext.name) -- install manually: code --install-extension $($ext.id)" -ForegroundColor Yellow
    }
@@ -516,7 +560,7 @@ if (Get-Command code -ErrorAction SilentlyContinue) {
 # -- Done --------------------------------------------
 Write-Host ""
 Write-Host "===================================================" -ForegroundColor Green
-Write-Host " AgentX v8.2.2 installed! [$displayMode]" -ForegroundColor Green
+Write-Host " AgentX v8.2.5 installed! [$displayMode]" -ForegroundColor Green
 Write-Host "===================================================" -ForegroundColor Green
 Write-Host ""
 Write-Host " CLI: .\.agentx\agentx.ps1 help" -ForegroundColor White

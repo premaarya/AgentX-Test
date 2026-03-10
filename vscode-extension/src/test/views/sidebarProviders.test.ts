@@ -151,7 +151,7 @@ describe('sidebar providers', () => {
     const root = createWorkspaceRoot();
     fs.writeFileSync(
       path.join(root, '.agentx', 'version.json'),
-      JSON.stringify({ version: '8.2.2', mode: 'github' }),
+      JSON.stringify({ version: '8.2.5', mode: 'github' }),
       'utf-8',
     );
     fs.writeFileSync(
@@ -159,13 +159,13 @@ describe('sidebar providers', () => {
       JSON.stringify({ mode: 'github' }),
       'utf-8',
     );
-    __setExtension('ms-azuretools.vscode-azure-github-copilot', {});
+    __setExtension('ms-azuretools.vscode-azure-mcp-server', {});
 
     const provider = new IntegrationTreeProvider(createAgentxStub(root));
     const items = await provider.getChildren();
     const providerChildren = await provider.getChildren(items[1]);
 
     assert.ok(providerChildren.some((item) => item.label === 'GitHub MCP'));
-    assert.ok(providerChildren.some((item) => item.label === 'Azure companion'));
+    assert.ok(providerChildren.some((item) => item.label === 'Azure skills'));
   });
 });

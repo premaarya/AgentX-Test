@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { AgentXContext } from '../agentxContext';
 import { SidebarTreeItem } from './sidebarTreeItem';
+import { getAzureCompanionState } from '../utils/companionExtensions';
 
 interface VersionStamp {
  readonly version?: string;
@@ -52,9 +53,19 @@ export class IntegrationTreeProvider implements vscode.TreeDataProvider<SidebarT
   const configInfo = workspaceRoot
    ? readJsonFile<VersionStamp>(path.join(workspaceRoot, '.agentx', 'config.json'))
    : undefined;
-  const azureCompanionInstalled = !!vscode.extensions.getExtension(
-   'ms-azuretools.vscode-azure-github-copilot',
-  );
+    const azureCompanionState = getAzureCompanionState(workspaceRoot);
+    const azureCompanionDescription = azureCompanionState === 'installed'
+     ? 'installed'
+     : azureCompanionState === 'legacy'
+        ? 'upgrade recommended'
+        : azureCompanionState === 'recommended'
+         ? 'recommended'
+         : 'not needed';
+    const azureCompanionIcon = azureCompanionState === 'installed'
+     ? 'extensions'
+     : azureCompanionState === 'not-needed'
+        ? 'circle-slash'
+        : 'warning';
 
   const overviewChildren = [
    SidebarTreeItem.detail('Workspace ready', 'root-folder', workspaceRoot ? 'yes' : 'no'),
@@ -70,9 +81,9 @@ export class IntegrationTreeProvider implements vscode.TreeDataProvider<SidebarT
    SidebarTreeItem.detail('GitHub MCP', 'github', formatValue(this.agentx.githubConnected)),
    SidebarTreeItem.detail('Azure DevOps MCP', 'repo', formatValue(this.agentx.adoConnected)),
    SidebarTreeItem.detail(
-    'Azure companion',
-    azureCompanionInstalled ? 'extensions' : 'warning',
-    azureCompanionInstalled ? 'installed' : 'missing',
+    'Azure skills',
+    azureCompanionIcon,
+    azureCompanionDescription,
    ),
   ];
 

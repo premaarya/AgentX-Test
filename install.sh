@@ -1,5 +1,5 @@
 #!/bin/bash
-# AgentX v8.2.2 Installer - Download, copy, configure.
+# AgentX v8.2.5 Installer - Download, copy, configure.
 #
 # Modes: local (default), github
 #
@@ -8,12 +8,16 @@
 # ./install.sh --mode github # GitHub mode - asks for repo/project
 # ./install.sh --path myproject # Install into a subfolder
 # ./install.sh --force # Full reinstall (overwrite)
+# ./install.sh --azure # Force Azure Skills companion install
 #
 # # One-liner install (local mode, no prompts)
 # curl -fsSL https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.sh | bash
 #
 # # One-liner for GitHub mode
 # MODE=github curl -fsSL ... | bash
+#
+# # One-liner to include Azure companion support
+# AGENTX_AZURE=true curl -fsSL ... | bash
 
 set -e
 
@@ -27,6 +31,7 @@ MODE="${MODE:-}"
 FORCE="${FORCE:-false}"
 NO_SETUP="${NO_SETUP:-false}"
 INSTALL_PATH="${AGENTX_PATH:-}"
+AZURE="${AGENTX_AZURE:-false}"
 BRANCH="master"
 TMP=".agentx-install-tmp"
 TMPARCHIVE="$TMP.tar.gz"
@@ -59,10 +64,33 @@ while [[ $# -gt 0 ]]; do
  --path) INSTALL_PATH="$2"; shift 2 ;;
  --force) FORCE=true; shift ;;
  --local) MODE="local"; shift ;;
+ --azure) AZURE=true; shift ;;
  --no-setup) NO_SETUP=true; shift ;;
  *) shift ;;
  esac
 done
+
+detect_azure_workspace() {
+ [ "$AZURE" = "true" ] && return 0
+
+ [ -d ".azure" ] && return 0
+
+ for file in azure.yaml azure-pipelines.yml azure-pipelines.yaml host.json local.settings.json; do
+  [ -f "$file" ] && return 0
+ done
+
+ if find . -path './node_modules' -prune -o -path './.git' -prune -o -type f \( -name '*.bicep' -o -name '*.bicepparam' \) -print -quit 2>/dev/null | grep -q .; then
+  return 0
+ fi
+
+ for file in README.md package.json pyproject.toml .agentx/config.json; do
+  if [ -f "$file" ] && grep -Eiq '\bazure\b|\bazd\b|Azure Functions|Container Apps|App Service|Static Web Apps' "$file"; then
+   return 0
+  fi
+ done
+
+ return 1
+}
 
 # --path: install into a subdirectory
 if [ -n "$INSTALL_PATH" ]; then
@@ -83,7 +111,7 @@ skip() { echo -e "${D}[--] $1${N}"; }
 # -- Banner ----------------------------------------------
 echo ""
 echo -e "${C}+===================================================+${N}"
-echo -e "${C}| AgentX v8.2.2 - AI Agent Orchestration |${N}"
+echo -e "${C}| AgentX v8.2.5 - AI Agent Orchestration |${N}"
 echo -e "${C}+===================================================+${N}"
 echo ""
 
@@ -115,11 +143,11 @@ if [ -f ".agentx/version.json" ]; then
  PREVIOUS_VERSION=$(grep -o '"version"[[:space:]]*:[[:space:]]*"[^"]*"' .agentx/version.json 2>/dev/null | head -1 | sed 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)"/\1/')
 fi
 
-if [ -n "$PREVIOUS_VERSION" ] && [ "$PREVIOUS_VERSION" != "8.2.2" ]; then
+if [ -n "$PREVIOUS_VERSION" ] && [ "$PREVIOUS_VERSION" != "8.2.5" ]; then
  MAJOR_VERSION=$(echo "$PREVIOUS_VERSION" | cut -d. -f1)
 
  if [ "$MAJOR_VERSION" -lt 8 ] 2>/dev/null; then
-  echo -e "${Y}[!] Detected AgentX v$PREVIOUS_VERSION - upgrading to v8.2.2...${N}"
+  echo -e "${Y}[!] Detected AgentX v$PREVIOUS_VERSION - upgrading to v8.2.5...${N}"
   echo -e "${D}  Uninstalling v$PREVIOUS_VERSION and performing clean install.${N}"
 
   # Back up user data that must survive the upgrade
@@ -208,8 +236,8 @@ mkdir -p .agentx/state .agentx/digests docs/{prd,adr,specs,architecture} memorie
 
 # Version tracking
 VERSION_FILE=".agentx/version.json"
-echo "{ \"version\": \"8.2.2\", \"mode\": \"$MODE\", \"installedAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\", \"updatedAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\" }" > "$VERSION_FILE"
-ok "Version 8.2.2 recorded"
+echo "{ \"version\": \"8.2.5\", \"mode\": \"$MODE\", \"installedAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\", \"updatedAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\" }" > "$VERSION_FILE"
+ok "Version 8.2.5 recorded"
 
 # Merge AgentX entries into user's .gitignore
 MARKER_START="# --- AgentX (auto-generated, do not edit this block) ---"
@@ -406,9 +434,12 @@ fi
 
 # -- Step 5: Companion extensions ----------------------
 echo -e "${C}[5] Companion extensions...${N}"
-COMPANION_EXTS="ms-azuretools.vscode-azure-github-copilot"
-COMPANION_NAMES="GitHub Copilot for Azure"
-if command -v code &>/dev/null; then
+COMPANION_EXTS="ms-azuretools.vscode-azure-mcp-server"
+COMPANION_NAMES="Azure MCP Extension"
+if ! detect_azure_workspace; then
+ skip "Azure companion skipped (no Azure signals detected)"
+ echo -e "${D} Re-run with --azure or AGENTX_AZURE=true to install Azure Skills support.${N}"
+elif command -v code &>/dev/null; then
  INSTALLED_EXTS=$(code --list-extensions 2>/dev/null || true)
  if echo "$INSTALLED_EXTS" | grep -qF "$COMPANION_EXTS"; then
   ok "$COMPANION_NAMES already installed"
@@ -416,6 +447,7 @@ if command -v code &>/dev/null; then
   echo -e "${D} Installing $COMPANION_NAMES...${N}"
   if code --install-extension "$COMPANION_EXTS" --force &>/dev/null; then
    ok "$COMPANION_NAMES installed"
+  echo -e "${D}  Azure Skills plugin support is now available through the Azure MCP extension.${N}"
   else
    echo -e "${Y} [--] Could not install $COMPANION_NAMES -- install manually: code --install-extension $COMPANION_EXTS${N}"
   fi
@@ -428,7 +460,7 @@ fi
 # -- Done ------------------------------------------------
 echo ""
 echo -e "${G}===================================================${N}"
-echo -e "${G} AgentX v8.2.2 installed! [$DISPLAY_MODE]${N}"
+echo -e "${G} AgentX v8.2.5 installed! [$DISPLAY_MODE]${N}"
 echo -e "${G}===================================================${N}"
 echo ""
 echo " CLI: ./.agentx/agentx.sh help"

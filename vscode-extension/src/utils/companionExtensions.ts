@@ -1,56 +1,69 @@
 import * as vscode from 'vscode';
+import { workspaceUsesAzure } from './azureWorkspaceDetector';
 
 /**
  * Companion extensions that AgentX recommends.
  * Checked on every activation; user is prompted to install if missing.
  */
-const COMPANION_EXTENSIONS = [
-  {
-    id: 'ms-azuretools.vscode-azure-github-copilot',
-    name: 'GitHub Copilot for Azure',
-    reason: 'Provides 15+ operational Foundry sub-skills (create, deploy, trace, troubleshoot) that complement AgentX design skills.',
-  },
-];
+const AZURE_PRIMARY_EXTENSION_ID = 'ms-azuretools.vscode-azure-mcp-server';
+const AZURE_LEGACY_EXTENSION_ID = 'ms-azuretools.vscode-azure-github-copilot';
+
+type AzureCompanionState = 'installed' | 'legacy' | 'recommended' | 'not-needed';
+
+function isInstalled(extensionId: string): boolean {
+  return !!vscode.extensions.getExtension(extensionId);
+}
+
+export function getAzureCompanionState(workspaceRoot?: string): AzureCompanionState {
+  if (isInstalled(AZURE_PRIMARY_EXTENSION_ID)) {
+    return 'installed';
+  }
+
+  if (isInstalled(AZURE_LEGACY_EXTENSION_ID)) {
+    return 'legacy';
+  }
+
+  return workspaceUsesAzure(workspaceRoot) ? 'recommended' : 'not-needed';
+}
 
 /**
  * Check whether companion extensions are installed.
  * If any are missing, show a one-time prompt offering to install them.
  * The user can dismiss permanently via "Don't Ask Again".
  */
-export async function checkCompanionExtensions(): Promise<void> {
-  for (const ext of COMPANION_EXTENSIONS) {
-    const installed = vscode.extensions.getExtension(ext.id);
-    if (installed) {
-      continue;
-    }
+export async function checkCompanionExtensions(workspaceRoot?: string): Promise<void> {
+  const state = getAzureCompanionState(workspaceRoot);
+  if (state === 'installed' || state === 'not-needed') {
+    return;
+  }
 
-    // Check if user previously dismissed this prompt
-    const config = vscode.workspace.getConfiguration('agentx');
-    const dismissed: string[] = config.get<string[]>('companionDismissed', []);
-    if (dismissed.includes(ext.id)) {
-      continue;
-    }
+  const config = vscode.workspace.getConfiguration('agentx');
+  const dismissed: string[] = config.get<string[]>('companionDismissed', []);
+  if (dismissed.includes(AZURE_PRIMARY_EXTENSION_ID)) {
+    return;
+  }
 
-    const install = 'Install';
-    const later = 'Later';
-    const never = "Don't Ask Again";
+  const install = state === 'legacy' ? 'Install Azure MCP' : 'Install';
+  const later = 'Later';
+  const never = "Don't Ask Again";
+  const message = state === 'legacy'
+    ? 'AgentX detected the legacy GitHub Copilot for Azure companion. Install the Azure MCP Extension to enable the Azure Skills plugin, Azure MCP Server, and Foundry MCP in the current Azure workspace.'
+    : 'AgentX detected Azure usage in this workspace. Install the Azure MCP Extension to enable the Azure Skills plugin, Azure MCP Server, and Foundry MCP for Azure design, deployment, diagnostics, and operations.';
 
-    const choice = await vscode.window.showInformationMessage(
-      `AgentX recommends installing "${ext.name}" for full AI agent support. ${ext.reason}`,
-      install,
-      later,
-      never,
+  const choice = await vscode.window.showInformationMessage(
+    message,
+    install,
+    later,
+    never,
+  );
+
+  if (choice === install) {
+    await vscode.commands.executeCommand(
+      'workbench.extensions.installExtension',
+      AZURE_PRIMARY_EXTENSION_ID,
     );
-
-    if (choice === install) {
-      await vscode.commands.executeCommand(
-        'workbench.extensions.installExtension',
-        ext.id,
-      );
-    } else if (choice === never) {
-      const updated = [...dismissed, ext.id];
-      await config.update('companionDismissed', updated, vscode.ConfigurationTarget.Global);
-    }
-    // 'Later' or dismissed notification -- do nothing, will prompt next activation
+  } else if (choice === never) {
+    const updated = [...dismissed, AZURE_PRIMARY_EXTENSION_ID];
+    await config.update('companionDismissed', updated, vscode.ConfigurationTarget.Global);
   }
 }

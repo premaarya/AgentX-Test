@@ -5,7 +5,7 @@
 
   **The Multi-Agent Workflow System for Software Delivery**
 
-  [![Version](https://img.shields.io/badge/Version-8.2.2-0EA5E9?style=for-the-badge)](https://github.com/jnPiyush/AgentX/releases/tag/v8.2.2)
+    [![Version](https://img.shields.io/badge/Version-8.2.5-0EA5E9?style=for-the-badge)](https://github.com/jnPiyush/AgentX/releases/tag/v8.2.5)
   [![License](https://img.shields.io/badge/License-Apache_2.0-22C55E?style=for-the-badge)](LICENSE)
 
   *Turn AI coding agents into a structured, highly capable development team with routing, domain skills, execution templates, long-term memory, and validation.*
@@ -128,6 +128,8 @@ curl -fsSL https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.sh |
 `
 
 Default install mode is local. GitHub and Azure DevOps modes are available for remote workflow integration.
+
+If AgentX detects Azure-oriented files such as `azure.yaml`, `.azure/`, Azure Functions config, or Bicep, it can also recommend or install the Azure MCP Extension so the Azure Skills plugin is available when the app targets Azure.
 
 ---
 

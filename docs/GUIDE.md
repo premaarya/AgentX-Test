@@ -195,7 +195,7 @@ PROFILE=python curl -fsSL https://raw.githubusercontent.com/jnPiyush/AgentX/mast
 3. **Copy** -- Merges files into your project (skips existing files unless `-Force`)
 4. **Configure** -- Generates `agent-status.json`, `config.json`, output directories
 5. **Setup** -- Interactive: git init, hooks install, username config (skip with `-NoSetup`)
-6. **Companion Extensions** -- Installs recommended VS Code extensions (e.g., GitHub Copilot for Azure)
+6. **Companion Extensions** -- Installs Azure companion capabilities when AgentX detects an Azure-oriented workspace (or when you force it with `-Azure` / `--azure`)
 
 ---
 
@@ -205,27 +205,27 @@ AgentX works with companion extensions that provide complementary capabilities. 
 
 | Extension | ID | Purpose | Auto-Installed |
 |-----------|-----|---------|----------------|
-| **GitHub Copilot for Azure** | `ms-azuretools.vscode-azure-github-copilot` | Operational Foundry playbooks: create, deploy, invoke, trace, troubleshoot agents | Yes |
+| **Azure MCP Extension** | `ms-azuretools.vscode-azure-mcp-server` | Installs Azure MCP plus the Azure Skills companion for Azure design, deployment, diagnostics, and Foundry workflows | Azure workspaces only |
 | **GitHub Copilot** | `GitHub.copilot` | AI code completions (required for Copilot Chat) | Prerequisite |
 | **GitHub Copilot Chat** | `GitHub.copilot-chat` | Chat interface for agent interactions | Prerequisite |
 
-### Why GitHub Copilot for Azure?
+### Why Azure MCP Extension and Azure Skills?
 
-Most AI projects require Azure AI Foundry for agent deployment. Microsoft's extension provides **15+ detailed operational sub-skills** that complement AgentX's design-level skills:
+When a project targets Azure, AgentX can install the Azure MCP Extension. That extension also brings in the Azure Skills companion from `microsoft/azure-skills`, wiring the guidance layer and MCP execution layer together for Azure work.
 
 | Layer | Provider | Covers |
 |-------|----------|--------|
 | **Design and Architecture** | AgentX `azure-foundry` | Model selection, eval strategy, guardrails, deployment patterns |
-| **Operational Execution** | GitHub Copilot for Azure | Step-by-step: create agents, deploy containers, invoke endpoints, trace, troubleshoot, RBAC, quota |
+| **Operational Execution** | Azure Skills plugin + Azure MCP | Prepare, validate, deploy, diagnose, cost review, RBAC, Foundry workflows |
 
-Both extensions' skills load simultaneously in VS Code Copilot -- no configuration needed.
+AgentX triggers this install when it detects Azure files such as `azure.yaml`, `.azure/`, Azure Functions config, or Bicep files. You can also force it during install with `-Azure` on PowerShell or `--azure` on Bash.
 
 ### Manual Install
 
 If the installer couldn't auto-install (no `code` CLI):
 
 ```bash
-code --install-extension ms-azuretools.vscode-azure-github-copilot
+code --install-extension ms-azuretools.vscode-azure-mcp-server
 ```
 
 ### Workspace Recommendations

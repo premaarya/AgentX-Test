@@ -6,17 +6,19 @@ description: >-
   deployment patterns. Use when designing agent architecture on Foundry,
   choosing models, planning evaluation strategy, or defining guardrails.
   For step-by-step operational workflows (create, deploy, invoke, trace,
-  troubleshoot), install the companion extension: GitHub Copilot for Azure
-  (ms-azuretools.vscode-azure-github-copilot).
+  troubleshoot), install the Azure MCP Extension
+  (ms-azuretools.vscode-azure-mcp-server), which also brings in the Azure Skills
+  plugin and Foundry MCP support in VS Code.
 ---
 
 # Azure AI Foundry
 
 > **Companion Extension**: For detailed operational playbooks (create agents,
 > deploy containers, invoke endpoints, trace with App Insights, troubleshoot),
-> install **GitHub Copilot for Azure** (`ms-azuretools.vscode-azure-github-copilot`).
-> It provides 15+ step-by-step sub-skills that complement this design-level skill.
-> AgentX installs it automatically as a dependency.
+> install **Azure MCP Extension** (`ms-azuretools.vscode-azure-mcp-server`).
+> In VS Code it also wires in the Azure Skills plugin from `microsoft/azure-skills`
+> plus Foundry MCP. AgentX recommends it when Azure files are detected and the
+> installer can add it automatically for Azure-oriented workspaces.
 
 ## When to Use This Skill
 
@@ -108,16 +110,16 @@ Run evals before every deployment:
 ## Companion Extension
 
 This skill covers **design and architecture** for Azure AI Foundry agents.
-For **operational execution** (step-by-step create, deploy, invoke, trace,
-troubleshoot, RBAC, quota management), install:
+For **operational execution** (step-by-step prepare, validate, deploy, invoke,
+trace, troubleshoot, RBAC, quota management), install:
 
-- **GitHub Copilot for Azure** (`ms-azuretools.vscode-azure-github-copilot`)
-- Marketplace: Search "GitHub Copilot for Azure" in VS Code Extensions
-- AgentX includes this as an `extensionDependencies` -- it installs automatically
+- **Azure MCP Extension** (`ms-azuretools.vscode-azure-mcp-server`)
+- It also installs the Azure Skills plugin and Foundry MCP support in VS Code
+- AgentX recommends it when Azure work is detected, or you can force it during install with `-Azure` / `--azure`
 
 The two extensions are complementary:
 
 | Layer | Extension | Covers |
 |-------|-----------|--------|
 | Design | AgentX `azure-foundry` | Architecture, model selection, eval strategy, guardrails |
-| Execution | GitHub Copilot for Azure | Create, deploy, invoke, trace, troubleshoot, RBAC, quota |
+| Execution | Azure Skills plugin + Azure MCP | Prepare, validate, deploy, invoke, trace, troubleshoot, RBAC, quota |

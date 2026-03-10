@@ -144,7 +144,7 @@ export function activate(context: vscode.ExtensionContext) {
  runSilentInstall(agentxContext).catch(() => { /* ignore */ });
 
  // Check companion extensions are installed (non-blocking)
- checkCompanionExtensions().catch(() => { /* ignore */ });
+ checkCompanionExtensions(agentxContext.workspaceRoot).catch(() => { /* ignore */ });
 
  // Set initial context flags
  void updateUiState();

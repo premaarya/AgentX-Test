@@ -1,7 +1,6 @@
 {
   "recommendations": [
-    "jnPiyush.agentx",
-    "ms-azuretools.vscode-azure-github-copilot"
+    "jnPiyush.agentx"
   ],
   "unwantedRecommendations": []
 }
