@@ -1,110 +1,80 @@
-# AgentX — Multi-Agent Orchestration for VS Code
+# AgentX for VS Code
+
+**The IDE Orchestrator for Multi-Agent Software Delivery**
 
 [![Version](https://img.shields.io/badge/Version-8.2.2-0EA5E9?style=for-the-badge)](https://marketplace.visualstudio.com/items?itemName=jnPiyush.agentx)
 [![License](https://img.shields.io/badge/License-Apache_2.0-22C55E?style=for-the-badge)](LICENSE)
 
-**AgentX** brings structured multi-agent orchestration to your VS Code workspace. Coordinate AI coding assistants (GitHub Copilot, Claude, etc.) as a real software team with parallel design and validation stages across PM, UX, Architect, Data Scientist, Engineer, Reviewer, DevOps, Tester, Power BI Analyst, and Consulting Research.
+*Bring structured multi-agent workflows directly into your editor with chat execution, live workspace state, and seamless repo integration.*
 
-## Features
+---
 
-### 🚀 One-Click Initialization
-Initialize AgentX in any workspace with a single command. Defaults to **Local mode** — zero prompts, no GitHub required. Switch to GitHub mode when you need full team features.
+## Why Use the Extension?
 
-| Mode | Default? | Description |
-|------|----------|-------------|
-| **Local** | ✅ Yes | Filesystem-based issue tracking, zero prompts |
-| **GitHub** | — | Full features: GitHub Actions, PRs, Projects (asks for repo/project) |
+Running autonomous agents from the CLI lacks visibility. The AgentX VS Code extension bridges the gap, allowing you to trigger complex delivery pipelines while retaining absolute visibility and control over what the agents are thinking, validating, and writing.
 
-### 🤖 20 Specialized Agents (13 Visible + 7 Internal Sub-Agents)
-| Agent | Role | Model |
-|-------|------|-------|
-| 🎯 Agent X | Adaptive coordinator | Claude Opus 4.6 |
-| 📋 Product Manager | PRDs & backlog | Claude Sonnet 4.5 |
-| 🎨 UX Designer | Wireframes & prototypes | Gemini 3 Pro |
-| 🏗️ Architect | ADRs & tech specs | Claude Opus 4.6 |
-| 🔧 Engineer | Code & tests | Claude Sonnet 4.5 |
-| 🔍 Reviewer | Code review & quality | Claude Opus 4.6 |
-| 🔧🔍 Auto-Fix Reviewer | Review + safe fixes | Claude Sonnet 4.5 |
-| ⚙️ DevOps Engineer | CI/CD pipelines | Claude Sonnet 4.5 |
-| 📊 Data Scientist | ML pipelines and evaluations | Claude Sonnet 4.5 |
-| 🧪 Tester | Test automation and certification | Claude Sonnet 4.5 |
-| 📊 Power BI Analyst | Reports, dashboards & DAX | Claude Sonnet 4.5 |
-| 🧭 Consulting Research | Research and consulting preparation | Claude Sonnet 4.5 |
-| 🧑‍🏋️ Agile Coach | Story creation and INVEST refinement | Claude Sonnet 4.5 |
+> **"Full autonomous orchestration, deeply integrated with your local workspace."**
 
-**Internal Sub-Agents** (spawned by parent agents, not user-invokable):
-| Agent | Role | Spawned By |
-|-------|------|------------|
-| GitHub Ops | GitHub issue triage & sprint planning | Agent X, PM, Reviewer, Tester |
-| ADO Ops | Azure DevOps work item management | Agent X, PM, Reviewer, Tester |
-| Functional Reviewer | Branch diff analysis | Reviewer |
-| Prompt Engineer | Prompt lifecycle management | Data Scientist, Engineer |
-| Eval Specialist | AI evaluation pipelines | Data Scientist, Reviewer |
-| Ops Monitor | Production AI monitoring | Data Scientist, DevOps |
-| RAG Specialist | Retrieval pipeline design | Data Scientist, Engineer |
+---
 
-### 📊 Sidebar Views
-- **Agents** — All agent definitions with model, maturity, and status
-- **Ready Queue** — Priority-sorted unblocked work items
-- **Workflows** -- Agent handoff chains from frontmatter (feature, epic, story, bug, spike, devops, docs)
+## The Extension Surface
 
-### 🔧 Commands
-| Command | Description |
-|---------|-------------|
-| `AgentX: Initialize Project` | Scaffold AgentX into your workspace |
-| `AgentX: Show Agent Status` | View all agents and their state |
-| `AgentX: Show Ready Queue` | View priority-sorted work |
-| `AgentX: Run Workflow` | Execute a workflow pipeline |
-| `AgentX: Check Dependencies` | Validate issue dependencies |
-| `AgentX: Generate Weekly Digest` | Create a summary digest |
+| Feature | Description |
+|:--------|:------------|
+| **Copilot Chat Integration** | Native chat participant for triggering AgentX routines seamlessly. |
+| **Workspace Setup Wizard** | Single-click initialization of local, GitHub, or Azure DevOps setups. |
+| **Live Sidebar Views** | Instantly visualize queues, active workflows, agent roles, and output templates. |
+| **Quality & Integration Gates** | Sidebar dashboards that track loop states, unresolved dependencies, and constraints. |
+| **Command Palette Access** | Fast workflow-oriented actions like Status sync, Ready Queue checks, and Digests. |
 
-### 🔄 MCP-Based Integrations
-- **Local Mode** (default) -- Filesystem-based issue tracking, no GitHub required, zero prompts
-- **GitHub Integration** (opt-in) -- Add `.vscode/mcp.json` with GitHub MCP server for full Actions, PRs, Projects V2
-- **ADO Integration** (opt-in) -- Add Azure DevOps MCP server for work items, boards, iterations
+---
+
+## Architecture Flow
+
+`mermaid
+flowchart LR
+    classDef chat fill:#fdf4ff,stroke:#d946ef,stroke-width:2px,color:#701a75
+    classDef core fill:#eff6ff,stroke:#3b82f6,stroke-width:2px,color:#1e40af
+    classDef repo fill:#f0fdf4,stroke:#22c55e,stroke-width:2px,color:#166534
+
+    Chat([Copilot Chat]):::chat --> Context[AgentX Context]:::core --> Engine[Execution Engine]:::core
+    
+    Engine --> View[Sidebar & Live State]
+    Engine --> File[Repo-Defined Assets]:::repo
+    
+    View -.->|Queues & Workflows| UI((VS Code UI))
+    File -.->|Skills & Templates| Workspace((Local Files))
+`
+
+* **Inputs:** VS Code Chat drives intent into the orchestrator.
+* **Control:** The IDE tracks progress and state live via dedicated UI extensions.
+* **Outputs:** Everything resolves natively into your repository as standard Markdown tracking, code, and CI manifests.
+
+---
 
 ## Requirements
 
-- **VS Code** 1.85.0+
-- **Git** installed and available on PATH
-- **PowerShell** (Windows) or **Bash** (Linux/macOS) for CLI commands
-- **GitHub CLI** (`gh`) — optional, for GitHub mode features
+To run AgentX successfully within VS Code:
 
-## Getting Started
+- **VS Code:** 1.85.0 or newer
+- **System:** Git configured on your PATH
+- **Runtime:** PowerShell or Bash available for CLI coordination
+- **Integrations:** gh (GitHub CLI) optional for extended GitHub mode operations
 
-1. Install the extension from the VS Code Marketplace
-2. Open a workspace folder
-3. Run `AgentX: Initialize Project` from the Command Palette (`Ctrl+Shift+P`)
-4. Select your mode (defaults to Local — no GitHub needed)
-5. Start using agents via GitHub Copilot Chat!
+---
 
-### Quick Example
+## Quick Start
 
-```
-@workspace /agent-x Create an Epic for user authentication with OAuth2
-```
+1. **Install** the extension from the VS Code Marketplace.
+2. **Open** to your target project workspace.
+3. **Initialize** the environment by running AgentX: Initialize Project in the Command Palette.
+4. **Deploy work** by invoking AgentX dynamically from Copilot Chat or picking from the AgentX sidebar queues!
 
-AgentX will:
-1. Route to **Product Manager** → Create PRD
-2. Route to **Architect**, **Data Scientist**, and **UX Designer** in parallel
-3. Route to **Engineer** → Implement code and tests
-4. Route to **Reviewer** → Review and approve
-5. Route to **DevOps** and **Tester** in parallel for post-review validation
+---
 
-## Extension Settings
+## Learn More
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `agentx.autoRefresh` | `true` | Auto-refresh sidebar views |
-| `agentx.shell` | `auto` | Shell for CLI commands (auto / pwsh / bash) |
-
-## Links
-
-- [GitHub Repository](https://github.com/jnPiyush/AgentX)
-- [Documentation](https://github.com/jnPiyush/AgentX/blob/master/AGENTS.md)
-- [Guide](https://github.com/jnPiyush/AgentX/blob/master/docs/GUIDE.md)
-- [Report Issues](https://github.com/jnPiyush/AgentX/issues)
-
-## License
-
-Apache License 2.0 -- See [LICENSE](LICENSE) for details.
+- [AgentX Core Repository](https://github.com/jnPiyush/AgentX)
+- [AGENTS.md & Routing Setup](https://github.com/jnPiyush/AgentX/blob/master/AGENTS.md)
+- [Detailed Workflow Guide](https://github.com/jnPiyush/AgentX/blob/master/docs/WORKFLOW.md)
+- [Full Setup Instructions](https://github.com/jnPiyush/AgentX/blob/master/docs/GUIDE.md)

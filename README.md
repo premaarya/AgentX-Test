@@ -1,537 +1,154 @@
-<p align="center">
-  <a href="https://github.com/jnPiyush/AgentX">
-    <img src="docs/assets/agentx-logo.svg" alt="AgentX Logo" width="400"/>
-  </a>
-</p>
+<div align="center">
+  <img src="docs/assets/agentx-logo.svg" width="200" alt="AgentX Logo">
 
-<p align="center">
-  <code>📋 PM</code> → <code>🎨 UX</code> | <code>🏗️ Architect</code> | <code>🧬 Data Scientist</code> → <code>🔧 Engineer</code> → <code>🔍 Reviewer</code> → <code>⚙️ DevOps</code> | <code>🧪 Tester</code>
-</p>
+  # AgentX
 
-<p align="center">
-  <a href="https://github.com/jnPiyush/AgentX/releases/tag/v8.2.2"><img src="https://img.shields.io/badge/Version-8.2.2-0EA5E9?style=for-the-badge" alt="Version 8.2.2"></a>
-  <a href="https://github.com/github/awesome-copilot"><img src="https://img.shields.io/badge/Standard-awesome--copilot-7C3AED?style=for-the-badge&logo=github" alt="Awesome Copilot"></a>
-  <a href="https://agentskills.io/specification"><img src="https://img.shields.io/badge/Skills-agentskills.io-F97316?style=for-the-badge" alt="Skills Spec"></a>
-  <a href="https://scorecard.dev/viewer/?uri=github.com/jnPiyush/AgentX"><img src="https://img.shields.io/badge/OpenSSF-Scorecard-4DC71F?style=for-the-badge" alt="OpenSSF Scorecard"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-22C55E?style=for-the-badge" alt="Apache 2.0 License"></a>
-</p>
+  **The Multi-Agent Workflow System for Software Delivery**
 
-<p align="center">
-  <a href="#-quick-start">Quick Start</a> •
-  <a href="#-features">Features</a> •
-  <a href="#-agent-roles">Agents</a> •
-  <a href="#-workflow">Workflow</a> •
-  <a href="AGENTS.md">Documentation</a>
-</p>
+  [![Version](https://img.shields.io/badge/Version-8.2.2-0EA5E9?style=for-the-badge)](https://github.com/jnPiyush/AgentX/releases/tag/v8.2.2)
+  [![License](https://img.shields.io/badge/License-Apache_2.0-22C55E?style=for-the-badge)](LICENSE)
+
+  *Turn AI coding agents into a structured, highly capable development team with routing, domain skills, execution templates, long-term memory, and validation.*
+</div>
 
 ---
 
-## 🎯 What is AgentX?
+## Why AgentX?
 
-AgentX is a **multi-agent orchestration framework** that enables AI coding assistants (GitHub Copilot, Claude, etc.) to work together like a real software team. Each agent has a specific role, produces standardized deliverables, and hands off to the next agent in the workflow.
+Zero-shot AI generation is unpredictable for complex software engineering. AgentX introduces a **Harness-Oriented Architecture** that forces AI models to plan, execute, iterate, review, and validate -- just like a high-performing engineering team.
 
-```
-📋 PM → 🎨 UX → 🏗️ Architect → 🔧 Engineer → 🔍 Reviewer
-```
+> **"Stop passively generating code. Start autonomously delivering software."**
 
-**The Problem**: AI assistants often skip planning, write code without specs, and ignore documentation.
+---
 
-**The Solution**: AgentX enforces a structured workflow with pre-commit hooks, templates, and orchestration.
+## The AI Development Team
+
+AgentX acts as an autonomous orchestrator, routing tasks to **20 specialized agents** based on required skills.
+
+| Domain | Agents | Deliverables |
+|:-------|:-------|:-------------|
+| **Product & Design** | Product Manager, UX Designer | PRDs, Wireframes, Prototypes |
+| **Architecture** | Architect, Data Scientist | ADRs, Tech Specs, ML Pipelines |
+| **Engineering** | Engineer, DevOps | Code, CI/CD, Containerization |
+| **Quality & Review** | Reviewer, Tester, Auto-Fix | Code Reviews, Tests, Quality Gates |
+| **Analytics & Gov.** | Power BI Analyst, Research | Datasets, M metrics, Industry Briefs |
+
+---
+
+## Domain Skills Library
+
+AgentX is powered by a rich knowledge layer of **60+ explicit skills** distributed across key categories. Agents read peer-reviewed patterns before writing code, ensuring repo-driven accuracy instead of model-memory guesses.
+
+| Category | Example Skills | Purpose |
+|:---------|:---------------|:--------|
+| **Architecture** | `api-design`, `security`, `database` | System design, performance, and scaling |
+| **AI Systems** | `rag-pipelines`, `agent-dev`, `azure-foundry` | Foundation models, agents, and evaluations |
+| **Development** | `testing`, `error-handling`, `type-safety` | Code robustness, linting, and quality |
+| **Languages & UI** | `python`, `react`, `prototype-craft` | Specific technical stacks and frontend visuals |
+| **Ops & Infra** | `github-actions`, `terraform`, `azure` | CI/CD pipelines, containerization, and IaC |
+| **Data & Testing** | `databricks`, `fabric-analytics`, `e2e-testing` | Analytics pipelines, MLops, and verification |
 
 ---
 
 ## Core Capabilities
 
-<table>
-<tr>
-<td width="50%">
+### 1. The Agentic Loop
 
-### Multi-Agent Orchestration
-- **20 specialized agents** (13 visible + 7 internal sub-agents)
-- PM, UX, Architect, Data Scientist, Engineer, Reviewer, Auto-Fix Reviewer, DevOps, Tester, Power BI Analyst, Consulting Research, Agile Coach + 7 invisible sub-agents
-- Hub-and-spoke coordination via **Agent X**
-- Issue-first workflow with automatic routing by type & priority
+```mermaid
+stateDiagram-v2
+    direction LR
+    classDef highlight fill:#eff6ff,stroke:#3b82f6,stroke-width:2px,color:#1e40af
+    classDef success fill:#f0fdf4,stroke:#22c55e,stroke-width:2px,color:#166534
 
-</td>
-<td width="50%">
+    [*] --> Generate
+    Generate --> Verify:::highlight
+    Verify --> SelfReview:::highlight
+    SelfReview --> Generate : Fix Gaps
+    SelfReview --> Done:::success : Approved
+```
+AgentX leverages a robust, iterative execution model. The agent researches the repo, classifies the task, writes code against clear criteria, verifies the result, and loops until the task is definitively "Done."
 
-### Structured SDLC Workflow
-- **Pre-handoff validation** between every phase
-- Templates for PRD, ADR, Tech Spec, UX, Review, Security
-- Git commit conventions with issue traceability
-- Status-driven pipeline: Backlog -> In Progress -> In Review -> Done
+### 2. Deep Domain Skills
+**Repo-driven knowledge, not model-memory guesses.**
+AgentX is powered by the explicit knowledge layer defined above. Agents read exact, peer-reviewed technical standards before writing a single line of code.
 
-</td>
-</tr>
-<tr>
-<td width="50%">
+### 3. Context Compaction
+**Long sessions without context amnesia.**
+Long-running AI tasks often break token limits. AgentX intelligently compacts conversational history, preserving system rules and essential facts while summarizing older history, ensuring the agent remains stable and focused.
 
-### 66 Production Skills
-- **10 categories**: architecture, development, languages, operations, infrastructure, data, ai-systems, design, testing, domain
-- Retrieval-led reasoning -- agents read skills before generating
-- 30 executable scripts across 17 skills
-- Covers C#, Python, Go, Rust, React, Terraform, Bicep, Databricks + more
+### 4. Self Review & Validation Gates
+**Trust, but mechanically verify.**
+Before any handoff, the active agent rigorously reviews its own work. Complex tasks require evidence-backed execution plans, and HIGH/MEDIUM severity issues block the workflow from advancing until resolved.
 
-</td>
-<td width="50%">
+### 5. Standardized Templates
+Every deliverable -- from PRDs to Tech Specs to Security Plans -- is written into predictable, structured templates. This makes inter-agent handoffs seamless and ensures a consistent paper trail.
 
-### VS Code Extension (Thin Shell)
-- One-click initialization & setup wizard
-- **20 agents** in Copilot Chat agent picker with frontmatter-driven routing
-- Ready queue, agent state tree, workflow visualization
-- Declarative architecture -- agents, skills, and instructions as markdown files
-
-</td>
-</tr>
-<tr>
-<td width="50%">
-
-### Copilot-Native Orchestration
-- **Copilot's native agentic loop** -- agents call tools, read files, run commands
-- Body text instructions drive self-review, quality loops, and handoffs
-- Agent X autonomous execution in one session, with specialist phases applied internally when needed
-- `handoffs:` frontmatter for workflow routing (Mode 2: Human-Orchestrated)
-
-</td>
-<td width="50%">
-
-### Cross-Session Memory
-- **memory.instructions.md** -- persists decisions, pitfalls, conventions across sessions
-- `/memories/*.md` files read at session start, written during work
-- **project-conventions.instructions.md** -- auto-applied patterns from prior sessions
-- Works across VS Code, Claude Code, and CLI
-
-</td>
-</tr>
-<tr>
-<td width="50%">
-
-### Provider-Aware CLI
-- **GitHub Provider**: Full GitHub Actions, PRs, issue operations, and Project V2 status sync through `gh` plus MCP integrations
-- **ADO Provider**: Azure DevOps work items and Azure Pipelines parity for shared harness validation
-- **Local Provider**: Filesystem-based issue tracking, offline-capable
-- 10 subcommands: ready, state, deps, digest, workflow, hook + more
-- PowerShell + Bash parity across all commands
-
-</td>
-<td width="50%">
-
-### Framework Totals
-- **66 skills** across 10 categories
-- **20 agent definitions** (11 stable + 9 preview)
-- **7 workflow types** via frontmatter handoffs (feature, epic, story, bug, spike, devops, docs)
-- **7 instruction files**, **11 prompts**, **7 templates**
-- Declarative workflows with dependency management
-
-</td>
-</tr>
-</table>
-
-
+### 6. Harness Engineering
+Make AI execution durable and resumable. AgentX treats the workspace as the state, utilizing tracked progress files, memory files, and formal architecture decisions to keep execution grounded in reality.
 
 ---
 
-## 🆙 What's New in v8.0.0
+## Architecture at a Glance
 
-**Declarative Migration** -- Replaced 108-file TypeScript runtime with ~23-file thin shell + declarative `.agent.md` files.
+```mermaid
+flowchart LR
+    classDef intent fill:#fffbeb,stroke:#f59e0b,stroke-width:2px,color:#92400e
+    classDef hub fill:#eff6ff,stroke:#3b82f6,stroke-width:2px,color:#1e40af
+    classDef phase fill:#f0fdf4,stroke:#22c55e,stroke-width:2px,color:#166534
+    
+    UI((User Intent)):::intent --> Hub{AgentX Hub}:::hub
+    
+    subgraph SpecialistRouting [Specialist Routing]
+        direction LR
+        D[Discover & Plan]:::phase --> I[Implement]:::phase --> V[Validate]:::phase
+    end
+    
+    Hub --> SpecialistRouting
+    
+    D -.->|PM, UX, Architect| Assets[(Repo Assets)]
+    I -.->|Engineer + Skills| Assets
+    V -.->|Reviewer, Tester| Assets
+```
 
-| Feature | Description |
-|---------|-------------|
-| Declarative Architecture | All agent logic lives in markdown frontmatter and body text -- not TypeScript |
-| Copilot-Native Agents | 20 agents use standard frontmatter (description, model, handoffs, tools, agents) |
-| Cross-Session Memory | `memory.instructions.md` + `/memories/*.md` for persistent context |
-| Frontmatter Handoffs | `handoffs:` drives workflow routing and "Hand off to X" buttons |
-| CLI Frontmatter Workflow | `agentx.ps1 workflow` reads `.agent.md` handoffs (replaced TOML) |
-| Claude Code Commands | 15 `.claude/commands/*.md` stubs with context-first rule and quality loop |
-| 66 Skills | Skills index across 10 categories |
-| Multi-Platform | Works across VS Code, Copilot CLI, Claude Code, and GitHub.com |
-
-### Previous Versions
-
-<details>
-<summary><strong>v7.0-v7.4 -- TypeScript Runtime (Superseded by v8.0.0)</strong></summary>
-
-- Custom agentic loop, self-review loop, clarification protocol (all replaced by declarative body text)
-- TypeScript event bus, context compactor, thinking log (deleted)
-- Model fallback selector, plugin system (deleted)
-- 108 TypeScript files, 27 commands, 23 settings (replaced by 23 files, 9 commands, 7 settings)
-
-</details>
-
-<details>
-<summary><strong>v6.8.0 -- Skills Reorganization</strong></summary>
-
-- 42 skills reorganized into 8 categories (from 6)
-- New categories: languages/, infrastructure/, data/ (split from cloud/)
-- Merged scalability -> performance, code-organization -> core-principles
-- Cleaner taxonomy for faster skill discovery
-
-</details>
-
-<details>
-<summary><strong>v6.0-6.5 -- VS Code Extension & Plugin System</strong></summary>
-
-- VS Code extension with critical pre-check auto-install (v6.0)
-- Typed event bus, structured thinking log, context compaction (v6.1)
-- Channel abstraction, cron task scheduler (v6.1)
-- PowerShell shell fallback, Copilot extension awareness (v6.0)
-- Plugin system, Node.js CLI migration (v6.5)
-
-</details>
-
-<details>
-<summary><strong>v5.0-5.3 -- Skills Compliance & Consulting Research</strong></summary>
-
-- 100% agentskills.io compliance (41 skills at the time)
-- Progressive disclosure architecture (112 reference files)
-- 30 executable scripts across 17 skills
-- Anthropic Guide compliance
-- Consulting Research Agent, UX Methodology Instructions (v5.3)
-- Playwright E2E Scaffold, Cognitive Architecture (v5.1-5.2)
-
-</details>
-
-<details>
-<summary><strong>v4.0 — Declarative Workflows & CLI</strong></summary>
-
-- TOML-based workflow templates (7 types: feature, epic, story, bug, spike, devops, docs)
-- Smart Ready Queue with priority-sorted work discovery
-- Agent State Tracking with lifecycle hooks
-- Dependency Management (`Blocked-by` / `Blocks` conventions)
-- Issue Digests — weekly summaries
-- Dual-Mode CLI (PowerShell + Bash, 10 subcommands)
-- Version tracking & smart upgrade
-- AI-First Intent Pipeline across all agents
-- 64-assertion framework self-tests
-
-</details>
-
-<details>
-<summary><strong>v3.0 — Analytics, Memory & Cross-Repo</strong></summary>
-
-- Agent Analytics Dashboard — metrics collection, weekly reports, Mermaid charts
-- Auto-Fix Reviewer (Preview) — safe auto-fixes with human approval
-- Prompt Engineering Skill — best practices, structured outputs, CoT templates
-- Local Mode — filesystem-based issue tracking, offline-capable
-- Cross-Repo Orchestration — monorepo/multi-repo support
-- DevOps Agent — CI/CD pipeline generation, release automation
-- Agent Memory — long-term learning, session persistence, three-tier model
-- Visualization — workflow diagrams, Mermaid integration, debug mode
-
-</details>
-
-<details>
-<summary><strong>v2.x — Session Persistence & Security</strong></summary>
-
-- Session persistence with progress logs and auto-resume
-- Defense-in-depth security (4-layer architecture, command allowlist)
-- Feature checklists and verification test patterns
-- Constraint-based agent design with maturity levels
-- Template input variables and Agent X adaptive mode
-- Hub-and-spoke architecture with pre-handoff validation
-
-</details>
+- **User Surface:** VS Code extension, Copilot Chat, sidebar views, and CLI
+- **Execution Layer:** AgentX Auto orchestrator, specialist phases, iterative loops
+- **Knowledge Layer:** Markdown-defined agents, skills, templates, instructions
+- **Control Layer:** Execution plans, repo-local state, automated validation gates
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
-### Zero-Prompt Install
-
-AgentX installs in **Local mode by default** — no prompts, no GitHub required. Just run:
-
-```powershell
-# Windows (PowerShell) — installs in local mode, zero prompts
+`powershell
 irm https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.ps1 | iex
-```
+`
 
-```bash
-# Linux/Mac — installs in local mode, zero prompts
+`ash
 curl -fsSL https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.sh | bash
-```
+`
 
-### Choose Your Mode
-
-| Provider | Default? | Best For | Features |
-|----------|----------|----------|----------|
-| **Local** | ✅ Yes | Solo/offline work | Filesystem-based issue tracking, zero prompts |
-| **GitHub** | — | Team projects | Actions, PRs, issue operations, Projects-aware workflows |
-| **Azure DevOps** | — | Teams standardizing on ADO | Work items, boards, Azure Pipelines validation parity |
-
-> 📖 **Local Mode Guide**: [docs/GUIDE.md](docs/GUIDE.md#local-mode-no-github)
-
-### Install Examples
-
-```powershell
-# Windows (PowerShell)
-.\install.ps1                          # Local mode (default) — no prompts
-.\install.ps1 -Mode github             # GitHub mode — asks for repo/project
-.\install.ps1 -Local                   # Explicit local mode shorthand
-.\install.ps1 -Force                   # Reinstall (overwrite existing files)
-.\install.ps1 -NoSetup                 # Skip git init and hooks setup
-```
-
-```bash
-# Linux/Mac
-./install.sh                           # Local mode (default) — no prompts
-./install.sh --mode github             # GitHub mode — asks for repo/project
-./install.sh --local                   # Explicit local mode shorthand
-./install.sh --force                   # Reinstall (overwrite existing files)
-./install.sh --no-setup                # Skip git init and hooks setup
-```
-
-### One-Liner for GitHub Mode
-
-```powershell
-# Windows — GitHub mode (will ask for repo/project)
-$env:AGENTX_MODE="github"; irm https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.ps1 | iex
-```
-
-```bash
-# Linux/Mac — GitHub mode (will ask for repo/project)
-MODE=github curl -fsSL https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.sh | bash
-```
-
-> **Note:** GitHub mode one-liners skip interactive setup (repo/project configuration) since prompts cannot work in piped execution. Run the installer locally afterward to complete GitHub configuration:
-> `.\install.ps1 -Mode github` (Windows) or `./install.sh --mode github` (Linux/Mac).
-
-### Create Labels (GitHub Mode Only)
-
-These labels are **not** created by the installer. Run these commands manually after install:
-
-```bash
-gh label create "type:epic" --color "7C3AED"
-gh label create "type:feature" --color "3B82F6"
-gh label create "type:story" --color "22C55E"
-gh label create "type:bug" --color "EF4444"
-gh label create "needs:ux" --color "EC4899"
-```
-
-### Companion Extensions
-
-The installer auto-installs **GitHub Copilot for Azure** (`ms-azuretools.vscode-azure-github-copilot`) -- essential for AI agent projects on Azure Foundry. It provides 15+ operational sub-skills (create, deploy, invoke, trace, troubleshoot) that complement AgentX's design-level skills. See [Companion Extensions](docs/GUIDE.md#companion-extensions) for details.
+Default install mode is local. GitHub and Azure DevOps modes are available for remote workflow integration.
 
 ---
 
-## 🏗️ Architecture
+## Main Repo Areas
 
-### Hub-and-Spoke Pattern
+- \AGENTS.md\ - Top-level guidance and routing rules
+- \docs/WORKFLOW.md\ - Workflow and handoffs
+- \Skills.md\ - Complete skill index
+- \.github/agents/\ - Individual agent definitions
+- \.github/skills/\ - Reusable implementation knowledge
+- \scode-extension/\ - VS Code extension source
+- \.agentx/\ - CLI runtime and local workflow utilities
 
-AgentX uses a **centralized hub** (Agent X) that routes work to specialized agents with parallel design and validation phases:
+## Read More
 
-```
-                    Agent X (Hub)
-                         |
-          +--------------+--------------+
-          |              |              |
-     PM Agent    (PRD complete)         |
-          |              |              |
-    +---------+---------+              |
-    |         |         |              |
- Architect  Data     UX               |
-  Agent   Scientist Agent             |
-    |         |         |              |
-    +---------+---------+              |
-              |                        |
-         Engineer Agent                |
-              |                        |
-         Reviewer Agent                |
-              |                        |
-    +---------+---------+              |
-    |                   |              |
-  DevOps Agent    Tester Agent         |
-    |                   |              |
-    +---------+---------+              |
-              |                        |
-    Engineer (bug fixes) <---+   Consulting Research
-                                  (standalone)
-```
+- [AGENTS.md](AGENTS.md)
+- [docs/WORKFLOW.md](docs/WORKFLOW.md)
+- [docs/GUIDE.md](docs/GUIDE.md)
+- [Skills.md](Skills.md)
 
-**Standalone Agents** (outside SDLC pipeline): Agile Coach, Consulting Research, Power BI Analyst
 
-**Internal Sub-Agents** (spawned by parent agents): GitHub Ops, ADO Ops, Functional Reviewer, Prompt Engineer, Eval Specialist, Ops Monitor, RAG Specialist
 
-**Key Principles**:
-1. **Centralized Coordination** - Agent X validates prerequisites and routes work
-2. **Strict Role Separation** - Each agent has one deliverable type (PRD, ADR, Code, etc.)
-3. **Universal Tool Access** - All agents can use all tools (maximum flexibility)
-4. **Status-Driven** - GitHub Projects V2 Status field controls workflow
-5. **Pre-Handoff Validation** - Quality gates before transitions
 
----
-
-## 👥 Agent Roles
-
-| Agent | Trigger | Deliverable | Validation | Status Flow |
-|-------|---------|-------------|------------|-------------|
-| 📋 **Product Manager** | `type:epic` | PRD + Feature/Story issues | `.github/scripts/validate-handoff.sh {issue} pm` | -> Ready |
-| 🎨 **UX Designer** | `needs:ux` + Status=Ready | Wireframes + User flows + Prototypes | `.github/scripts/validate-handoff.sh {issue} ux` | -> Ready |
-| 🏗️ **Architect** | `type:feature` or Status=Ready | ADR + Tech Spec (diagrams, NO CODE) | `.github/scripts/validate-handoff.sh {issue} architect` | -> Ready |
-| 📊 **Data Scientist** | `type:data-science` or Status=Ready | ML pipelines + evaluations + model cards | `.github/scripts/validate-handoff.sh {issue} data-scientist` | -> Ready |
-| 🔧 **Engineer** | `type:story` or Status=Ready | Code + Tests (>=80%) + Docs | `.github/scripts/validate-handoff.sh {issue} engineer` | -> In Review |
-| 🔍 **Reviewer** | Status = In Review | Review Report + Approval/Rejection | `.github/scripts/validate-handoff.sh {issue} reviewer` | -> Done |
-| 🔧🔍 **Auto-Fix Reviewer** | Status = In Review (auto-fix) | Review + safe auto-fixes | `.github/scripts/validate-handoff.sh {issue} reviewer` | -> Done |
-| ⚙️ **DevOps** | `type:devops` or Status=Validating | CI/CD pipelines + Deployment configs | `.github/scripts/validate-handoff.sh {issue} devops` | -> Done |
-| 🧪 **Tester** | `type:testing` or Status=Validating | Test suites + certification reports | `.github/scripts/validate-handoff.sh {issue} tester` | -> Done |
-| 📊 **Power BI Analyst** | `type:powerbi` | Reports + semantic models + DAX | `.github/scripts/validate-handoff.sh {issue} powerbi-analyst` | -> In Review |
-| 🧭 **Consulting Research** | Consulting research requests | Research briefs + presentation outlines | standalone (outside SDLC pipeline) | standalone |
-| 🏋️ **Agile Coach** | Story creation/refinement | Copy-paste ready stories | standalone (outside SDLC pipeline) | standalone |
-
-**All agents have access to all tools** for maximum flexibility.
-
----
-
-## 🔄 Workflow
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         AgentX Workflow                         │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│   📝 Create Issue          🏷️ Add Labels        📊 Track Status │
-│        │                        │                     │         │
-│        ▼                        ▼                     ▼         │
-│   ┌─────────┐            ┌───────────┐         ┌──────────┐    │
-│   │  User   │───────────▶│ type:epic │────────▶│ Backlog  │    │
-│   │ Request │            │ type:story│         │    ↓     │    │
-│   └─────────┘            └───────────┘         │ Progress │    │
-│                                                │    ↓     │    │
-│   ┌───────────────────────────────────────────────────────────────┐
-│   │                                                               │
-│   │  📋 PM -> [🏗️ Arch | 📊 Data Science | 🎨 UX] -> 🔧 Eng -> 🔍 │
-│   │                 -> [⚙️ DevOps | 🧪 Tester] -> 🔧 bug fixes      │
-│   │                                                               │
-│   └───────────────────────────────────────────────────────────────┘
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### Status Flow (GitHub Projects V2)
-
-```
-Backlog -> Ready -> In Progress -> In Review -> Validating -> Done
-
-Bug-fix loop: Validating -> In Progress (Engineer) when Tester reports defects.
-```
-
----
-
-## 📁 Project Structure
-
-```
-AgentX/
-├── 📄 AGENTS.md              # Quick-reference map (points to detailed docs)
-├── 📄 Skills.md              # 66 production skills index
-├── 📄 CONTRIBUTING.md        # Contributor guide
-│
-├── 📁 .github/
-│   ├── 📁 agents/            # 20 agent definitions (13 visible + 7 internal)
-│   ├── 📁 hooks/             # Pre-commit validation
-│   ├── 📁 scripts/           # Validation & metrics scripts
-│   ├── 📁 security/          # Command allowlist
-│   ├── 📁 templates/         # PRD, ADR, Spec, UX, Progress, Exec Plan templates
-│   ├── 📁 prompts/           # 12 reusable prompts
-│   ├── 📁 workflows/         # GitHub Actions (CI/CD, scanning)
-│   └── 📁 skills/            # 63 skill documents (10 categories)
-│   └── 📁 instructions/      # 7 auto-applied instruction files
-│   └── 📁 schemas/           # JSON schema validation
-│
-├── 📁 .agentx/               # CLI, state, local issues
-│   ├── 📄 agentx.ps1         # PowerShell CLI (11 subcommands)
-│   ├── 📄 agentx.sh          # Bash CLI (11 subcommands)
-│   ├── 📁 state/             # Agent status tracking
-│   ├── 📁 digests/           # Weekly issue digests
-│   └── 📁 issues/            # Local mode issue storage
-│
-├── 📁 .vscode/
-│   └── 📄 mcp.json           # MCP Server config (GitHub)
-│
-├── 📁 scripts/               # Install, convert, deploy scripts
-│
-├── 📁 memories/              # Cross-session memory files
-│
-└── 📁 docs/
-    ├── � WORKFLOW.md        # Workflow, routing, handoff, status transitions
-    ├── 📄 QUALITY_SCORE.md   # Graded quality assessment
-    ├── 📄 GOLDEN_PRINCIPLES.md # Mechanical rules enforced by linters
-    ├── 📄 tech-debt-tracker.md # Known gaps and deferred work
-    ├── �📁 adr/               # Architecture Decision Records
-    ├── 📁 architecture/      # Architecture docs & migration plan
-    ├── 📁 prd/               # Product Requirements Docs
-    └── 📁 specs/             # Technical Specifications
-```
-
----
-
-## 📖 Documentation
-
-| Document | Description |
-|----------|-------------|
-| [AGENTS.md](AGENTS.md) | Quick-reference map of all resources |
-| [docs/WORKFLOW.md](docs/WORKFLOW.md) | Workflow, routing, handoff rules, architecture |
-| [Skills.md](Skills.md) | 66 production skills across 10 categories |
-| [**Guide**](docs/GUIDE.md) | **Quickstart, setup, local mode, MCP server, troubleshooting** |
-| [docs/QUALITY_SCORE.md](docs/QUALITY_SCORE.md) | Graded quality assessment of every component |
-| [docs/GOLDEN_PRINCIPLES.md](docs/GOLDEN_PRINCIPLES.md) | Mechanical rules enforced by linters |
-| [docs/tech-debt-tracker.md](docs/tech-debt-tracker.md) | Known gaps and deferred work |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute to AgentX |
-
-### Packs
-
-Packs are distributable bundles of agents, skills, instructions, and workflows. Each pack has a `manifest.json` validated against `.github/schemas/pack-manifest.schema.json`.
-
-| Pack | Description | Maturity |
-|------|-------------|----------|
-| `agentx-core` | Full SDLC agents, workflow engine, instructions | stable |
-
----
-
-## 🛠️ Tech Stack Support
-
-<p align="center">
-  <img src="https://img.shields.io/badge/.NET-512BD4?style=flat-square&logo=dotnet&logoColor=white" alt=".NET">
-  <img src="https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python">
-  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript">
-  <img src="https://img.shields.io/badge/React-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React">
-  <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL">
-  <img src="https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat-square&logo=github-actions&logoColor=white" alt="GitHub Actions">
-</p>
-
----
-
-## 🤝 Contributing
-
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-```bash
-# Fork & clone
-git clone https://github.com/YOUR_USERNAME/AgentX.git
-
-# Create feature branch
-git checkout -b feature/amazing-feature
-
-# Make changes & commit (hooks will validate)
-git commit -m "feat: add amazing feature (#123)"
-
-# Push & create PR
-git push origin feature/amazing-feature
-```
-
----
-
-## 📜 License
-
-Apache License 2.0 - See [LICENSE](LICENSE) for details.
-
----
-
-<p align="center">
-  <strong>Built with ❤️ for the AI-assisted development community</strong>
-</p>
-
-<p align="center">
-  <a href="https://github.com/jnPiyush/AgentX/stargazers">⭐ Star us on GitHub</a> •
-  <a href="https://github.com/jnPiyush/AgentX/issues">🐛 Report Bug</a> •
-  <a href="https://github.com/jnPiyush/AgentX/discussions">💬 Discussions</a>
-</p>
 
