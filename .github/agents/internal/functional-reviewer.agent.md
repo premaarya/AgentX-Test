@@ -18,7 +18,15 @@ boundaries:
     - "tests/** (test code)"
     - "docs/** (all documentation)"
     - ".github/workflows/** (CI/CD pipelines)"
-tools: ['codebase', 'search', 'changes', 'runCommands', 'problems', 'usages', 'fetch', 'think']
+tools:
+  - codebase
+  - search
+  - changes
+  - runCommands
+  - problems
+  - usages
+  - fetch
+  - think
 ---
 
 # Functional Reviewer Agent
@@ -117,13 +125,13 @@ Structure findings as a severity-ordered report:
 
 ### Findings
 
-#### [CRITICAL] {Title}
+#### CRITICAL: {Title}
 - **File**: {path}#{line}
 - **Category**: Logic | Edge Case | Error Handling | Concurrency | Contract
 - **Evidence**: {concrete scenario where this fails}
 - **Recommendation**: {specific fix direction}
 
-#### [HIGH] {Title}
+#### HIGH: {Title}
 ...
 `
 
@@ -167,3 +175,5 @@ If diff is too large (500+ files), codebase context is missing, or files use unf
 1. **Report scope limitation** to the Reviewer with specifics on what could not be analyzed
 2. **Analyze what you can** and mark incomplete areas
 3. **Never fabricate** findings to fill coverage gaps
+
+

@@ -26,7 +26,16 @@ boundaries:
     - "docs/adr/**"
     - "docs/ux/**"
     - ".github/workflows/**"
-tools: ['codebase', 'editFiles', 'search', 'changes', 'problems', 'usages', 'fetch', 'think', 'github/*']
+tools:
+  - codebase
+  - editFiles
+  - search
+  - changes
+  - problems
+  - usages
+  - fetch
+  - think
+  - github/*
 agents:
   - AgentX Data Scientist
   - AgentX Engineer
@@ -184,17 +193,17 @@ Update Status to `In Review` in GitHub Projects.
 
 ### Entry
 
-- [PASS] Data sources identified and accessible
-- [PASS] Business requirements documented (PRD or story)
-- [PASS] Data layer ready (tables/views exist or Fabric Lakehouse populated)
+- PASS Data sources identified and accessible
+- PASS Business requirements documented (PRD or story)
+- PASS Data layer ready (tables/views exist or Fabric Lakehouse populated)
 
 ### Exit
 
-- [PASS] All DAX measures produce correct results
-- [PASS] Performance Analyzer shows no visual >3s render time
-- [PASS] RLS tested (if applicable)
-- [PASS] Documentation committed (data dictionary + measure reference + report spec)
-- [PASS] No hardcoded credentials or connection strings
+- PASS All DAX measures produce correct results
+- PASS Performance Analyzer shows no visual >3s render time
+- PASS RLS tested (if applicable)
+- PASS Documentation committed (data dictionary + measure reference + report spec)
+- PASS No hardcoded credentials or connection strings
 
 ## When Blocked (Agent-to-Agent Communication)
 
@@ -222,7 +231,7 @@ Only proceed to Step 2 if a question remains unanswered after reading all artifa
 
 If a question remains after reading artifacts, ask the user to switch to the relevant agent:
 
-"I need input from [AgentName] on [specific question]. Please switch to the [AgentName] agent and ask: [question with context]."
+"I need input from <AgentName> on <specific question>. Please switch to the <AgentName> agent and ask: <question with context>."
 
 Only reference agents listed in your `agents:` frontmatter.
 
@@ -234,7 +243,7 @@ Maximum 3 follow-up exchanges per topic.
 ### Step 4: Escalate to User If Unresolved
 
 After 3 exchanges with no resolution, tell the user:
-"I need clarification on [topic]. [AgentName] could not resolve: [question]. Can you help?"
+"I need clarification on <topic>. <AgentName> could not resolve: <question>. Can you help?"
 
 ## Iterative Quality Loop (MANDATORY)
 
@@ -248,7 +257,7 @@ Copilot runs this loop natively within its agentic session.
 3. **Fix** -- address the failure
 4. **Re-run verification** -- confirm the fix works
 5. **Self-review** -- once all checks pass, spawn a same-role reviewer sub-agent:
-   - Reviewer evaluates with structured findings: [HIGH], [MEDIUM], [LOW]
+   - Reviewer evaluates with structured findings: HIGH, MEDIUM, LOW
    - APPROVED: true when no HIGH or MEDIUM findings remain
    - APPROVED: false when any HIGH or MEDIUM findings exist
 6. **Address findings** -- fix all HIGH and MEDIUM findings, then re-run from Step 1
@@ -265,3 +274,5 @@ Before handing off, mark the loop complete:
 `.agentx/agentx.ps1 loop complete <issue>`
 
 The CLI blocks handoff with exit 1 if the loop state is not `complete`.
+
+

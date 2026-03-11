@@ -21,7 +21,14 @@ boundaries:
     - "docs/adr/** (architecture docs)"
     - "docs/ux/** (UX documents)"
     - ".github/workflows/** (CI/CD pipelines)"
-tools: ['codebase', 'editFiles', 'search', 'runCommands', 'problems', 'fetch', 'think']
+tools:
+  - codebase
+  - editFiles
+  - search
+  - runCommands
+  - problems
+  - fetch
+  - think
 agents: []
 handoffs: []
 ---
@@ -185,3 +192,5 @@ Evaluation process:
 | Monolithic index for heterogeneous docs | Different doc types need different retrieval strategies |
 | Ignoring chunk metadata | Loses document structure, section context, timestamps |
 | One-time evaluation only | Quality degrades as corpus grows and queries evolve |
+
+

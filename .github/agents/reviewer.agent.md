@@ -20,7 +20,16 @@ boundaries:
     - "tests/**"
     - "docs/prd/**"
     - "docs/adr/**"
-tools: ['codebase', 'editFiles', 'search', 'changes', 'problems', 'usages', 'fetch', 'think', 'github/*']
+tools:
+  - codebase
+  - editFiles
+  - search
+  - changes
+  - problems
+  - usages
+  - fetch
+  - think
+  - github/*
 agents:
   - AgentX Engineer
   - AgentX Auto-Fix Reviewer
@@ -137,9 +146,9 @@ Create `docs/reviews/REVIEW-{issue}.md` from template at `.github/templates/REVI
 ### 6.1. Confidence Markers (REQUIRED)
 
 Every major recommendation MUST include a confidence tag:
-- [Confidence: HIGH] -- Strong evidence, proven pattern, low risk
-- [Confidence: MEDIUM] -- Reasonable approach, some uncertainty, may need validation
-- [Confidence: LOW] -- Speculative, limited evidence, requires further research
+- Confidence: HIGH -- Strong evidence, proven pattern, low risk
+- Confidence: MEDIUM -- Reasonable approach, some uncertainty, may need validation
+- Confidence: LOW -- Speculative, limited evidence, requires further research
 
 Apply to: findings severity, refactoring suggestions, performance observations, security assessments.
 
@@ -188,20 +197,20 @@ Update Status back to `In Progress`.
 
 ### Entry
 
-- [PASS] Status = `In Review`
-- [PASS] Engineer's quality loop status = `complete`
+- PASS Status = `In Review`
+- PASS Engineer's quality loop status = `complete`
 
 ### Exit (Approve)
 
-- [PASS] All Critical and Major findings resolved
-- [PASS] Review document created with clear decision
-- [PASS] Status updated to `Validating`
-- [PASS] Validation passes: `.github/scripts/validate-handoff.sh <issue> reviewer`
+- PASS All Critical and Major findings resolved
+- PASS Review document created with clear decision
+- PASS Status updated to `Validating`
+- PASS Validation passes: `.github/scripts/validate-handoff.sh <issue> reviewer`
 
 ### Exit (Reject)
 
-- [PASS] `needs:changes` label added with specific feedback
-- [PASS] Status updated back to `In Progress`
+- PASS `needs:changes` label added with specific feedback
+- PASS Status updated back to `In Progress`
 
 ## When Blocked (Agent-to-Agent Communication)
 
@@ -212,7 +221,7 @@ If code changes are unclear or spec context is insufficient:
 3. **Never approve blind**: If you cannot verify spec conformance, ask for clarification
 4. **Timeout rule**: If no response within 15 minutes, document the ambiguity in the review and flag for human decision
 
-> **Shared Protocols**: Follow [AGENTS.md](../../AGENTS.md#handoff-flow) for handoff workflow, progress logs, memory compaction, and agent communication.
+> **Shared Protocols**: Follow [WORKFLOW.md](../../docs/WORKFLOW.md#handoff-flow) for handoff workflow, progress logs, memory compaction, and agent communication.
 > **Local Mode**: See [GUIDE.md](../../docs/GUIDE.md#local-mode-no-github) for local issue management.
 
 ## Inter-Agent Clarification Protocol
@@ -232,7 +241,7 @@ Only proceed to Step 2 if a question remains unanswered after reading all artifa
 
 If a question remains after reading artifacts, ask the user to switch to the relevant agent:
 
-"I need input from [AgentName] on [specific question]. Please switch to the [AgentName] agent and ask: [question with context]."
+"I need input from <AgentName> on <specific question>. Please switch to the <AgentName> agent and ask: <question with context>."
 
 Only reference agents listed in your `agents:` frontmatter.
 
@@ -244,7 +253,7 @@ Maximum 3 follow-up exchanges per topic.
 ### Step 4: Escalate to User If Unresolved
 
 After 3 exchanges with no resolution, tell the user:
-"I need clarification on [topic]. [AgentName] could not resolve: [question]. Can you help?"
+"I need clarification on <topic>. <AgentName> could not resolve: <question>. Can you help?"
 
 ## Iterative Quality Loop (MANDATORY)
 
@@ -258,7 +267,7 @@ Copilot runs this loop natively within its agentic session.
 3. **Fix** -- address the failure
 4. **Re-run verification** -- confirm the fix works
 5. **Self-review** -- once all checks pass, spawn a same-role reviewer sub-agent:
-   - Reviewer evaluates with structured findings: [HIGH], [MEDIUM], [LOW]
+   - Reviewer evaluates with structured findings: HIGH, MEDIUM, LOW
    - APPROVED: true when no HIGH or MEDIUM findings remain
    - APPROVED: false when any HIGH or MEDIUM findings exist
 6. **Address findings** -- fix all HIGH and MEDIUM findings, then re-run from Step 1
@@ -275,3 +284,5 @@ Before handing off, mark the loop complete:
 `.agentx/agentx.ps1 loop complete <issue>`
 
 The CLI blocks handoff with exit 1 if the loop state is not `complete`.
+
+

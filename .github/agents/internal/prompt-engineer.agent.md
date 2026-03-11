@@ -19,7 +19,14 @@ boundaries:
     - "docs/prd/** (PRD documents)"
     - "docs/adr/** (architecture docs)"
     - ".github/workflows/** (CI/CD pipelines)"
-tools: ['codebase', 'editFiles', 'search', 'runCommands', 'problems', 'fetch', 'think']
+tools:
+  - codebase
+  - editFiles
+  - search
+  - runCommands
+  - problems
+  - fetch
+  - think
 agents: []
 handoffs: []
 ---
@@ -144,3 +151,5 @@ Track changes in `.copilot-tracking/prompt-eval/{name}-changelog.md`:
 | Inline prompts in code | Cannot version, diff, or A/B test |
 | No adversarial testing | First jailbreak attempt succeeds |
 | Prompt too long (>8K tokens) | Context window waste, latency increase, quality degradation |
+
+

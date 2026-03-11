@@ -24,7 +24,15 @@ boundaries:
     - "docs/adr/**"
     - "docs/ux/**"
     - "tests/**"
-tools: ['codebase', 'editFiles', 'search', 'changes', 'problems', 'fetch', 'think', 'github/*']
+tools:
+  - codebase
+  - editFiles
+  - search
+  - changes
+  - problems
+  - fetch
+  - think
+  - github/*
 agents:
   - AgentX Architect
   - AgentX GitHub Ops
@@ -125,7 +133,7 @@ Create `docs/prd/PRD-{epic-id}.md` **locally** using `editFiles` tool, based on 
 |-------|-------------|--------|-------------------|
 | Epic | `[Epic] {Title}` | `type:epic`, `priority:pN` | Overview, PRD link, Feature list |
 | Feature | `[Feature] {Name}` | `type:feature`, `priority:pN` | Description, Parent Epic ref, Story list |
-| Story | `[Story] {User Story}` | `type:story`, `priority:pN` | As a/I want/So that, Parent ref, Acceptance criteria |
+| Story | `<Story> {User Story}` | `type:story`, `priority:pN` | As a/I want/So that, Parent ref, Acceptance criteria |
 
 - Add `needs:ux` label to stories requiring UI work
 - Add `needs:ai` label to stories requiring GenAI capabilities
@@ -177,17 +185,17 @@ Update Epic Status to `Ready` in GitHub Projects.
 
 ### Entry
 
-- [PASS] Issue has `type:epic` label
-- [PASS] Status is `Backlog` (no duplicate work)
+- PASS Issue has `type:epic` label
+- PASS Status is `Backlog` (no duplicate work)
 
 ### Exit
 
-- [PASS] PRD exists with all 12 sections filled
-- [PASS] Epic + Feature + Story issues created with proper hierarchy
-- [PASS] All stories have acceptance criteria
-- [PASS] PRD committed to repository
-- [PASS] Research Summary section documents prior art analysis with sources and evidence
-- [PASS] Validation passes: `.github/scripts/validate-handoff.sh <issue> pm`
+- PASS PRD exists with all 12 sections filled
+- PASS Epic + Feature + Story issues created with proper hierarchy
+- PASS All stories have acceptance criteria
+- PASS PRD committed to repository
+- PASS Research Summary section documents prior art analysis with sources and evidence
+- PASS Validation passes: `.github/scripts/validate-handoff.sh <issue> pm`
 
 ## When Blocked (Agent-to-Agent Communication)
 
@@ -198,7 +206,7 @@ If requirements are unclear or stakeholder input is needed:
 3. **Never assume**: Do not fabricate requirements -- ask for clarification
 4. **Timeout rule**: If no response within 15 minutes, document assumptions explicitly and flag for review
 
-> **Shared Protocols**: Follow [AGENTS.md](../../AGENTS.md#handoff-flow) for handoff workflow, progress logs, memory compaction, and agent communication.
+> **Shared Protocols**: Follow [WORKFLOW.md](../../docs/WORKFLOW.md#handoff-flow) for handoff workflow, progress logs, memory compaction, and agent communication.
 > **Local Mode**: See [GUIDE.md](../../docs/GUIDE.md#local-mode-no-github) for local issue management.
 
 ## Inter-Agent Clarification Protocol
@@ -217,7 +225,7 @@ Only proceed to Step 2 if a question remains unanswered after reading all artifa
 ### Step 2: Ask the User for Cross-Agent Help
 
 If the question is for a different agent (Architect, UX Designer, etc.), ask the user:
-"This question is better suited for the [AgentName] agent. Please switch to that agent mode and ask: [specific question]."
+"This question is better suited for the <AgentName> agent. Please switch to that agent mode and ask: <specific question>."
 
 ### Step 3: Follow Up If Needed
 
@@ -227,7 +235,7 @@ Maximum 3 follow-up exchanges per topic.
 ### Step 4: Escalate to User If Unresolved
 
 After 3 exchanges with no resolution, tell the user:
-"I need clarification on [topic]. [AgentName] could not resolve: [question]. Can you help?"
+"I need clarification on <topic>. <AgentName> could not resolve: <question>. Can you help?"
 
 ## Iterative Quality Loop (MANDATORY)
 
@@ -241,7 +249,7 @@ Copilot runs this loop natively within its agentic session.
 3. **Fix** -- address the failure
 4. **Re-run verification** -- confirm the fix works
 5. **Self-review** -- once all checks pass, spawn a same-role reviewer sub-agent:
-   - Reviewer evaluates with structured findings: [HIGH], [MEDIUM], [LOW]
+   - Reviewer evaluates with structured findings: HIGH, MEDIUM, LOW
    - APPROVED: true when no HIGH or MEDIUM findings remain
    - APPROVED: false when any HIGH or MEDIUM findings exist
 6. **Address findings** -- fix all HIGH and MEDIUM findings, then re-run from Step 1
@@ -270,3 +278,5 @@ Before handing off, mark the loop complete:
 `.agentx/agentx.ps1 loop complete <issue>`
 
 The CLI blocks handoff with exit 1 if the loop state is not `complete`.
+
+

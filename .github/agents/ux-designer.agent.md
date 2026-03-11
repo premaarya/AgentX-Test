@@ -25,7 +25,16 @@ boundaries:
     - "docs/adr/**"
     - "docs/prd/**"
     - "tests/**"
-tools: ['codebase', 'editFiles', 'search', 'changes', 'problems', 'usages', 'fetch', 'think', 'github/*']
+tools:
+  - codebase
+  - editFiles
+  - search
+  - changes
+  - problems
+  - usages
+  - fetch
+  - think
+  - github/*
 agents:
   - AgentX Product Manager
 handoffs:
@@ -164,16 +173,16 @@ Update Status to `Ready` in GitHub Projects.
 
 ### Entry
 
-- [PASS] Status = `Ready` (PM complete)
-- [PASS] PRD exists at `docs/prd/PRD-{epic-id}.md`
+- PASS Status = `Ready` (PM complete)
+- PASS PRD exists at `docs/prd/PRD-{epic-id}.md`
 
 ### Exit
 
-- [PASS] UX specs created for all stories with `needs:ux`
-- [PASS] HTML/CSS prototypes exist at `docs/ux/prototypes/`
-- [PASS] Prototypes are interactive, responsive, WCAG 2.1 AA compliant
-- [PASS] Design Research section documents competitive audit with sources and pattern rationale
-- [PASS] Validation passes: `.github/scripts/validate-handoff.sh <issue> ux`
+- PASS UX specs created for all stories with `needs:ux`
+- PASS HTML/CSS prototypes exist at `docs/ux/prototypes/`
+- PASS Prototypes are interactive, responsive, WCAG 2.1 AA compliant
+- PASS Design Research section documents competitive audit with sources and pattern rationale
+- PASS Validation passes: `.github/scripts/validate-handoff.sh <issue> ux`
 
 ## When Blocked (Agent-to-Agent Communication)
 
@@ -184,7 +193,7 @@ If design requirements are unclear or user research is insufficient:
 3. **Never assume user intent**: Ask PM for clarification rather than guessing user needs
 4. **Timeout rule**: If no response within 15 minutes, document assumptions explicitly and flag for review
 
-> **Shared Protocols**: Follow [AGENTS.md](../../AGENTS.md#handoff-flow) for handoff workflow, progress logs, memory compaction, and agent communication.
+> **Shared Protocols**: Follow [WORKFLOW.md](../../docs/WORKFLOW.md#handoff-flow) for handoff workflow, progress logs, memory compaction, and agent communication.
 > **Local Mode**: See [GUIDE.md](../../docs/GUIDE.md#local-mode-no-github) for local issue management.
 
 ## Inter-Agent Clarification Protocol
@@ -204,7 +213,7 @@ Only proceed to Step 2 if a question remains unanswered after reading all artifa
 
 If a question remains after reading artifacts, ask the user to switch to the relevant agent:
 
-"I need input from [AgentName] on [specific question]. Please switch to the [AgentName] agent and ask: [question with context]."
+"I need input from <AgentName> on <specific question>. Please switch to the <AgentName> agent and ask: <question with context>."
 
 Only reference agents listed in your `agents:` frontmatter.
 
@@ -216,7 +225,7 @@ Maximum 3 follow-up exchanges per topic.
 ### Step 4: Escalate to User If Unresolved
 
 After 3 exchanges with no resolution, tell the user:
-"I need clarification on [topic]. [AgentName] could not resolve: [question]. Can you help?"
+"I need clarification on <topic>. <AgentName> could not resolve: <question>. Can you help?"
 
 ## Iterative Quality Loop (MANDATORY)
 
@@ -230,7 +239,7 @@ Copilot runs this loop natively within its agentic session.
 3. **Fix** -- address the failure
 4. **Re-run verification** -- confirm the fix works
 5. **Self-review** -- once all checks pass, spawn a same-role reviewer sub-agent:
-   - Reviewer evaluates with structured findings: [HIGH], [MEDIUM], [LOW]
+   - Reviewer evaluates with structured findings: HIGH, MEDIUM, LOW
    - APPROVED: true when no HIGH or MEDIUM findings remain
    - APPROVED: false when any HIGH or MEDIUM findings exist
 6. **Address findings** -- fix all HIGH and MEDIUM findings, then re-run from Step 1
@@ -247,3 +256,5 @@ Before handing off, mark the loop complete:
 `.agentx/agentx.ps1 loop complete <issue>`
 
 The CLI blocks handoff with exit 1 if the loop state is not `complete`.
+
+

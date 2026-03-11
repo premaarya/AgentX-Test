@@ -152,13 +152,14 @@ AgentX uses a **Hub-and-Spoke architecture** for agent coordination:
 **Key Principles:**
 
 1. **Centralized Coordination** - Agent X is the top-level autonomous executor. It SHOULD complete work in one session whenever feasible and use specialist stages as internal workflow phases. Manual agent switching is a fallback for isolation or platform limitations.
-2. **Strict Role Separation** - Each agent produces one deliverable type (PRD, ADR, Code, Review)
-3. **Universal Tool Access** - All agents have access to all tools for maximum flexibility
-4. **Status-Driven** - GitHub Projects V2 Status field is the source of truth
-5. **Pre-Handoff Validation** - Artifacts validated before status transitions
-6. **Post-Review Validation** - DevOps and Tester validate in parallel after Reviewer approves
-7. **Bug-Fix Feedback Loop** - Tester defects route back to Engineer for resolution
-8. **Two-Layer Architecture** - Skills (Markdown) encode domain knowledge; MCP servers handle tool execution. Skills are the orchestration layer; MCP is the plumbing. Every skill works standalone without MCP connections.
+2. **Role-Contract Preservation** - When Agent X executes a specialist phase internally, it MUST follow that specialist agent's constraints, boundaries, required templates, required skills, entry gates, exit gates, and deliverable rules. Internal execution is not permission to weaken the role contract.
+3. **Strict Role Separation** - Each agent produces one deliverable type (PRD, ADR, Code, Review)
+4. **Universal Tool Access** - All agents have access to all tools for maximum flexibility
+5. **Status-Driven** - GitHub Projects V2 Status field is the source of truth
+6. **Pre-Handoff Validation** - Artifacts validated before status transitions
+7. **Post-Review Validation** - DevOps and Tester validate in parallel after Reviewer approves
+8. **Bug-Fix Feedback Loop** - Tester defects route back to Engineer for resolution
+9. **Two-Layer Architecture** - Skills (Markdown) encode domain knowledge; MCP servers handle tool execution. Skills are the orchestration layer; MCP is the plumbing. Every skill works standalone without MCP connections.
 
 ### Routing Logic
 
@@ -188,7 +189,7 @@ type:powerbi + Backlog -> Power BI Analyst (skip PM/Architect for report/dashboa
 In Review + needs:testing -> Tester (pre-release certification)
 ```
 
-**Autonomous Mode**: For simple tasks (bugs, docs, stories <=3 files), Agent X can automatically route to Engineer, skipping manual coordination. See [Agent X](../.github/agents/agent-x.agent.md) (mode: adaptive).
+**Autonomous Mode**: For simple tasks (bugs, docs, stories <=3 files), Agent X can automatically route to Engineer, skipping manual coordination. When Agent X acts as Engineer internally, it is still required to follow the Engineer agent's own contract and gates. See [Agent X](../.github/agents/agent-x.agent.md) (mode: adaptive).
 
 **Universal Iterative Refinement**: ALL workflows include `iterate = true` on the Engineer's implementation step by default. The Reviewer ALWAYS verifies loop completion before approval. The `needs:iteration` label is reserved for **extended** iteration (max 20 iterations). See [Iterative Loop Skill](../.github/skills/development/iterative-loop/SKILL.md).
 
@@ -229,13 +230,14 @@ These checks are the target validation model. Where automation is not yet presen
 
 | Mode | How It Works | Platform |
 |------|-------------|----------|
-| **Mode 1: Agent X Autonomous** | Agent X classifies work and executes it end to end in one session, applying PM -> [Architect, UX, Data Scientist] -> Engineer -> Reviewer -> [DevOps, Tester] as internal phases when needed | VS Code, Claude Code |
+| **Mode 1: Agent X Autonomous** | Agent X classifies work and executes it end to end in one session, applying PM -> [Architect, UX, Data Scientist] -> Engineer -> Reviewer -> [DevOps, Tester] as internal phases when needed while preserving each specialist agent's own rules and gates | VS Code, Claude Code |
 | **Mode 2: Human-Orchestrated** | User picks agent from Copilot agent picker; `handoffs:` frontmatter renders "Hand off to X" buttons | VS Code |
 | **CLI Standalone** | `agentx.ps1 run <agent> <task>` runs agent via GitHub Models API; no sub-agent chaining | CLI |
 
 ### Agent-to-Agent Communication
 
 Agent X SHOULD keep work in one session by applying specialist constraints internally.
+When it does so, it MUST read and honor the active specialist agent definition instead of treating the phase as a lightweight approximation.
 When strict role isolation or platform behavior requires it, agents MAY still communicate
 through the user and ask for a manual switch to the relevant specialist.
 
@@ -258,6 +260,8 @@ Discover/Plan -> [Architect, Data Scientist, UX] -> Engineer -> Reviewer -> [Dev
 **Design Phase**: Architect, Data Scientist, and UX inputs are applied before implementation when complexity requires them.
 **Parallel Validation Phase**: DevOps Engineer and Tester validate in parallel after Reviewer approves.
 **Bug-Fix Feedback Loop**: Tester defects route back to Engineer for resolution before closing.
+
+For Agent X autonomous execution, each phase above inherits the same non-skippable contract as the corresponding specialist agent. PM phase still requires PRD rules and PM boundaries, Architect phase still requires ADR/Spec and zero-code policy, UX phase still requires prototypes and accessibility rules, Engineer phase still requires the quality loop, and Reviewer phase still requires review artifacts and approval gates.
 
 > **Note**: Consulting Research, Power BI Analyst, and Agile Coach operate **standalone** (not part of the core SDLC pipeline). GitHub Ops, ADO Ops, Functional Reviewer, Prompt Engineer, Eval Specialist, Ops Monitor, and RAG Specialist are invisible sub-agents spawned by their parent agents.
 

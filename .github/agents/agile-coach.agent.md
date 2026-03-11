@@ -20,7 +20,12 @@ boundaries:
     - "docs/ux/**"
     - "tests/**"
     - ".github/workflows/**"
-tools: ['codebase', 'editFiles', 'search', 'fetch', 'think']
+tools:
+  - codebase
+  - editFiles
+  - search
+  - fetch
+  - think
 ---
 
 # Agile Coach Agent
@@ -132,7 +137,7 @@ Produce copy-paste ready output:
 `markdown
 ## User Story
 
-**Title**: [Story] {concise title}
+**Title**: <Story> {concise title}
 
 **As a** {user persona},
 **I want** {capability},
@@ -195,4 +200,6 @@ If the user cannot answer elicitation questions or the domain is unfamiliar:
 4. **Escalate to PM** if the story needs broader product context (recommend running the Product Manager agent)
 
 > **Standalone Agent**: This agent is not part of the core SDLC pipeline. Like Consulting Research, it is invoked directly by users.
-> **Shared Protocols**: Follow [AGENTS.md](../../AGENTS.md#handoff-flow) for agent communication conventions.
+> **Shared Protocols**: Follow [WORKFLOW.md](../../docs/WORKFLOW.md#handoff-flow) for agent communication conventions.
+
+

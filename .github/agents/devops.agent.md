@@ -24,7 +24,17 @@ boundaries:
     - "docs/prd/**"
     - "docs/adr/**"
     - "docs/ux/**"
-tools: ['codebase', 'editFiles', 'search', 'changes', 'runCommands', 'problems', 'usages', 'fetch', 'think', 'github/*']
+tools:
+  - codebase
+  - editFiles
+  - search
+  - changes
+  - runCommands
+  - problems
+  - usages
+  - fetch
+  - think
+  - github/*
 agents:
   - AgentX Engineer
   - AgentX Ops Monitor
@@ -144,15 +154,15 @@ Update Status in GitHub Projects.
 
 ### Entry
 
-- [PASS] Issue has `type:devops` label or Status = `Validating`
-- [PASS] Architecture/spec available (for new pipeline work)
+- PASS Issue has `type:devops` label or Status = `Validating`
+- PASS Architecture/spec available (for new pipeline work)
 
 ### Exit
 
-- [PASS] Workflows pass syntax validation
-- [PASS] Secrets stored securely (no hardcoded values)
-- [PASS] Deployment documentation complete with rollback procedures
-- [PASS] Validation passes: `.github/scripts/validate-handoff.sh <issue> devops`
+- PASS Workflows pass syntax validation
+- PASS Secrets stored securely (no hardcoded values)
+- PASS Deployment documentation complete with rollback procedures
+- PASS Validation passes: `.github/scripts/validate-handoff.sh <issue> devops`
 
 ## When Blocked (Agent-to-Agent Communication)
 
@@ -163,7 +173,7 @@ If infrastructure decisions are unclear, build requirements are missing, or depl
 3. **Never hardcode secrets**: If credentials are needed, ask for Key Vault or secret configuration guidance
 4. **Timeout rule**: If no response within 15 minutes, document assumptions and flag for review
 
-> **Shared Protocols**: Follow [AGENTS.md](../../AGENTS.md#handoff-flow) for handoff workflow, progress logs, memory compaction, and agent communication.
+> **Shared Protocols**: Follow [WORKFLOW.md](../../docs/WORKFLOW.md#handoff-flow) for handoff workflow, progress logs, memory compaction, and agent communication.
 > **Local Mode**: See [GUIDE.md](../../docs/GUIDE.md#local-mode-no-github) for local issue management.
 
 ## Inter-Agent Clarification Protocol
@@ -183,7 +193,7 @@ Only proceed to Step 2 if a question remains unanswered after reading all artifa
 
 If a question remains after reading artifacts, ask the user to switch to the relevant agent:
 
-"I need input from [AgentName] on [specific question]. Please switch to the [AgentName] agent and ask: [question with context]."
+"I need input from <AgentName> on <specific question>. Please switch to the <AgentName> agent and ask: <question with context>."
 
 Only reference agents listed in your `agents:` frontmatter.
 
@@ -195,7 +205,7 @@ Maximum 3 follow-up exchanges per topic.
 ### Step 4: Escalate to User If Unresolved
 
 After 3 exchanges with no resolution, tell the user:
-"I need clarification on [topic]. [AgentName] could not resolve: [question]. Can you help?"
+"I need clarification on <topic>. <AgentName> could not resolve: <question>. Can you help?"
 
 ## Iterative Quality Loop (MANDATORY)
 
@@ -209,7 +219,7 @@ Copilot runs this loop natively within its agentic session.
 3. **Fix** -- address the failure
 4. **Re-run verification** -- confirm the fix works
 5. **Self-review** -- once all checks pass, spawn a same-role reviewer sub-agent:
-   - Reviewer evaluates with structured findings: [HIGH], [MEDIUM], [LOW]
+   - Reviewer evaluates with structured findings: HIGH, MEDIUM, LOW
    - APPROVED: true when no HIGH or MEDIUM findings remain
    - APPROVED: false when any HIGH or MEDIUM findings exist
 6. **Address findings** -- fix all HIGH and MEDIUM findings, then re-run from Step 1
@@ -226,3 +236,5 @@ Before handing off, mark the loop complete:
 `.agentx/agentx.ps1 loop complete <issue>`
 
 The CLI blocks handoff with exit 1 if the loop state is not `complete`.
+
+

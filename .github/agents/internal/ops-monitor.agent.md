@@ -21,7 +21,14 @@ boundaries:
     - "docs/adr/** (architecture docs)"
     - "docs/ux/** (UX documents)"
     - ".github/workflows/** (CI/CD pipelines)"
-tools: ['codebase', 'editFiles', 'search', 'runCommands', 'problems', 'fetch', 'think']
+tools:
+  - codebase
+  - editFiles
+  - search
+  - runCommands
+  - problems
+  - fetch
+  - think
 agents: []
 handoffs: []
 ---
@@ -168,3 +175,5 @@ Baseline lifecycle:
 | Ignoring provider model updates | Silent behavior changes go undetected |
 | Single-signal alerting | One metric is noisy; correlate multiple signals |
 | No fallback activation monitoring | Provider outage goes undetected |
+
+

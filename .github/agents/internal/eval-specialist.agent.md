@@ -20,7 +20,14 @@ boundaries:
     - "docs/prd/** (PRD documents)"
     - "docs/adr/** (architecture docs)"
     - ".github/workflows/** (CI/CD pipelines)"
-tools: ['codebase', 'editFiles', 'search', 'runCommands', 'problems', 'fetch', 'think']
+tools:
+  - codebase
+  - editFiles
+  - search
+  - runCommands
+  - problems
+  - fetch
+  - think
 agents: []
 handoffs: []
 ---
@@ -174,3 +181,5 @@ Generate side-by-side comparison:
 | Skipping safety testing | First adversarial input succeeds |
 | No baseline for regression | Cannot detect quality degradation after changes |
 | Evaluating on training data | Inflated scores, no generalization signal |
+
+

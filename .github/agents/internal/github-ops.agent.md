@@ -24,7 +24,17 @@ boundaries:
     - "docs/ux/** (UX designs)"
     - "docs/reviews/** (review documents)"
     - ".github/workflows/** (CI/CD pipelines)"
-tools: ['codebase', 'editFiles', 'search', 'changes', 'runCommands', 'problems', 'usages', 'fetch', 'think', 'github/*']
+tools:
+  - codebase
+  - editFiles
+  - search
+  - changes
+  - runCommands
+  - problems
+  - usages
+  - fetch
+  - think
+  - github/*
 agents:
   - AgentX
 handoffs:
@@ -203,15 +213,15 @@ Before completing any workflow run:
 
 ### Entry
 
-- [PASS] User intent classified into a known workflow type
-- [PASS] Autonomy level confirmed
+- PASS User intent classified into a known workflow type
+- PASS Autonomy level confirmed
 
 ### Exit
 
-- [PASS] Workflow state saved to .copilot-tracking/
-- [PASS] Summary provided with action counts
-- [PASS] No internal state leaked to GitHub content
-- [PASS] Blocked/ambiguous items flagged for attention
+- PASS Workflow state saved to .copilot-tracking/
+- PASS Summary provided with action counts
+- PASS No internal state leaked to GitHub content
+- PASS Blocked/ambiguous items flagged for attention
 
 ## When Blocked
 
@@ -223,4 +233,6 @@ If GitHub API calls fail, permissions are insufficient, or issue context is uncl
 4. **Escalate** to user if write permissions are missing
 
 > **Local Mode**: In local mode, use .agentx/local-issue-manager.ps1 instead of GitHub MCP tools.
-> **Shared Protocols**: Follow [AGENTS.md](../../AGENTS.md#handoff-flow) for handoff workflow and agent communication.
+> **Shared Protocols**: Follow [WORKFLOW.md](../../../docs/WORKFLOW.md#handoff-flow) for handoff workflow and agent communication.
+
+

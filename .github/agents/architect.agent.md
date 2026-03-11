@@ -26,7 +26,16 @@ boundaries:
     - "docs/prd/**"
     - "docs/ux/**"
     - "tests/**"
-tools: ['codebase', 'editFiles', 'search', 'changes', 'problems', 'usages', 'fetch', 'think', 'github/*']
+tools:
+  - codebase
+  - editFiles
+  - search
+  - changes
+  - problems
+  - usages
+  - fetch
+  - think
+  - github/*
 agents:
   - AgentX Product Manager
   - AgentX Data Scientist
@@ -153,9 +162,9 @@ For EVERY architecture decision, document the AI assessment. Even if the solutio
 ### 5. Confidence Markers (REQUIRED)
 
 Every major recommendation MUST include a confidence tag:
-- [Confidence: HIGH] -- Strong evidence, proven pattern, low risk
-- [Confidence: MEDIUM] -- Reasonable approach, some uncertainty, may need validation
-- [Confidence: LOW] -- Speculative, limited evidence, requires further research
+- Confidence: HIGH -- Strong evidence, proven pattern, low risk
+- Confidence: MEDIUM -- Reasonable approach, some uncertainty, may need validation
+- Confidence: LOW -- Speculative, limited evidence, requires further research
 
 Apply to: technology choices, pattern selections, trade-off conclusions, risk assessments.
 
@@ -207,16 +216,16 @@ Update Status to `Ready` in GitHub Projects.
 
 ### Entry
 
-- [PASS] PRD exists at `docs/prd/PRD-{epic-id}.md` (or issue is spike)
-- [PASS] Status = `Ready` (PM complete)
+- PASS PRD exists at `docs/prd/PRD-{epic-id}.md` (or issue is spike)
+- PASS Status = `Ready` (PM complete)
 
 ### Exit
 
-- [PASS] ADR exists with 3+ evaluated options (skip for spikes)
-- [PASS] Tech Spec has all 13 sections (skip for spikes)
-- [PASS] Zero code examples in any spec
-- [PASS] ADR Context section includes research evidence with sources (benchmarks, failure modes, security)
-- [PASS] Validation passes: `.github/scripts/validate-handoff.sh <issue> architect`
+- PASS ADR exists with 3+ evaluated options (skip for spikes)
+- PASS Tech Spec has all 13 sections (skip for spikes)
+- PASS Zero code examples in any spec
+- PASS ADR Context section includes research evidence with sources (benchmarks, failure modes, security)
+- PASS Validation passes: `.github/scripts/validate-handoff.sh <issue> architect`
 
 ## When Blocked (Agent-to-Agent Communication)
 
@@ -227,7 +236,7 @@ If PRD requirements are ambiguous or technical constraints are unclear:
 3. **Never assume constraints**: Ask PM to clarify requirements rather than guessing
 4. **Timeout rule**: If no response within 15 minutes, document assumptions explicitly and flag for review
 
-> **Shared Protocols**: Follow [AGENTS.md](../../AGENTS.md#handoff-flow) for handoff workflow, progress logs, memory compaction, and agent communication.
+> **Shared Protocols**: Follow [WORKFLOW.md](../../docs/WORKFLOW.md#handoff-flow) for handoff workflow, progress logs, memory compaction, and agent communication.
 > **Local Mode**: See [GUIDE.md](../../docs/GUIDE.md#local-mode-no-github) for local issue management.
 
 ## Inter-Agent Clarification Protocol
@@ -247,7 +256,7 @@ Only proceed to Step 2 if a question remains unanswered after reading all artifa
 
 If a question remains after reading artifacts, ask the user to switch to the relevant agent:
 
-"I need input from [AgentName] on [specific question]. Please switch to the [AgentName] agent and ask: [question with context]."
+"I need input from <AgentName> on <specific question>. Please switch to the <AgentName> agent and ask: <question with context>."
 
 Only reference agents listed in your `agents:` frontmatter.
 
@@ -259,7 +268,7 @@ Maximum 3 follow-up exchanges per topic.
 ### Step 4: Escalate to User If Unresolved
 
 After 3 exchanges with no resolution, tell the user:
-"I need clarification on [topic]. [AgentName] could not resolve: [question]. Can you help?"
+"I need clarification on <topic>. <AgentName> could not resolve: <question>. Can you help?"
 
 ## Iterative Quality Loop (MANDATORY)
 
@@ -273,7 +282,7 @@ Copilot runs this loop natively within its agentic session.
 3. **Fix** -- address the failure
 4. **Re-run verification** -- confirm the fix works
 5. **Self-review** -- once all checks pass, spawn a same-role reviewer sub-agent:
-   - Reviewer evaluates with structured findings: [HIGH], [MEDIUM], [LOW]
+   - Reviewer evaluates with structured findings: HIGH, MEDIUM, LOW
    - APPROVED: true when no HIGH or MEDIUM findings remain
    - APPROVED: false when any HIGH or MEDIUM findings exist
 6. **Address findings** -- fix all HIGH and MEDIUM findings, then re-run from Step 1
@@ -302,3 +311,5 @@ Before handing off, mark the loop complete:
 `.agentx/agentx.ps1 loop complete <issue>`
 
 The CLI blocks handoff with exit 1 if the loop state is not `complete`.
+
+
