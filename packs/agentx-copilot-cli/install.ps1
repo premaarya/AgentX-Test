@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
- Install AgentX Copilot CLI Plugin v8.2.6 into a workspace.
+ Install AgentX Copilot CLI Plugin v8.2.7 into a workspace.
 
 .DESCRIPTION
  Copies AgentX agents, skills, instructions, and prompts into a target workspace
@@ -49,8 +49,22 @@ param(
  [switch]$Force
 )
 
+$MinimumPowerShellVersion = [Version]'7.4.0'
+
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+if ($PSVersionTable.PSVersion -lt $MinimumPowerShellVersion) {
+ Write-Host "[FAIL] AgentX Copilot CLI Plugin requires PowerShell 7.4+. Current version: $($PSVersionTable.PSVersion)" -ForegroundColor Red
+ Write-Host "Install PowerShell 7.4+ from https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell" -ForegroundColor Yellow
+ if ($IsWindows -or $env:OS -eq 'Windows_NT') {
+  Write-Host "Install command: winget install Microsoft.PowerShell" -ForegroundColor DarkGray
+  Write-Host "Then rerun with: pwsh packs/agentx-copilot-cli/install.ps1" -ForegroundColor DarkGray
+ } else {
+  Write-Host "Then rerun with: pwsh packs/agentx-copilot-cli/install.ps1" -ForegroundColor DarkGray
+ }
+ exit 1
+}
 
 # -- Helpers ---------------------------------------------------------------
 
@@ -130,7 +144,7 @@ if (-not $Target) {
 
 Write-Host ""
 Write-Host "============================================" -ForegroundColor Cyan
-Write-Host "| AgentX Copilot CLI Plugin v8.2.6        |" -ForegroundColor Cyan
+Write-Host "| AgentX Copilot CLI Plugin v8.2.7        |" -ForegroundColor Cyan
 Write-Host "| Standalone plugin for GitHub Copilot CLI |" -ForegroundColor Cyan
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host ""
@@ -257,7 +271,7 @@ if (-not (Test-Path $versionDir)) {
 if ($PSCmdlet.ShouldProcess($versionFile, "Write version stamp")) {
  @{
   plugin = "agentx-copilot-cli"
-    version = "8.2.6"
+    version = "8.2.7"
   installedAt = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
   source = $Source
   includeCli = [bool]$IncludeCli
@@ -269,7 +283,7 @@ if ($PSCmdlet.ShouldProcess($versionFile, "Write version stamp")) {
 
 Write-Host ""
 Write-Host "============================================" -ForegroundColor Green
-Write-Host " AgentX Copilot CLI Plugin v8.2.6 installed" -ForegroundColor Green
+Write-Host " AgentX Copilot CLI Plugin v8.2.7 installed" -ForegroundColor Green
 Write-Host "============================================" -ForegroundColor Green
 Write-Host ""
 Write-Host " Files copied  : $totalCopied" -ForegroundColor White

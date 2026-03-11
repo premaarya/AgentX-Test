@@ -157,6 +157,9 @@ irm https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.ps1 | iex  
 curl -fsSL https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.sh | bash  # Bash
 ```
 
+PowerShell install path note:
+`install.ps1` requires PowerShell 7.4+ (`pwsh`). If you are on older Windows PowerShell, install PowerShell 7 and rerun with `pwsh -File .\install.ps1`.
+
 ### Install Profiles
 
 Control what gets installed with the `-Profile` flag:

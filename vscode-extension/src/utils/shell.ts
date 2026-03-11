@@ -1,5 +1,7 @@
 import { exec, execSync, spawn } from 'child_process';
 
+const MIN_POWERSHELL_VERSION = '7.4.0';
+
 /**
  * Cached result of PowerShell availability check.
  * null = not yet checked, string = resolved shell path.
@@ -7,30 +9,38 @@ import { exec, execSync, spawn } from 'child_process';
 let _resolvedPwsh: string | null = null;
 
 /**
- * Detect the best available PowerShell executable on the current system.
+ * Detect a supported PowerShell executable on the current system.
  *
- * Checks `pwsh` (PowerShell 7+) first, then falls back to `powershell.exe`
- * (Windows PowerShell 5.1) on Windows. Returns an empty string when neither
- * is found.
+ * AgentX requires `pwsh` 7.4+ on Windows. Returns an empty string when no
+ * supported `pwsh` runtime is found.
  */
 export function resolveWindowsShell(): string {
   if (_resolvedPwsh !== null) { return _resolvedPwsh; }
 
+  const compareSemver = (left: string, right: string): number => {
+    const leftParts = left.split('.').map((part) => parseInt(part, 10) || 0);
+    const rightParts = right.split('.').map((part) => parseInt(part, 10) || 0);
+    const length = Math.max(leftParts.length, rightParts.length);
+    for (let index = 0; index < length; index++) {
+      const leftValue = leftParts[index] ?? 0;
+      const rightValue = rightParts[index] ?? 0;
+      if (leftValue > rightValue) { return 1; }
+      if (leftValue < rightValue) { return -1; }
+    }
+    return 0;
+  };
+
   // Try pwsh (PowerShell 7+ cross-platform)
   try {
-    execSync('pwsh -NoProfile -Command "exit 0"', { stdio: 'ignore', timeout: 5_000 });
-    _resolvedPwsh = 'pwsh';
-    return _resolvedPwsh;
-  } catch { /* pwsh not available */ }
-
-  // On Windows, fall back to built-in powershell.exe (v5.1)
-  if (process.platform === 'win32') {
-    try {
-      execSync('powershell.exe -NoProfile -Command "exit 0"', { stdio: 'ignore', timeout: 5_000 });
-      _resolvedPwsh = 'powershell.exe';
+    const version = execSync('pwsh -NoProfile -Command "$PSVersionTable.PSVersion.ToString()"', {
+      stdio: ['ignore', 'pipe', 'ignore'],
+      timeout: 5_000,
+    }).toString().trim();
+    if (compareSemver(version, MIN_POWERSHELL_VERSION) >= 0) {
+      _resolvedPwsh = 'pwsh';
       return _resolvedPwsh;
-    } catch { /* powershell.exe not available */ }
-  }
+    }
+  } catch { /* pwsh not available */ }
 
   _resolvedPwsh = '';
   return _resolvedPwsh;
@@ -46,9 +56,8 @@ export function resetShellCache(): void {
 /**
  * Execute a shell command and return stdout.
  *
- * On Windows the `shell` parameter accepts `'pwsh'` (default) which will
- * automatically resolve to `pwsh` or `powershell.exe` depending on what
- * is available. Pass `'bash'` for Unix shells.
+ * On Windows the `shell` parameter accepts `'pwsh'` (default) and requires
+ * PowerShell 7.4+ to be installed. Pass `'bash'` for Unix shells.
  */
 export function execShell(
  command: string,
@@ -61,13 +70,12 @@ export function execShell(
  if (shell === 'bash') {
    shellPath = '/bin/bash';
  } else {
-   // Resolve to best available PowerShell (pwsh > powershell.exe)
+   // Resolve to a supported PowerShell runtime (pwsh 7.4+)
    const resolved = resolveWindowsShell();
    if (!resolved) {
      reject(new Error(
-       'PowerShell is not installed. Install PowerShell 7+ (pwsh) from '
-       + 'https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell '
-       + 'or ensure Windows PowerShell (powershell.exe) is available.'
+       'PowerShell 7.4+ (pwsh) is required. Install it from '
+       + 'https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell.'
      ));
      return;
    }
@@ -112,9 +120,8 @@ export function execShellStreaming(
    const resolved = resolveWindowsShell();
    if (!resolved) {
     reject(new Error(
-      'PowerShell is not installed. Install PowerShell 7+ (pwsh) from '
-      + 'https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell '
-      + 'or ensure Windows PowerShell (powershell.exe) is available.'
+      'PowerShell 7.4+ (pwsh) is required. Install it from '
+      + 'https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell.'
     ));
     return;
    }

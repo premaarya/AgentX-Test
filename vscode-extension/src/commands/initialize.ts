@@ -514,13 +514,12 @@ async function extractZip(zipPath: string, destDir: string): Promise<void> {
  fs.mkdirSync(destDir, { recursive: true });
 
  if (process.platform === 'win32') {
- // Use the best available PowerShell (pwsh > powershell.exe)
+ // Use a supported PowerShell runtime (pwsh 7.4+)
  const resolved = resolveWindowsShell();
  if (!resolved) {
  throw new Error(
- 'PowerShell is not installed. Install PowerShell 7+ (pwsh) from '
- + 'https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell '
- + 'or ensure Windows PowerShell (powershell.exe) is available.'
+ 'PowerShell 7.4+ (pwsh) is required. Install it from '
+ + 'https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell.'
  );
  }
  const { execShell: exec } = await import('../utils/shell');

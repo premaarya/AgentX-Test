@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
- Install AgentX v8.2.6 - Download, copy, configure.
+ Install AgentX v8.2.7 - Download, copy, configure.
 
 .PARAMETER Mode
  github - Full features: GitHub Actions, PRs, Projects (asks for repo/project info)
@@ -49,6 +49,8 @@ param(
  [switch]$Azure
 )
 
+$MinimumPowerShellVersion = [Version]'7.4.0'
+
 # Environment variable overrides (for irm | iex one-liner usage)
 if (-not $Mode -and $env:AGENTX_MODE) { $Mode = $env:AGENTX_MODE }
 if (-not $Path -and $env:AGENTX_PATH) { $Path = $env:AGENTX_PATH }
@@ -76,15 +78,17 @@ if ($Mode -and $Mode -notin @("github", "local")) {
 }
 
 # -- PowerShell version check --
-# Minimum: PowerShell 5.1 (Windows built-in). Recommended: PowerShell 7+.
-if ($PSVersionTable.PSVersion.Major -lt 5) {
- Write-Host "[X] PowerShell 5.1+ is required. Current version: $($PSVersionTable.PSVersion)" -ForegroundColor Red
- Write-Host " Install PowerShell 7+: https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell" -ForegroundColor Yellow
+# Supported runtime: PowerShell 7.4+ only.
+if ($PSVersionTable.PSVersion -lt $MinimumPowerShellVersion) {
+ Write-Host "[X] AgentX requires PowerShell 7.4+ to run install.ps1. Current version: $($PSVersionTable.PSVersion)" -ForegroundColor Red
+ Write-Host " Install PowerShell 7.4+ from https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell" -ForegroundColor Yellow
+ if ($IsWindows -or $env:OS -eq 'Windows_NT') {
+  Write-Host " Install command: winget install Microsoft.PowerShell" -ForegroundColor DarkGray
+  Write-Host " Then rerun with: pwsh -File .\install.ps1" -ForegroundColor DarkGray
+ } else {
+  Write-Host " Then rerun with: pwsh -File ./install.ps1" -ForegroundColor DarkGray
+ }
  return
-}
-if ($PSVersionTable.PSVersion.Major -eq 5) {
- Write-Host "[--] Windows PowerShell $($PSVersionTable.PSVersion) detected. PowerShell 7+ recommended." -ForegroundColor Yellow
- Write-Host "  Install: winget install Microsoft.PowerShell" -ForegroundColor DarkGray
 }
 
 # Auto-detect piped execution (irm | iex) - used to skip interactive prompts
@@ -152,7 +156,7 @@ try {
 # -- Banner ----------------------------------------------
 Write-Host ""
 Write-Host "+===================================================+" -ForegroundColor Cyan
-Write-Host "| AgentX v8.2.6 - AI Agent Orchestration |" -ForegroundColor Cyan
+Write-Host "| AgentX v8.2.7 - AI Agent Orchestration |" -ForegroundColor Cyan
 Write-Host "+===================================================+" -ForegroundColor Cyan
 Write-Host ""
 
@@ -179,12 +183,12 @@ if (Test-Path ".agentx/version.json") {
  } catch {}
 }
 
-if ($previousVersion -and $previousVersion -ne "8.2.6") {
+if ($previousVersion -and $previousVersion -ne "8.2.7") {
  $majorVersion = 0
  try { $majorVersion = [int]($previousVersion -split '\.')[0] } catch {}
 
  if ($majorVersion -lt 8) {
-    Write-Host "[!] Detected AgentX v$previousVersion - upgrading to v8.2.6..." -ForegroundColor Yellow
+    Write-Host "[!] Detected AgentX v$previousVersion - upgrading to v8.2.7..." -ForegroundColor Yellow
   Write-Host "  Uninstalling v$previousVersion and performing clean install." -ForegroundColor DarkGray
 
   # Back up user data that must survive the upgrade
@@ -319,12 +323,12 @@ Write-Host "[3] Configuring runtime..." -ForegroundColor Cyan
 # Version tracking
 $versionFile = ".agentx/version.json"
 @{
-  version = "8.2.6"
+  version = "8.2.7"
  mode = $Mode
  installedAt = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
  updatedAt = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
 } | ConvertTo-Json | Set-Content $versionFile
-Write-OK "Version 8.2.6 recorded"
+Write-OK "Version 8.2.7 recorded"
 
 # Merge AgentX entries into user's .gitignore
 $MARKER_START = "# --- AgentX (auto-generated, do not edit this block) ---"
@@ -560,7 +564,7 @@ if (-not $azureCompanionRequested) {
 # -- Done --------------------------------------------
 Write-Host ""
 Write-Host "===================================================" -ForegroundColor Green
-Write-Host " AgentX v8.2.6 installed! [$displayMode]" -ForegroundColor Green
+Write-Host " AgentX v8.2.7 installed! [$displayMode]" -ForegroundColor Green
 Write-Host "===================================================" -ForegroundColor Green
 Write-Host ""
 Write-Host " CLI: .\.agentx\agentx.ps1 help" -ForegroundColor White

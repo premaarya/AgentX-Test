@@ -10,11 +10,7 @@ describe('shell - resolveWindowsShell', () => {
   it('should return a non-empty string on systems with PowerShell', function () {
     if (process.platform !== 'win32') { this.skip(); }
     const result = resolveWindowsShell();
-    assert.ok(result.length > 0, 'should find pwsh or powershell.exe');
-    assert.ok(
-      result === 'pwsh' || result === 'powershell.exe',
-      `unexpected shell: ${result}`
-    );
+    assert.ok(result === '' || result === 'pwsh', `unexpected shell: ${result}`);
   });
 
   it('should cache the resolved value', () => {
@@ -35,11 +31,15 @@ describe('shell - resolveWindowsShell', () => {
 describe('shell - execShell', () => {
 
   it('should resolve with stdout for a simple command', async () => {
-    // Use pwsh on Windows (resolves to pwsh or powershell.exe), bash elsewhere
+    // Use pwsh on Windows when supported, bash elsewhere
     const shell = process.platform === 'win32' ? 'pwsh' as const : 'bash' as const;
     const cmd = process.platform === 'win32'
       ? 'Write-Output "hello from shell"'
       : 'echo "hello from shell"';
+
+    if (process.platform === 'win32' && resolveWindowsShell() !== 'pwsh') {
+      return;
+    }
 
     const result = await execShell(cmd, process.cwd(), shell);
     assert.equal(result, 'hello from shell');
@@ -48,6 +48,10 @@ describe('shell - execShell', () => {
   it('should reject when command fails', async () => {
     const shell = process.platform === 'win32' ? 'pwsh' as const : 'bash' as const;
     const cmd = 'exit 1';
+
+    if (process.platform === 'win32' && resolveWindowsShell() !== 'pwsh') {
+      return;
+    }
 
     try {
       await execShell(cmd, process.cwd(), shell);
@@ -64,6 +68,10 @@ describe('shell - execShell', () => {
       ? 'Write-Output "  padded  "'
       : 'echo "  padded  "';
 
+    if (process.platform === 'win32' && resolveWindowsShell() !== 'pwsh') {
+      return;
+    }
+
     const result = await execShell(cmd, process.cwd(), shell);
     // execShell trims the whole output string
     assert.equal(result, 'padded');
@@ -76,6 +84,10 @@ describe('shell - execShell', () => {
       ? '(Get-Location).Path'
       : 'pwd';
 
+    if (process.platform === 'win32' && resolveWindowsShell() !== 'pwsh') {
+      return;
+    }
+
     const result = await execShell(cmd, cwd, shell);
     // The output should contain the temp directory path
     assert.ok(result.length > 0, 'should return a path');
@@ -86,6 +98,10 @@ describe('shell - execShell', () => {
     const cmd = process.platform === 'win32'
       ? 'Write-Output "line one"; Write-Output "line two"'
       : 'printf "line one\\nline two\\n"';
+
+    if (process.platform === 'win32' && resolveWindowsShell() !== 'pwsh') {
+      return;
+    }
 
     const lines: string[] = [];
     const result = await execShellStreaming(cmd, process.cwd(), shell, (line) => lines.push(line));

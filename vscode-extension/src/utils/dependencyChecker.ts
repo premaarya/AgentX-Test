@@ -39,6 +39,8 @@ export interface EnvironmentReport {
   timestamp: string;
 }
 
+const MIN_POWERSHELL_VERSION = '7.4.0';
+
 /**
  * Execute a command and return stdout, or empty string on failure.
  */
@@ -62,6 +64,21 @@ function tryExec(command: string, timeoutMs = 10_000): Promise<string> {
 function parseVersion(raw: string): string {
   const match = raw.match(/(\d+\.\d+[\w.-]*)/);
   return match ? match[1] : raw.trim().substring(0, 30);
+}
+
+function compareSemver(left: string, right: string): number {
+  const leftParts = left.split('.').map((part) => parseInt(part, 10) || 0);
+  const rightParts = right.split('.').map((part) => parseInt(part, 10) || 0);
+  const length = Math.max(leftParts.length, rightParts.length);
+
+  for (let index = 0; index < length; index++) {
+    const leftValue = leftParts[index] ?? 0;
+    const rightValue = rightParts[index] ?? 0;
+    if (leftValue > rightValue) { return 1; }
+    if (leftValue < rightValue) { return -1; }
+  }
+
+  return 0;
 }
 
 /**
@@ -103,38 +120,37 @@ async function checkNodeJs(): Promise<DependencyResult> {
  * Check if PowerShell (pwsh) is available.
  */
 async function checkPowerShell(): Promise<DependencyResult> {
-  // Check pwsh (cross-platform PowerShell 7+) first
-  let raw = await tryExec('pwsh --version');
-  let found = raw.length > 0;
-  let version = found ? parseVersion(raw) : '';
-  let usedFallback = false;
+  const rawPwsh = await tryExec('pwsh -NoProfile -Command "$PSVersionTable.PSVersion.ToString()"');
+  const hasPwsh = rawPwsh.length > 0;
+  const pwshVersion = hasPwsh ? parseVersion(rawPwsh) : '';
+  const meetsMinimum = hasPwsh && compareSemver(pwshVersion, MIN_POWERSHELL_VERSION) >= 0;
 
-  // On Windows, fall back to built-in powershell.exe (v5.1)
-  if (!found && process.platform === 'win32') {
-    raw = await tryExec('powershell.exe -Command "$PSVersionTable.PSVersion.ToString()"');
-    found = raw.length > 0;
-    version = found ? parseVersion(raw) : '';
-    usedFallback = found;
+  let legacyVersion = '';
+  if (process.platform === 'win32') {
+    const rawLegacy = await tryExec('powershell.exe -NoProfile -Command "$PSVersionTable.PSVersion.ToString()"');
+    legacyVersion = rawLegacy.length > 0 ? parseVersion(rawLegacy) : '';
   }
 
   let message = '';
 
-  if (!found) {
-    message = 'PowerShell is not installed. Required for AgentX CLI scripts (.agentx/agentx.ps1).';
-  } else if (usedFallback) {
-    message = `Windows PowerShell ${version} found. PowerShell 7+ (pwsh) is recommended for best compatibility.`;
+  if (meetsMinimum) {
+    message = `PowerShell ${pwshVersion} detected.`;
+  } else if (hasPwsh) {
+    message = `PowerShell ${pwshVersion} found, but AgentX requires PowerShell ${MIN_POWERSHELL_VERSION}+ (pwsh).`;
+  } else if (legacyVersion) {
+    message = `Windows PowerShell ${legacyVersion} found, but AgentX requires PowerShell ${MIN_POWERSHELL_VERSION}+ (pwsh).`;
   } else {
-    message = `PowerShell ${version} detected.`;
+    message = `PowerShell ${MIN_POWERSHELL_VERSION}+ (pwsh) is required for AgentX PowerShell workflows.`;
   }
 
   return {
     name: 'PowerShell',
-    found,
-    version,
-    severity: found && usedFallback ? 'recommended' : 'required',
+    found: meetsMinimum,
+    version: hasPwsh ? pwshVersion : legacyVersion,
+    severity: 'required',
     message,
     fixUrl: 'https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell',
-    fixLabel: 'Install PowerShell 7',
+    fixLabel: 'Install PowerShell 7.4+',
     fixCommand: process.platform === 'win32'
       ? 'winget install Microsoft.PowerShell'
       : process.platform === 'darwin'

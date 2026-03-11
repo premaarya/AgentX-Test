@@ -2,7 +2,7 @@
 
 **The IDE Orchestrator for Multi-Agent Software Delivery**
 
-[![Version](https://img.shields.io/badge/Version-8.2.6-0EA5E9?style=for-the-badge)](https://marketplace.visualstudio.com/items?itemName=jnPiyush.agentx)
+[![Version](https://img.shields.io/badge/Version-8.2.7-0EA5E9?style=for-the-badge)](https://marketplace.visualstudio.com/items?itemName=jnPiyush.agentx)
 [![License](https://img.shields.io/badge/License-Apache_2.0-22C55E?style=for-the-badge)](LICENSE)
 
 *Bring structured multi-agent workflows directly into your editor with chat execution, live workspace state, and seamless repo integration.*
@@ -31,7 +31,7 @@ Running autonomous agents from the CLI lacks visibility. The AgentX VS Code exte
 
 ## Architecture Flow
 
-`mermaid
+```mermaid
 flowchart LR
     classDef chat fill:#fdf4ff,stroke:#d946ef,stroke-width:2px,color:#701a75
     classDef core fill:#eff6ff,stroke:#3b82f6,stroke-width:2px,color:#1e40af
@@ -44,7 +44,7 @@ flowchart LR
     
     View -.->|Queues & Workflows| UI((VS Code UI))
     File -.->|Skills & Templates| Workspace((Local Files))
-`
+```
 
 * **Inputs:** VS Code Chat drives intent into the orchestrator.
 * **Control:** The IDE tracks progress and state live via dedicated UI extensions.
@@ -58,7 +58,7 @@ To run AgentX successfully within VS Code:
 
 - **VS Code:** 1.85.0 or newer
 - **System:** Git configured on your PATH
-- **Runtime:** PowerShell or Bash available for CLI coordination
+- **Runtime:** PowerShell 7.4+ (`pwsh`) on Windows, or Bash on Linux/macOS
 - **Integrations:** gh (GitHub CLI) optional for extended GitHub mode operations
 
 ---
