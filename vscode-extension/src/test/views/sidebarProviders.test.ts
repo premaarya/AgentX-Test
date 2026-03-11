@@ -151,7 +151,7 @@ describe('sidebar providers', () => {
     const root = createWorkspaceRoot();
     fs.writeFileSync(
       path.join(root, '.agentx', 'version.json'),
-      JSON.stringify({ version: '8.2.5', mode: 'github' }),
+      JSON.stringify({ version: '8.2.6', mode: 'github' }),
       'utf-8',
     );
     fs.writeFileSync(
