@@ -458,6 +458,9 @@
         "path": "./.github/agentx/skills/data/powerbi/SKILL.md"
       },
       {
+        "path": "./.github/agentx/skills/design/design-system-reasoning/SKILL.md"
+      },
+      {
         "path": "./.github/agentx/skills/design/frontend-ui/SKILL.md"
       },
       {

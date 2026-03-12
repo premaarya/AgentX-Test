@@ -1,5 +1,5 @@
 ---
-description: 'Compressed skill index for AI agents. 66 skills across 10 categories. Load max 3-4 per task.'
+description: 'Compressed skill index for AI agents. 67 skills across 10 categories. Load max 3-4 per task.'
 ---
 
 # Production Code Skills Index
@@ -12,7 +12,7 @@ description: 'Compressed skill index for AI agents. 66 skills across 10 categori
 
 **Loading order**: Router -> instruction (auto) -> this index -> pick skills -> `read_file` them.
 
-**Anti-pattern**: Never load all 66 skills. Use Quick Reference below.
+**Anti-pattern**: Never load all 67 skills. Use Quick Reference below.
 
 ---
 
@@ -43,7 +43,7 @@ description: 'Compressed skill index for AI agents. 66 skills across 10 categori
 | **Containerization** | [Containerization](.github/skills/infrastructure/containerization/SKILL.md), [Security](.github/skills/architecture/security/SKILL.md), [Release Mgmt](.github/skills/operations/release-management/SKILL.md) |
 | **Data Analysis** | [Data Analysis](.github/skills/data/data-analysis/SKILL.md), [Database](.github/skills/architecture/database/SKILL.md), [Testing](.github/skills/development/testing/SKILL.md) |
 | **Power BI Report / Dashboard** | [Power BI](.github/skills/data/powerbi/SKILL.md), [Fabric Analytics](.github/skills/data/fabric-analytics/SKILL.md), [Database](.github/skills/architecture/database/SKILL.md), [Documentation](.github/skills/development/documentation/SKILL.md) |
-| **UX/UI Design** | [UX/UI Design](.github/skills/design/ux-ui-design/SKILL.md), [Prototype Craft](.github/skills/design/prototype-craft/SKILL.md), [Frontend/UI](.github/skills/design/frontend-ui/SKILL.md), [React](.github/skills/languages/react/SKILL.md) |
+| **UX/UI Design** | [Design System Reasoning](.github/skills/design/design-system-reasoning/SKILL.md), [UX/UI Design](.github/skills/design/ux-ui-design/SKILL.md), [Prototype Craft](.github/skills/design/prototype-craft/SKILL.md), [Frontend/UI](.github/skills/design/frontend-ui/SKILL.md) |
 | **E2E Testing** | [E2E Testing](.github/skills/testing/e2e-testing/SKILL.md), [Test Automation](.github/skills/testing/test-automation/SKILL.md), [Testing](.github/skills/development/testing/SKILL.md) |
 | **Integration Testing** | [Integration Testing](.github/skills/testing/integration-testing/SKILL.md), [API Design](.github/skills/architecture/api-design/SKILL.md), [Testing](.github/skills/development/testing/SKILL.md) |
 | **Performance Testing** | [Performance Testing](.github/skills/testing/performance-testing/SKILL.md), [Performance & Scalability](.github/skills/architecture/performance/SKILL.md), [Test Automation](.github/skills/testing/test-automation/SKILL.md) |
@@ -57,7 +57,7 @@ description: 'Compressed skill index for AI agents. 66 skills across 10 categori
 
 ---
 
-## Skills Directory (66 skills -- pipe-delimited)
+## Skills Directory (67 skills -- pipe-delimited)
 
 > Format: `category|skill|path|keywords`
 > Read the SKILL.md at the path when the task matches keywords.
@@ -115,6 +115,7 @@ ai|rag-pipelines|.github/skills/ai-systems/rag-pipelines/SKILL.md|chunking,retri
 ai|context-mgmt|.github/skills/ai-systems/context-management/SKILL.md|compaction,summarization,token-budget,sliding-window
 ai|feedback-loops|.github/skills/ai-systems/feedback-loops/SKILL.md|RLHF,RLAIF,user-feedback,preference-data,continuous-improvement
 ai|azure-foundry|.github/skills/ai-systems/azure-foundry/SKILL.md|Foundry,agent-lifecycle,model-selection,tracing,guardrails,deployment
+design|design-system-reasoning|.github/skills/design/design-system-reasoning/SKILL.md|design-system,art-direction,tokens,visual-language,anti-patterns,ui-direction
 design|ux-ui|.github/skills/design/ux-ui-design/SKILL.md|wireframes,user-flows,HTML/CSS,a11y
 design|prototype-craft|.github/skills/design/prototype-craft/SKILL.md|visual-polish,color-palette,typography,CSS-craft,Tailwind,transitions,elevation
 design|frontend-ui|.github/skills/design/frontend-ui/SKILL.md|HTML5,CSS3,Tailwind,responsive,BEM
@@ -182,6 +183,7 @@ These rules are always active. They are embedded here so agents never skip them.
 
 ```
 React Component|ux-ui->react->frontend-ui->testing->code-review
+Design System|design-system-reasoning->ux-ui->prototype-craft->frontend-ui
 Blazor Component|ux-ui->blazor->csharp->testing->code-review
 Frontend Bug|error-handling->react/blazor->testing->code-review
 REST API|api-design->database->csharp/python->security->testing->code-review
@@ -222,5 +224,5 @@ Legal Research Brief|legal->documentation
 
 ---
 
-**See Also**: [AGENTS.md](AGENTS.md) | [agentskills.io](https://agentskills.io/specification) | 66 skills (arch:5, dev:11, lang:8, ops:5, infra:4, data:6, ai:12, design:3, test:6, domain:5)
+**See Also**: [AGENTS.md](AGENTS.md) | [agentskills.io](https://agentskills.io/specification) | 67 skills (arch:5, dev:11, lang:8, ops:5, infra:4, data:6, ai:12, design:4, test:6, domain:5)
 

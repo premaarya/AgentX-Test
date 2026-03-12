@@ -55,7 +55,7 @@
 | Infrastructure | 4 | A | Azure, Bicep, Terraform, containerization |
 | Data | 6 | A | Data analysis, Fabric, Databricks, Power BI |
 | AI Systems | 12 | A | Agent dev, prompt eng, RAG, drift, evaluation, MCP, Azure Foundry |
-| Design | 3 | A | UX/UI design, prototype craft, frontend/UI |
+| Design | 4 | A | design-system reasoning, UX/UI design, prototype craft, frontend/UI |
 | Testing | 6 | A | E2E, integration, performance, security, production readiness |
 | Domain | 5 | B | Oil & gas, financial services, audit, tax, legal -- could add more verticals |
 

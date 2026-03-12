@@ -34,6 +34,24 @@ const rootRuntimeFiles = [
 // docs/ reference files referenced by agents (bundled to docs/ subdirectory)
 const docFiles = ['WORKFLOW.md', 'GUIDE.md', 'GOLDEN_PRINCIPLES.md', 'QUALITY_SCORE.md', 'tech-debt-tracker.md'];
 
+const bundledMarkdownRewrites = [
+    {
+        relativePath: 'Skills.md',
+        replacements: [
+            ['(.github/skills/', '(skills/'],
+            ['|.github/skills/', '|skills/'],
+        ],
+    },
+    {
+        relativePath: path.join('docs', 'WORKFLOW.md'),
+        replacements: [
+            ['(../.github/templates/', '(../templates/'],
+            ['(../.github/agents/', '(../agents/'],
+            ['(../.github/skills/', '(../skills/'],
+        ],
+    },
+];
+
 // Clean destination
 if (fs.existsSync(destRoot)) {
     fs.rmSync(destRoot, { recursive: true });
@@ -127,6 +145,8 @@ if (docFileCount > 0) {
     console.log('  Copied ' + docFileCount + ' docs/ reference files');
 }
 
+applyBundledMarkdownRewrites();
+
 console.log('Done: ' + totalFiles + ' files copied to .github/agentx/');
 
 function countFiles(dir) {
@@ -139,4 +159,31 @@ function countFiles(dir) {
         }
     }
     return count;
+}
+
+function applyBundledMarkdownRewrites() {
+    let rewrittenFileCount = 0;
+
+    for (const entry of bundledMarkdownRewrites) {
+        const targetPath = path.join(destRoot, entry.relativePath);
+        if (!fs.existsSync(targetPath)) {
+            continue;
+        }
+
+        const original = fs.readFileSync(targetPath, 'utf8');
+        let updated = original;
+
+        for (const [from, to] of entry.replacements) {
+            updated = updated.split(from).join(to);
+        }
+
+        if (updated !== original) {
+            fs.writeFileSync(targetPath, updated, 'utf8');
+            rewrittenFileCount++;
+        }
+    }
+
+    if (rewrittenFileCount > 0) {
+        console.log('  Rewrote bundled markdown links in ' + rewrittenFileCount + ' files');
+    }
 }
