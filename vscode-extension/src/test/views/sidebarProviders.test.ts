@@ -16,6 +16,7 @@ function createWorkspaceRoot(): string {
   fs.mkdirSync(path.join(root, '.agentx', 'state'), { recursive: true });
   fs.mkdirSync(path.join(root, '.agentx', 'issues'), { recursive: true });
   fs.mkdirSync(path.join(root, 'docs', 'plans'), { recursive: true });
+  fs.mkdirSync(path.join(root, 'docs', 'reviews', 'findings'), { recursive: true });
   return root;
 }
 
@@ -26,6 +27,7 @@ function createAgentxStub(root: string) {
     adoConnected: false,
     getPendingClarification: async () => undefined,
     listExecutionPlanFiles: () => ['docs/plans/EXEC-PLAN-1.md'],
+    getStatePath: (fileName: string) => path.join(root, '.agentx', 'state', fileName),
   } as any;
 }
 
@@ -74,6 +76,11 @@ describe('sidebar providers', () => {
       'utf-8',
     );
     fs.writeFileSync(path.join(root, 'docs', 'plans', 'EXEC-PLAN-1.md'), '# Plan', 'utf-8');
+    fs.writeFileSync(
+      path.join(root, 'docs', 'reviews', 'findings', 'FINDING-164-001.md'),
+      '---\nid: FINDING-164-001\ntitle: Promote review gap\nsource_review: docs/reviews/REVIEW-164.md\nsource_issue: 164\nseverity: high\nstatus: Backlog\npriority: p1\nowner: reviewer\npromotion: required\nsuggested_type: story\nlabels: type:story\ndependencies: #163\nevidence: docs/reviews/REVIEW-164.md\nbacklog_issue: \ncreated: 2026-03-12\nupdated: 2026-03-12\n---\n\n# Review Finding: Promote review gap\n\n## Summary\n\nTrack the review gap.\n\n## Impact\n\n- Review follow-up can disappear.\n\n## Recommended Action\n\n- Promote it into backlog work.\n\n## Promotion Notes\n\n- Required.\n',
+      'utf-8',
+    );
 
     const provider = new WorkTreeProvider({
       ...createAgentxStub(root),
@@ -99,6 +106,10 @@ describe('sidebar providers', () => {
     const issueChildren = await provider.getChildren(issueSection);
     assert.equal(issueChildren.length, 1);
     assert.ok(String(issueChildren[0].label).includes('#7 Add sidebar'));
+
+    const actionChildren = await provider.getChildren(items[4]);
+    assert.ok(actionChildren.some((item) => item.label === 'Review findings'));
+    assert.ok(actionChildren.some((item) => item.label === 'Promote review finding'));
   });
 
   it('WorkflowTreeProvider should expose current state and workflow catalog', async () => {
@@ -127,6 +138,14 @@ describe('sidebar providers', () => {
 
   it('QualityTreeProvider should show handoff state', async () => {
     const root = createWorkspaceRoot();
+    fs.mkdirSync(path.join(root, 'docs', 'progress'), { recursive: true });
+    fs.writeFileSync(path.join(root, 'docs', 'plans', 'EXEC-PLAN-1.md'), '# Plan', 'utf-8');
+    fs.writeFileSync(path.join(root, 'docs', 'progress', 'EXEC-PLAN-1.md'), '# Progress', 'utf-8');
+    fs.writeFileSync(
+      path.join(root, 'docs', 'reviews', 'findings', 'FINDING-164-001.md'),
+      '---\nid: FINDING-164-001\ntitle: Promote review gap\nsource_review: docs/reviews/REVIEW-164.md\nsource_issue: 164\nseverity: high\nstatus: Backlog\npriority: p1\nowner: reviewer\npromotion: required\nsuggested_type: story\nlabels: type:story\ndependencies: #163\nevidence: docs/reviews/REVIEW-164.md\nbacklog_issue: \ncreated: 2026-03-12\nupdated: 2026-03-12\n---\n\n# Review Finding: Promote review gap\n\n## Summary\n\nTrack the review gap.\n\n## Impact\n\n- Review follow-up can disappear.\n\n## Recommended Action\n\n- Promote it into backlog work.\n\n## Promotion Notes\n\n- Required.\n',
+      'utf-8',
+    );
     fs.writeFileSync(path.join(root, '.agentx', 'state', 'loop-state.json'), JSON.stringify({
       active: false,
       status: 'complete',
@@ -138,13 +157,46 @@ describe('sidebar providers', () => {
       lastIterationAt: '2026-03-09T10:10:00Z',
       history: [],
     }), 'utf-8');
+    fs.writeFileSync(path.join(root, '.agentx', 'state', 'harness-state.json'), JSON.stringify({
+      version: 1,
+      threads: [{
+        id: 'thread-1',
+        title: 'Implement sidebar',
+        taskType: 'story',
+        status: 'complete',
+        startedAt: '2026-03-09T10:00:00Z',
+        updatedAt: '2026-03-09T10:10:00Z',
+      }],
+      turns: [],
+      items: [],
+      evidence: [{
+        id: 'evidence-1',
+        threadId: 'thread-1',
+        evidenceType: 'completion',
+        summary: 'Sidebar complete',
+        createdAt: '2026-03-09T10:10:00Z',
+      }],
+    }), 'utf-8');
 
     const provider = new QualityTreeProvider(createAgentxStub(root));
     const items = await provider.getChildren();
     const summaryChildren = await provider.getChildren(items[0]);
 
+    assert.ok(summaryChildren.some((item) => item.label === 'Evaluation'));
+    assert.ok(summaryChildren.some((item) => item.label === 'Coverage'));
+    assert.ok(summaryChildren.some((item) => item.label === 'Attribution'));
+    assert.ok(summaryChildren.some((item) => item.label === 'Agent-native review'));
+    assert.ok(summaryChildren.some((item) => item.label === 'Parity gaps'));
+    assert.ok(summaryChildren.some((item) => item.label === 'Review findings'));
+    assert.ok(summaryChildren.some((item) => item.label === 'Promotable findings'));
+    assert.ok(summaryChildren.some((item) => item.label === 'Evaluation' && item.description === '100% (5/5 checks)'));
     assert.ok(summaryChildren.some((item) => item.label === 'Reviewer handoff'));
     assert.ok(summaryChildren.some((item) => item.description === 'ready'));
+
+    const actionChildren = await provider.getChildren(items[1]);
+    assert.ok(actionChildren.some((item) => item.label === 'Agent-native review'));
+    assert.ok(actionChildren.some((item) => item.label === 'Review findings'));
+    assert.ok(actionChildren.some((item) => item.label === 'Promote review finding'));
   });
 
   it('IntegrationTreeProvider should show provider and companion state', async () => {

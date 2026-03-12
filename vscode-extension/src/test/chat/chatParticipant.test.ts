@@ -1,5 +1,8 @@
 import { strict as assert } from 'assert';
 import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import { createMockResponseStream } from '../mocks/vscode';
 import {
   getAgentXChatFollowups,
@@ -8,6 +11,98 @@ import {
 } from '../../chat/chatParticipant';
 
 describe('chatParticipant', () => {
+  let tmpDir: string;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentx-chat-learnings-'));
+    fs.mkdirSync(path.join(tmpDir, 'docs', 'learnings'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, 'docs', 'guides'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, 'docs', 'reviews', 'findings'), { recursive: true });
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'learnings', 'LEARNING-163.md'),
+      [
+        '---',
+        'id: LEARNING-163',
+        'title: Use a five-phase knowledge-compounding lifecycle',
+        'category: workflow-contract',
+        'subcategory: compound-capture',
+        'phases: planning,review,capture',
+        'validation: approved',
+        'evidence: high',
+        'mode: shared',
+        'keywords: workflow,review,compound,artifacts,planning',
+        'sources: docs/adr/ADR-163.md,docs/specs/SPEC-163.md',
+        '---',
+        '## Summary',
+        'Treat compound capture as a formal post-review phase over existing AgentX artifacts.',
+        '',
+        '## Guidance',
+        '- Resolve capture after review rather than during early implementation.',
+        '- Reuse issue, plan, progress, and review artifacts rather than a sidecar tracker.',
+        '',
+        '## Use When',
+        '- Defining planning and review handoff behavior.',
+        '',
+        '## Avoid',
+        '- Creating a second backlog for learnings.',
+        '',
+      ].join('\n'),
+      'utf-8',
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'guides', 'KNOWLEDGE-CAPTURE.md'),
+      '# Knowledge Capture\n',
+      'utf-8',
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'reviews', 'findings', 'FINDING-164-001.md'),
+      [
+        '---',
+        'id: FINDING-164-001',
+        'title: Promote deferred review gaps',
+        'source_review: docs/reviews/REVIEW-164.md',
+        'source_issue: 164',
+        'severity: high',
+        'status: Backlog',
+        'priority: p1',
+        'owner: reviewer',
+        'promotion: required',
+        'suggested_type: story',
+        'labels: type:story,needs:changes',
+        'dependencies: #163',
+        'evidence: docs/reviews/REVIEW-164.md',
+        'backlog_issue: ',
+        'created: 2026-03-12',
+        'updated: 2026-03-12',
+        '---',
+        '',
+        '# Review Finding: Promote deferred review gaps',
+        '',
+        '## Summary',
+        '',
+        'Deferred review gaps should become tracked backlog work.',
+        '',
+        '## Impact',
+        '',
+        '- Important follow-up can disappear after review.',
+        '',
+        '## Recommended Action',
+        '',
+        '- Promote the finding into the normal AgentX backlog.',
+        '',
+        '## Promotion Notes',
+        '',
+        '- Required because the gap affects future review quality.',
+        '',
+      ].join('\n'),
+      'utf-8',
+    );
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
   it('streams live CLI status lines into chat progress', async () => {
     const progressStream = createMockResponseStream();
     const agentx = {
@@ -48,6 +143,7 @@ describe('chatParticipant', () => {
     const response = createMockResponseStream();
     const agentx = {
       checkInitialized: async () => true,
+      workspaceRoot: tmpDir,
     };
 
     await handleAgentXChatRequest(
@@ -57,6 +153,108 @@ describe('chatParticipant', () => {
     );
 
     assert.ok(response.getMarkdown().includes('During execution, live status updates'));
+  });
+
+  it('returns ranked planning learnings from chat', async () => {
+    const response = createMockResponseStream();
+    const agentx = {
+      checkInitialized: async () => true,
+      workspaceRoot: tmpDir,
+    };
+
+    await handleAgentXChatRequest(
+      { prompt: 'learnings planning workflow review' } as any,
+      response as any,
+      agentx as any,
+    );
+
+    const markdown = response.getMarkdown();
+    assert.ok(markdown.includes('Planning Learnings'));
+    assert.ok(markdown.includes('Use a five-phase knowledge-compounding lifecycle'));
+    assert.ok(markdown.includes('Resolve capture after review'));
+  });
+
+  it('returns knowledge capture guidance from chat', async () => {
+    const response = createMockResponseStream();
+    const agentx = {
+      checkInitialized: async () => true,
+      workspaceRoot: tmpDir,
+    };
+
+    await handleAgentXChatRequest(
+      { prompt: 'capture guidance' } as any,
+      response as any,
+      agentx as any,
+    );
+
+    const markdown = response.getMarkdown();
+    assert.ok(markdown.includes('Knowledge Capture Guidance'));
+    assert.ok(markdown.includes('docs/learnings/LEARNING-<issue>.md'));
+  });
+
+  it('returns agent-native review output from chat', async () => {
+    fs.writeFileSync(path.join(tmpDir, 'docs', 'guides', 'AGENT-NATIVE-REVIEW.md'), '# Agent review\n', 'utf-8');
+    fs.mkdirSync(path.join(tmpDir, '.github', 'templates'), { recursive: true });
+    fs.writeFileSync(path.join(tmpDir, '.github', 'templates', 'REVIEW-TEMPLATE.md'), '# Review\n', 'utf-8');
+    fs.mkdirSync(path.join(tmpDir, 'vscode-extension', 'src', 'views'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, 'vscode-extension', 'src', 'chat'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, 'vscode-extension', 'src'), { recursive: true });
+    fs.writeFileSync(path.join(tmpDir, 'vscode-extension', 'package.json'), JSON.stringify({ contributes: { commands: [{ command: 'agentx.runWorkflow' }, { command: 'agentx.showReviewLearnings' }, { command: 'agentx.showKnowledgeCaptureGuidance' }] } }), 'utf-8');
+    fs.writeFileSync(path.join(tmpDir, 'vscode-extension', 'src', 'views', 'workTreeProvider.ts'), 'Run workflow\nagentx.runWorkflow\nReview learnings\nagentx.showReviewLearnings\nCapture guidance\nagentx.showKnowledgeCaptureGuidance\n', 'utf-8');
+    fs.writeFileSync(path.join(tmpDir, 'vscode-extension', 'src', 'views', 'qualityTreeProvider.ts'), 'agentx.showAgentNativeReview\n', 'utf-8');
+    fs.writeFileSync(path.join(tmpDir, 'vscode-extension', 'src', 'chat', 'chatParticipant.ts'), 'run engineer\nrun reviewer\nrun architect\nlearnings review\nshowReviewLearnings\ncapture guidance\nshowKnowledgeCaptureGuidance\n', 'utf-8');
+    fs.writeFileSync(path.join(tmpDir, 'vscode-extension', 'src', 'agentxContext.ts'), 'workspaceRoot\ngetPendingClarification\nlistExecutionPlanFiles\ngetStatePath\n', 'utf-8');
+
+    const response = createMockResponseStream();
+    const agentx = {
+      checkInitialized: async () => true,
+      workspaceRoot: tmpDir,
+    };
+
+    await handleAgentXChatRequest(
+      { prompt: 'agent-native review' } as any,
+      response as any,
+      agentx as any,
+    );
+
+    const markdown = response.getMarkdown();
+    assert.ok(markdown.includes('Agent-Native Review'));
+    assert.ok(markdown.includes('advisory-first'));
+  });
+
+  it('returns durable review findings from chat', async () => {
+    const response = createMockResponseStream();
+    const agentx = {
+      checkInitialized: async () => true,
+      workspaceRoot: tmpDir,
+    };
+
+    await handleAgentXChatRequest(
+      { prompt: 'review findings' } as any,
+      response as any,
+      agentx as any,
+    );
+
+    const markdown = response.getMarkdown();
+    assert.ok(markdown.includes('Review Findings'));
+    assert.ok(markdown.includes('FINDING-164-001'));
+  });
+
+  it('promotes a finding from chat through the AgentX issue flow', async () => {
+    const response = createMockResponseStream();
+    const agentx = {
+      checkInitialized: async () => true,
+      workspaceRoot: tmpDir,
+      runCli: async () => 'Created issue #88: Resolve review finding',
+    };
+
+    await handleAgentXChatRequest(
+      { prompt: 'promote finding FINDING-164-001' } as any,
+      response as any,
+      agentx as any,
+    );
+
+    assert.ok(response.getMarkdown().includes('Promoted FINDING-164-001 as issue #88.'));
   });
 
   it('stores pending clarification and shows continue guidance when human input is required', async () => {

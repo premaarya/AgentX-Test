@@ -2,6 +2,21 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { AgentXContext } from '../agentxContext';
 import { stripAnsi } from '../utils/stripAnsi';
+import {
+  getDefaultLearningsQuery,
+  rankLearnings,
+  renderCaptureGuidanceMarkdown,
+  renderRankedLearningsMarkdown,
+} from '../utils/learnings';
+import {
+  evaluateAgentNativeReview,
+  renderAgentNativeReviewMarkdown,
+} from '../review/agent-native-review';
+import {
+  loadReviewFindingRecords,
+  promoteReviewFinding,
+  renderReviewFindingsMarkdown,
+} from '../review/review-findings';
 
 const PARTICIPANT_ID = 'agentx.chat';
 const CHAT_OUTPUT_CHANNEL_NAME = 'AgentX Chat';
@@ -267,6 +282,52 @@ export async function handleAgentXChatRequest(
     return resumePendingClarification(response, agentx, pending, guidance);
   }
 
+  const learningsMatch = userText.match(/^learnings\s+(planning|plan|review)(?:\s+(.+))?$/is);
+  if (learningsMatch) {
+    const intent = /review/i.test(learningsMatch[1]) ? 'review' : 'planning';
+    const root = agentx.workspaceRoot;
+    const resolvedQuery = root
+      ? (learningsMatch[2]?.trim() || getDefaultLearningsQuery(root, intent))
+      : (learningsMatch[2]?.trim() || '');
+    const results = root ? rankLearnings(root, intent, resolvedQuery) : [];
+    response.markdown(renderRankedLearningsMarkdown(intent, results, resolvedQuery));
+    return {};
+  }
+
+  if (/^(capture guidance|knowledge capture|capture)$/i.test(userText)) {
+    response.markdown(renderCaptureGuidanceMarkdown(agentx.workspaceRoot));
+    return {};
+  }
+
+  if (/^(agent-native review|parity review|agent parity)$/i.test(userText)) {
+    const report = evaluateAgentNativeReview(agentx);
+    response.markdown(report
+      ? renderAgentNativeReviewMarkdown(report)
+      : 'No workspace is open, so AgentX cannot evaluate agent-native review parity.');
+    return {};
+  }
+
+  if (/^(review findings|findings review|durable findings)$/i.test(userText)) {
+    const root = agentx.workspaceRoot;
+    const records = root ? loadReviewFindingRecords(root) : [];
+    response.markdown(renderReviewFindingsMarkdown(records));
+    return {};
+  }
+
+  const promoteFindingMatch = userText.match(/^promote finding\s+([A-Za-z0-9-]+)$/i);
+  if (promoteFindingMatch) {
+    try {
+      const result = await promoteReviewFinding(agentx, promoteFindingMatch[1]);
+      response.markdown(
+        `Promoted ${result.finding.id} as issue #${result.issueNumber}.`,
+      );
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      response.markdown(`**AgentX error:** ${message}`);
+    }
+    return {};
+  }
+
   if (pending) {
     return resumePendingClarification(response, agentx, pending, userText);
   }
@@ -276,6 +337,12 @@ export async function handleAgentXChatRequest(
     + 'Usage:\n'
     + '- `@agentx run engineer "implement the health endpoint for issue #42"`\n'
     + '- `@agentx continue "use the existing auth flow and keep refresh tokens"`\n'
+    + '- `@agentx learnings planning`\n'
+    + '- `@agentx learnings review auth workflow`\n'
+    + '- `@agentx capture guidance`\n'
+    + '- `@agentx agent-native review`\n'
+    + '- `@agentx review findings`\n'
+    + '- `@agentx promote finding FINDING-164-001`\n'
     + '- `@agentx run architect "design the auth system"`\n'
     + '- `@agentx run reviewer "review the changes in issue #42"`\n\n'
     + 'During execution, live status updates for compaction, clarification, loop progress, tool activity, and self-review are streamed into chat.'

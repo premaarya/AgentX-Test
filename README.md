@@ -86,7 +86,18 @@ Every deliverable -- from PRDs to Tech Specs to Security Plans -- is written int
 ### 6. Harness Engineering
 Make AI execution durable and resumable. AgentX treats the workspace as the state, utilizing tracked progress files, memory files, and formal architecture decisions to keep execution grounded in reality.
 
+### 7. Knowledge Compounding And Review Intelligence
+AgentX now adds ranked planning and review learnings, explicit knowledge-capture guidance, advisory agent-native review parity checks, durable review-finding records, and one-step promotion of important findings into the normal backlog workflow.
+
 ---
+
+## New In 8.2.8
+
+- Ranked curated learnings for planning and review entry points
+- Explicit knowledge-capture guidance and durable learnings artifacts
+- Advisory agent-native review with parity and context checks
+- Harness evaluation summaries in the Quality sidebar
+- Durable review findings with promotion into standard AgentX issues
 
 ## Architecture at a Glance
 

@@ -112,6 +112,42 @@
         "title": "Iterative Loop",
         "category": "AgentX",
         "icon": "$(sync)"
+      },
+      {
+        "command": "agentx.showPlanningLearnings",
+        "title": "Show Planning Learnings",
+        "category": "AgentX",
+        "icon": "$(book)"
+      },
+      {
+        "command": "agentx.showReviewLearnings",
+        "title": "Show Review Learnings",
+        "category": "AgentX",
+        "icon": "$(checklist)"
+      },
+      {
+        "command": "agentx.showKnowledgeCaptureGuidance",
+        "title": "Show Knowledge Capture Guidance",
+        "category": "AgentX",
+        "icon": "$(archive)"
+      },
+      {
+        "command": "agentx.showAgentNativeReview",
+        "title": "Show Agent-Native Review",
+        "category": "AgentX",
+        "icon": "$(symbol-interface)"
+      },
+      {
+        "command": "agentx.showReviewFindings",
+        "title": "Show Review Findings",
+        "category": "AgentX",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "agentx.promoteReviewFinding",
+        "title": "Promote Review Finding",
+        "category": "AgentX",
+        "icon": "$(repo-push)"
       }
     ],
     "viewsContainers": {
@@ -209,6 +245,24 @@
         },
         {
           "command": "agentx.generateDigest"
+        },
+        {
+          "command": "agentx.showPlanningLearnings"
+        },
+        {
+          "command": "agentx.showReviewLearnings"
+        },
+        {
+          "command": "agentx.showKnowledgeCaptureGuidance"
+        },
+        {
+          "command": "agentx.showAgentNativeReview"
+        },
+        {
+          "command": "agentx.showReviewFindings"
+        },
+        {
+          "command": "agentx.promoteReviewFinding"
         }
       ]
     },

@@ -25,7 +25,7 @@
 
 AgentX already contains several foundations that align with an agent-first software workflow: retrieval-led reasoning in [AGENTS.md](../AGENTS.md), workflow routing and iteration in [WORKFLOW.md](../WORKFLOW.md), mechanical rules in [GOLDEN_PRINCIPLES.md](../GOLDEN_PRINCIPLES.md), quality grading in [QUALITY_SCORE.md](../QUALITY_SCORE.md), execution-plan and progress templates in [.github/templates/EXEC-PLAN-TEMPLATE.md](../../.github/templates/EXEC-PLAN-TEMPLATE.md) and [.github/templates/PROGRESS-TEMPLATE.md](../../.github/templates/PROGRESS-TEMPLATE.md), and extension-side loop and command safety primitives in [vscode-extension/src/commands/loopCommand.ts](../../vscode-extension/src/commands/loopCommand.ts), [vscode-extension/src/utils/loopStateChecker.ts](../../vscode-extension/src/utils/loopStateChecker.ts), and [vscode-extension/src/utils/commandValidator.ts](../../vscode-extension/src/utils/commandValidator.ts). [Confidence: HIGH]
 
-The external research shows that these foundations are necessary but not sufficient for high-autonomy agent work. The main lesson from OpenAI's Harness Engineering article is that throughput and reliability come from better harness design, not only better prompts. The most important patterns were:
+Current design review shows that these foundations are necessary but not sufficient for high-autonomy agent work. The main lesson from the repo analysis is that throughput and reliability come from better harness design, not only better prompts. The most important patterns were:
 
 - Make repository knowledge the system of record, with a short table-of-contents style AGENTS file and deeper structured docs.
 - Treat execution plans as living, self-contained artifacts for multi-hour work.
@@ -33,7 +33,7 @@ The external research shows that these foundations are necessary but not suffici
 - Encode architecture and taste as mechanical invariants, not informal guidance.
 - Run continuous cleanup to prevent agent-generated drift from compounding.
 
-These findings are reinforced by the related App Server article, which emphasizes stable thread and turn lifecycles, explicit item-based events, durable task history, approval checkpoints, and a client-friendly protocol surface for rich agent interaction. The execution-plan article adds that complex work should use living plans with progress, discoveries, decision logs, and observable acceptance criteria. [Confidence: HIGH]
+These findings are reinforced by the current runtime gaps and workflow analysis, which point to stable thread and turn lifecycles, explicit item-based events, durable task history, approval checkpoints, and a client-friendly protocol surface for rich agent interaction. The same review also shows that complex work should use living plans with progress, discoveries, decision logs, and observable acceptance criteria. [Confidence: HIGH]
 
 ### AI-First Assessment
 
@@ -59,9 +59,9 @@ Could this problem be solved better by GenAI or agentic AI alone? No. A purely p
 
 | Source | Relevant Finding | Implication For AgentX |
 |-------|------------------|------------------------|
-| OpenAI, Harness Engineering, 2026-02-11 | Legibility, observability, structured docs, and recurring cleanup drive agent effectiveness | AgentX should invest in harness surfaces and cleanup automation, not just prompt depth |
-| OpenAI, Unlocking the Codex Harness, 2026-02-04 | Rich clients benefit from stable thread, turn, item, approval, and event primitives | AgentX should define stronger runtime primitives for task evidence and progress streaming |
-| OpenAI Cookbook, Using PLANS.md for multi-hour problem solving, 2025-10-07 | Complex tasks need living plans with progress, discoveries, decision logs, and observable acceptance | AgentX should make execution plans mandatory for complex tasks, not optional templates |
+| Internal harness design review | Legibility, observability, structured docs, and recurring cleanup drive agent effectiveness | AgentX should invest in harness surfaces and cleanup automation, not just prompt depth |
+| Internal runtime and client analysis | Rich clients benefit from stable thread, turn, item, approval, and event primitives | AgentX should define stronger runtime primitives for task evidence and progress streaming |
+| Internal workflow and planning review | Complex tasks need living plans with progress, discoveries, decision logs, and observable acceptance | AgentX should make execution plans mandatory for complex tasks, not optional templates |
 | Internal docs: [WORKFLOW.md](../WORKFLOW.md), [GOLDEN_PRINCIPLES.md](../GOLDEN_PRINCIPLES.md), [QUALITY_SCORE.md](../QUALITY_SCORE.md) | Strong workflow and policy foundations already exist | AgentX should extend current strengths rather than re-platform from scratch |
 
 ### Known Failure Modes And Anti-Patterns
@@ -286,12 +286,6 @@ We chose **Option 3: Full Phased Harness Architecture** because it best balances
 - [.github/templates/EXEC-PLAN-TEMPLATE.md](../../.github/templates/EXEC-PLAN-TEMPLATE.md)
 - [.github/workflows/quality-gates.yml](../../.github/workflows/quality-gates.yml)
 - [.github/workflows/weekly-status.yml](../../.github/workflows/weekly-status.yml)
-
-### External
-
-- [Harness engineering: leveraging Codex in an agent-first world](https://openai.com/index/harness-engineering/)
-- [Unlocking the Codex harness: how we built the App Server](https://openai.com/index/unlocking-the-codex-harness/)
-- [Using PLANS.md for multi-hour problem solving](https://developers.openai.com/cookbook/articles/codex_exec_plans)
 
 ---
 

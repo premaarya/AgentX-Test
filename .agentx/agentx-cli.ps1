@@ -796,6 +796,19 @@ function Get-Flag([string[]]$flags, [string]$default = '') {
     return $default
 }
 
+function Get-DecodedFlag([string[]]$plainFlags, [string[]]$encodedFlags, [string]$default = '') {
+    $encoded = Get-Flag $encodedFlags
+    if (-not [string]::IsNullOrWhiteSpace($encoded)) {
+        try {
+            return [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($encoded))
+        } catch {
+            throw "Invalid base64 value provided for $($encodedFlags -join '/')."
+        }
+    }
+
+    return Get-Flag $plainFlags $default
+}
+
 function Test-Flag([string[]]$flags) {
     return @($Script:SubArgs | Where-Object { $flags -contains $_ }).Count -gt 0
 }
@@ -1176,8 +1189,8 @@ function Save-Issue($issue) {
 
 function Invoke-IssueCreate {
     $provider = Get-AgentXProvider
-    $title = Get-Flag @('-t', '--title')
-    $body = Get-Flag @('-b', '--body')
+    $title = Get-DecodedFlag @('-t', '--title') @('--title-base64')
+    $body = Get-DecodedFlag @('-b', '--body') @('--body-base64')
     $labelStr = Get-Flag @('-l', '--labels')
     if (-not $title) { Write-Host 'Error: --title is required'; exit 1 }
 
@@ -1267,8 +1280,8 @@ function Invoke-IssueUpdate {
     $issue = if ($provider -eq 'github') { Get-GitHubIssue $num } elseif ($provider -eq 'ado') { Get-AdoIssue $num } else { Get-Issue $num }
     if (-not $issue) { Write-Host "Error: Issue #$num not found"; exit 1 }
 
-    $title = Get-Flag @('-t', '--title')
-    $body = Get-Flag @('-b', '--body')
+    $title = Get-DecodedFlag @('-t', '--title') @('--title-base64')
+    $body = Get-DecodedFlag @('-b', '--body') @('--body-base64')
     $status = Get-Flag @('-s', '--status')
     $labelStr = Get-Flag @('-l', '--labels')
 
@@ -1426,7 +1439,7 @@ function Invoke-IssueGet {
 function Invoke-IssueComment {
     $provider = Get-AgentXProvider
     $num = [int](Get-Flag @('-n', '--number') '0')
-    $body = Get-Flag @('-c', '--comment', '-b', '--body')
+    $body = Get-DecodedFlag @('-c', '--comment', '-b', '--body') @('--comment-base64', '--body-base64')
     if (-not $num -or -not $body) { Write-Host 'Error: --number and --comment required'; exit 1 }
 
     if ($provider -eq 'github') {

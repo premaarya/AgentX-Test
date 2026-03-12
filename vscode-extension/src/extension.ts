@@ -5,6 +5,9 @@ import { registerWorkflowCommand } from './commands/workflow';
 import { registerDepsCommand } from './commands/deps';
 import { registerDigestCommand } from './commands/digest';
 import { registerLoopCommand } from './commands/loopCommand';
+import { registerAgentNativeReviewCommand } from './commands/agent-native-review';
+import { registerLearningsCommands } from './commands/learnings';
+import { registerReviewFindingCommands } from './commands/review-findings';
 import { registerShowIssueCommand } from './commands/showIssue';
 import { registerPendingClarificationCommand } from './commands/pendingClarification';
 import { AgentTreeProvider } from './views/agentTreeProvider';
@@ -80,6 +83,9 @@ export function activate(context: vscode.ExtensionContext) {
  registerDepsCommand(context, agentxContext);
  registerDigestCommand(context, agentxContext);
  registerLoopCommand(context, agentxContext);
+ registerAgentNativeReviewCommand(context, agentxContext);
+ registerLearningsCommands(context, agentxContext);
+ registerReviewFindingCommands(context, agentxContext);
 
  // Show issue detail (used by agent tree item click)
  registerShowIssueCommand(context, agentxContext);

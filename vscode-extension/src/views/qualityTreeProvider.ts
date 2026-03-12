@@ -1,5 +1,25 @@
 import * as vscode from 'vscode';
 import { AgentXContext } from '../agentxContext';
+import {
+ getAttributionSummary,
+ getAttributionTooltip,
+ getCoverageSummary,
+ getCoverageTooltip,
+ getEvaluationSummary,
+ getEvaluationTooltip,
+} from '../eval/harnessEvaluator';
+import {
+ getAgentNativeGapSummary,
+ getAgentNativeGapTooltip,
+ getAgentNativeReviewSummary,
+ getAgentNativeReviewTooltip,
+} from '../review/agent-native-review';
+import {
+ getPromotableFindingSummary,
+ getPromotableFindingTooltip,
+ getReviewFindingSummary,
+ getReviewFindingTooltip,
+} from '../review/review-findings';
 import { getHarnessStatusDisplay } from '../utils/harnessState';
 import {
  checkHandoffGate,
@@ -38,6 +58,13 @@ export class QualityTreeProvider implements vscode.TreeDataProvider<SidebarTreeI
   const summaryChildren = [
    SidebarTreeItem.detail('Loop', 'sync', getLoopStatusDisplay(root)),
    SidebarTreeItem.detail('Harness', 'pulse', getHarnessStatusDisplay(root)),
+    SidebarTreeItem.detail('Evaluation', handoff.allowed ? 'graph' : 'warning', getEvaluationSummary(this.agentx), getEvaluationTooltip(this.agentx)),
+    SidebarTreeItem.detail('Coverage', 'layers', getCoverageSummary(this.agentx), getCoverageTooltip(this.agentx)),
+    SidebarTreeItem.detail('Attribution', 'symbol-key', getAttributionSummary(this.agentx), getAttributionTooltip(this.agentx)),
+    SidebarTreeItem.detail('Agent-native review', 'symbol-interface', getAgentNativeReviewSummary(this.agentx), getAgentNativeReviewTooltip(this.agentx)),
+    SidebarTreeItem.detail('Parity gaps', 'warning', getAgentNativeGapSummary(this.agentx), getAgentNativeGapTooltip(this.agentx)),
+    SidebarTreeItem.detail('Review findings', 'comment-discussion', getReviewFindingSummary(this.agentx), getReviewFindingTooltip(this.agentx)),
+    SidebarTreeItem.detail('Promotable findings', 'repo-push', getPromotableFindingSummary(this.agentx), getPromotableFindingTooltip(this.agentx)),
    SidebarTreeItem.detail('Reviewer handoff', gateIcon, gateState, handoff.reason),
   ];
 
@@ -45,6 +72,9 @@ export class QualityTreeProvider implements vscode.TreeDataProvider<SidebarTreeI
    SidebarTreeItem.action('Loop status', 'history', 'agentx.loopStatus', 'Loop Status'),
    SidebarTreeItem.action('Start loop', 'play', 'agentx.loopStart', 'Loop Start'),
    SidebarTreeItem.action('Complete loop', 'check', 'agentx.loopComplete', 'Loop Complete'),
+    SidebarTreeItem.action('Agent-native review', 'symbol-interface', 'agentx.showAgentNativeReview', 'Agent-Native Review'),
+    SidebarTreeItem.action('Review findings', 'comment-discussion', 'agentx.showReviewFindings', 'Review Findings'),
+    SidebarTreeItem.action('Promote review finding', 'repo-push', 'agentx.promoteReviewFinding', 'Promote Review Finding'),
    SidebarTreeItem.action('Check environment', 'beaker', 'agentx.checkEnvironment', 'Check Environment'),
   ];
 

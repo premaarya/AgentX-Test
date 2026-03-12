@@ -181,6 +181,11 @@ export class WorkTreeProvider implements vscode.TreeDataProvider<SidebarTreeItem
 
   const actionChildren = [
    SidebarTreeItem.action('Run workflow', 'play', 'agentx.runWorkflow', 'Run Workflow'),
+    SidebarTreeItem.action('Planning learnings', 'book', 'agentx.showPlanningLearnings', 'Planning Learnings'),
+    SidebarTreeItem.action('Review learnings', 'checklist', 'agentx.showReviewLearnings', 'Review Learnings'),
+    SidebarTreeItem.action('Capture guidance', 'archive', 'agentx.showKnowledgeCaptureGuidance', 'Knowledge Capture Guidance'),
+    SidebarTreeItem.action('Review findings', 'comment-discussion', 'agentx.showReviewFindings', 'Review Findings'),
+    SidebarTreeItem.action('Promote review finding', 'repo-push', 'agentx.promoteReviewFinding', 'Promote Review Finding'),
    SidebarTreeItem.action('Show agent status', 'organization', 'agentx.showStatus', 'Show Agent Status'),
     SidebarTreeItem.action('Check environment', 'beaker', 'agentx.checkEnvironment', 'Check Environment'),
    SidebarTreeItem.action('Generate digest', 'notebook', 'agentx.generateDigest', 'Generate Digest'),
