@@ -16,11 +16,15 @@ import { IntegrationTreeProvider } from './views/integrationTreeProvider';
 import { AgentXContext } from './agentxContext';
 import { registerChatParticipant } from './chat/chatParticipant';
 import { clearInstructionCache } from './chat/agentContextLoader';
-import { runSetupWizard, runSilentInstall } from './commands/setupWizard';
+import { runSetupWizard, runStartupCheck } from './commands/setupWizard';
 import { silentVersionSync } from './utils/versionChecker';
 import { checkCompanionExtensions } from './utils/companionExtensions';
 import { getQualityStateDisplay } from './utils/loopStateChecker';
 import { readHarnessState } from './utils/harnessState';
+import {
+ shouldRunStartupDependencyCheck,
+ markStartupDependencyCheck,
+} from './utils/startupDependencyCheck';
 
 let agentxContext: AgentXContext;
 
@@ -140,8 +144,18 @@ export function activate(context: vscode.ExtensionContext) {
   context.extensionPath
  ).catch(() => { /* ignore */ });
 
- // Run silent install (non-blocking)
- runSilentInstall(agentxContext).catch(() => { /* ignore */ });
+ // Run a throttled startup dependency check (non-blocking)
+ if (shouldRunStartupDependencyCheck(
+  context,
+  agentxContext.workspaceRoot,
+  context.extension.packageJSON.version,
+ )) {
+  void markStartupDependencyCheck(
+   context,
+   agentxContext.workspaceRoot,
+   context.extension.packageJSON.version,
+  ).then(() => runStartupCheck(agentxContext)).catch(() => { /* ignore */ });
+ }
 
  // Check companion extensions are installed (non-blocking)
  checkCompanionExtensions(agentxContext.workspaceRoot).catch(() => { /* ignore */ });

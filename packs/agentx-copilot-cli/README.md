@@ -157,7 +157,7 @@ rm -rf .agentx  # if CLI utilities were installed
 ## Version
 
 - Plugin: `agentx-copilot-cli`
-- Version: `8.2.7`
+- Version: `8.2.8`
 - Publisher: jnPiyush
 - License: MIT
 

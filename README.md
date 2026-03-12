@@ -5,7 +5,7 @@
 
   **The Multi-Agent Workflow System for Software Delivery**
 
-    [![Version](https://img.shields.io/badge/Version-8.2.7-0EA5E9?style=for-the-badge)](https://github.com/jnPiyush/AgentX/releases/tag/v8.2.7)
+    [![Version](https://img.shields.io/badge/Version-8.2.8-0EA5E9?style=for-the-badge)](https://github.com/jnPiyush/AgentX/releases/tag/v8.2.8)
   [![License](https://img.shields.io/badge/License-Apache_2.0-22C55E?style=for-the-badge)](LICENSE)
 
   *Turn AI coding agents into a structured, highly capable development team with routing, domain skills, execution templates, long-term memory, and validation.*
