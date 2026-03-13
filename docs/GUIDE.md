@@ -166,7 +166,7 @@ Control what gets installed with the `-Profile` flag:
 
 | Profile | Skills | Instructions | Prompts | Hooks | VS Code |
 |---------|--------|-------------|---------|-------|---------|
-| **full** (default) | All 63 | All 7 | Yes | Yes | Yes |
+| **full** (default) | All 67 | All 7 | Yes | Yes | Yes |
 | **minimal** | None | None | No | No | No |
 | **python** | Python, testing, data, architecture | python, api | Yes | Yes | Yes |
 | **dotnet** | C#, Blazor, Azure, SQL, architecture | csharp, blazor, api | Yes | Yes | Yes |
@@ -883,6 +883,19 @@ go install github.com/github/github-mcp-server@latest
 | **Scaffold RAG/Memory** | `python .github/skills/ai-systems/cognitive-architecture/scripts/scaffold-cognitive.py --name my-agent` |
 | **Run security scan** | `.github/skills/architecture/security/scripts/scan-secrets.ps1` |
 | **Check test coverage** | `.github/skills/development/testing/scripts/check-coverage.ps1` |
+
+### VS Code Compound Loop Commands
+
+| What | Surface |
+|------|---------|
+| **Brainstorm with prior learnings** | Command Palette: `AgentX: Show Brainstorm Guide` or chat: `@agentx brainstorm auth rollout constraints` |
+| **Review ranked planning learnings** | Command Palette: `AgentX: Show Planning Learnings` or chat: `@agentx learnings planning` |
+| **Review ranked review learnings** | Command Palette: `AgentX: Show Review Learnings` or chat: `@agentx learnings review auth workflow` |
+| **Inspect the compound loop** | Command Palette: `AgentX: Show Compound Loop` or chat: `@agentx compound` |
+| **Open capture guidance** | Command Palette: `AgentX: Show Knowledge Capture Guidance` or chat: `@agentx capture guidance` |
+| **Scaffold a learning artifact** | Command Palette: `AgentX: Create Learning Capture` or chat: `@agentx create learning capture` |
+| **Inspect durable review findings** | Command Palette: `AgentX: Show Review Findings` or chat: `@agentx review findings` |
+| **Run advisory parity review** | Command Palette: `AgentX: Show Agent-Native Review` or chat: `@agentx agent-native review` |
 
 ---
 

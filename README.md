@@ -37,7 +37,7 @@ AgentX acts as an autonomous orchestrator, routing tasks to **20 specialized age
 
 ## Domain Skills Library
 
-AgentX is powered by a rich knowledge layer of **60+ explicit skills** distributed across key categories. Agents read peer-reviewed patterns before writing code, ensuring repo-driven accuracy instead of model-memory guesses.
+AgentX is powered by a rich knowledge layer of **67 explicit skills** distributed across key categories. Agents read peer-reviewed patterns before writing code, ensuring repo-driven accuracy instead of model-memory guesses.
 
 | Category | Example Skills | Purpose |
 |:---------|:---------------|:--------|
@@ -87,14 +87,15 @@ Every deliverable -- from PRDs to Tech Specs to Security Plans -- is written int
 Make AI execution durable and resumable. AgentX treats the workspace as the state, utilizing tracked progress files, memory files, and formal architecture decisions to keep execution grounded in reality.
 
 ### 7. Knowledge Compounding And Review Intelligence
-AgentX now adds ranked planning and review learnings, explicit knowledge-capture guidance, advisory agent-native review parity checks, durable review-finding records, and one-step promotion of important findings into the normal backlog workflow.
+AgentX now adds explicit brainstorm and compound-loop entry points, ranked planning and review learnings, learning-capture scaffolds tied to the active issue context, advisory agent-native review parity checks, durable review-finding records, and one-step promotion of important findings into the normal backlog workflow.
 
 ---
 
 ## New In 8.2.8
 
+- Explicit `brainstorm`, `compound`, and `create learning capture` surfaces in chat, sidebars, and commands
 - Ranked curated learnings for planning and review entry points
-- Explicit knowledge-capture guidance and durable learnings artifacts
+- Explicit knowledge-capture guidance, scaffolding, and durable learnings artifacts
 - Advisory agent-native review with parity and context checks
 - Harness evaluation summaries in the Quality sidebar
 - Durable review findings with promotion into standard AgentX issues

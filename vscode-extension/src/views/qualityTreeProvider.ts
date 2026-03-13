@@ -72,6 +72,8 @@ export class QualityTreeProvider implements vscode.TreeDataProvider<SidebarTreeI
    SidebarTreeItem.action('Loop status', 'history', 'agentx.loopStatus', 'Loop Status'),
    SidebarTreeItem.action('Start loop', 'play', 'agentx.loopStart', 'Loop Start'),
    SidebarTreeItem.action('Complete loop', 'check', 'agentx.loopComplete', 'Loop Complete'),
+        SidebarTreeItem.action('Compound loop', 'layers', 'agentx.showCompoundLoop', 'Compound Loop'),
+        SidebarTreeItem.action('Create learning capture', 'new-file', 'agentx.createLearningCapture', 'Create Learning Capture'),
     SidebarTreeItem.action('Agent-native review', 'symbol-interface', 'agentx.showAgentNativeReview', 'Agent-Native Review'),
     SidebarTreeItem.action('Review findings', 'comment-discussion', 'agentx.showReviewFindings', 'Review Findings'),
     SidebarTreeItem.action('Promote review finding', 'repo-push', 'agentx.promoteReviewFinding', 'Promote Review Finding'),

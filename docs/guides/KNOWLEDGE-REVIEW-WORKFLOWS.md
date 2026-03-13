@@ -8,15 +8,16 @@ This guide defines the shared workflow contract for three related AgentX concern
 - agent-native review parity
 - durable review findings and promotion
 
-These concerns are intentionally documented together because they form one review-time workflow: evaluate parity, decide what should be preserved, and track durable follow-up work when review findings require it.
+These concerns are intentionally documented together because they form one compound-engineering workflow: shape the work with prior learnings, evaluate parity, decide what should be preserved, and track durable follow-up work when review findings require it.
 
 ## Workflow Chain
 
-1. Finish implementation review and validation.
-2. Run agent-native review to check action parity, context parity, and shared workspace expectations.
-3. Resolve whether the outcome creates reusable knowledge that should be captured.
-4. Persist durable review findings when follow-up work should survive beyond the current review cycle.
-5. Promote important findings into the normal AgentX backlog instead of creating a parallel tracker.
+1. Start with a brainstorm step when planning would benefit from prior learnings or known workflow constraints.
+2. Finish implementation review and validation.
+3. Run agent-native review to check action parity, context parity, and shared workspace expectations.
+4. Resolve whether the outcome creates reusable knowledge that should be captured.
+5. Persist durable review findings when follow-up work should survive beyond the current review cycle.
+6. Promote important findings into the normal AgentX backlog instead of creating a parallel tracker.
 
 ## Agent-Native Review
 
@@ -34,9 +35,12 @@ The review asks three questions:
 
 | Capability | User Surface | Agent Surface | Shared Artifacts | Why It Matters |
 |------------|--------------|---------------|------------------|----------------|
+| Brainstorm with learnings | Command palette, Work sidebar | `@agentx brainstorm ...` | this guide, `docs/learnings/` | Planning should start from reusable lessons instead of a cold start when prior knowledge exists |
 | Workflow execution | Command palette, Work sidebar | `@agentx run ...` | issue, plan, workflow state | Review findings are weak if agents cannot trigger the same delivery flow |
 | Review learnings retrieval | Command palette, Work sidebar | `@agentx learnings review ...` | `docs/learnings/` | Review should reuse prior solutions without user-only lookup steps |
+| Compound loop visibility | Command palette, Work and Quality sidebars | `@agentx compound` | this guide, `docs/learnings/`, `docs/reviews/findings/` | Operators and agents should inspect the same post-review capture and follow-up state |
 | Knowledge capture guidance | Command palette, Work sidebar | `@agentx capture guidance` | this guide, `docs/learnings/` | Reusable outcomes should be preserved consistently after review |
+| Learning capture scaffold | Command palette, Work and Quality sidebars | `@agentx create learning capture` | `docs/learnings/`, harness state | Capture should start from the active issue context instead of a blank file |
 | Durable review findings | Command palette, Quality sidebar | `@agentx review findings` | this guide, `docs/reviews/findings/` | Important review outcomes should remain visible across sessions |
 
 ### Scoring Rubric
@@ -77,6 +81,18 @@ Agent-native review output should include:
 
 ## Knowledge Capture
 
+### Planning Entry Point
+
+Use the brainstorm step before planning when the repo likely already contains reusable guidance.
+
+Operator surfaces:
+
+- Command palette: `AgentX: Show Brainstorm Guide`
+- Work sidebar: `Brainstorm`
+- Chat: `@agentx brainstorm <topic>`
+
+The brainstorm output should pull forward the highest-signal planning learnings, restate the active issue context when available, and make the next narrowing step explicit before execution begins.
+
 ### Trigger Model
 
 - Mandatory capture:
@@ -90,16 +106,19 @@ Agent-native review output should include:
 
 1. Finish review and validate the final outcome.
 2. Resolve the capture decision as mandatory, optional, or skip.
-3. When capture is produced, store it under `docs/learnings/LEARNING-<issue>.md`.
-4. Link the learning back to the originating issue and its supporting ADR, spec, review, or validation artifacts.
-5. If capture is skipped, record a short rationale in the close-out summary or issue comment.
+3. Inspect the compound loop view when you need the combined picture of reusable learnings, promotable review findings, and capture readiness.
+4. When capture is produced, store it under `docs/learnings/LEARNING-<issue>.md`.
+5. Prefer scaffolding capture from the active issue context through `AgentX: Create Learning Capture` or `@agentx create learning capture`.
+6. Link the learning back to the originating issue and its supporting ADR, spec, review, or validation artifacts.
+7. If capture is skipped, record a short rationale in the close-out summary or issue comment.
 
 ### Autonomous Execution Path
 
 1. AgentX finishes the same review and validation steps it would require from an operator.
 2. AgentX resolves the capture decision after review, not during initial implementation.
-3. When capture is required or accepted, AgentX creates the learning artifact and mentions it in the final summary.
-4. The flow stays advisory-first until stronger automation and duplication checks are proven.
+3. AgentX can surface the compound loop or scaffold a learning artifact from the active harness thread before writing a final capture.
+4. When capture is required or accepted, AgentX creates the learning artifact and mentions it in the final summary.
+5. The flow stays advisory-first until stronger automation and duplication checks are proven.
 
 ### Artifact Location
 

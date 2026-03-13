@@ -3,9 +3,12 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import {
+  getLearningCaptureTarget,
   loadLearningRecords,
   rankLearnings,
+  renderBrainstormGuidanceMarkdown,
   renderCaptureGuidanceMarkdown,
+  renderCompoundLoopMarkdown,
 } from '../../utils/learnings';
 
 describe('learnings utility', () => {
@@ -85,6 +88,73 @@ describe('learnings utility', () => {
       '# Knowledge And Review Workflows\n',
       'utf-8',
     );
+
+    fs.mkdirSync(path.join(tmpDir, '.agentx', 'state'), { recursive: true });
+    fs.writeFileSync(
+      path.join(tmpDir, '.agentx', 'state', 'harness-state.json'),
+      JSON.stringify({
+        version: 1,
+        threads: [{
+          id: 'thread-1',
+          title: 'Improve compound capture',
+          taskType: 'story',
+          status: 'active',
+          issueNumber: 163,
+          planPath: 'docs/plans/EXEC-PLAN-163.md',
+          startedAt: '2026-03-12T10:00:00Z',
+          updatedAt: '2026-03-12T10:10:00Z',
+        }],
+        turns: [],
+        items: [],
+        evidence: [],
+      }, null, 2),
+      'utf-8',
+    );
+
+    fs.mkdirSync(path.join(tmpDir, 'docs', 'reviews', 'findings'), { recursive: true });
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'reviews', 'findings', 'FINDING-163-001.md'),
+      [
+        '---',
+        'id: FINDING-163-001',
+        'title: Promote reusable review outcome',
+        'source_review: docs/reviews/REVIEW-163.md',
+        'source_issue: 163',
+        'severity: high',
+        'status: Backlog',
+        'priority: p1',
+        'owner: reviewer',
+        'promotion: required',
+        'suggested_type: story',
+        'labels: type:story,priority:p1',
+        'dependencies: ',
+        'evidence: docs/reviews/REVIEW-163.md',
+        'backlog_issue: ',
+        'created: 2026-03-12',
+        'updated: 2026-03-12',
+        '---',
+        '',
+        '# Review Finding: Promote reusable review outcome',
+        '',
+        '## Summary',
+        '',
+        'Capture the reusable review outcome.',
+        '',
+        '## Impact',
+        '',
+        '- Future loops lose the result if it is not captured.',
+        '',
+        '## Recommended Action',
+        '',
+        '- Promote the finding and preserve a learning artifact.',
+        '',
+        '## Promotion Notes',
+        '',
+        '- Required.',
+        '',
+      ].join('\n'),
+      'utf-8',
+    );
   });
 
   afterEach(() => {
@@ -109,5 +179,29 @@ describe('learnings utility', () => {
     const markdown = renderCaptureGuidanceMarkdown(tmpDir);
     assert.ok(markdown.includes('docs/learnings/LEARNING-<issue>.md'));
     assert.ok(markdown.includes('Reference guide'));
+  });
+
+  it('resolves the active harness thread as the default learning capture target', () => {
+    const target = getLearningCaptureTarget(tmpDir);
+    assert.equal(target?.issueNumber, 163);
+    assert.equal(target?.title, 'Improve compound capture');
+  });
+
+  it('renders brainstorm guidance with planning learnings', () => {
+    const markdown = renderBrainstormGuidanceMarkdown(
+      tmpDir,
+      'workflow review capture',
+      rankLearnings(tmpDir, 'planning', 'workflow review capture'),
+    );
+    assert.ok(markdown.includes('Brainstorm'));
+    assert.ok(markdown.includes('Top planning learnings'));
+    assert.ok(markdown.includes('Use a five-phase knowledge-compounding lifecycle'));
+  });
+
+  it('renders compound loop guidance with review findings and capture steps', () => {
+    const markdown = renderCompoundLoopMarkdown(tmpDir);
+    assert.ok(markdown.includes('Compound Loop'));
+    assert.ok(markdown.includes('Promotable findings: 1'));
+    assert.ok(markdown.includes('Create or update a curated learning capture artifact.'));
   });
 });

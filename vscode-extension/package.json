@@ -120,6 +120,12 @@
         "icon": "$(book)"
       },
       {
+        "command": "agentx.showBrainstormGuide",
+        "title": "Show Brainstorm Guide",
+        "category": "AgentX",
+        "icon": "$(lightbulb)"
+      },
+      {
         "command": "agentx.showReviewLearnings",
         "title": "Show Review Learnings",
         "category": "AgentX",
@@ -130,6 +136,18 @@
         "title": "Show Knowledge Capture Guidance",
         "category": "AgentX",
         "icon": "$(archive)"
+      },
+      {
+        "command": "agentx.showCompoundLoop",
+        "title": "Show Compound Loop",
+        "category": "AgentX",
+        "icon": "$(layers)"
+      },
+      {
+        "command": "agentx.createLearningCapture",
+        "title": "Create Learning Capture",
+        "category": "AgentX",
+        "icon": "$(new-file)"
       },
       {
         "command": "agentx.showAgentNativeReview",
@@ -247,6 +265,9 @@
           "command": "agentx.generateDigest"
         },
         {
+          "command": "agentx.showBrainstormGuide"
+        },
+        {
           "command": "agentx.showPlanningLearnings"
         },
         {
@@ -254,6 +275,12 @@
         },
         {
           "command": "agentx.showKnowledgeCaptureGuidance"
+        },
+        {
+          "command": "agentx.showCompoundLoop"
+        },
+        {
+          "command": "agentx.createLearningCapture"
         },
         {
           "command": "agentx.showAgentNativeReview"

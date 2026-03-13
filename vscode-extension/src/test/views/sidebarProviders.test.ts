@@ -108,6 +108,9 @@ describe('sidebar providers', () => {
     assert.ok(String(issueChildren[0].label).includes('#7 Add sidebar'));
 
     const actionChildren = await provider.getChildren(items[4]);
+    assert.ok(actionChildren.some((item) => item.label === 'Brainstorm'));
+    assert.ok(actionChildren.some((item) => item.label === 'Compound loop'));
+    assert.ok(actionChildren.some((item) => item.label === 'Create learning capture'));
     assert.ok(actionChildren.some((item) => item.label === 'Review findings'));
     assert.ok(actionChildren.some((item) => item.label === 'Promote review finding'));
   });
@@ -194,6 +197,8 @@ describe('sidebar providers', () => {
     assert.ok(summaryChildren.some((item) => item.description === 'ready'));
 
     const actionChildren = await provider.getChildren(items[1]);
+    assert.ok(actionChildren.some((item) => item.label === 'Compound loop'));
+    assert.ok(actionChildren.some((item) => item.label === 'Create learning capture'));
     assert.ok(actionChildren.some((item) => item.label === 'Agent-native review'));
     assert.ok(actionChildren.some((item) => item.label === 'Review findings'));
     assert.ok(actionChildren.some((item) => item.label === 'Promote review finding'));

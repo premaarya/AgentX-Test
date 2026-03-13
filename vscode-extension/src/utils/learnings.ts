@@ -1,6 +1,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { readHarnessState } from './harnessState';
+import {
+  getPromotableReviewFindings,
+  loadReviewFindingRecords,
+} from '../review/review-findings';
 
 export type LearningsIntent = 'planning' | 'review' | 'capture';
 export type LearningValidationState = 'draft' | 'reviewed' | 'approved' | 'superseded' | 'archived';
@@ -29,6 +33,13 @@ export interface RankedLearning extends LearningRecord {
   readonly score: number;
   readonly matchedSignals: ReadonlyArray<string>;
   readonly rationale: string;
+}
+
+export interface LearningCaptureTarget {
+  readonly issueNumber?: number;
+  readonly title: string;
+  readonly taskType?: string;
+  readonly planPath?: string;
 }
 
 const LEARNINGS_DIR = path.join('docs', 'learnings');
@@ -389,4 +400,113 @@ export function renderCaptureGuidanceMarkdown(root?: string): string {
   }
 
   return lines.join('\n');
+}
+
+export function getLearningCaptureTarget(root: string): LearningCaptureTarget | undefined {
+  const harnessState = readHarnessState(root);
+  const activeThread = [...harnessState.threads].reverse().find((thread) => thread.status === 'active');
+  if (!activeThread) {
+    return undefined;
+  }
+
+  return {
+    issueNumber: activeThread.issueNumber ?? undefined,
+    title: activeThread.title,
+    taskType: activeThread.taskType,
+    planPath: activeThread.planPath,
+  };
+}
+
+export function renderBrainstormGuidanceMarkdown(
+  root: string,
+  query: string,
+  records: ReadonlyArray<RankedLearning>,
+): string {
+  const target = getLearningCaptureTarget(root);
+  const lines: string[] = [
+    '**Brainstorm**',
+    '',
+    target
+      ? `Active context: ${target.title}${target.issueNumber ? ` (#${target.issueNumber})` : ''}`
+      : 'Active context: no active harness thread detected.',
+    `Query: ${query}`,
+    '',
+    'Clarify before planning:',
+    '- What problem are we actually solving, and what is explicitly out of scope?',
+    '- Which existing repo patterns, review findings, or learnings should constrain the solution?',
+    '- What evidence will prove the work is done: tests, validation, review artifact, or capture artifact?',
+    '- What is the smallest change that still preserves future reuse and review quality?',
+    '',
+  ];
+
+  if (records.length === 0) {
+    lines.push('No planning learnings matched the current context.', '');
+  } else {
+    lines.push('Top planning learnings:', '');
+    for (const record of records) {
+      lines.push(`- **${record.title}** (${record.relativePath})`);
+      if (record.summary) {
+        lines.push(`  Summary: ${record.summary}`);
+      }
+      if (record.guidance.length > 0) {
+        lines.push(`  Guidance: ${record.guidance[0]}`);
+      }
+    }
+    lines.push('');
+  }
+
+  lines.push(
+    'Next actions:',
+    '- Run `agentx.runWorkflow` once the approach is narrowed enough to execute.',
+    '- Re-check `Planning learnings` after the problem statement changes.',
+  );
+
+  return lines.join('\n');
+}
+
+export function renderCompoundLoopMarkdown(root: string): string {
+  const captureQuery = getDefaultLearningsQuery(root, 'capture');
+  const captureLearnings = rankLearnings(root, 'capture', captureQuery);
+  const findings = loadReviewFindingRecords(root);
+  const promotable = getPromotableReviewFindings(root);
+  const target = getLearningCaptureTarget(root);
+
+  const lines: string[] = [
+    '**Compound Loop**',
+    '',
+    target
+      ? `Active context: ${target.title}${target.issueNumber ? ` (#${target.issueNumber})` : ''}`
+      : 'Active context: no active harness thread detected.',
+    `Open review findings: ${findings.filter((record) => record.status !== 'Done').length}`,
+    `Promotable findings: ${promotable.length}`,
+    `Capture target: docs/learnings/LEARNING-${target?.issueNumber ?? '<issue>'}.md`,
+    '',
+    'Compound checks:',
+    '- Has review finished with enough evidence to preserve a reusable learning?',
+    '- Should any durable review finding be promoted before the loop closes?',
+    '- Is there a skip rationale if capture is intentionally not created?',
+    '',
+  ];
+
+  if (captureLearnings.length > 0) {
+    lines.push('Relevant capture learnings:', '');
+    for (const record of captureLearnings) {
+      lines.push(`- **${record.title}** (${record.relativePath})`);
+      if (record.guidance.length > 0) {
+        lines.push(`  Guidance: ${record.guidance[0]}`);
+      }
+    }
+    lines.push('');
+  }
+
+  lines.push(
+    'Recommended next actions:',
+    '- Create or update a curated learning capture artifact.',
+    '- Review durable findings and promote any required follow-up into the backlog.',
+    '- Record an explicit skip rationale if no capture is warranted.',
+    '',
+    renderCaptureGuidanceMarkdown(root),
+  );
+
+  return lines.join('\n').trim();
 }

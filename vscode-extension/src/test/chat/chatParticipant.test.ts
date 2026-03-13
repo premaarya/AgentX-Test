@@ -192,6 +192,42 @@ describe('chatParticipant', () => {
     assert.ok(markdown.includes('docs/learnings/LEARNING-<issue>.md'));
   });
 
+  it('returns brainstorm guidance from chat', async () => {
+    const response = createMockResponseStream();
+    const agentx = {
+      checkInitialized: async () => true,
+      workspaceRoot: tmpDir,
+    };
+
+    await handleAgentXChatRequest(
+      { prompt: 'brainstorm workflow capture loop' } as any,
+      response as any,
+      agentx as any,
+    );
+
+    const markdown = response.getMarkdown();
+    assert.ok(markdown.includes('Brainstorm'));
+    assert.ok(markdown.includes('Top planning learnings'));
+  });
+
+  it('returns compound loop guidance from chat', async () => {
+    const response = createMockResponseStream();
+    const agentx = {
+      checkInitialized: async () => true,
+      workspaceRoot: tmpDir,
+    };
+
+    await handleAgentXChatRequest(
+      { prompt: 'compound' } as any,
+      response as any,
+      agentx as any,
+    );
+
+    const markdown = response.getMarkdown();
+    assert.ok(markdown.includes('Compound Loop'));
+    assert.ok(markdown.includes('Promotable findings'));
+  });
+
   it('returns agent-native review output from chat', async () => {
     fs.writeFileSync(path.join(tmpDir, 'docs', 'guides', 'KNOWLEDGE-REVIEW-WORKFLOWS.md'), '# Knowledge And Review Workflows\n', 'utf-8');
     fs.mkdirSync(path.join(tmpDir, '.github', 'templates'), { recursive: true });

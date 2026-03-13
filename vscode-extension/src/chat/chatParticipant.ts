@@ -3,8 +3,11 @@ import * as path from 'path';
 import { AgentXContext } from '../agentxContext';
 import { stripAnsi } from '../utils/stripAnsi';
 import {
+  getLearningCaptureTarget,
   getDefaultLearningsQuery,
   rankLearnings,
+  renderBrainstormGuidanceMarkdown,
+  renderCompoundLoopMarkdown,
   renderCaptureGuidanceMarkdown,
   renderRankedLearningsMarkdown,
 } from '../utils/learnings';
@@ -294,8 +297,45 @@ export async function handleAgentXChatRequest(
     return {};
   }
 
+  const brainstormMatch = userText.match(/^(?:ce:)?brainstorm(?:\s+(.+))?$/is);
+  if (brainstormMatch) {
+    const root = agentx.workspaceRoot;
+    if (!root) {
+      response.markdown('No workspace is open, so AgentX cannot brainstorm against repo context.');
+      return {};
+    }
+
+    const resolvedQuery = (brainstormMatch[1]?.trim() || getDefaultLearningsQuery(root, 'planning'));
+    const results = rankLearnings(root, 'planning', resolvedQuery);
+    response.markdown(renderBrainstormGuidanceMarkdown(root, resolvedQuery, results));
+    return {};
+  }
+
   if (/^(capture guidance|knowledge capture|capture)$/i.test(userText)) {
     response.markdown(renderCaptureGuidanceMarkdown(agentx.workspaceRoot));
+    return {};
+  }
+
+  if (/^(?:ce:)?compound(?:\s+loop)?$/i.test(userText)) {
+    const root = agentx.workspaceRoot;
+    response.markdown(root
+      ? renderCompoundLoopMarkdown(root)
+      : 'No workspace is open, so AgentX cannot evaluate the compound loop.');
+    return {};
+  }
+
+  if (/^(capture learning|create learning capture|scaffold learning)$/i.test(userText)) {
+    const root = agentx.workspaceRoot;
+    if (!root) {
+      response.markdown('No workspace is open, so AgentX cannot create a learning capture file.');
+      return {};
+    }
+
+    await vscode.commands.executeCommand('agentx.createLearningCapture');
+    const target = getLearningCaptureTarget(root);
+    response.markdown(
+      `Opened a learning capture artifact for ${target?.issueNumber ? `issue #${target.issueNumber}` : 'the current context'}.`,
+    );
     return {};
   }
 
@@ -337,8 +377,11 @@ export async function handleAgentXChatRequest(
     + 'Usage:\n'
     + '- `@agentx run engineer "implement the health endpoint for issue #42"`\n'
     + '- `@agentx continue "use the existing auth flow and keep refresh tokens"`\n'
+    + '- `@agentx brainstorm auth rollout constraints`\n'
     + '- `@agentx learnings planning`\n'
     + '- `@agentx learnings review auth workflow`\n'
+    + '- `@agentx compound`\n'
+    + '- `@agentx create learning capture`\n'
     + '- `@agentx capture guidance`\n'
     + '- `@agentx agent-native review`\n'
     + '- `@agentx review findings`\n'
