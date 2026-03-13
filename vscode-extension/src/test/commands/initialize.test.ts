@@ -1,7 +1,12 @@
 import { strict as assert } from 'assert';
+import * as os from 'os';
+import * as path from 'path';
+import * as fs from 'fs';
 import * as sinon from 'sinon';
 import * as vscode from 'vscode';
 import { registerInitializeCommand } from '../../commands/initialize';
+import { runInitializeCommand } from '../../commands/initializeCommandInternals';
+import * as setupWizard from '../../commands/setupWizard';
 import { AgentXContext } from '../../agentxContext';
 
 // ---------------------------------------------------------------------------
@@ -79,5 +84,72 @@ describe('registerInitializeCommand', () => {
 
     await registeredCallback();
     assert.ok(errSpy.calledOnce);
+  });
+});
+
+describe('runInitializeCommand', () => {
+  let sandbox: sinon.SinonSandbox;
+  let fakeContext: vscode.ExtensionContext;
+  let fakeAgentx: sinon.SinonStubbedInstance<AgentXContext>;
+  let originalWorkspaceFolders: typeof vscode.workspace.workspaceFolders;
+
+  beforeEach(() => {
+    sandbox = sinon.createSandbox();
+    fakeContext = {
+      subscriptions: [],
+      extensionUri: vscode.Uri.file('/test/extension'),
+      extension: { packageJSON: { version: '8.3.0' } },
+    } as unknown as vscode.ExtensionContext;
+    fakeAgentx = {} as unknown as sinon.SinonStubbedInstance<AgentXContext>;
+    originalWorkspaceFolders = vscode.workspace.workspaceFolders;
+  });
+
+  afterEach(() => {
+    (vscode.workspace as any).workspaceFolders = originalWorkspaceFolders;
+    sandbox.restore();
+  });
+
+  it('should show an error and return when no workspace folders are open', async () => {
+    (vscode.workspace as any).workspaceFolders = undefined;
+    const errorStub = sandbox.stub(vscode.window, 'showErrorMessage');
+
+    await runInitializeCommand(fakeContext, fakeAgentx as unknown as AgentXContext);
+
+    sinon.assert.calledOnce(errorStub);
+    assert.ok(String(errorStub.firstCall.args[0]).includes('Open a workspace folder first'));
+  });
+
+  it('should warn and stop when the silent precheck fails', async () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'agentx-init-test-'));
+    (vscode.workspace as any).workspaceFolders = [
+      {
+        name: 'test-workspace',
+        uri: vscode.Uri.file(tempRoot),
+      },
+    ];
+
+    const precheckStub = sandbox.stub(setupWizard, 'runSilentInstall').resolves({
+      passed: false,
+      report: {
+        results: [],
+        healthy: false,
+        criticalCount: 1,
+        warningCount: 0,
+        timestamp: new Date().toISOString(),
+      },
+    });
+    const warningStub = sandbox.stub(vscode.window, 'showWarningMessage');
+    const quickPickStub = sandbox.stub(vscode.window, 'showQuickPick');
+
+    try {
+      await runInitializeCommand(fakeContext, fakeAgentx as unknown as AgentXContext);
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+
+    sinon.assert.calledOnce(precheckStub);
+    sinon.assert.calledOnce(warningStub);
+    sinon.assert.notCalled(quickPickStub);
+    assert.ok(String(warningStub.firstCall.args[0]).includes('Some required dependencies could not be installed'));
   });
 });

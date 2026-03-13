@@ -53,9 +53,9 @@
 
 ## Related Documentation
 <!-- Link to ADR, Tech Spec, PRD if applicable -->
-- ADR: docs/adr/ADR-#.md
-- Spec: docs/specs/SPEC-#.md
-- PRD: docs/prd/PRD-#.md
+- ADR: docs/artifacts/adr/ADR-#.md
+- Spec: docs/artifacts/specs/SPEC-#.md
+- PRD: docs/artifacts/prd/PRD-#.md
 
 ## Deployment Notes
 <!-- Anything special needed for deployment? -->

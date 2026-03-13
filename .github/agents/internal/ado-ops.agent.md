@@ -19,10 +19,10 @@ boundaries:
     - ".copilot-tracking/ado-items/** (workflow state and plans)"
   cannot_modify:
     - "src/** (source code)"
-    - "docs/prd/** (PRD documents)"
-    - "docs/adr/** (architecture docs)"
+    - "docs/artifacts/prd/** (PRD documents)"
+    - "docs/artifacts/adr/** (architecture docs)"
     - "docs/ux/** (UX designs)"
-    - "docs/reviews/** (review documents)"
+    - "docs/artifacts/reviews/** (review documents)"
     - ".github/workflows/** (CI/CD pipelines)"
 tools:
   - codebase
@@ -143,7 +143,7 @@ If intent is ambiguous, ask the user to clarify before proceeding.
 
 ### PRD Decomposition Workflow
 
-1. Read the PRD at docs/prd/PRD-{id}.md
+1. Read the PRD at docs/artifacts/prd/PRD-{id}.md
 2. Extract requirements sections (P0, P1, P2) and user stories
 3. Map to ADO work item hierarchy:
    - Epic (1 per PRD)
@@ -245,8 +245,8 @@ Before completing any workflow run:
 
 | Task | Skill |
 |------|-------|
-| Work item quality and structure | [Documentation](../skills/development/documentation/SKILL.md) |
-| Backlog prioritization patterns | [Code Review](../skills/development/code-review/SKILL.md) |
+| Work item quality and structure | [Documentation](../../skills/development/documentation/SKILL.md) |
+| Backlog prioritization patterns | [Code Review](../../skills/development/code-review/SKILL.md) |
 
 ## Enforcement Gates
 

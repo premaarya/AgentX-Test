@@ -12,14 +12,14 @@ constraints:
   - "MUST create all files locally using editFiles -- MUST NOT use mcp_github_create_or_update_file or mcp_github_push_files to push files directly to GitHub"
 boundaries:
   can_modify:
-    - "docs/reviews/**"
+    - "docs/artifacts/reviews/**"
     - "GitHub Issues (comments, labels, status)"
     - "GitHub Projects Status (In Review -> Validating or In Progress)"
   cannot_modify:
     - "src/**"
     - "tests/**"
-    - "docs/prd/**"
-    - "docs/adr/**"
+    - "docs/artifacts/prd/**"
+    - "docs/artifacts/adr/**"
 tools:
   - codebase
   - editFiles
@@ -66,9 +66,9 @@ Review implementations for quality, correctness, security, and spec conformance.
 
 ### 1. Read Context
 
-- Read Tech Spec at `docs/specs/SPEC-{issue}.md`
-- Read PRD at `docs/prd/PRD-{epic-id}.md` for original intent
-- Read ADR at `docs/adr/ADR-{issue}.md` for design decisions
+- Read Tech Spec at `docs/artifacts/specs/SPEC-{issue}.md`
+- Read PRD at `docs/artifacts/prd/PRD-{epic-id}.md` for original intent
+- Read ADR at `docs/artifacts/adr/ADR-{issue}.md` for design decisions
 
 ### 2. Verify Quality Loop
 
@@ -131,7 +131,7 @@ npm test  # or equivalent for the project
 
 ### 6. Write Review Document
 
-Create `docs/reviews/REVIEW-{issue}.md` from template at `.github/templates/REVIEW-TEMPLATE.md`.
+Create `docs/artifacts/reviews/REVIEW-{issue}.md` from template at `.github/templates/REVIEW-TEMPLATE.md`.
 
 **Required sections**: Summary, Checklist Results, Findings (categorized by severity), Decision (Approve/Reject), Recommended Changes (if rejecting).
 
@@ -168,7 +168,7 @@ Before issuing the final decision, verify with fresh eyes:
 
 **If approved**:
 ```bash
-git add docs/reviews/
+git add docs/artifacts/reviews/
 git commit -m "review: approve #{issue}"
 ```
 Update Status to `Validating` in GitHub Projects.
@@ -181,7 +181,7 @@ Update Status back to `In Progress`.
 
 | Artifact | Location |
 |----------|----------|
-| Review Document | `docs/reviews/REVIEW-{issue}.md` |
+| Review Document | `docs/artifacts/reviews/REVIEW-{issue}.md` |
 | Issue Comments | GitHub Issue (inline feedback) |
 
 ## Skills to Load
@@ -231,9 +231,9 @@ If code changes are unclear or spec context is insufficient:
 
 Before asking any agent for help, read all relevant filesystem artifacts:
 
-- PRD at `docs/prd/PRD-{issue}.md`
-- ADR at `docs/adr/ADR-{issue}.md`
-- Tech Spec at `docs/specs/SPEC-{issue}.md`
+- PRD at `docs/artifacts/prd/PRD-{issue}.md`
+- ADR at `docs/artifacts/adr/ADR-{issue}.md`
+- Tech Spec at `docs/artifacts/specs/SPEC-{issue}.md`
 - UX Design at `docs/ux/UX-{issue}.md`
 
 Only proceed to Step 2 if a question remains unanswered after reading all artifacts.

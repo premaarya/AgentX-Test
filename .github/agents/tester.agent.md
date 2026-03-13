@@ -20,8 +20,8 @@ boundaries:
     - ".github/workflows/*test*"
   cannot_modify:
     - "src/**"
-    - "docs/prd/**"
-    - "docs/adr/**"
+    - "docs/artifacts/prd/**"
+    - "docs/artifacts/adr/**"
     - "docs/ux/**"
 tools:
   - codebase
@@ -217,9 +217,9 @@ If test expectations are unclear, environment is broken, or acceptance criteria 
 
 Before asking any agent for help, read all relevant filesystem artifacts:
 
-- PRD at `docs/prd/PRD-{issue}.md`
-- ADR at `docs/adr/ADR-{issue}.md`
-- Tech Spec at `docs/specs/SPEC-{issue}.md`
+- PRD at `docs/artifacts/prd/PRD-{issue}.md`
+- ADR at `docs/artifacts/adr/ADR-{issue}.md`
+- Tech Spec at `docs/artifacts/specs/SPEC-{issue}.md`
 - UX Design at `docs/ux/UX-{issue}.md`
 
 Only proceed to Step 2 if a question remains unanswered after reading all artifacts.

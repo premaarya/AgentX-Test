@@ -17,8 +17,8 @@ boundaries:
     - "src/** (RAG pipeline code)"
     - "tests/** (RAG pipeline tests)"
   cannot_modify:
-    - "docs/prd/** (PRD documents)"
-    - "docs/adr/** (architecture docs)"
+    - "docs/artifacts/prd/** (PRD documents)"
+    - "docs/artifacts/adr/** (architecture docs)"
     - "docs/ux/** (UX documents)"
     - ".github/workflows/** (CI/CD pipelines)"
 tools:
@@ -56,7 +56,7 @@ Task: [design pipeline/optimize retrieval/evaluate quality/troubleshoot]
 
 ### 1. Analyze Document Corpus
 
-Load skill: [RAG Pipelines](../skills/ai-systems/rag-pipelines/SKILL.md)
+Load skill: [RAG Pipelines](../../skills/ai-systems/rag-pipelines/SKILL.md)
 
 Characterize the corpus before making any design decisions:
 

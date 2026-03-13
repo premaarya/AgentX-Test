@@ -68,9 +68,9 @@ build/
 # AgentX output directories - tracked in Git (agent deliverables)
 # NOTE: These directories are intentional deliverables created by agent workflows.
 # They MUST NOT be gitignored or workflow jobs using 'git add' will fail.
-# See: PM -> docs/prd/, Architect -> docs/adr/ + docs/specs/,
+# See: PM -> docs/artifacts/prd/, Architect -> docs/artifacts/adr/ + docs/artifacts/specs/,
 #      UX -> docs/ux/, DevOps -> docs/deployment/,
-#      Reviewer -> docs/reviews/
+#      Reviewer -> docs/artifacts/reviews/
 
 # Cache directories
 .cache/

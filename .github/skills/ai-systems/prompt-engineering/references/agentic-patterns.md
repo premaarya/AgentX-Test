@@ -80,7 +80,7 @@ boundaries:
 ```text
 # Good: Specific, actionable, includes context
 "Implement user authentication for issue #123. 
-Tech spec: docs/specs/SPEC-123.md. 
+Tech spec: docs/artifacts/specs/SPEC-123.md. 
 Focus on JWT token generation and validation."
 
 # Bad: Vague, missing context

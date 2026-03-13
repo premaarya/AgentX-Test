@@ -210,7 +210,7 @@ Phase 2: {{phase2_description}}
 Phase 3: {{phase3_description}}
   Done when: {{phase3_criteria}}
 
-Track progress in docs/progress/ISSUE-{{id}}-log.md.
+Track progress in docs/execution/progress/ISSUE-{{id}}-log.md.
 When ALL phases complete, output: <promise>ALL_PHASES_COMPLETE</promise>
 ```
 
@@ -324,7 +324,7 @@ When review finds zero issues, output: <promise>NO_ISSUES_FOUND</promise>
 Each iteration SHOULD update the progress log:
 
 ```markdown
-<!-- docs/progress/ISSUE-42-log.md -->
+<!-- docs/execution/progress/ISSUE-42-log.md -->
 # Progress Log: Issue #42
 
 ## Iteration 1 (2026-02-24T10:00:00Z)

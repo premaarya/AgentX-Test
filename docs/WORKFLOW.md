@@ -72,6 +72,11 @@ For simple work, the standard issue-first flow is sufficient. For complex work, 
 
 When a task is complex, agents **MUST** create and maintain an execution plan using [.github/templates/EXEC-PLAN-TEMPLATE.md](../.github/templates/EXEC-PLAN-TEMPLATE.md) before starting implementation.
 
+Canonical locations:
+- Execution plans live under `docs/execution/plans/`
+- Progress logs live under `docs/execution/progress/`
+- Legacy `docs/plans/` and `docs/progress/` paths are redirect-only shims during migration
+
 **Current enforcement state:** This is a workflow policy today. Mechanical enforcement is partial until the quality gates and automation are extended to check plan presence, freshness, and evidence links.
 
 **Execution plan requirements:**

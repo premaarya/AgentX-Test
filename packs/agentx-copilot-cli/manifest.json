@@ -1,6 +1,6 @@
 {
   "name": "agentx-copilot-cli",
-  "version": "8.2.8",
+  "version": "8.3.0",
   "description": "AgentX Copilot CLI plugin -- installs agents, skills, instructions, and prompts into any workspace for GitHub Copilot CLI usage. Separate from the core AgentX VS Code extension.",
   "maturity": "stable",
   "platform": "copilot-cli",
@@ -67,6 +67,7 @@
     "skills": [
       ".github/skills/ai-systems/ai-agent-development/SKILL.md",
       ".github/skills/ai-systems/ai-evaluation/SKILL.md",
+      ".github/skills/ai-systems/azure-foundry/SKILL.md",
       ".github/skills/ai-systems/cognitive-architecture/SKILL.md",
       ".github/skills/ai-systems/context-management/SKILL.md",
       ".github/skills/ai-systems/data-drift-strategy/SKILL.md",
@@ -91,6 +92,7 @@
       ".github/skills/design/frontend-ui/SKILL.md",
       ".github/skills/design/prototype-craft/SKILL.md",
       ".github/skills/design/ux-ui-design/SKILL.md",
+      ".github/skills/design/design-system-reasoning/SKILL.md",
       ".github/skills/development/code-review/SKILL.md",
       ".github/skills/development/configuration/SKILL.md",
       ".github/skills/development/dependency-management/SKILL.md",
@@ -100,6 +102,7 @@
       ".github/skills/development/logging-monitoring/SKILL.md",
       ".github/skills/development/skill-creator/SKILL.md",
       ".github/skills/development/testing/SKILL.md",
+      ".github/skills/development/token-optimizer/SKILL.md",
       ".github/skills/development/type-safety/SKILL.md",
       ".github/skills/domain/audit-assurance/SKILL.md",
       ".github/skills/domain/financial-services/SKILL.md",

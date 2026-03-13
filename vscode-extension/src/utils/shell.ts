@@ -1,6 +1,13 @@
-import { exec, execSync, spawn } from 'child_process';
-
-const MIN_POWERSHELL_VERSION = '7.4.0';
+import { exec, spawn } from 'child_process';
+import {
+ buildShellArgs,
+ compareSemver,
+ detectPwshVersion,
+ flushBuffer,
+ getMissingPwshError,
+ MIN_POWERSHELL_VERSION,
+ resolveShellPath,
+} from './shellInternals';
 
 /**
  * Cached result of PowerShell availability check.
@@ -17,25 +24,9 @@ let _resolvedPwsh: string | null = null;
 export function resolveWindowsShell(): string {
   if (_resolvedPwsh !== null) { return _resolvedPwsh; }
 
-  const compareSemver = (left: string, right: string): number => {
-    const leftParts = left.split('.').map((part) => parseInt(part, 10) || 0);
-    const rightParts = right.split('.').map((part) => parseInt(part, 10) || 0);
-    const length = Math.max(leftParts.length, rightParts.length);
-    for (let index = 0; index < length; index++) {
-      const leftValue = leftParts[index] ?? 0;
-      const rightValue = rightParts[index] ?? 0;
-      if (leftValue > rightValue) { return 1; }
-      if (leftValue < rightValue) { return -1; }
-    }
-    return 0;
-  };
-
   // Try pwsh (PowerShell 7+ cross-platform)
   try {
-    const version = execSync('pwsh -NoProfile -Command "$PSVersionTable.PSVersion.ToString()"', {
-      stdio: ['ignore', 'pipe', 'ignore'],
-      timeout: 5_000,
-    }).toString().trim();
+    const version = detectPwshVersion();
     if (compareSemver(version, MIN_POWERSHELL_VERSION) >= 0) {
       _resolvedPwsh = 'pwsh';
       return _resolvedPwsh;
@@ -68,18 +59,15 @@ export function execShell(
  let shellPath: string;
 
  if (shell === 'bash') {
-   shellPath = '/bin/bash';
+   shellPath = resolveShellPath(shell, '');
  } else {
    // Resolve to a supported PowerShell runtime (pwsh 7.4+)
    const resolved = resolveWindowsShell();
    if (!resolved) {
-     reject(new Error(
-       'PowerShell 7.4+ (pwsh) is required. Install it from '
-       + 'https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell.'
-     ));
+     reject(getMissingPwshError());
      return;
    }
-   shellPath = resolved;
+   shellPath = resolveShellPath(shell, resolved);
  }
 
  const options = {
@@ -115,22 +103,17 @@ export function execShellStreaming(
   let shellPath: string;
 
   if (shell === 'bash') {
-   shellPath = '/bin/bash';
+   shellPath = resolveShellPath(shell, '');
   } else {
    const resolved = resolveWindowsShell();
    if (!resolved) {
-    reject(new Error(
-      'PowerShell 7.4+ (pwsh) is required. Install it from '
-      + 'https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell.'
-    ));
+    reject(getMissingPwshError());
     return;
    }
-   shellPath = resolved;
+   shellPath = resolveShellPath(shell, resolved);
   }
 
-  const args = shell === 'bash'
-   ? ['-lc', command]
-   : ['-NoProfile', '-Command', command];
+  const args = buildShellArgs(shell, command);
 
   const child = spawn(shellPath, args, {
    cwd,
@@ -143,30 +126,18 @@ export function execShellStreaming(
   let stdoutBuffer = '';
   let stderrBuffer = '';
 
-  const flushBuffer = (buffer: string, source: 'stdout' | 'stderr'): string => {
-   const normalized = buffer.replace(/\r/g, '');
-   const lines = normalized.split('\n');
-   const remainder = lines.pop() ?? '';
-   for (const line of lines) {
-    if (line.length > 0) {
-      onLine?.(line, source);
-    }
-   }
-   return remainder;
-  };
-
   child.stdout.on('data', (chunk: Buffer | string) => {
    const text = chunk.toString();
    stdoutChunks.push(text);
    stdoutBuffer += text;
-   stdoutBuffer = flushBuffer(stdoutBuffer, 'stdout');
+   stdoutBuffer = flushBuffer(stdoutBuffer, 'stdout', onLine);
   });
 
   child.stderr.on('data', (chunk: Buffer | string) => {
    const text = chunk.toString();
    stderrChunks.push(text);
    stderrBuffer += text;
-   stderrBuffer = flushBuffer(stderrBuffer, 'stderr');
+   stderrBuffer = flushBuffer(stderrBuffer, 'stderr', onLine);
   });
 
   child.on('error', (error) => {

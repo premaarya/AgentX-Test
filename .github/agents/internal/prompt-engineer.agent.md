@@ -16,8 +16,8 @@ boundaries:
     - ".copilot-tracking/prompt-eval/** (evaluation results)"
   cannot_modify:
     - "src/** (application source code)"
-    - "docs/prd/** (PRD documents)"
-    - "docs/adr/** (architecture docs)"
+    - "docs/artifacts/prd/** (PRD documents)"
+    - "docs/artifacts/adr/** (architecture docs)"
     - ".github/workflows/** (CI/CD pipelines)"
 tools:
   - codebase
@@ -57,7 +57,7 @@ Task: [design/evaluate/test/iterate]
 - Scan `prompts/` directory for existing prompt files
 - Read current prompt structure, variables, and patterns
 - Identify gaps, anti-patterns, or improvement opportunities
-- Load skill: [Prompt Engineering](../skills/ai-systems/prompt-engineering/SKILL.md)
+- Load skill: [Prompt Engineering](../../skills/ai-systems/prompt-engineering/SKILL.md)
 
 ### 2. Design Prompts
 

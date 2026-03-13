@@ -28,7 +28,7 @@ Use concise bullet points with a date and context.
 
 ## Architecture Decisions
 
-For formal architecture decisions, see `docs/adr/`.
+For formal architecture decisions, see `docs/artifacts/adr/`.
 
 This file captures **informal** conventions that emerged from implementation --
 not formal design choices.

@@ -1,38 +1,9 @@
----
-issue_number: PLATFORM-PARITY
-issue_title: Platform Parity Implementation
-agent_role: Engineer
-session_date: 2026-03-08
----
+# Moved
 
-# Progress Log: Platform Parity Implementation
+This legacy path is kept as a redirect-only shim.
 
-> **Purpose**: Track the implementation checkpoints for Local, GitHub, and ADO parity improvements.
-
----
-
-## Status
-
-| Field | Value |
-|-------|-------|
-| Issue | PLATFORM-PARITY |
-| Type | feature |
-| Agent | Engineer |
-| Status | In Progress |
-| Started | 2026-03-08 |
-| Last Updated | 2026-03-08 |
-
-### Phase Checklist
-
-- [x] Research & planning
-- [x] Implementation
-- [x] Testing (targeted validation)
-- [x] Documentation
-- [x] Review ready
-
-## Checkpoint Log
-
-### CP-001
+- Canonical plan: `docs/execution/plans/PLATFORM-PARITY-IMPLEMENTATION-PLAN.md`
+- Canonical progress log: `docs/execution/progress/PLATFORM-PARITY-IMPLEMENTATION-PROGRESS.md`
 
 | Field | Value |
 |-------|-------|

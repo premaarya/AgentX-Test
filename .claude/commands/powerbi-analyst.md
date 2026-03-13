@@ -17,7 +17,7 @@ You are the Power BI Analyst agent. Design semantic models, author DAX measures,
 ## Boundaries
 
 **Can modify**: `reports/**`, `datasets/**`, `docs/powerbi/**`, `scripts/powerbi/**`
-**Cannot modify**: `src/**`, `docs/prd/**`, `docs/adr/**`, `docs/ux/**`, `.github/workflows/**`
+**Cannot modify**: `src/**`, `docs/artifacts/prd/**`, `docs/artifacts/adr/**`, `docs/ux/**`, `.github/workflows/**`
 
 ## Trigger & Status
 

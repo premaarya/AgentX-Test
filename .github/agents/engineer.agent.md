@@ -19,8 +19,8 @@ boundaries:
     - "docs/README.md"
     - "GitHub Projects Status (In Progress -> In Review)"
   cannot_modify:
-    - "docs/prd/**"
-    - "docs/adr/**"
+    - "docs/artifacts/prd/**"
+    - "docs/artifacts/adr/**"
     - "docs/ux/**"
     - ".github/workflows/**"
 tools:
@@ -86,8 +86,8 @@ Start -> Implement -> Test -> Review -> Iterate (if needed) -> Complete -> Hando
 
 ### 1. Read Context
 
-- Read Tech Spec at `docs/specs/SPEC-{issue}.md`
-- Read ADR at `docs/adr/ADR-{issue}.md` for architectural decisions
+- Read Tech Spec at `docs/artifacts/specs/SPEC-{issue}.md`
+- Read ADR at `docs/artifacts/adr/ADR-{issue}.md` for architectural decisions
 - Scan existing codebase patterns with `semantic_search` / `grep_search`
 - For bugs: read the issue description, reproduction steps, and related code
 
@@ -240,9 +240,9 @@ If spec is ambiguous, architecture unclear, or dependencies are missing:
 
 Before asking any agent for help, read all relevant filesystem artifacts:
 
-- PRD at `docs/prd/PRD-{issue}.md`
-- ADR at `docs/adr/ADR-{issue}.md`
-- Tech Spec at `docs/specs/SPEC-{issue}.md`
+- PRD at `docs/artifacts/prd/PRD-{issue}.md`
+- ADR at `docs/artifacts/adr/ADR-{issue}.md`
+- Tech Spec at `docs/artifacts/specs/SPEC-{issue}.md`
 - UX Design at `docs/ux/UX-{issue}.md`
 
 Only proceed to Step 2 if a question remains unanswered after reading all artifacts.

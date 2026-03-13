@@ -22,22 +22,59 @@ $broken = @()
 $total = 0
 $checked = 0
 
+function Get-FencedCodeRanges {
+    param(
+        [string]$Content
+    )
+
+    $ranges = @()
+    $matches = [regex]::Matches($Content, '(?ms)```.*?```')
+    foreach ($match in $matches) {
+        $ranges += [PSCustomObject]@{
+            Start = $match.Index
+            End   = $match.Index + $match.Length
+        }
+    }
+
+    return $ranges
+}
+
+function Test-IsInsideFencedCode {
+    param(
+        [int]$Index,
+        [object[]]$Ranges
+    )
+
+    foreach ($range in $Ranges) {
+        if ($Index -ge $range.Start -and $Index -lt $range.End) {
+            return $true
+        }
+    }
+
+    return $false
+}
+
 $mdFiles = Get-ChildItem -Path $ScanDir -Filter '*.md' -Recurse -File -ErrorAction SilentlyContinue |
     Where-Object { $_.FullName -notmatch 'node_modules|\.git[/\\]|vendor' }
 
 foreach ($file in $mdFiles) {
     $content = Get-Content $file.FullName -Raw -Encoding utf8
     $links = [regex]::Matches($content, '\[([^\]]+)\]\(([^)]+)\)')
-    $lineNum = 0
+    $fencedCodeRanges = Get-FencedCodeRanges -Content $content
     $lines = $content -split "`n"
 
     foreach ($match in $links) {
+        if (Test-IsInsideFencedCode -Index $match.Index -Ranges $fencedCodeRanges) { continue }
+
         $total++
         $linkText = $match.Groups[1].Value
         $linkTarget = $match.Groups[2].Value
 
         # Skip external URLs, anchors, mailto, and scheme-based links
         if ($linkTarget -match '^(https?://|mailto:|#|data:|javascript:)') { continue }
+
+        # Skip placeholder or example-only link targets used in templates.
+        if ($linkTarget -eq 'link' -or $linkTarget -match '[{}$]' -or $linkTarget -match '^path([/#].*)?$') { continue }
 
         # Skip fragment-only refs within same file
         if ($linkTarget.StartsWith('#')) { continue }

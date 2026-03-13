@@ -15,11 +15,11 @@ describe('chatParticipant', () => {
 
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentx-chat-learnings-'));
-    fs.mkdirSync(path.join(tmpDir, 'docs', 'learnings'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, 'docs', 'artifacts', 'learnings'), { recursive: true });
     fs.mkdirSync(path.join(tmpDir, 'docs', 'guides'), { recursive: true });
-    fs.mkdirSync(path.join(tmpDir, 'docs', 'reviews', 'findings'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, 'docs', 'artifacts', 'reviews', 'findings'), { recursive: true });
     fs.writeFileSync(
-      path.join(tmpDir, 'docs', 'learnings', 'LEARNING-163.md'),
+      path.join(tmpDir, 'docs', 'artifacts', 'learnings', 'LEARNING-163.md'),
       [
         '---',
         'id: LEARNING-163',
@@ -31,7 +31,7 @@ describe('chatParticipant', () => {
         'evidence: high',
         'mode: shared',
         'keywords: workflow,review,compound,artifacts,planning',
-        'sources: docs/adr/ADR-163.md,docs/specs/SPEC-163.md',
+        'sources: docs/artifacts/adr/ADR-163.md,docs/artifacts/specs/SPEC-163.md',
         '---',
         '## Summary',
         'Treat compound capture as a formal post-review phase over existing AgentX artifacts.',
@@ -55,12 +55,12 @@ describe('chatParticipant', () => {
       'utf-8',
     );
     fs.writeFileSync(
-      path.join(tmpDir, 'docs', 'reviews', 'findings', 'FINDING-164-001.md'),
+      path.join(tmpDir, 'docs', 'artifacts', 'reviews', 'findings', 'FINDING-164-001.md'),
       [
         '---',
         'id: FINDING-164-001',
         'title: Promote deferred review gaps',
-        'source_review: docs/reviews/REVIEW-164.md',
+        'source_review: docs/artifacts/reviews/REVIEW-164.md',
         'source_issue: 164',
         'severity: high',
         'status: Backlog',
@@ -70,7 +70,7 @@ describe('chatParticipant', () => {
         'suggested_type: story',
         'labels: type:story,needs:changes',
         'dependencies: #163',
-        'evidence: docs/reviews/REVIEW-164.md',
+        'evidence: docs/artifacts/reviews/REVIEW-164.md',
         'backlog_issue: ',
         'created: 2026-03-12',
         'updated: 2026-03-12',
@@ -189,7 +189,7 @@ describe('chatParticipant', () => {
 
     const markdown = response.getMarkdown();
     assert.ok(markdown.includes('Knowledge Capture Guidance'));
-    assert.ok(markdown.includes('docs/learnings/LEARNING-<issue>.md'));
+    assert.ok(markdown.includes('docs/artifacts/learnings/LEARNING-<issue>.md'));
   });
 
   it('returns brainstorm guidance from chat', async () => {

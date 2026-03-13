@@ -6,7 +6,7 @@
 
 Define **primary** and **secondary** personas covering: demographics, goals, pain points, behaviors, and a representative quote. Keep personas to one page each.
 
-> ** Full template** -> [references/research-templates.md](references/research-templates.md)
+> ** Full template** -> [research-templates.md](research-templates.md)
 
 ### User Journey Mapping
 
@@ -22,7 +22,7 @@ Map the end-to-end experience across these stages:
 
 **Key output**: A list of **recommendations** with specific, actionable changes (e.g., "Reduce required fields to 3").
 
-> ** Full journey template** -> [references/research-templates.md](references/research-templates.md)
+> ** Full journey template** -> [research-templates.md](research-templates.md)
 
 ---
 

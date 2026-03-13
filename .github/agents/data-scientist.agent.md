@@ -21,8 +21,8 @@ boundaries:
     - "notebooks/**"
     - "GitHub Projects Status (In Progress -> In Review)"
   cannot_modify:
-    - "docs/prd/**"
-    - "docs/adr/**"
+    - "docs/artifacts/prd/**"
+    - "docs/artifacts/adr/**"
     - "docs/ux/**"
     - ".github/workflows/**"
 tools:
@@ -299,9 +299,9 @@ If data requirements are unclear, integration points are undefined, or evaluatio
 
 Before asking any agent for help, read all relevant filesystem artifacts:
 
-- PRD at `docs/prd/PRD-{issue}.md`
-- ADR at `docs/adr/ADR-{issue}.md`
-- Tech Spec at `docs/specs/SPEC-{issue}.md`
+- PRD at `docs/artifacts/prd/PRD-{issue}.md`
+- ADR at `docs/artifacts/adr/ADR-{issue}.md`
+- Tech Spec at `docs/artifacts/specs/SPEC-{issue}.md`
 - UX Design at `docs/ux/UX-{issue}.md`
 
 Only proceed to Step 2 if a question remains unanswered after reading all artifacts.

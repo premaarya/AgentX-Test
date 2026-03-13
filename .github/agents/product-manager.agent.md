@@ -16,12 +16,12 @@ constraints:
   - "MUST create PRD files locally using editFiles -- MUST NOT use mcp_github_create_or_update_file or mcp_github_push_files to push files directly to GitHub"
 boundaries:
   can_modify:
-    - "docs/prd/**"
+    - "docs/artifacts/prd/**"
     - "GitHub Issues (create, update, comment)"
     - "GitHub Projects Status (move to Ready)"
   cannot_modify:
     - "src/**"
-    - "docs/adr/**"
+    - "docs/artifacts/adr/**"
     - "docs/ux/**"
     - "tests/**"
 tools:
@@ -123,7 +123,7 @@ Scan the user's request for technology signals:
 
 ### 3. Create PRD (LOCAL FILE -- NOT GitHub)
 
-Create `docs/prd/PRD-{epic-id}.md` **locally** using `editFiles` tool, based on template at `.github/templates/PRD-TEMPLATE.md`. Do NOT use `mcp_github_create_or_update_file` or `mcp_github_push_files` -- the PRD must exist as a local workspace file so the user can review before committing.
+Create `docs/artifacts/prd/PRD-{epic-id}.md` **locally** using `editFiles` tool, based on template at `.github/templates/PRD-TEMPLATE.md`. Do NOT use `mcp_github_create_or_update_file` or `mcp_github_push_files` -- the PRD must exist as a local workspace file so the user can review before committing.
 
 **12 required sections**: Problem Statement, Target Users, Goals & Metrics, Requirements (P0/P1/P2), User Stories with acceptance criteria, User Flows, Dependencies, Risks, Timeline, Out of Scope, Open Questions, Appendix.
 
@@ -160,7 +160,7 @@ Before handoff, verify with fresh eyes:
 ### 6. Commit & Handoff
 
 ```bash
-git add docs/prd/PRD-{epic-id}.md
+git add docs/artifacts/prd/PRD-{epic-id}.md
 git commit -m "feat: add PRD for Epic #{epic-id}"
 ```
 
@@ -170,7 +170,7 @@ Update Epic Status to `Ready` in GitHub Projects.
 
 | Artifact | Location |
 |----------|----------|
-| PRD | `docs/prd/PRD-{epic-id}.md` |
+| PRD | `docs/artifacts/prd/PRD-{epic-id}.md` |
 | Epic issue | GitHub Issues with `type:epic` |
 | Feature issues | GitHub Issues with `type:feature` |
 | Story issues | GitHub Issues with `type:story` |
@@ -217,9 +217,9 @@ If requirements are unclear or stakeholder input is needed:
 
 Before asking any agent for help, read all relevant filesystem artifacts:
 
-- PRD at `docs/prd/PRD-{issue}.md`
-- ADR at `docs/adr/ADR-{issue}.md`
-- Tech Spec at `docs/specs/SPEC-{issue}.md`
+- PRD at `docs/artifacts/prd/PRD-{issue}.md`
+- ADR at `docs/artifacts/adr/ADR-{issue}.md`
+- Tech Spec at `docs/artifacts/specs/SPEC-{issue}.md`
 - UX Design at `docs/ux/UX-{issue}.md`
 
 Only proceed to Step 2 if a question remains unanswered after reading all artifacts.

@@ -1,38 +1,9 @@
----
-title: Platform Parity Implementation
-status: In Progress
-owner: Engineer
-last_updated: 2026-03-08
----
+# Moved
 
-# Execution Plan: Platform Parity Implementation
+This legacy path is kept as a redirect-only shim.
 
-## Purpose / Big Picture
-
-Implement the provider-based parity slice that makes Local, GitHub, and ADO integrations behave consistently at the CLI and validation-host layers, starting by fixing provider resolution and adding a shared validation path for GitHub Actions, Azure Pipelines, and local execution.
-
-This execution plan is a living document. Keep `Progress`, `Surprises & Discoveries`, `Decision Log`, and `Outcomes & Retrospective` current as work proceeds.
-
-## Progress
-
-- [x] Initial plan drafted
-- [x] Repo context and dependencies reviewed
-- [x] Validation approach defined
-- [x] Implementation started
-- [x] Acceptance evidence recorded
-
-## Surprises & Discoveries
-
-- Observation: The CLI still resolves platform behavior from `config.mode`, but the extension initializer writes `integration` metadata instead.
-  Evidence: `.agentx/agentx-cli.ps1` returns `(Get-AgentXConfig).mode ?? 'local'`, while `vscode-extension/src/commands/initialize.ts` writes `integration: 'github'` or `integration: 'ado'`.
-- Observation: ADO is visible in the extension UI and setup flow, but Azure CLI is not present in the current environment.
-  Evidence: `az --version` failed on 2026-03-08 with command-not-found, while `gh --version` succeeded.
-
-## Decision Log
-
-- Decision: Normalize provider selection through a canonical `provider` field with backward-compatible fallback to `integration` and `mode`.
-  Options Considered: Keep `mode`; switch everything to `integration`; introduce `provider` with fallback support.
-  Chosen: Introduce `provider` with fallback support.
+- Canonical plan: `docs/execution/plans/PLATFORM-PARITY-IMPLEMENTATION-PLAN.md`
+- Canonical progress log: `docs/execution/progress/PLATFORM-PARITY-IMPLEMENTATION-PROGRESS.md`
   Rationale: It fixes current breakage without forcing an immediate migration of older configs or docs.
   Date/Author: 2026-03-08 / GitHub Copilot
 - Decision: Add Azure Pipelines parity through shared harness validation and dependency gating before attempting broad ADO work-item mutations.

@@ -26,7 +26,7 @@ This ensures traceability, validates prerequisites, and prevents incomplete tran
     "context": {
       "summary": "PRD complete for health endpoint feature",
       "artifacts": [
-        { "path": "docs/prd/PRD-42.md", "type": "prd", "description": "Product requirements" }
+        { "path": "docs/artifacts/prd/PRD-42.md", "type": "prd", "description": "Product requirements" }
       ],
       "decisions": ["REST over gRPC for simplicity"],
       "openQuestions": [],

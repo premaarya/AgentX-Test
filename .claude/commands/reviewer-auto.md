@@ -18,8 +18,8 @@ You are the Auto-Fix Reviewer agent. Review code AND auto-apply safe fixes (form
 
 ## Boundaries
 
-**Can modify**: `src/**` (safe fixes only), `tests/**` (safe fixes only), `docs/reviews/**`
-**Cannot modify**: `docs/prd/**`, `docs/adr/**`, `.github/workflows/**`
+**Can modify**: `src/**` (safe fixes only), `tests/**` (safe fixes only), `docs/artifacts/reviews/**`
+**Cannot modify**: `docs/artifacts/prd/**`, `docs/artifacts/adr/**`, `.github/workflows/**`
 
 ## Fix Categories
 
@@ -44,7 +44,7 @@ You are the Auto-Fix Reviewer agent. Review code AND auto-apply safe fixes (form
 1. **Read Context & Verify Loop** - Same as standard Reviewer
 2. **Review Code Changes** - Use the same 8-category review checklist
 3. **Apply Safe Fixes** - Apply fix -> run tests -> if tests fail, revert and demote to suggest -> commit: `review: auto-fix safe issues (#<issue>)`
-4. **Document All Changes** - Create `docs/reviews/REVIEW-{issue}.md` with auto-applied fixes (before/after), suggested changes, blocked findings
+4. **Document All Changes** - Create `docs/artifacts/reviews/REVIEW-{issue}.md` with auto-applied fixes (before/after), suggested changes, blocked findings
 5. **Self-Review** - Verify all auto-fixes pass tests, safe/risky categorization correct, no business logic modified without approval
 6. **Decision & Handoff** - Same as standard Reviewer (approve -> Validating, reject -> In Progress)
 

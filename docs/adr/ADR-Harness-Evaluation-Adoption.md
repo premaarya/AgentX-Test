@@ -23,7 +23,7 @@
 
 ## Context
 
-AgentX has already established the first major pieces of a harness-oriented workflow: repository-local plans and progress logs, complex-work plan gating, weekly plan-health reporting, and file-backed runtime state for thread, turn, item, and evidence concepts. These foundations are visible in [docs/WORKFLOW.md](../WORKFLOW.md), [docs/GOLDEN_PRINCIPLES.md](../GOLDEN_PRINCIPLES.md), [docs/QUALITY_SCORE.md](../QUALITY_SCORE.md), [docs/plans/HARNESS-IMPLEMENTATION.md](../plans/HARNESS-IMPLEMENTATION.md), and [vscode-extension/src/utils/harnessState.ts](../../vscode-extension/src/utils/harnessState.ts). [Confidence: HIGH]
+AgentX has already established the first major pieces of a harness-oriented workflow: repository-local plans and progress logs, complex-work plan gating, weekly plan-health reporting, and file-backed runtime state for thread, turn, item, and evidence concepts. These foundations are visible in [docs/WORKFLOW.md](../WORKFLOW.md), [docs/GOLDEN_PRINCIPLES.md](../GOLDEN_PRINCIPLES.md), [docs/QUALITY_SCORE.md](../QUALITY_SCORE.md), [docs/execution/plans/HARNESS-IMPLEMENTATION-PLAN.md](../execution/plans/HARNESS-IMPLEMENTATION-PLAN.md), and [vscode-extension/src/utils/harnessState.ts](../../vscode-extension/src/utils/harnessState.ts). [Confidence: HIGH]
 
 What AgentX still lacks is a native evaluation layer that can score the quality of an agent run after the fact, explain why a run failed, and distinguish whether the primary cause was model behavior, harness design, policy gaps, or environment/tooling. Current validation emphasizes structural compliance and artifact existence. It is weaker at causal diagnosis, observed-versus-inferred coverage, and comparable scoring across sessions. [Confidence: HIGH]
 
@@ -60,7 +60,7 @@ Could this problem be solved better by GenAI or agentic AI alone? No. A purely m
 | Internal harness design review | Durable repo-local context and stronger feedback loops improve agent throughput and reliability | AgentX should extend its harness with stronger evaluation and feedback, not only more runtime state |
 | Internal runtime and UX analysis | Rich harnesses benefit from stable task primitives and explicit event surfaces | AgentX should evaluate thread and turn quality from its existing state model instead of treating runs as opaque transcripts |
 | Internal workflow and plan review | Complex work should be judged by living plans, progress, and observable acceptance evidence | AgentX should evaluate whether plans and evidence remain aligned throughout a run |
-| Internal docs: [ADR-Harness-Engineering.md](../adr/ADR-Harness-Engineering.md), [QUALITY_SCORE.md](../QUALITY_SCORE.md), [tech-debt-tracker.md](../tech-debt-tracker.md) | The repo already recognizes gaps in evaluation evidence, runtime maturity, and documentation/runtime consistency | Harness evaluation should close these gaps with a measurable, native scoring layer |
+| Internal docs: [ADR-Harness-Engineering.md](../artifacts/adr/ADR-Harness-Engineering.md), [QUALITY_SCORE.md](../QUALITY_SCORE.md), [tech-debt-tracker.md](../tech-debt-tracker.md) | The repo already recognizes gaps in evaluation evidence, runtime maturity, and documentation/runtime consistency | Harness evaluation should close these gaps with a measurable, native scoring layer |
 
 ### Known Failure Modes And Anti-Patterns
 
@@ -251,7 +251,7 @@ We chose **Option 3: Deterministic Native Evaluation Layer** because it best mat
 
 ## Implementation
 
-**Detailed technical specification**: [SPEC-Harness-Evaluation-Adoption.md](../specs/SPEC-Harness-Evaluation-Adoption.md)
+**Detailed technical specification**: [SPEC-Harness-Evaluation-Adoption.md](../artifacts/specs/SPEC-Harness-Evaluation-Adoption.md)
 
 **High-level implementation plan:**
 
@@ -274,12 +274,12 @@ We chose **Option 3: Deterministic Native Evaluation Layer** because it best mat
 
 ### Internal
 
-- [AGENTS.md](../AGENTS.md)
+- [AGENTS.md](../../AGENTS.md)
 - [WORKFLOW.md](../WORKFLOW.md)
 - [GOLDEN_PRINCIPLES.md](../GOLDEN_PRINCIPLES.md)
 - [QUALITY_SCORE.md](../QUALITY_SCORE.md)
 - [tech-debt-tracker.md](../tech-debt-tracker.md)
-- [ADR-Harness-Engineering.md](../adr/ADR-Harness-Engineering.md)
+- [ADR-Harness-Engineering.md](../artifacts/adr/ADR-Harness-Engineering.md)
 
 ---
 

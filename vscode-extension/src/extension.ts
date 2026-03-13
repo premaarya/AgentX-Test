@@ -1,21 +1,10 @@
 import * as vscode from 'vscode';
-import { registerInitializeCommand } from './commands/initialize';
-import { registerStatusCommand } from './commands/status';
-import { registerWorkflowCommand } from './commands/workflow';
-import { registerDepsCommand } from './commands/deps';
-import { registerDigestCommand } from './commands/digest';
-import { registerLoopCommand } from './commands/loopCommand';
-import { registerAgentNativeReviewCommand } from './commands/agent-native-review';
-import { registerLearningsCommands } from './commands/learnings';
-import { registerReviewFindingCommands } from './commands/review-findings';
-import { registerShowIssueCommand } from './commands/showIssue';
-import { registerPendingClarificationCommand } from './commands/pendingClarification';
-import { AgentTreeProvider } from './views/agentTreeProvider';
-import { WorkTreeProvider } from './views/workTreeProvider';
-import { WorkflowTreeProvider } from './views/workflowTreeProvider';
-import { TemplateTreeProvider } from './views/templateTreeProvider';
-import { QualityTreeProvider } from './views/qualityTreeProvider';
-import { IntegrationTreeProvider } from './views/integrationTreeProvider';
+import { registerAgentXCommands } from './commands/registry';
+import {
+ createSidebarProviders,
+ refreshSidebarProviders,
+ registerSidebarProviders,
+} from './views/registry';
 import { AgentXContext } from './agentxContext';
 import { registerChatParticipant } from './chat/chatParticipant';
 import { clearInstructionCache } from './chat/agentContextLoader';
@@ -35,6 +24,7 @@ export function activate(context: vscode.ExtensionContext) {
  console.log('AgentX extension activating...');
 
  agentxContext = new AgentXContext(context);
+ const sidebarProviders = createSidebarProviders(agentxContext);
 
  const statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 50);
  statusBar.text = '$(hubot) AgentX';
@@ -62,45 +52,16 @@ export function activate(context: vscode.ExtensionContext) {
  };
 
  // Register sidebar tree view providers (VS Code-only value)
- const workTreeProvider = new WorkTreeProvider(agentxContext);
- const agentTreeProvider = new AgentTreeProvider(agentxContext);
- const workflowTreeProvider = new WorkflowTreeProvider(agentxContext);
- const templateProvider = new TemplateTreeProvider(agentxContext);
- const qualityTreeProvider = new QualityTreeProvider(agentxContext);
- const integrationTreeProvider = new IntegrationTreeProvider(agentxContext);
-
- vscode.window.registerTreeDataProvider('agentx-work', workTreeProvider);
- vscode.window.registerTreeDataProvider('agentx-agents', agentTreeProvider);
- vscode.window.registerTreeDataProvider('agentx-workflow', workflowTreeProvider);
- vscode.window.registerTreeDataProvider('agentx-templates', templateProvider);
- vscode.window.registerTreeDataProvider('agentx-quality', qualityTreeProvider);
- vscode.window.registerTreeDataProvider('agentx-integrations', integrationTreeProvider);
+ registerSidebarProviders(sidebarProviders);
 
  // Register commands
- registerInitializeCommand(context, agentxContext);
- registerStatusCommand(context, agentxContext);
- registerWorkflowCommand(context, agentxContext);
- registerDepsCommand(context, agentxContext);
- registerDigestCommand(context, agentxContext);
- registerLoopCommand(context, agentxContext);
- registerAgentNativeReviewCommand(context, agentxContext);
- registerLearningsCommands(context, agentxContext);
- registerReviewFindingCommands(context, agentxContext);
-
- // Show issue detail (used by agent tree item click)
- registerShowIssueCommand(context, agentxContext);
- registerPendingClarificationCommand(context, agentxContext);
+ registerAgentXCommands(context, agentxContext);
 
  // Refresh all views
  context.subscriptions.push(
   vscode.commands.registerCommand('agentx.refresh', () => {
    agentxContext.invalidateCache();
-   workTreeProvider.refresh();
-   agentTreeProvider.refresh();
-   workflowTreeProvider.refresh();
-   templateProvider.refresh();
-   qualityTreeProvider.refresh();
-   integrationTreeProvider.refresh();
+   refreshSidebarProviders(sidebarProviders);
    clearInstructionCache();
     void updateUiState();
    vscode.window.showInformationMessage('AgentX: Refreshed all views.');
@@ -127,12 +88,7 @@ export function activate(context: vscode.ExtensionContext) {
   clearInstructionCache();
     updateUiState().then(() => {
      if (agentxContext.workspaceRoot) {
-        workTreeProvider.refresh();
-        agentTreeProvider.refresh();
-        workflowTreeProvider.refresh();
-        templateProvider.refresh();
-        qualityTreeProvider.refresh();
-        integrationTreeProvider.refresh();
+        refreshSidebarProviders(sidebarProviders);
      }
     });
  };

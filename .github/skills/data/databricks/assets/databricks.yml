@@ -1,0 +1,5 @@
+bundle:
+  name: sample-databricks-skill
+
+workspace:
+  host: https://example.cloud.databricks.com

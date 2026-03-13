@@ -460,7 +460,8 @@ function Sync-LocalIssueToGitHub($localIssue, [int]$remoteIssueNumber) {
 
 function Create-GitHubIssueFromLocalIssue($localIssue, [string]$localIssueNumber) {
     $createArgs = @('issue', 'create', '--title', $localIssue.title)
-    if ($localIssue.body) { $createArgs += @('--body', $localIssue.body) }
+    $issueBody = if ([string]::IsNullOrWhiteSpace($localIssue.body)) { $localIssue.title } else { $localIssue.body }
+    $createArgs += @('--body', $issueBody)
     foreach ($label in @($localIssue.labels)) {
         if ($label) { $createArgs += @('--label', [string]$label) }
     }
@@ -1198,7 +1199,8 @@ function Invoke-IssueCreate {
 
     if ($provider -eq 'github') {
         $args = @('issue', 'create', '--title', $title)
-        if ($body) { $args += @('--body', $body) }
+        $issueBody = if ([string]::IsNullOrWhiteSpace($body)) { $title } else { $body }
+        $args += @('--body', $issueBody)
         foreach ($label in $labels) {
             $args += @('--label', $label)
         }
@@ -1962,14 +1964,14 @@ function Invoke-ValidateCmd {
 
     switch ($role) {
         'pm' {
-            Test-Check (Test-Path (Join-Path $Script:ROOT "docs/prd/PRD-$num.md")) "PRD-$num.md exists"
+            Test-Check (Test-Path (Join-Path $Script:ROOT "docs/artifacts/prd/PRD-$num.md")) "PRD-$num.md exists"
         }
         'ux' {
             Test-Check (Test-Path (Join-Path $Script:ROOT "docs/ux/UX-$num.md")) "UX-$num.md exists"
         }
         'architect' {
-            Test-Check (Test-Path (Join-Path $Script:ROOT "docs/adr/ADR-$num.md")) "ADR-$num.md exists"
-            Test-Check (Test-Path (Join-Path $Script:ROOT "docs/specs/SPEC-$num.md")) "SPEC-$num.md exists"
+            Test-Check (Test-Path (Join-Path $Script:ROOT "docs/artifacts/adr/ADR-$num.md")) "ADR-$num.md exists"
+            Test-Check (Test-Path (Join-Path $Script:ROOT "docs/artifacts/specs/SPEC-$num.md")) "SPEC-$num.md exists"
         }
         'engineer' {
             $gitLog = & git log --oneline --grep="#$num" -1 2>$null
@@ -1983,7 +1985,7 @@ function Invoke-ValidateCmd {
             Test-Check $loopComplete "Quality loop is complete (cancelled does not satisfy this gate)"
         }
         'reviewer' {
-            Test-Check (Test-Path (Join-Path $Script:ROOT "docs/reviews/REVIEW-$num.md")) "REVIEW-$num.md exists"
+            Test-Check (Test-Path (Join-Path $Script:ROOT "docs/artifacts/reviews/REVIEW-$num.md")) "REVIEW-$num.md exists"
         }
         'devops' {
             Test-Check (Test-Path (Join-Path $Script:ROOT '.github/workflows')) 'Workflows directory exists'

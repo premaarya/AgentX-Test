@@ -25,11 +25,11 @@ $ARTIFACT_TYPES = @('prd','adr','spec','ux','code','test','review','pipeline','c
 
 # Agent -> expected deliverable paths
 $AGENT_DELIVERABLES = @{
-    'pm'        = @{ pattern = 'docs/prd/PRD-{0}.md'; type = 'prd' }
-    'architect' = @{ pattern = 'docs/adr/ADR-{0}.md'; type = 'adr' }
+    'pm'        = @{ pattern = 'docs/artifacts/prd/PRD-{0}.md'; type = 'prd' }
+    'architect' = @{ pattern = 'docs/artifacts/adr/ADR-{0}.md'; type = 'adr' }
     'ux'        = @{ pattern = 'docs/ux/UX-{0}.md'; type = 'ux' }
     'engineer'  = @{ pattern = 'src/**'; type = 'code' }
-    'reviewer'  = @{ pattern = 'docs/reviews/REVIEW-{0}.md'; type = 'review' }
+    'reviewer'  = @{ pattern = 'docs/artifacts/reviews/REVIEW-{0}.md'; type = 'review' }
     'devops'    = @{ pattern = '.github/workflows/**'; type = 'pipeline' }
     'tester'    = @{ pattern = 'docs/testing/**'; type = 'certification' }
 }

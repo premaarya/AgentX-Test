@@ -1,6 +1,2 @@
-- 2026-03-08: Do not mark coverage-specific checklist items complete unless a coverage report was actually produced; passing unit tests alone is not equivalent.
-- 2026-03-08: Do not trust `config.mode` alone for platform behavior; newer initialization flows write `integration`, which can silently force the CLI back to local mode if provider resolution is not normalized.
-- 2026-03-08: Do not claim live ADO parity from local validation unless Azure CLI and the `azure-devops` extension are actually installed; provider-aware code paths alone are not proof of operational parity.
-- 2026-03-08: Do not assume GitHub Project V2 status option labels use AgentX casing; resolve option IDs from the real project field list and support explicit override mapping when projects use custom names.
-- 2026-03-08: Do not index `[0]` on filtered mock objects in PowerShell test doubles; empty selections throw instead of returning `$null` and can hide real runtime behavior.
-- 2026-03-08: The frontmatter validator's old line-by-line regex parser silently misread folded YAML values like `description: >-`, creating false failures on valid skills.
+- 2026-03-13: After moving an entire command body into an internals module, re-read the facade file before testing; stray lines from the old body can survive a large patch even when diagnostics do not immediately surface them.
+- 2026-03-14: `gh issue create` requires `--body` in non-interactive mode; always pass `--body` with a fallback to the title when the body is empty, or `gh` exits with a cryptic "must provide --title and --body" error.

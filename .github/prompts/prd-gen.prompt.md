@@ -57,7 +57,7 @@ Explicitly list what is NOT included.
 
 ### 3. Output Format
 
-Create PRD at: `docs/prd/PRD-{{issue_number}}.md`
+Create PRD at: `docs/artifacts/prd/PRD-{{issue_number}}.md`
 
 Use template: `.github/templates/PRD-TEMPLATE.md`
 

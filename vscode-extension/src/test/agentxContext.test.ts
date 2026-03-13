@@ -350,16 +350,16 @@ describe('AgentXContext', () => {
     it('should list execution plan files relative to the workspace root', () => {
       const root = path.join(tmpBase, 'plans-root');
       fs.mkdirSync(path.join(root, 'docs', 'plans'), { recursive: true });
-      fs.mkdirSync(path.join(root, 'docs', 'adr'), { recursive: true });
+      fs.mkdirSync(path.join(root, 'docs', 'artifacts', 'adr'), { recursive: true });
       createAgentXRoot(root);
 
       fs.writeFileSync(path.join(root, 'docs', 'plans', 'alpha.md'), '# Alpha\n');
-      fs.writeFileSync(path.join(root, 'docs', 'adr', 'EXEC-PLAN-Beta.md'), '# Beta\n');
+      fs.writeFileSync(path.join(root, 'docs', 'artifacts', 'adr', 'EXEC-PLAN-Beta.md'), '# Beta\n');
       __setWorkspaceFolders([{ path: root }]);
 
       const ctx = new AgentXContext(fakeExtensionContext());
       const plans = ctx.listExecutionPlanFiles();
-      assert.deepEqual(plans, ['docs/adr/EXEC-PLAN-Beta.md', 'docs/plans/alpha.md']);
+      assert.deepEqual(plans, ['docs/artifacts/adr/EXEC-PLAN-Beta.md', 'docs/plans/alpha.md']);
     });
 
     it('should return an empty execution plan list when workspace root is missing', () => {

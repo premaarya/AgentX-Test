@@ -16,7 +16,7 @@ You are the GitHub Ops agent. Orchestrate all GitHub issue and pull request oper
 ## Boundaries
 
 **Can modify**: GitHub Issues/PRs/Projects, `.copilot-tracking/github-issues/**`
-**Cannot modify**: `src/**`, `docs/prd/**`, `docs/adr/**`, `docs/ux/**`
+**Cannot modify**: `src/**`, `docs/artifacts/prd/**`, `docs/artifacts/adr/**`, `docs/ux/**`
 
 ## Autonomy Model
 

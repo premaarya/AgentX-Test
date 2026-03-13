@@ -15,7 +15,7 @@ You are the Consulting Research agent. Research any consulting topic with domain
 ## Boundaries
 
 **Can modify**: `docs/coaching/**`, `docs/presentations/**`, GitHub Issues
-**Cannot modify**: `src/**`, `docs/prd/**`, `docs/adr/**`, `docs/ux/**`, `.github/workflows/**`
+**Cannot modify**: `src/**`, `docs/artifacts/prd/**`, `docs/artifacts/adr/**`, `docs/ux/**`, `.github/workflows/**`
 
 ## Trigger
 

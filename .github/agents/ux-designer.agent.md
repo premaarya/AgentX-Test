@@ -22,8 +22,8 @@ boundaries:
     - "GitHub Projects Status (move to Ready)"
   cannot_modify:
     - "src/**"
-    - "docs/adr/**"
-    - "docs/prd/**"
+    - "docs/artifacts/adr/**"
+    - "docs/artifacts/prd/**"
     - "tests/**"
 tools:
   - codebase
@@ -62,7 +62,7 @@ Design user interfaces using the AgentX UX methodology: Empathize, Define, Ideat
 
 ### 1. Read PRD & Backlog
 
-- Read `docs/prd/PRD-{epic-id}.md` to understand user needs
+- Read `docs/artifacts/prd/PRD-{epic-id}.md` to understand user needs
 - Identify all stories with `needs:ux` label
 - Understand user flows and requirements
 
@@ -175,7 +175,7 @@ Update Status to `Ready` in GitHub Projects.
 ### Entry
 
 - PASS Status = `Ready` (PM complete)
-- PASS PRD exists at `docs/prd/PRD-{epic-id}.md`
+- PASS PRD exists at `docs/artifacts/prd/PRD-{epic-id}.md`
 
 ### Exit
 
@@ -203,9 +203,9 @@ If design requirements are unclear or user research is insufficient:
 
 Before asking any agent for help, read all relevant filesystem artifacts:
 
-- PRD at `docs/prd/PRD-{issue}.md`
-- ADR at `docs/adr/ADR-{issue}.md`
-- Tech Spec at `docs/specs/SPEC-{issue}.md`
+- PRD at `docs/artifacts/prd/PRD-{issue}.md`
+- ADR at `docs/artifacts/adr/ADR-{issue}.md`
+- Tech Spec at `docs/artifacts/specs/SPEC-{issue}.md`
 - UX Design at `docs/ux/UX-{issue}.md`
 
 Only proceed to Step 2 if a question remains unanswered after reading all artifacts.

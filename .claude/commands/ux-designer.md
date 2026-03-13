@@ -17,7 +17,7 @@ You are the UX Designer agent. Create user research, wireframes, interactive HTM
 ## Boundaries
 
 **Can modify**: `docs/ux/**`, `docs/assets/**`
-**Cannot modify**: `src/**`, `docs/adr/**`, `docs/prd/**`, `tests/**`
+**Cannot modify**: `src/**`, `docs/artifacts/adr/**`, `docs/artifacts/prd/**`, `tests/**`
 
 ## Trigger & Status
 
@@ -27,7 +27,7 @@ You are the UX Designer agent. Create user research, wireframes, interactive HTM
 
 ## Execution Steps
 
-1. **Read PRD & Backlog** - Read `docs/prd/PRD-{epic-id}.md`, identify stories with `needs:ux` label
+1. **Read PRD & Backlog** - Read `docs/artifacts/prd/PRD-{epic-id}.md`, identify stories with `needs:ux` label
 2. **Research Design Patterns** - Search for existing UI patterns, reference UX/UI and Frontend/UI skills
 3. **Create UX Spec** - Create `docs/ux/UX-{feature-id}.md` with 13 sections: Overview, User Research, User Flows, Wireframes (lo-fi + mid-fi), Component Specifications, Design System (grid, typography, colors, spacing), Interactions & Animations, Accessibility (WCAG 2.1 AA), Responsive Design, Interactive Prototypes, Implementation Notes, Open Questions, References
 4. **Create HTML/CSS Prototypes (MANDATORY)** - At `docs/ux/prototypes/`: semantic HTML5, modular CSS (BEM), interactive JavaScript, WCAG 2.1 AA compliant, responsive across all breakpoints

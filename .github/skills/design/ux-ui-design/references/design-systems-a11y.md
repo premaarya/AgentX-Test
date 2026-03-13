@@ -66,7 +66,7 @@ Foundations Components Patterns
 | Icon buttons | `aria-label` on button, `aria-hidden` on SVG |
 | Focus trap | Cycle Tab between first/last focusable in modal |
 
-> ** Full accessibility markup & JS** -> [references/accessibility-patterns.md](references/accessibility-patterns.md)
+> ** Full accessibility markup & JS** -> [accessibility-patterns.md](accessibility-patterns.md)
 
 ---
 
@@ -97,7 +97,7 @@ Foundations Components Patterns
 - [ ] Font sizes scale appropriately (clamp or media queries)
 - [ ] Modals are full-screen on mobile
 
-> ** Full breakpoint CSS & grid code** -> [references/responsive-patterns.md](references/responsive-patterns.md)
+> ** Full breakpoint CSS & grid code** -> [responsive-patterns.md](responsive-patterns.md)
 
 ---
 
@@ -125,6 +125,6 @@ Foundations Components Patterns
 | Task 1 | 5/5 (100%) | 1m 23s | 0.4 | 4.6/5 |
 | Task 2 | 4/5 (80%) | 2m 45s | 1.2 | 3.8/5 |
 
-> ** Full test plan template** -> [references/usability-testing-template.md](references/usability-testing-template.md)
+> ** Full test plan template** -> [usability-testing-template.md](usability-testing-template.md)
 
 ---

@@ -118,8 +118,8 @@ User {
 
 ### 7. Output Format
 
-Create ADR at: `docs/adr/ADR-{{issue_number}}.md`
-Create Spec at: `docs/specs/SPEC-{{issue_number}}.md`
+Create ADR at: `docs/artifacts/adr/ADR-{{issue_number}}.md`
+Create Spec at: `docs/artifacts/specs/SPEC-{{issue_number}}.md`
 
 Use templates from `.github/templates/`
 

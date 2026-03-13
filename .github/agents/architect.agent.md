@@ -17,13 +17,13 @@ constraints:
   - "MUST document research findings with sources in the ADR Context section"
 boundaries:
   can_modify:
-    - "docs/adr/**"
-    - "docs/specs/**"
+    - "docs/artifacts/adr/**"
+    - "docs/artifacts/specs/**"
     - "docs/architecture/**"
     - "GitHub Projects Status (move to Ready)"
   cannot_modify:
     - "src/**"
-    - "docs/prd/**"
+    - "docs/artifacts/prd/**"
     - "docs/ux/**"
     - "tests/**"
 tools:
@@ -70,8 +70,8 @@ Architecture decisions are expensive to reverse. Invest heavily in research to m
 
 **Phase 1: Understand the Problem + AI Opportunity Assessment**
 
-- Read `docs/prd/PRD-{epic-id}.md` for requirements, constraints, and quality attributes
-- Search existing ADRs: `docs/adr/ADR-*.md` for established patterns and past decisions
+- Read `docs/artifacts/prd/PRD-{epic-id}.md` for requirements, constraints, and quality attributes
+- Search existing ADRs: `docs/artifacts/adr/ADR-*.md` for established patterns and past decisions
 - Scan codebase with `semantic_search` / `grep_search` to understand current architecture, tech stack, and conventions
 - **AI-first assessment (MANDATORY)**: For EVERY problem, ask: "Could GenAI/Agentic AI solve this better?" Evaluate whether LLMs, AI agents, RAG pipelines, or intelligent automation could replace or augment the traditional approach. Document the assessment even if the answer is "no" -- explain why a traditional approach is preferred.
 - Use `aitk_get_ai_model_guidance` to compare LLM capabilities, context windows, and pricing when AI solutions are viable
@@ -118,7 +118,7 @@ Architecture decisions are expensive to reverse. Invest heavily in research to m
 
 ### 2. Create ADR
 
-Create `docs/adr/ADR-{issue}.md` from template at `.github/templates/ADR-TEMPLATE.md`.
+Create `docs/artifacts/adr/ADR-{issue}.md` from template at `.github/templates/ADR-TEMPLATE.md`.
 
 **ADR structure**:
 
@@ -132,7 +132,7 @@ Create `docs/adr/ADR-{issue}.md` from template at `.github/templates/ADR-TEMPLAT
 
 ### 3. Create Tech Spec
 
-Create `docs/specs/SPEC-{issue}.md` from template at `.github/templates/SPEC-TEMPLATE.md`.
+Create `docs/artifacts/specs/SPEC-{issue}.md` from template at `.github/templates/SPEC-TEMPLATE.md`.
 
 **13 required sections**: Overview, Goals & Non-Goals, Architecture (Mermaid), Component Design, Data Model, API Design, Security, Performance, Error Handling, Monitoring, Testing Strategy, Migration Plan, Open Questions.
 
@@ -187,7 +187,7 @@ Apply to: technology choices, pattern selections, trade-off conclusions, risk as
 ### 7. Commit & Handoff
 
 ```bash
-git add docs/adr/ docs/specs/
+git add docs/artifacts/adr/ docs/artifacts/specs/
 git commit -m "arch: add ADR and spec for #{issue}"
 ```
 
@@ -197,8 +197,8 @@ Update Status to `Ready` in GitHub Projects.
 
 | Artifact | Location |
 |----------|----------|
-| ADR | `docs/adr/ADR-{issue}.md` |
-| Tech Spec | `docs/specs/SPEC-{issue}.md` |
+| ADR | `docs/artifacts/adr/ADR-{issue}.md` |
+| Tech Spec | `docs/artifacts/specs/SPEC-{issue}.md` |
 | Spike Report | `docs/architecture/SPIKE-{issue}.md` (spikes only) |
 
 ## Skills to Load
@@ -217,7 +217,7 @@ Update Status to `Ready` in GitHub Projects.
 
 ### Entry
 
-- PASS PRD exists at `docs/prd/PRD-{epic-id}.md` (or issue is spike)
+- PASS PRD exists at `docs/artifacts/prd/PRD-{epic-id}.md` (or issue is spike)
 - PASS Status = `Ready` (PM complete)
 
 ### Exit
@@ -246,9 +246,9 @@ If PRD requirements are ambiguous or technical constraints are unclear:
 
 Before asking any agent for help, read all relevant filesystem artifacts:
 
-- PRD at `docs/prd/PRD-{issue}.md`
-- ADR at `docs/adr/ADR-{issue}.md`
-- Tech Spec at `docs/specs/SPEC-{issue}.md`
+- PRD at `docs/artifacts/prd/PRD-{issue}.md`
+- ADR at `docs/artifacts/adr/ADR-{issue}.md`
+- Tech Spec at `docs/artifacts/specs/SPEC-{issue}.md`
 - UX Design at `docs/ux/UX-{issue}.md`
 
 Only proceed to Step 2 if a question remains unanswered after reading all artifacts.

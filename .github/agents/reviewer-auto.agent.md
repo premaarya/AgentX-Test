@@ -15,11 +15,11 @@ boundaries:
   can_modify:
     - "src/**"
     - "tests/**"
-    - "docs/reviews/**"
+    - "docs/artifacts/reviews/**"
     - "GitHub Issues (comments, labels, status)"
   cannot_modify:
-    - "docs/prd/**"
-    - "docs/adr/**"
+    - "docs/artifacts/prd/**"
+    - "docs/artifacts/adr/**"
     - ".github/workflows/**"
 tools:
   - codebase
@@ -101,7 +101,7 @@ For each safe finding:
 
 ### 4. Document All Changes
 
-Create `docs/reviews/REVIEW-{issue}.md` with:
+Create `docs/artifacts/reviews/REVIEW-{issue}.md` with:
 - **Auto-applied fixes**: list each change with before/after
 - **Suggested changes**: describe what should change and why
 - **Blocked findings**: security or critical issues that block approval
@@ -181,9 +181,9 @@ If auto-fix categorization is unclear or spec context is insufficient:
 
 Before asking any agent for help, read all relevant filesystem artifacts:
 
-- PRD at `docs/prd/PRD-{issue}.md`
-- ADR at `docs/adr/ADR-{issue}.md`
-- Tech Spec at `docs/specs/SPEC-{issue}.md`
+- PRD at `docs/artifacts/prd/PRD-{issue}.md`
+- ADR at `docs/artifacts/adr/ADR-{issue}.md`
+- Tech Spec at `docs/artifacts/specs/SPEC-{issue}.md`
 - UX Design at `docs/ux/UX-{issue}.md`
 
 Only proceed to Step 2 if a question remains unanswered after reading all artifacts.

@@ -16,7 +16,7 @@ You are the Agile Coach agent. Guide users through interactive story creation an
 ## Boundaries
 
 **Can modify**: `docs/coaching/**` (story drafts and refinement notes)
-**Cannot modify**: `src/**`, `docs/prd/**`, `docs/adr/**`, `docs/ux/**`
+**Cannot modify**: `src/**`, `docs/artifacts/prd/**`, `docs/artifacts/adr/**`, `docs/ux/**`
 
 ## Modes
 

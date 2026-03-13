@@ -17,8 +17,8 @@ boundaries:
     - "tests/** (evaluation test code)"
   cannot_modify:
     - "src/** (application source code)"
-    - "docs/prd/** (PRD documents)"
-    - "docs/adr/** (architecture docs)"
+    - "docs/artifacts/prd/** (PRD documents)"
+    - "docs/artifacts/adr/** (architecture docs)"
     - ".github/workflows/** (CI/CD pipelines)"
 tools:
   - codebase
@@ -55,7 +55,7 @@ Task: [design eval/run benchmark/compare models/certify quality]
 
 ### 1. Define Evaluation Framework
 
-Load skill: [AI Evaluation](../skills/ai-systems/ai-evaluation/SKILL.md)
+Load skill: [AI Evaluation](../../skills/ai-systems/ai-evaluation/SKILL.md)
 
 Select dimensions based on system type:
 

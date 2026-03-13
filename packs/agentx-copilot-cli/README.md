@@ -7,7 +7,7 @@
 | Artifact | Count | Description |
 |----------|-------|-------------|
 | Agents | 20 | 13 external + 7 internal sub-agents |
-| Skills | 64 | Production code standards across 10 categories |
+| Skills | 67 | Production code standards across 10 categories |
 | Instructions | 7 | Auto-applied coding guidelines by file pattern |
 | Prompts | 12 | Reusable prompt templates |
 | Templates | 8 | PRD, ADR, Spec, UX, Review, Security, Progress, Exec Plan |
@@ -157,7 +157,7 @@ rm -rf .agentx  # if CLI utilities were installed
 ## Version
 
 - Plugin: `agentx-copilot-cli`
-- Version: `8.2.8`
+- Version: `8.3.0`
 - Publisher: jnPiyush
 - License: MIT
 

@@ -36,7 +36,7 @@ Documenting something?
 +- Public API?
 | +- REST API -> OpenAPI/Swagger spec
 | - Library -> XML docs / docstrings on all public members
-+- Architecture decision? -> ADR (docs/adr/ADR-NNN.md)
++- Architecture decision? -> ADR (docs/artifacts/adr/ADR-NNN.md)
 +- Complex logic?
 | +- WHY it works this way -> Code comment
 | - HOW to use it -> Doc comment / docstring

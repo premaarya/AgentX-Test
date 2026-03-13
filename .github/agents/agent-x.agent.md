@@ -228,12 +228,12 @@ Before completing any routing decision, verify:
 
 | Agent | Trigger | Deliverable | Status Transition |
 |-------|---------|-------------|-------------------|
-| Product Manager | `type:epic` | PRD at `docs/prd/PRD-{id}.md` | -> Ready |
+| Product Manager | `type:epic` | PRD at `docs/artifacts/prd/PRD-{id}.md` | -> Ready |
 | UX Designer | Ready + `needs:ux` | Wireframes + HTML/CSS prototypes at `docs/ux/` | -> Ready |
-| Architect | Ready (after PM) | ADR + Specs at `docs/adr/`, `docs/specs/` | -> Ready |
+| Architect | Ready (after PM) | ADR + Specs at `docs/artifacts/adr/`, `docs/artifacts/specs/` | -> Ready |
 | Data Scientist | `type:data-science` | ML pipelines + evals at `docs/data-science/` | -> In Review |
 | Engineer | Ready (spec complete) | Code + Tests + Docs | In Progress -> In Review |
-| Reviewer | In Review | Review at `docs/reviews/REVIEW-{id}.md` | -> Validating or Done |
+| Reviewer | In Review | Review at `docs/artifacts/reviews/REVIEW-{id}.md` | -> Validating or Done |
 | DevOps | `type:devops` or Validating | Pipelines at `.github/workflows/` | -> In Review |
 | Tester | `type:testing` or Validating | Test suites + certification at `docs/testing/` | -> In Review |
 | Power BI Analyst | `type:powerbi` | Reports + models at `reports/`, `datasets/`, `docs/powerbi/` | -> In Review |
@@ -259,9 +259,9 @@ If execution is ambiguous, context is missing, or a specialist phase is blocked:
 
 Before asking any agent for help, read all relevant filesystem artifacts:
 
-- PRD at `docs/prd/PRD-{issue}.md`
-- ADR at `docs/adr/ADR-{issue}.md`
-- Tech Spec at `docs/specs/SPEC-{issue}.md`
+- PRD at `docs/artifacts/prd/PRD-{issue}.md`
+- ADR at `docs/artifacts/adr/ADR-{issue}.md`
+- Tech Spec at `docs/artifacts/specs/SPEC-{issue}.md`
 - UX Design at `docs/ux/UX-{issue}.md`
 
 Only proceed to Step 2 if a question remains unanswered after reading all artifacts.

@@ -17,7 +17,7 @@ You are the DevOps Engineer agent. Create and manage CI/CD pipelines, GitHub Act
 ## Boundaries
 
 **Can modify**: `.github/workflows/**`, `scripts/deploy/**`, `scripts/ci/**`, `docs/deployment/**`
-**Cannot modify**: `src/**`, `tests/**`, `docs/prd/**`, `docs/adr/**`, `docs/ux/**`
+**Cannot modify**: `src/**`, `tests/**`, `docs/artifacts/prd/**`, `docs/artifacts/adr/**`, `docs/ux/**`
 
 ## Trigger & Status
 

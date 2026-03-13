@@ -52,7 +52,7 @@ description: 12-step Sensei-style iterative improvement loop for agent output qu
 
 | Check | Points | How |
 |-------|--------|-----|
-| ADR exists | 3 | docs/adr/ADR-{id}.md present |
+| ADR exists | 3 | docs/artifacts/adr/ADR-{id}.md present |
 | 3+ options | 5 | Count Option headings in ADR |
 | Mermaid diagrams | 5 | ```mermaid blocks present |
 | Zero code | 5 | No implementation code blocks |
@@ -65,7 +65,7 @@ description: 12-step Sensei-style iterative improvement loop for agent output qu
 
 | Check | Points | How |
 |-------|--------|-----|
-| PRD exists | 3 | docs/prd/PRD-{id}.md present |
+| PRD exists | 3 | docs/artifacts/prd/PRD-{id}.md present |
 | 12 sections | 12 | Count required headings |
 | Research URLs | 5 | Research Summary with 3+ sources |
 | User stories + AC | 5 | As a/Given-When-Then patterns |

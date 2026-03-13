@@ -21,7 +21,7 @@ describe('agent-native review', () => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentx-agent-review-'));
     writeFile(tmpDir, workflowGuidePath, '# Knowledge And Review Workflows\n');
     writeFile(tmpDir, '.github/templates/REVIEW-TEMPLATE.md', '# Review\n');
-    writeFile(tmpDir, 'docs/learnings/LEARNING-165.md', '# Learning\n');
+    writeFile(tmpDir, 'docs/artifacts/learnings/LEARNING-165.md', '# Learning\n');
     writeFile(tmpDir, 'vscode-extension/package.json', JSON.stringify({
       contributes: {
         commands: [
@@ -55,7 +55,7 @@ describe('agent-native review', () => {
       'getPendingClarification',
       'listExecutionPlanFiles',
       'getStatePath',
-      'docs/learnings',
+      'docs/artifacts/learnings',
     ].join('\n'));
   });
 

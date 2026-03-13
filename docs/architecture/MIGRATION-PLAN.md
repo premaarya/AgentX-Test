@@ -447,7 +447,7 @@ applyTo: '**'
 - [To be populated as agents learn]
 
 ## Architecture Decisions
-- [Reference docs/adr/ for formal decisions]
+- [Reference docs/artifacts/adr/ for formal decisions]
 ```
 
 How it reaches each platform -- same pattern as `memory.instructions.md` (GAP-18):
@@ -481,7 +481,7 @@ next step -- it controls the sequence itself.
 Human -> @agentx -> [Agent X session - active hub]
                          |
     1. runSubagent("Product Manager", ...)   -> PRD written to disk -> returns
-       [GATE: verify docs/prd/PRD-{issue}.md exists and is complete]
+       [GATE: verify docs/artifacts/prd/PRD-{issue}.md exists and is complete]
                          |
     2. runSubagent("Architect")    ]
        runSubagent("UX Designer")  ]-- parallel: one AI step, three spawns
@@ -549,11 +549,11 @@ Copilot path (the CLI path keeps its existing loop gate):
 
 | Transition | Artifact Agent X must verify before spawning |
 |-----------|---------------------------------------------|
-| PM -> Architect / UX / DS | `docs/prd/PRD-{issue}.md` exists with all required sections |
+| PM -> Architect / UX / DS | `docs/artifacts/prd/PRD-{issue}.md` exists with all required sections |
 | UX -> Engineer | `docs/ux/UX-{issue}.md` exists; prototype file(s) exist under `docs/ux/prototypes/` |
-| Architect -> Engineer | `docs/adr/ADR-{issue}.md` exists; `docs/specs/SPEC-{issue}.md` exists |
+| Architect -> Engineer | `docs/artifacts/adr/ADR-{issue}.md` exists; `docs/artifacts/specs/SPEC-{issue}.md` exists |
 | Engineer -> Reviewer | Loop state = `complete` (CLI gate); code committed with issue reference |
-| Reviewer -> DevOps / Tester | `docs/reviews/REVIEW-{issue}.md` exists with explicit approval decision |
+| Reviewer -> DevOps / Tester | `docs/artifacts/reviews/REVIEW-{issue}.md` exists with explicit approval decision |
 
 If an artifact is missing or incomplete, Agent X does NOT silently proceed. It
 either asks the responsible sub-agent to finish it or surfaces the gap to the user.
@@ -570,7 +570,7 @@ hub -- the human decides when to move from PM to Architect to Engineer:
 
 ```
 Human --> @agentx /product-manager  [PM session]
-           PM writes PRD to disk (docs/prd/PRD-N.md) -- session ends
+           PM writes PRD to disk (docs/artifacts/prd/PRD-N.md) -- session ends
 Human --> @agentx /architect        [Architect session -- FRESH, no PM context]
            Architect reads PRD from disk
            Still has a question the PRD didn't cover?
@@ -582,8 +582,8 @@ Human --> @agentx /engineer         [Engineer session]
 ```
 
 **Key difference**: In Mode 2, each agent session starts fresh with no shared
-conversation history. Context is passed via the filesystem (docs/prd/, docs/adr/,
-docs/specs/) -- NOT through the previous session's messages. If a question remains
+conversation history. Context is passed via the filesystem (docs/artifacts/prd/, docs/artifacts/adr/,
+docs/artifacts/specs/) -- NOT through the previous session's messages. If a question remains
 unanswered after reading all artifacts, the agent reaches the target directly via
 `runSubagent` with explicit context in the prompt.
 
@@ -629,9 +629,9 @@ clarification summary to `.agentx/state/clarifications/issue-N.md` manually.
 
 ### Step 1: Read Artifacts First (MANDATORY)
 Before asking any agent, read all relevant filesystem artifacts:
-- PRD at `docs/prd/PRD-{issue}.md`
-- ADR at `docs/adr/ADR-{issue}.md`
-- Tech Spec at `docs/specs/SPEC-{issue}.md`
+- PRD at `docs/artifacts/prd/PRD-{issue}.md`
+- ADR at `docs/artifacts/adr/ADR-{issue}.md`
+- Tech Spec at `docs/artifacts/specs/SPEC-{issue}.md`
 - UX Design at `docs/ux/UX-{issue}.md`
 
 Only proceed to Step 2 if a question remains unanswered after reading.

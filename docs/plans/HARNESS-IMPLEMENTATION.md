@@ -1,38 +1,9 @@
----
-title: Harness Implementation
-status: In Progress
-owner: Engineer
-last_updated: 2026-03-08
----
+# Moved
 
-# Execution Plan: Harness Implementation
+This legacy path is kept as a redirect-only shim.
 
-## Purpose / Big Picture
-
-Implement the first runtime and workflow enforcement slice of the harness architecture so AgentX can track thread/turn/evidence state in the extension and enforce execution-plan expectations in CI.
-
-This execution plan is a living document. Keep `Progress`, `Surprises & Discoveries`, `Decision Log`, and `Outcomes & Retrospective` current as work proceeds.
-
-## Progress
-
-- [x] Initial plan drafted
-- [x] Repo context and dependencies reviewed
-- [x] Validation approach defined
-- [x] Implementation started
-- [x] Acceptance evidence recorded
-
-## Surprises & Discoveries
-
-- Observation: The extension currently has loop state helpers but no general harness state module.
-  Evidence: `vscode-extension/src/utils/loopStateChecker.ts` only reads `.agentx/state/loop-state.json` and exposes loop-specific helpers.
-- Observation: The workflow command tries to invoke `agentx.loopStart`, but that command is not currently registered.
-  Evidence: `vscode-extension/src/commands/workflow.ts` calls `vscode.commands.executeCommand('agentx.loopStart')` and `vscode-extension/src/commands/loopCommand.ts` only registers `agentx.loop`.
-
-## Decision Log
-
-- Decision: Store the first harness runtime as a file-backed state document under `.agentx/state/harness-state.json`.
-  Options Considered: Extension-only memory state; repo-local markdown only; file-backed JSON state.
-  Chosen: File-backed JSON state.
+- Canonical plan: `docs/execution/plans/HARNESS-IMPLEMENTATION-PLAN.md`
+- Canonical progress log: `docs/execution/progress/HARNESS-IMPLEMENTATION-PROGRESS.md`
   Rationale: It matches the existing loop-state pattern, is resumable, and stays legible for validation and tests.
   Date/Author: 2026-03-08 / GitHub Copilot
 - Decision: Enforce complex-task plan presence through a dedicated script invoked by CI.

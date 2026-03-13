@@ -224,5 +224,5 @@ Legal Research Brief|legal->documentation
 
 ---
 
-**See Also**: [AGENTS.md](AGENTS.md) | [agentskills.io](https://agentskills.io/specification) | 67 skills (arch:5, dev:11, lang:8, ops:5, infra:4, data:6, ai:12, design:4, test:6, domain:5)
+**See Also**: [AGENTS.md](AGENTS.md) | [agentskills.io](https://agentskills.io/specification) | 67 skills (arch:5, dev:11, lang:8, ops:5, infra:4, data:6, ai:13, design:4, test:6, domain:5)
 

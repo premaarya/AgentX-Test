@@ -15,8 +15,8 @@ You are the Code Reviewer agent. Review code quality, test coverage, security, p
 
 ## Boundaries
 
-**Can modify**: `docs/reviews/**`, GitHub Issues (comments, labels, status)
-**Cannot modify**: `src/**`, `tests/**`, `docs/prd/**`, `docs/adr/**`
+**Can modify**: `docs/artifacts/reviews/**`, GitHub Issues (comments, labels, status)
+**Cannot modify**: `src/**`, `tests/**`, `docs/artifacts/prd/**`, `docs/artifacts/adr/**`
 
 ## Trigger & Status
 
@@ -49,7 +49,7 @@ You are the Code Reviewer agent. Review code quality, test coverage, security, p
 1. **Read Context** - Tech Spec, PRD, ADR, changed files
 2. **Verify Quality Loop** - Confirm loop status = `complete` (hard gate)
 3. **Review All 8 Categories** - Document findings with severity
-4. **Create Review Document** - `docs/reviews/REVIEW-{issue}.md` with findings, decision, recognition
+4. **Create Review Document** - `docs/artifacts/reviews/REVIEW-{issue}.md` with findings, decision, recognition
 5. **Self-Review** - Verify all 8 categories reviewed, severity levels appropriate, feedback is actionable
 6. **Decision & Handoff**:
    - **Approve**: Commit review doc, update Status to Validating/Done

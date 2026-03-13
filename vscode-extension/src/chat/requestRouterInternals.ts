@@ -1,0 +1,445 @@
+import * as vscode from 'vscode';
+import { AgentXContext } from '../agentxContext';
+import {
+  getLearningCaptureTarget,
+  getDefaultLearningsQuery,
+  rankLearnings,
+  renderBrainstormGuidanceMarkdown,
+  renderCompoundLoopMarkdown,
+  renderCaptureGuidanceMarkdown,
+  renderRankedLearningsMarkdown,
+} from '../utils/learnings';
+import {
+  evaluateAgentNativeReview,
+  renderAgentNativeReviewMarkdown,
+} from '../review/agent-native-review';
+import {
+  loadReviewFindingRecords,
+  promoteReviewFinding,
+  renderReviewFindingsMarkdown,
+} from '../review/review-findings';
+import { stripAnsi } from '../utils/stripAnsi';
+
+const CHAT_OUTPUT_CHANNEL_NAME = 'AgentX Chat';
+const CHAT_OUTPUT_INLINE_LIMIT = 4000;
+const CHAT_OUTPUT_PREVIEW_LINES = 8;
+const LIVE_STATUS_PATTERN = /\[(?:COMPACTION|CLARIFY(?: RESPONSE| DETAIL| \d+\/\d+)?|SELF-REVIEW|MODEL FALLBACK|LOOP WARNING|CIRCUIT BREAKER|TOOL ERROR|BOUNDARY BLOCKED|FAIL|WARN|PASS|HUMAN ESCALATION|HUMAN REQUIRED|HUMAN RESPONSE|HUMAN REQUIRED SESSION)\]|^\s*Iteration \d+\/\d+|^\s*Tool:/i;
+const HUMAN_REQUIRED_SESSION_PATTERN = /\[HUMAN REQUIRED SESSION\]\s+(.+)$/i;
+
+export type PendingClarification = NonNullable<
+  Awaited<ReturnType<AgentXContext['getPendingClarification']>>
+>;
+
+let chatOutputChannel: vscode.OutputChannel | undefined;
+
+export function resetChatRouterInternalStateForTests(): void {
+  chatOutputChannel = undefined;
+}
+
+export async function runAgentCommand(
+  response: vscode.ChatResponseStream,
+  agentx: AgentXContext,
+  agentName: string,
+  task: string,
+): Promise<vscode.ChatResult> {
+  try {
+    response.progress(`Running ${agentName} agent...`);
+    let pendingSessionId = '';
+    const output = await agentx.runCliStreaming(
+      'run',
+      [agentName, `"${task.replace(/"/g, '\\"')}"`],
+      (line) => {
+        const normalized = normalizeCliLine(line);
+        const sessionMatch = normalized.match(HUMAN_REQUIRED_SESSION_PATTERN);
+        if (sessionMatch) {
+          pendingSessionId = sessionMatch[1].trim();
+        }
+        if (normalized && shouldSurfaceCliLine(normalized)) {
+          response.progress(normalized);
+        }
+      },
+      { AGENTX_NONINTERACTIVE_HUMAN: '1' },
+    );
+
+    writeOutputToChannel(`AgentX Chat Run: ${agentName}`, output);
+
+    if (pendingSessionId) {
+      await updatePendingClarification(agentx, {
+        sessionId: pendingSessionId,
+        agentName,
+        prompt: task,
+        humanPrompt: stripAnsi(output),
+      });
+      response.markdown(`${formatOutputPreview(output)}\n\n${buildContinueGuidance(agentName)}`);
+      return {};
+    }
+
+    await clearPendingClarification(agentx);
+    response.markdown(formatOutputPreview(output));
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    response.markdown(`**AgentX error:** ${msg}`);
+  }
+
+  return {};
+}
+
+export async function resumePendingClarification(
+  response: vscode.ChatResponseStream,
+  agentx: AgentXContext,
+  pending: PendingClarification,
+  guidance: string,
+): Promise<vscode.ChatResult> {
+  try {
+    response.progress(`Resuming ${pending.agentName} agent...`);
+    let nextPendingSessionId = '';
+    const output = await agentx.runCliStreaming(
+      'run',
+      [
+        '--resume-session', pending.sessionId,
+        '--clarification-response', `"${guidance.replace(/"/g, '\\"')}"`,
+      ],
+      (line) => {
+        const normalized = normalizeCliLine(line);
+        const sessionMatch = normalized.match(HUMAN_REQUIRED_SESSION_PATTERN);
+        if (sessionMatch) {
+          nextPendingSessionId = sessionMatch[1].trim();
+        }
+        if (normalized && shouldSurfaceCliLine(normalized)) {
+          response.progress(normalized);
+        }
+      },
+      { AGENTX_NONINTERACTIVE_HUMAN: '1' },
+    );
+
+    writeOutputToChannel(`AgentX Chat Resume: ${pending.agentName}`, output);
+
+    if (nextPendingSessionId) {
+      await updatePendingClarification(agentx, {
+        sessionId: nextPendingSessionId,
+        agentName: pending.agentName,
+        prompt: pending.prompt,
+        humanPrompt: stripAnsi(output),
+      });
+      response.markdown(`${formatOutputPreview(output)}\n\n${buildContinueGuidance(pending.agentName)}`);
+      return {};
+    }
+
+    await clearPendingClarification(agentx);
+    response.markdown(formatOutputPreview(output));
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    response.markdown(`**AgentX error:** ${msg}`);
+  }
+
+  return {};
+}
+
+export async function getPendingClarification(
+  agentx: AgentXContext,
+): Promise<PendingClarification | undefined> {
+  return typeof agentx.getPendingClarification === 'function'
+    ? await agentx.getPendingClarification()
+    : undefined;
+}
+
+export function buildPendingClarificationMessage(
+  pending: { agentName: string; prompt: string; humanPrompt?: string },
+): string {
+  const lines = [
+    `**Pending clarification for ${pending.agentName}**`,
+    '',
+  ];
+
+  if (pending.humanPrompt) {
+    lines.push(pending.humanPrompt, '');
+  }
+
+  lines.push(
+    `Original task: ${pending.prompt}`,
+    '',
+    'Reply in plain language with the guidance you want AgentX to use. You can also still use `@agentx continue "..."` explicitly.',
+  );
+
+  return lines.join('\n');
+}
+
+export function renderUsageGuidance(): string {
+  return (
+    '**AgentX** - Multi-Agent Orchestration\n\n'
+    + 'Usage:\n'
+    + '- `@agentx run engineer "implement the health endpoint for issue #42"`\n'
+    + '- `@agentx continue "use the existing auth flow and keep refresh tokens"`\n'
+    + '- `@agentx brainstorm auth rollout constraints`\n'
+    + '- `@agentx learnings planning`\n'
+    + '- `@agentx learnings review auth workflow`\n'
+    + '- `@agentx compound`\n'
+    + '- `@agentx create learning capture`\n'
+    + '- `@agentx capture guidance`\n'
+    + '- `@agentx agent-native review`\n'
+    + '- `@agentx review findings`\n'
+    + '- `@agentx promote finding FINDING-164-001`\n'
+    + '- `@agentx run architect "design the auth system"`\n'
+    + '- `@agentx run reviewer "review the changes in issue #42"`\n\n'
+    + 'During execution, live status updates for compaction, clarification, loop progress, tool activity, and self-review are streamed into chat.'
+  );
+}
+
+export function buildContinueGuidance(agentName: string): string {
+  return `Clarification is waiting for your input for the ${agentName} agent. Continue with:\n\n- \`@agentx continue "your guidance here"\``;
+}
+
+export async function tryHandleClarificationStatusRequest(
+  userText: string,
+  response: vscode.ChatResponseStream,
+  pending: PendingClarification | undefined,
+): Promise<vscode.ChatResult | undefined> {
+  if (!/^(clarification status|pending clarification)$/i.test(userText)) {
+    return undefined;
+  }
+
+  if (!pending) {
+    response.markdown('There is no pending clarification right now.');
+    return {};
+  }
+
+  response.markdown(buildPendingClarificationMessage(pending));
+  return {};
+}
+
+export async function tryHandleContinueRequest(
+  userText: string,
+  response: vscode.ChatResponseStream,
+  agentx: AgentXContext,
+  pending: PendingClarification | undefined,
+): Promise<vscode.ChatResult | undefined> {
+  const continueMatch = userText.match(/^continue(?:\s+(.+))?$/is);
+  if (!continueMatch) {
+    return undefined;
+  }
+
+  if (!pending) {
+    response.markdown('There is no pending clarification to continue. Start a run first.');
+    return {};
+  }
+
+  const guidance = continueMatch[1]?.trim();
+  if (!guidance) {
+    response.markdown(buildPendingClarificationMessage(pending));
+    return {};
+  }
+
+  return resumePendingClarification(response, agentx, pending, guidance);
+}
+
+export async function tryHandleLearningsRequest(
+  userText: string,
+  response: vscode.ChatResponseStream,
+  workspaceRoot: string | undefined,
+): Promise<vscode.ChatResult | undefined> {
+  const learningsMatch = userText.match(/^learnings\s+(planning|plan|review)(?:\s+(.+))?$/is);
+  if (!learningsMatch) {
+    return undefined;
+  }
+
+  const intent = /review/i.test(learningsMatch[1]) ? 'review' : 'planning';
+  const resolvedQuery = workspaceRoot
+    ? (learningsMatch[2]?.trim() || getDefaultLearningsQuery(workspaceRoot, intent))
+    : (learningsMatch[2]?.trim() || '');
+  const results = workspaceRoot ? rankLearnings(workspaceRoot, intent, resolvedQuery) : [];
+  response.markdown(renderRankedLearningsMarkdown(intent, results, resolvedQuery));
+  return {};
+}
+
+export async function tryHandleBrainstormRequest(
+  userText: string,
+  response: vscode.ChatResponseStream,
+  workspaceRoot: string | undefined,
+): Promise<vscode.ChatResult | undefined> {
+  const brainstormMatch = userText.match(/^(?:ce:)?brainstorm(?:\s+(.+))?$/is);
+  if (!brainstormMatch) {
+    return undefined;
+  }
+
+  if (!workspaceRoot) {
+    response.markdown('No workspace is open, so AgentX cannot brainstorm against repo context.');
+    return {};
+  }
+
+  const resolvedQuery = brainstormMatch[1]?.trim() || getDefaultLearningsQuery(workspaceRoot, 'planning');
+  const results = rankLearnings(workspaceRoot, 'planning', resolvedQuery);
+  response.markdown(renderBrainstormGuidanceMarkdown(workspaceRoot, resolvedQuery, results));
+  return {};
+}
+
+export async function tryHandleCaptureGuidanceRequest(
+  userText: string,
+  response: vscode.ChatResponseStream,
+  workspaceRoot: string | undefined,
+): Promise<vscode.ChatResult | undefined> {
+  if (!/^(capture guidance|knowledge capture|capture)$/i.test(userText)) {
+    return undefined;
+  }
+
+  response.markdown(renderCaptureGuidanceMarkdown(workspaceRoot));
+  return {};
+}
+
+export async function tryHandleCompoundRequest(
+  userText: string,
+  response: vscode.ChatResponseStream,
+  workspaceRoot: string | undefined,
+): Promise<vscode.ChatResult | undefined> {
+  if (!/^(?:ce:)?compound(?:\s+loop)?$/i.test(userText)) {
+    return undefined;
+  }
+
+  response.markdown(workspaceRoot
+    ? renderCompoundLoopMarkdown(workspaceRoot)
+    : 'No workspace is open, so AgentX cannot evaluate the compound loop.');
+  return {};
+}
+
+export async function tryHandleCreateLearningCaptureRequest(
+  userText: string,
+  response: vscode.ChatResponseStream,
+  workspaceRoot: string | undefined,
+): Promise<vscode.ChatResult | undefined> {
+  if (!/^(capture learning|create learning capture|scaffold learning)$/i.test(userText)) {
+    return undefined;
+  }
+
+  if (!workspaceRoot) {
+    response.markdown('No workspace is open, so AgentX cannot create a learning capture file.');
+    return {};
+  }
+
+  await vscode.commands.executeCommand('agentx.createLearningCapture');
+  const target = getLearningCaptureTarget(workspaceRoot);
+  response.markdown(
+    `Opened a learning capture artifact for ${target?.issueNumber ? `issue #${target.issueNumber}` : 'the current context'}.`,
+  );
+  return {};
+}
+
+export async function tryHandleAgentNativeReviewRequest(
+  userText: string,
+  response: vscode.ChatResponseStream,
+  agentx: AgentXContext,
+): Promise<vscode.ChatResult | undefined> {
+  if (!/^(agent-native review|parity review|agent parity)$/i.test(userText)) {
+    return undefined;
+  }
+
+  const report = evaluateAgentNativeReview(agentx);
+  response.markdown(report
+    ? renderAgentNativeReviewMarkdown(report)
+    : 'No workspace is open, so AgentX cannot evaluate agent-native review parity.');
+  return {};
+}
+
+export async function tryHandleReviewFindingsRequest(
+  userText: string,
+  response: vscode.ChatResponseStream,
+  workspaceRoot: string | undefined,
+): Promise<vscode.ChatResult | undefined> {
+  if (!/^(review findings|findings review|durable findings)$/i.test(userText)) {
+    return undefined;
+  }
+
+  const records = workspaceRoot ? loadReviewFindingRecords(workspaceRoot) : [];
+  response.markdown(renderReviewFindingsMarkdown(records));
+  return {};
+}
+
+export async function tryHandlePromoteFindingRequest(
+  userText: string,
+  response: vscode.ChatResponseStream,
+  agentx: AgentXContext,
+): Promise<vscode.ChatResult | undefined> {
+  const promoteFindingMatch = userText.match(/^promote finding\s+([A-Za-z0-9-]+)$/i);
+  if (!promoteFindingMatch) {
+    return undefined;
+  }
+
+  try {
+    const result = await promoteReviewFinding(agentx, promoteFindingMatch[1]);
+    response.markdown(`Promoted ${result.finding.id} as issue #${result.issueNumber}.`);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    response.markdown(`**AgentX error:** ${message}`);
+  }
+
+  return {};
+}
+
+function normalizeCliLine(line: string): string {
+  return stripAnsi(line).trim();
+}
+
+function shouldSurfaceCliLine(line: string): boolean {
+  return LIVE_STATUS_PATTERN.test(line);
+}
+
+function getChatOutputChannel(): vscode.OutputChannel {
+  if (!chatOutputChannel) {
+    chatOutputChannel = vscode.window.createOutputChannel(CHAT_OUTPUT_CHANNEL_NAME);
+  }
+  return chatOutputChannel;
+}
+
+function formatOutputPreview(output: string): string {
+  const normalized = stripAnsi(output).trim();
+  if (!normalized) {
+    return 'No output was produced.';
+  }
+
+  if (normalized.length <= CHAT_OUTPUT_INLINE_LIMIT) {
+    return normalized;
+  }
+
+  const lines = normalized.split(/\r?\n/);
+  const head = lines.slice(0, CHAT_OUTPUT_PREVIEW_LINES);
+  const tail = lines.slice(-CHAT_OUTPUT_PREVIEW_LINES);
+  const previewLines = [...head];
+
+  if (lines.length > CHAT_OUTPUT_PREVIEW_LINES * 2) {
+    previewLines.push(`... (${lines.length - (CHAT_OUTPUT_PREVIEW_LINES * 2)} lines omitted) ...`);
+  }
+
+  if (lines.length > CHAT_OUTPUT_PREVIEW_LINES) {
+    previewLines.push(...tail);
+  }
+
+  return [
+    `Large output detected (${lines.length} lines, ${normalized.length} chars). Full output was written to the **${CHAT_OUTPUT_CHANNEL_NAME}** output channel.`,
+    '',
+    'Preview:',
+    '```text',
+    previewLines.join('\n'),
+    '```',
+  ].join('\n');
+}
+
+function writeOutputToChannel(title: string, output: string): void {
+  const channel = getChatOutputChannel();
+  channel.clear();
+  channel.appendLine(title);
+  channel.appendLine('');
+  channel.appendLine(stripAnsi(output));
+}
+
+async function updatePendingClarification(
+  agentx: AgentXContext,
+  pending: { sessionId: string; agentName: string; prompt: string; humanPrompt?: string },
+): Promise<void> {
+  if (typeof agentx.setPendingClarification === 'function') {
+    await agentx.setPendingClarification(pending);
+  }
+}
+
+async function clearPendingClarification(agentx: AgentXContext): Promise<void> {
+  if (typeof agentx.clearPendingClarification === 'function') {
+    await agentx.clearPendingClarification();
+  }
+}

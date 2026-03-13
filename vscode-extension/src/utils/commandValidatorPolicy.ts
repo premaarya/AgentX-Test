@@ -1,0 +1,82 @@
+import type { Reversibility } from './commandValidatorTypes';
+
+export const DEFAULT_ALLOWLIST: readonly string[] = [
+  'git status', 'git diff', 'git log', 'git branch', 'git show',
+  'git stash', 'git remote', 'git fetch', 'git ls-files',
+  'ls', 'dir', 'cat', 'type', 'head', 'tail', 'wc', 'find', 'grep',
+  'rg', 'ripgrep', 'fd',
+  'echo', 'printf', 'pwd', 'cd', 'which', 'where', 'whoami',
+  'hostname', 'date', 'env', 'printenv',
+  'npm run', 'npm test', 'npm list', 'npm ls', 'npm outdated',
+  'npm audit', 'npm ci', 'npm version', 'npm view', 'npm info',
+  'npm help', 'npm search',
+  'node --version', 'node -v', 'npx --version',
+  'bun --version', 'deno --version',
+  'python --version', 'python -V', 'python3 --version', 'python3 -V',
+  'pip list', 'pip show', 'pip check', 'pip freeze',
+  'pip3 list', 'pip3 show', 'pip3 check', 'pip3 freeze',
+  'pipenv run', 'poetry run', 'poetry show',
+  'dotnet build', 'dotnet test', 'dotnet run', 'dotnet restore',
+  'dotnet clean', 'dotnet --version', 'dotnet --list-sdks',
+  'dotnet --list-runtimes', 'dotnet --info',
+  'nuget list', 'nuget sources',
+  'tsc', 'eslint', 'prettier', 'jest', 'vitest', 'mocha', 'pytest',
+  'cargo build', 'cargo test', 'cargo check', 'cargo clippy',
+  'rustc --version', 'go build', 'go test', 'go vet', 'go version',
+  'make', 'cmake', 'ninja',
+  'docker ps', 'docker images', 'docker inspect', 'docker logs',
+  'docker version', 'docker info', 'docker compose ps',
+  'kubectl get', 'kubectl describe', 'kubectl logs',
+  'kubectl version', 'kubectl config',
+  'curl --version', 'wget --version',
+] as const;
+
+export const BLOCKED_PATTERNS: readonly RegExp[] = [
+  /\brm\s+-rf\s+\//i,
+  /\bformat\s+c:/i,
+  /\bdrop\s+database\b/i,
+  /\bgit\s+reset\s+--hard\b/i,
+  /:\(\)\s*\{\s*:\|:&\s*\};:/,
+  /bash\s+-i\s*>&\s*\/dev\/tcp\//i,
+  /nc\s+.*-e\s+\/bin\/(ba)?sh/i,
+  /python[23]?\s+.*socket.*exec/i,
+  /\bdd\s+if=\/dev\/zero\b/i,
+  /\bdd\s+if=\/dev\/random\b/i,
+  /\bmkfs\./i,
+  /\bshred\s+.*\/dev\//i,
+  /\b(curl|wget)\b.*\|\s*\b(ba)?sh\b/i,
+  /\b(curl|wget)\b.*\|\s*\bpython[23]?\b/i,
+  /\bbase64\s+.*--decode\b.*\|\s*\b(ba)?sh\b/i,
+  /echo\s+.*\|\s*base64\s+.*\|\s*\b(ba)?sh\b/i,
+  /\b(shutdown|reboot|halt)\b/i,
+  /\binit\s+0\b/i,
+  /\bsystemctl\s+(poweroff|reboot|halt)\b/i,
+  /\bchmod\s+(-R\s+)?777\s+\//i,
+  /\bTRUNCATE\s+TABLE\b/i,
+  /\bDROP\s+TABLE\b/i,
+  /\bgit\s+push\s+.*--force\b/i,
+  /\bgit\s+push\s+.*-f\b/i,
+] as const;
+
+export interface ReversibilityEntry {
+  readonly pattern: RegExp;
+  readonly reversibility: Reversibility;
+  readonly undoHint: string;
+}
+
+export const REVERSIBILITY_TABLE: readonly ReversibilityEntry[] = [
+  { pattern: /\bgit\s+checkout\b/i, reversibility: 'easy', undoHint: 'git checkout <previous-branch-or-commit>' },
+  { pattern: /\bgit\s+stash\s+pop\b/i, reversibility: 'easy', undoHint: 'git stash (to re-stash the changes)' },
+  { pattern: /\bgit\s+commit\b/i, reversibility: 'easy', undoHint: 'git reset HEAD~1 (to undo the last commit)' },
+  { pattern: /\bgit\s+merge\b/i, reversibility: 'easy', undoHint: 'git merge --abort or git reset --merge' },
+  { pattern: /\bmv\b/i, reversibility: 'easy', undoHint: 'Move the file back with mv <dest> <src>' },
+  { pattern: /\bcp\b/i, reversibility: 'easy', undoHint: 'Delete the copy with rm <destination>' },
+  { pattern: /\brm\s+-[rRf]{1,3}\b/i, reversibility: 'irreversible', undoHint: 'No undo -- ensure files are backed up first' },
+  { pattern: /\bgit\s+push\b/i, reversibility: 'irreversible', undoHint: 'Already pushed to remote; contact repo admin to revert' },
+  { pattern: /\bDROP\b/i, reversibility: 'irreversible', undoHint: 'No undo for DROP; restore from database backup' },
+  { pattern: /\bTRUNCATE\b/i, reversibility: 'irreversible', undoHint: 'No undo for TRUNCATE; restore from database backup' },
+  { pattern: /\brm\b/i, reversibility: 'effort', undoHint: 'Restore from backup or trash (if available)' },
+  { pattern: /\bnpm\s+install\b/i, reversibility: 'effort', undoHint: 'npm uninstall <pkg> or restore package.json' },
+  { pattern: /\byarn\s+add\b/i, reversibility: 'effort', undoHint: 'yarn remove <pkg>' },
+  { pattern: /\bpip\s+install\b/i, reversibility: 'effort', undoHint: 'pip uninstall <pkg>' },
+] as const;

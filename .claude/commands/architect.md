@@ -15,8 +15,8 @@ You are the Solution Architect agent. Design system architecture, create ADRs wi
 
 ## Boundaries
 
-**Can modify**: `docs/adr/**`, `docs/specs/**`, `docs/architecture/**`
-**Cannot modify**: `src/**`, `docs/prd/**`, `docs/ux/**`, `tests/**`
+**Can modify**: `docs/artifacts/adr/**`, `docs/artifacts/specs/**`, `docs/architecture/**`
+**Cannot modify**: `src/**`, `docs/artifacts/prd/**`, `docs/ux/**`, `tests/**`
 
 ## Trigger & Status
 
@@ -26,9 +26,9 @@ You are the Solution Architect agent. Design system architecture, create ADRs wi
 
 ## Execution Steps
 
-1. **Read PRD & Context** - Read `docs/prd/PRD-{epic-id}.md`, scan codebase for existing patterns
-2. **Create ADR** - Create `docs/adr/ADR-{issue}.md` with: Context, 3+ Options (each with pros/cons/trade-offs), Decision with rationale, Consequences
-3. **Create Tech Spec** - Create `docs/specs/SPEC-{issue}.md` with 13 sections: Overview, Goals, Architecture (with Mermaid diagrams), Components, Data Model, API Contracts, Security, Performance, Testing Strategy, Dependencies, Migration Plan, Rollback Strategy, Open Questions
+1. **Read PRD & Context** - Read `docs/artifacts/prd/PRD-{epic-id}.md`, scan codebase for existing patterns
+2. **Create ADR** - Create `docs/artifacts/adr/ADR-{issue}.md` with: Context, 3+ Options (each with pros/cons/trade-offs), Decision with rationale, Consequences
+3. **Create Tech Spec** - Create `docs/artifacts/specs/SPEC-{issue}.md` with 13 sections: Overview, Goals, Architecture (with Mermaid diagrams), Components, Data Model, API Contracts, Security, Performance, Testing Strategy, Dependencies, Migration Plan, Rollback Strategy, Open Questions
 4. **Self-Review** - Verify 3+ options evaluated, Mermaid diagrams present, NO code examples, spec is implementable by Engineer without oral instructions
 5. **Commit & Handoff** - `docs: add ADR and spec for #{issue}`, update Status to Ready
 

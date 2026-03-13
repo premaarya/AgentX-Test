@@ -119,9 +119,9 @@ jobs:
         run: |
           mkdir -p docs/prd
           ISSUE="${{ needs.route.outputs.issue_number }}"
-          if [ ! -f "docs/prd/PRD-${ISSUE}.md" ]; then
-            cp .github/templates/PRD-TEMPLATE.md "docs/prd/PRD-${ISSUE}.md"
-            sed -i "s/{epic-id}/${ISSUE}/g" "docs/prd/PRD-${ISSUE}.md"
+          if [ ! -f "docs/artifacts/prd/PRD-${ISSUE}.md" ]; then
+            cp .github/templates/PRD-TEMPLATE.md "docs/artifacts/prd/PRD-${ISSUE}.md"
+            sed -i "s/{epic-id}/${ISSUE}/g" "docs/artifacts/prd/PRD-${ISSUE}.md"
             echo "[PASS] Created PRD scaffold"
           else
             echo "[SKIP] PRD already exists"
@@ -143,10 +143,10 @@ jobs:
           ISSUE="${{ needs.route.outputs.issue_number }}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/prd/
+          git add docs/artifacts/prd/
           git diff --cached --quiet || git commit -m "docs: scaffold PRD for Epic #${ISSUE}"
           git push || true
-          gh issue comment ${ISSUE} --body "**PM Agent**: PRD scaffold created at docs/prd/PRD-${ISSUE}.md - Update status to Ready in Projects board when complete."
+          gh issue comment ${ISSUE} --body "**PM Agent**: PRD scaffold created at docs/artifacts/prd/PRD-${ISSUE}.md - Update status to Ready in Projects board when complete."
 
   ux:
     name: UX Designer
@@ -193,14 +193,14 @@ jobs:
           mkdir -p docs/adr docs/specs
           ISSUE="${{ needs.route.outputs.issue_number }}"
 
-          if [ ! -f "docs/adr/ADR-${ISSUE}.md" ]; then
-            cp .github/templates/ADR-TEMPLATE.md "docs/adr/ADR-${ISSUE}.md"
-            sed -i "s/{epic-id}/${ISSUE}/g" "docs/adr/ADR-${ISSUE}.md"
+          if [ ! -f "docs/artifacts/adr/ADR-${ISSUE}.md" ]; then
+            cp .github/templates/ADR-TEMPLATE.md "docs/artifacts/adr/ADR-${ISSUE}.md"
+            sed -i "s/{epic-id}/${ISSUE}/g" "docs/artifacts/adr/ADR-${ISSUE}.md"
           fi
 
-          if [ ! -f "docs/specs/SPEC-${ISSUE}.md" ]; then
-            cp .github/templates/SPEC-TEMPLATE.md "docs/specs/SPEC-${ISSUE}.md"
-            sed -i "s/{feature-id}/${ISSUE}/g" "docs/specs/SPEC-${ISSUE}.md"
+          if [ ! -f "docs/artifacts/specs/SPEC-${ISSUE}.md" ]; then
+            cp .github/templates/SPEC-TEMPLATE.md "docs/artifacts/specs/SPEC-${ISSUE}.md"
+            sed -i "s/{feature-id}/${ISSUE}/g" "docs/artifacts/specs/SPEC-${ISSUE}.md"
           fi
 
       - name: Commit & Comment
@@ -210,10 +210,10 @@ jobs:
           ISSUE="${{ needs.route.outputs.issue_number }}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/adr/ docs/specs/
+          git add docs/artifacts/adr/ docs/artifacts/specs/
           git diff --cached --quiet || git commit -m "docs: scaffold ADR + Spec for #${ISSUE}"
           git push || true
-          gh issue comment ${ISSUE} --body "**Architect Agent**: Scaffolds created (ADR: docs/adr/ADR-${ISSUE}.md, Spec: docs/specs/SPEC-${ISSUE}.md) - Update status to Ready in Projects board when complete."
+          gh issue comment ${ISSUE} --body "**Architect Agent**: Scaffolds created (ADR: docs/artifacts/adr/ADR-${ISSUE}.md, Spec: docs/artifacts/specs/SPEC-${ISSUE}.md) - Update status to Ready in Projects board when complete."
 
   engineer:
     name: Engineer
@@ -240,9 +240,9 @@ jobs:
         run: |
           mkdir -p docs/reviews
           ISSUE="${{ needs.route.outputs.issue_number }}"
-          if [ ! -f "docs/reviews/REVIEW-${ISSUE}.md" ]; then
-            cp .github/templates/REVIEW-TEMPLATE.md "docs/reviews/REVIEW-${ISSUE}.md"
-            sed -i "s/{issue-id}/${ISSUE}/g" "docs/reviews/REVIEW-${ISSUE}.md"
+          if [ ! -f "docs/artifacts/reviews/REVIEW-${ISSUE}.md" ]; then
+            cp .github/templates/REVIEW-TEMPLATE.md "docs/artifacts/reviews/REVIEW-${ISSUE}.md"
+            sed -i "s/{issue-id}/${ISSUE}/g" "docs/artifacts/reviews/REVIEW-${ISSUE}.md"
             echo "[PASS] Created Review scaffold"
           else
             echo "[SKIP] Review document already exists"
@@ -255,10 +255,10 @@ jobs:
           ISSUE="${{ needs.route.outputs.issue_number }}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/reviews/
+          git add docs/artifacts/reviews/
           git diff --cached --quiet || git commit -m "docs: scaffold review for #${ISSUE}"
           git push || true
-          gh issue comment ${ISSUE} --body "**Reviewer Agent**: Review scaffold created at docs/reviews/REVIEW-${ISSUE}.md - Complete review and move status to Done when approved."
+          gh issue comment ${ISSUE} --body "**Reviewer Agent**: Review scaffold created at docs/artifacts/reviews/REVIEW-${ISSUE}.md - Complete review and move status to Done when approved."
 
   devops:
     name: DevOps Engineer

@@ -7,10 +7,10 @@
  "**/agents/*.agent.md",
  "../specs/SPEC-*.md",
  "ADR-*.md",
- "docs/adr/ADR-*.md",
- "docs/specs/**",
+ "docs/artifacts/adr/ADR-*.md",
+ "docs/artifacts/specs/**",
  "docs/architecture/**",
- "../../docs/specs/SPEC-*.md"
+ "../../docs/artifacts/specs/SPEC-*.md"
  ],
  "files.associations": {
  "*.agent.md": "markdown"

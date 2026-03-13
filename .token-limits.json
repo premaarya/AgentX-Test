@@ -10,9 +10,9 @@
     "docs/**/*.md": 8000
   },
   "overrides": {
-    "docs/adr/ADR-AgentX.md": 20000,
+    "docs/artifacts/adr/ADR-AgentX.md": 20000,
     "docs/architecture/MIGRATION-PLAN.md": 25000,
-    "docs/prd/PRD-AgentX.md": 50000,
-    "docs/specs/SPEC-AgentX.md": 45000
+    "docs/artifacts/prd/PRD-AgentX.md": 50000,
+    "docs/artifacts/specs/SPEC-AgentX.md": 45000
   }
 }

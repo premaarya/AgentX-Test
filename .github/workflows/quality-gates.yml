@@ -269,13 +269,13 @@ jobs:
           if [ -z "$ROLE" ]; then
             FILES_CHANGED=$(git diff --name-only origin/${{ github.base_ref }}..HEAD)
 
-            if echo "$FILES_CHANGED" | grep -q "docs/prd/"; then
+            if echo "$FILES_CHANGED" | grep -q "docs/artifacts/prd/"; then
               ROLE="pm"
-            elif echo "$FILES_CHANGED" | grep -q "docs/adr/\|docs/specs/"; then
+            elif echo "$FILES_CHANGED" | grep -q "docs/artifacts/adr/\|docs/artifacts/specs/"; then
               ROLE="architect"
             elif echo "$FILES_CHANGED" | grep -q "docs/ux/"; then
               ROLE="ux"
-            elif echo "$FILES_CHANGED" | grep -q "docs/reviews/"; then
+            elif echo "$FILES_CHANGED" | grep -q "docs/artifacts/reviews/"; then
               ROLE="reviewer"
             elif echo "$FILES_CHANGED" | grep -qE "\.(cs|py|ts|js|go|rs)$"; then
               ROLE="engineer"

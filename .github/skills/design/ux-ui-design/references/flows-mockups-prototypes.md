@@ -110,6 +110,6 @@ Every prototype must include these reusable components:
 - **Modals** - backdrop, focus trap, ESC-to-close, ARIA dialog role
 - **Toast notifications** - auto-dismiss, type variants (info/success/error)
 
-> ** Full HTML/CSS/JS code** -> [references/html-prototype-code.md](references/html-prototype-code.md)
+> ** Full HTML/CSS/JS code** -> [html-prototype-code.md](html-prototype-code.md)
 
 ---

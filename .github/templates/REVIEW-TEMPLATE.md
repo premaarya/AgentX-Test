@@ -138,7 +138,7 @@ public async Task<User> GetUserAsync(string userId)
 }
 ```
 
-**Reference**: [Security Skill #04](../../skills/04-security.md#sql-injection)
+**Reference**: [Security Skill](../skills/architecture/security/SKILL.md#sql-injection)
 
 #### High Issue 1: {Title}
 {Repeat structure}
@@ -277,7 +277,7 @@ public async Task Test1()
 // Secure implementation
 ```
 
-**Reference**: [Security Skill #04](../../skills/04-security.md)
+**Reference**: [Security Skill](../skills/architecture/security/SKILL.md)
 
 ### Security Headers
 ```csharp

@@ -20,11 +20,11 @@ describe('review findings', () => {
 
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentx-review-findings-'));
-    writeFile(tmpDir, 'docs/reviews/findings/FINDING-164-001.md', [
+    writeFile(tmpDir, 'docs/artifacts/reviews/findings/FINDING-164-001.md', [
       '---',
       'id: FINDING-164-001',
       'title: Add tracked follow-up for deferred parity gaps',
-      'source_review: docs/reviews/REVIEW-164.md',
+      'source_review: docs/artifacts/reviews/REVIEW-164.md',
       'source_issue: 164',
       'severity: high',
       'status: Backlog',
@@ -34,7 +34,7 @@ describe('review findings', () => {
       'suggested_type: story',
       'labels: type:story,needs:changes',
       'dependencies: #163,#165',
-      'evidence: docs/reviews/REVIEW-164.md,docs/guides/KNOWLEDGE-REVIEW-WORKFLOWS.md',
+      'evidence: docs/artifacts/reviews/REVIEW-164.md,docs/guides/KNOWLEDGE-REVIEW-WORKFLOWS.md',
       'backlog_issue: ',
       'created: 2026-03-12',
       'updated: 2026-03-12',
@@ -65,7 +65,7 @@ describe('review findings', () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it('loads durable review finding records from docs/reviews/findings', () => {
+  it('loads durable review finding records from docs/artifacts/reviews/findings', () => {
     const records = loadReviewFindingRecords(tmpDir);
     assert.equal(records.length, 1);
     assert.equal(records[0].id, 'FINDING-164-001');

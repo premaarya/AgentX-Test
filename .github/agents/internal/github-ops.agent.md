@@ -19,10 +19,10 @@ boundaries:
     - ".copilot-tracking/github-issues/** (workflow state and plans)"
   cannot_modify:
     - "src/** (source code)"
-    - "docs/prd/** (PRD documents)"
-    - "docs/adr/** (architecture docs)"
+    - "docs/artifacts/prd/** (PRD documents)"
+    - "docs/artifacts/adr/** (architecture docs)"
     - "docs/ux/** (UX designs)"
-    - "docs/reviews/** (review documents)"
+    - "docs/artifacts/reviews/** (review documents)"
     - ".github/workflows/** (CI/CD pipelines)"
 tools:
   - codebase
@@ -206,8 +206,8 @@ Before completing any workflow run:
 
 | Task | Skill |
 |------|-------|
-| Issue management best practices | [Documentation](../skills/development/documentation/SKILL.md) |
-| Backlog quality and prioritization | [Code Review](../skills/development/code-review/SKILL.md) |
+| Issue management best practices | [Documentation](../../skills/development/documentation/SKILL.md) |
+| Backlog quality and prioritization | [Code Review](../../skills/development/code-review/SKILL.md) |
 
 ## Enforcement Gates
 

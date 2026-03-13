@@ -17,8 +17,8 @@ boundaries:
     - "docs/data-science/AGENTOPS-*.md (AgentOps documentation)"
     - "src/** (monitoring/tracing instrumentation code only)"
   cannot_modify:
-    - "docs/prd/** (PRD documents)"
-    - "docs/adr/** (architecture docs)"
+    - "docs/artifacts/prd/** (PRD documents)"
+    - "docs/artifacts/adr/** (architecture docs)"
     - "docs/ux/** (UX documents)"
     - ".github/workflows/** (CI/CD pipelines)"
 tools:
@@ -56,7 +56,7 @@ Task: [setup tracing/detect drift/configure alerts/analyze costs]
 
 ### 1. AgentOps Tracing Setup
 
-Load skills: [Model Drift](../skills/ai-systems/model-drift-management/SKILL.md), [Data Drift](../skills/ai-systems/data-drift-strategy/SKILL.md)
+Load skills: [Model Drift](../../skills/ai-systems/model-drift-management/SKILL.md), [Data Drift](../../skills/ai-systems/data-drift-strategy/SKILL.md)
 
 Configure OpenTelemetry instrumentation:
 

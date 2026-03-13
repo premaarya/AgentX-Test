@@ -78,7 +78,7 @@ describe('sidebar providers', () => {
     fs.writeFileSync(path.join(root, 'docs', 'plans', 'EXEC-PLAN-1.md'), '# Plan', 'utf-8');
     fs.writeFileSync(
       path.join(root, 'docs', 'reviews', 'findings', 'FINDING-164-001.md'),
-      '---\nid: FINDING-164-001\ntitle: Promote review gap\nsource_review: docs/reviews/REVIEW-164.md\nsource_issue: 164\nseverity: high\nstatus: Backlog\npriority: p1\nowner: reviewer\npromotion: required\nsuggested_type: story\nlabels: type:story\ndependencies: #163\nevidence: docs/reviews/REVIEW-164.md\nbacklog_issue: \ncreated: 2026-03-12\nupdated: 2026-03-12\n---\n\n# Review Finding: Promote review gap\n\n## Summary\n\nTrack the review gap.\n\n## Impact\n\n- Review follow-up can disappear.\n\n## Recommended Action\n\n- Promote it into backlog work.\n\n## Promotion Notes\n\n- Required.\n',
+      '---\nid: FINDING-164-001\ntitle: Promote review gap\nsource_review: docs/artifacts/reviews/REVIEW-164.md\nsource_issue: 164\nseverity: high\nstatus: Backlog\npriority: p1\nowner: reviewer\npromotion: required\nsuggested_type: story\nlabels: type:story\ndependencies: #163\nevidence: docs/artifacts/reviews/REVIEW-164.md\nbacklog_issue: \ncreated: 2026-03-12\nupdated: 2026-03-12\n---\n\n# Review Finding: Promote review gap\n\n## Summary\n\nTrack the review gap.\n\n## Impact\n\n- Review follow-up can disappear.\n\n## Recommended Action\n\n- Promote it into backlog work.\n\n## Promotion Notes\n\n- Required.\n',
       'utf-8',
     );
 
@@ -146,7 +146,7 @@ describe('sidebar providers', () => {
     fs.writeFileSync(path.join(root, 'docs', 'progress', 'EXEC-PLAN-1.md'), '# Progress', 'utf-8');
     fs.writeFileSync(
       path.join(root, 'docs', 'reviews', 'findings', 'FINDING-164-001.md'),
-      '---\nid: FINDING-164-001\ntitle: Promote review gap\nsource_review: docs/reviews/REVIEW-164.md\nsource_issue: 164\nseverity: high\nstatus: Backlog\npriority: p1\nowner: reviewer\npromotion: required\nsuggested_type: story\nlabels: type:story\ndependencies: #163\nevidence: docs/reviews/REVIEW-164.md\nbacklog_issue: \ncreated: 2026-03-12\nupdated: 2026-03-12\n---\n\n# Review Finding: Promote review gap\n\n## Summary\n\nTrack the review gap.\n\n## Impact\n\n- Review follow-up can disappear.\n\n## Recommended Action\n\n- Promote it into backlog work.\n\n## Promotion Notes\n\n- Required.\n',
+      '---\nid: FINDING-164-001\ntitle: Promote review gap\nsource_review: docs/artifacts/reviews/REVIEW-164.md\nsource_issue: 164\nseverity: high\nstatus: Backlog\npriority: p1\nowner: reviewer\npromotion: required\nsuggested_type: story\nlabels: type:story\ndependencies: #163\nevidence: docs/artifacts/reviews/REVIEW-164.md\nbacklog_issue: \ncreated: 2026-03-12\nupdated: 2026-03-12\n---\n\n# Review Finding: Promote review gap\n\n## Summary\n\nTrack the review gap.\n\n## Impact\n\n- Review follow-up can disappear.\n\n## Recommended Action\n\n- Promote it into backlog work.\n\n## Promotion Notes\n\n- Required.\n',
       'utf-8',
     );
     fs.writeFileSync(path.join(root, '.agentx', 'state', 'loop-state.json'), JSON.stringify({
@@ -208,7 +208,7 @@ describe('sidebar providers', () => {
     const root = createWorkspaceRoot();
     fs.writeFileSync(
       path.join(root, '.agentx', 'version.json'),
-      JSON.stringify({ version: '8.2.8', mode: 'github' }),
+      JSON.stringify({ version: '8.3.0', mode: 'github' }),
       'utf-8',
     );
     fs.writeFileSync(

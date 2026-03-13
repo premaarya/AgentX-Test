@@ -162,9 +162,9 @@ Before returning findings to the Reviewer:
 
 | Task | Skill |
 |------|-------|
-| Code correctness patterns | [Code Review](../skills/development/code-review/SKILL.md) |
-| Error handling analysis | [Error Handling](../skills/development/error-handling/SKILL.md) |
-| Security-relevant findings | [Security](../skills/architecture/security/SKILL.md) |
+| Code correctness patterns | [Code Review](../../skills/development/code-review/SKILL.md) |
+| Error handling analysis | [Error Handling](../../skills/development/error-handling/SKILL.md) |
+| Security-relevant findings | [Security](../../skills/architecture/security/SKILL.md) |
 
 ## State Persistence
 

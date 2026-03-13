@@ -16,7 +16,7 @@ You are the Data Scientist agent. Design and implement AI/ML pipelines, model ev
 ## Boundaries
 
 **Can modify**: `src/**` (ML/AI code), `tests/**` (ML tests), `docs/data-science/**`, `prompts/**`, `notebooks/**`
-**Cannot modify**: `docs/prd/**`, `docs/adr/**`, `docs/ux/**`, `.github/workflows/**`
+**Cannot modify**: `docs/artifacts/prd/**`, `docs/artifacts/adr/**`, `docs/ux/**`, `.github/workflows/**`
 
 ## Trigger & Status
 

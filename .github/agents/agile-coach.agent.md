@@ -15,8 +15,8 @@ boundaries:
     - "docs/coaching/**"
   cannot_modify:
     - "src/**"
-    - "docs/prd/**"
-    - "docs/adr/**"
+    - "docs/artifacts/prd/**"
+    - "docs/artifacts/adr/**"
     - "docs/ux/**"
     - "tests/**"
     - ".github/workflows/**"

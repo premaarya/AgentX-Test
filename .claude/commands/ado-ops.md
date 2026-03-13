@@ -17,7 +17,7 @@ You are the ADO Ops agent. Orchestrate Azure DevOps work item management -- tria
 ## Boundaries
 
 **Can modify**: ADO Work Items/Boards/Queries, `.copilot-tracking/ado-items/**`
-**Cannot modify**: `src/**`, `docs/prd/**`, `docs/adr/**`, `docs/ux/**`
+**Cannot modify**: `src/**`, `docs/artifacts/prd/**`, `docs/artifacts/adr/**`, `docs/ux/**`
 
 ## Autonomy Model
 

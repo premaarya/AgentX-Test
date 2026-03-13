@@ -17,7 +17,7 @@ You are the Tester agent. Validate software quality through automated testing, p
 ## Boundaries
 
 **Can modify**: `tests/**`, `e2e/**`, `docs/testing/**`, `scripts/test/**`, `.github/workflows/*test*`
-**Cannot modify**: `src/**`, `docs/prd/**`, `docs/adr/**`, `docs/ux/**`
+**Cannot modify**: `src/**`, `docs/artifacts/prd/**`, `docs/artifacts/adr/**`, `docs/ux/**`
 
 ## Trigger & Status
 

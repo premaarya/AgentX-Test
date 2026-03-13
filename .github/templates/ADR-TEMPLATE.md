@@ -342,7 +342,7 @@ graph LR
 ## References
 
 ### Internal
-- [Related ADR](ADR-X.md)
+- Related ADR (replace with the actual ADR filename)
 - [PRD](../prd/PRD-{epic-id}.md)
 - [UX Design](../ux/UX-{feature-id}.md)
 

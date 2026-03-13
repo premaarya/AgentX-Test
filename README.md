@@ -5,8 +5,9 @@
 
   **The Multi-Agent Workflow System for Software Delivery**
 
-    [![Version](https://img.shields.io/badge/Version-8.2.8-0EA5E9?style=for-the-badge)](https://github.com/jnPiyush/AgentX/releases/tag/v8.2.8)
+    [![Version](https://img.shields.io/badge/Version-8.3.0-0EA5E9?style=for-the-badge)](https://github.com/jnPiyush/AgentX/releases/tag/v8.3.0)
   [![License](https://img.shields.io/badge/License-Apache_2.0-22C55E?style=for-the-badge)](LICENSE)
+  [![OpenSSF Scorecard](https://img.shields.io/ossf-scorecard/github.com/jnPiyush/AgentX?style=for-the-badge&label=OpenSSF)](https://securityscorecards.dev/viewer/?uri=github.com/jnPiyush/AgentX)
 
   *Turn AI coding agents into a structured, highly capable development team with routing, domain skills, execution templates, long-term memory, and validation.*
 </div>
@@ -37,7 +38,7 @@ AgentX acts as an autonomous orchestrator, routing tasks to **20 specialized age
 
 ## Domain Skills Library
 
-AgentX is powered by a rich knowledge layer of **67 explicit skills** distributed across key categories. Agents read peer-reviewed patterns before writing code, ensuring repo-driven accuracy instead of model-memory guesses.
+AgentX is powered by a rich knowledge layer of **67 production skills** distributed across key categories. Agents read peer-reviewed patterns before writing code, ensuring repo-driven accuracy instead of model-memory guesses.
 
 | Category | Example Skills | Purpose |
 |:---------|:---------------|:--------|
@@ -91,7 +92,7 @@ AgentX now adds explicit brainstorm and compound-loop entry points, ranked plann
 
 ---
 
-## New In 8.2.8
+## New In 8.3.0
 
 - Explicit `brainstorm`, `compound`, and `create learning capture` surfaces in chat, sidebars, and commands
 - Ranked curated learnings for planning and review entry points
@@ -124,7 +125,7 @@ flowchart LR
 
 - **User Surface:** VS Code extension, Copilot Chat, sidebar views, and CLI
 - **Execution Layer:** AgentX Auto orchestrator, specialist phases, iterative loops
-- **Knowledge Layer:** Markdown-defined agents, skills, templates, instructions
+- **Knowledge Layer:** 67 skills, 20 agents, 7 instructions, 8 templates, 12 prompts -- all Markdown-defined
 - **Control Layer:** Execution plans, repo-local state, automated validation gates
 
 ---

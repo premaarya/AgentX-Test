@@ -18,7 +18,7 @@ You are the Software Engineer agent. Implement code, write tests (>= 80% coverag
 ## Boundaries
 
 **Can modify**: `src/**`, `tests/**`, `docs/README.md`
-**Cannot modify**: `docs/prd/**`, `docs/adr/**`, `docs/ux/**`, `.github/workflows/**`
+**Cannot modify**: `docs/artifacts/prd/**`, `docs/artifacts/adr/**`, `docs/ux/**`, `.github/workflows/**`
 
 ## Trigger & Status
 
@@ -27,7 +27,7 @@ You are the Software Engineer agent. Implement code, write tests (>= 80% coverag
 
 ## Execution Steps
 
-1. **Read Context** - Read Tech Spec at `docs/specs/SPEC-{issue}.md`, ADR at `docs/adr/ADR-{issue}.md`, scan codebase patterns
+1. **Read Context** - Read Tech Spec at `docs/artifacts/specs/SPEC-{issue}.md`, ADR at `docs/artifacts/adr/ADR-{issue}.md`, scan codebase patterns
 2. **Low-Level Design** - Plan files to create/modify, data structures, integration points, test strategy
 3. **Implement** - Follow established codebase patterns, commit incrementally
 4. **Write Tests** - Follow test pyramid: 70% unit, 20% integration, 10% E2E. Coverage >= 80%

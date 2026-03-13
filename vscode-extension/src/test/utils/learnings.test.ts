@@ -16,11 +16,11 @@ describe('learnings utility', () => {
 
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentx-learnings-'));
-    fs.mkdirSync(path.join(tmpDir, 'docs', 'learnings'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, 'docs', 'artifacts', 'learnings'), { recursive: true });
     fs.mkdirSync(path.join(tmpDir, 'docs', 'guides'), { recursive: true });
 
     fs.writeFileSync(
-      path.join(tmpDir, 'docs', 'learnings', 'LEARNING-162.md'),
+      path.join(tmpDir, 'docs', 'artifacts', 'learnings', 'LEARNING-162.md'),
       [
         '---',
         'id: LEARNING-162',
@@ -32,7 +32,7 @@ describe('learnings utility', () => {
         'evidence: high',
         'mode: shared',
         'keywords: learnings,metadata,ranking,retrieval,planning,review',
-        'sources: docs/adr/ADR-162.md,docs/specs/SPEC-162.md',
+        'sources: docs/artifacts/adr/ADR-162.md,docs/artifacts/specs/SPEC-162.md',
         '---',
         '## Summary',
         'Use curated durable learnings for retrieval, not raw observations.',
@@ -52,7 +52,7 @@ describe('learnings utility', () => {
     );
 
     fs.writeFileSync(
-      path.join(tmpDir, 'docs', 'learnings', 'LEARNING-163.md'),
+      path.join(tmpDir, 'docs', 'artifacts', 'learnings', 'LEARNING-163.md'),
       [
         '---',
         'id: LEARNING-163',
@@ -64,7 +64,7 @@ describe('learnings utility', () => {
         'evidence: high',
         'mode: shared',
         'keywords: workflow,compound capture,review,handoff,artifacts,plan,progress',
-        'sources: docs/adr/ADR-163.md,docs/specs/SPEC-163.md',
+        'sources: docs/artifacts/adr/ADR-163.md,docs/artifacts/specs/SPEC-163.md',
         '---',
         '## Summary',
         'Treat compound capture as a formal post-review phase over existing artifacts.',
@@ -111,14 +111,14 @@ describe('learnings utility', () => {
       'utf-8',
     );
 
-    fs.mkdirSync(path.join(tmpDir, 'docs', 'reviews', 'findings'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, 'docs', 'artifacts', 'reviews', 'findings'), { recursive: true });
     fs.writeFileSync(
-      path.join(tmpDir, 'docs', 'reviews', 'findings', 'FINDING-163-001.md'),
+      path.join(tmpDir, 'docs', 'artifacts', 'reviews', 'findings', 'FINDING-163-001.md'),
       [
         '---',
         'id: FINDING-163-001',
         'title: Promote reusable review outcome',
-        'source_review: docs/reviews/REVIEW-163.md',
+        'source_review: docs/artifacts/reviews/REVIEW-163.md',
         'source_issue: 163',
         'severity: high',
         'status: Backlog',
@@ -128,7 +128,7 @@ describe('learnings utility', () => {
         'suggested_type: story',
         'labels: type:story,priority:p1',
         'dependencies: ',
-        'evidence: docs/reviews/REVIEW-163.md',
+        'evidence: docs/artifacts/reviews/REVIEW-163.md',
         'backlog_issue: ',
         'created: 2026-03-12',
         'updated: 2026-03-12',
@@ -161,7 +161,7 @@ describe('learnings utility', () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it('loads curated learning records from docs/learnings', () => {
+  it('loads curated learning records from docs/artifacts/learnings', () => {
     const records = loadLearningRecords(tmpDir);
     assert.equal(records.length, 2);
     assert.equal(records[0].id, 'LEARNING-162');
@@ -177,7 +177,7 @@ describe('learnings utility', () => {
 
   it('renders capture guidance with the expected artifact location', () => {
     const markdown = renderCaptureGuidanceMarkdown(tmpDir);
-    assert.ok(markdown.includes('docs/learnings/LEARNING-<issue>.md'));
+    assert.ok(markdown.includes('docs/artifacts/learnings/LEARNING-<issue>.md'));
     assert.ok(markdown.includes('Reference guide'));
   });
 

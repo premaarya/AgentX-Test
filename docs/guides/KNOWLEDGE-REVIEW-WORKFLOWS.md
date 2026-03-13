@@ -35,13 +35,13 @@ The review asks three questions:
 
 | Capability | User Surface | Agent Surface | Shared Artifacts | Why It Matters |
 |------------|--------------|---------------|------------------|----------------|
-| Brainstorm with learnings | Command palette, Work sidebar | `@agentx brainstorm ...` | this guide, `docs/learnings/` | Planning should start from reusable lessons instead of a cold start when prior knowledge exists |
+| Brainstorm with learnings | Command palette, Work sidebar | `@agentx brainstorm ...` | this guide, `docs/artifacts/learnings/` | Planning should start from reusable lessons instead of a cold start when prior knowledge exists |
 | Workflow execution | Command palette, Work sidebar | `@agentx run ...` | issue, plan, workflow state | Review findings are weak if agents cannot trigger the same delivery flow |
-| Review learnings retrieval | Command palette, Work sidebar | `@agentx learnings review ...` | `docs/learnings/` | Review should reuse prior solutions without user-only lookup steps |
-| Compound loop visibility | Command palette, Work and Quality sidebars | `@agentx compound` | this guide, `docs/learnings/`, `docs/reviews/findings/` | Operators and agents should inspect the same post-review capture and follow-up state |
-| Knowledge capture guidance | Command palette, Work sidebar | `@agentx capture guidance` | this guide, `docs/learnings/` | Reusable outcomes should be preserved consistently after review |
-| Learning capture scaffold | Command palette, Work and Quality sidebars | `@agentx create learning capture` | `docs/learnings/`, harness state | Capture should start from the active issue context instead of a blank file |
-| Durable review findings | Command palette, Quality sidebar | `@agentx review findings` | this guide, `docs/reviews/findings/` | Important review outcomes should remain visible across sessions |
+| Review learnings retrieval | Command palette, Work sidebar | `@agentx learnings review ...` | `docs/artifacts/learnings/` | Review should reuse prior solutions without user-only lookup steps |
+| Compound loop visibility | Command palette, Work and Quality sidebars | `@agentx compound` | this guide, `docs/artifacts/learnings/`, `docs/artifacts/reviews/findings/` | Operators and agents should inspect the same post-review capture and follow-up state |
+| Knowledge capture guidance | Command palette, Work sidebar | `@agentx capture guidance` | this guide, `docs/artifacts/learnings/` | Reusable outcomes should be preserved consistently after review |
+| Learning capture scaffold | Command palette, Work and Quality sidebars | `@agentx create learning capture` | `docs/artifacts/learnings/`, harness state | Capture should start from the active issue context instead of a blank file |
+| Durable review findings | Command palette, Quality sidebar | `@agentx review findings` | this guide, `docs/artifacts/reviews/findings/` | Important review outcomes should remain visible across sessions |
 
 ### Scoring Rubric
 
@@ -107,7 +107,7 @@ The brainstorm output should pull forward the highest-signal planning learnings,
 1. Finish review and validate the final outcome.
 2. Resolve the capture decision as mandatory, optional, or skip.
 3. Inspect the compound loop view when you need the combined picture of reusable learnings, promotable review findings, and capture readiness.
-4. When capture is produced, store it under `docs/learnings/LEARNING-<issue>.md`.
+4. When capture is produced, store it under `docs/artifacts/learnings/LEARNING-<issue>.md`.
 5. Prefer scaffolding capture from the active issue context through `AgentX: Create Learning Capture` or `@agentx create learning capture`.
 6. Link the learning back to the originating issue and its supporting ADR, spec, review, or validation artifacts.
 7. If capture is skipped, record a short rationale in the close-out summary or issue comment.
@@ -122,9 +122,9 @@ The brainstorm output should pull forward the highest-signal planning learnings,
 
 ### Artifact Location
 
-- Curated durable learnings: `docs/learnings/LEARNING-<issue>.md`
-- Durable review findings: `docs/reviews/findings/FINDING-<issue>-<id>.md`
-- Source documents remain in their original families, such as `docs/adr/`, `docs/specs/`, `docs/reviews/`, and issue state
+- Curated durable learnings: `docs/artifacts/learnings/LEARNING-<issue>.md`
+- Durable review findings: `docs/artifacts/reviews/findings/FINDING-<issue>-<id>.md`
+- Source documents remain in their original families, such as `docs/artifacts/adr/`, `docs/artifacts/specs/`, `docs/artifacts/reviews/`, and issue state
 
 ### Minimum Link-Back Requirements
 
@@ -138,7 +138,7 @@ Each curated learning should link back to:
 
 ### Durable Record
 
-Store durable review findings under `docs/reviews/findings/FINDING-<issue>-<id>.md`.
+Store durable review findings under `docs/artifacts/reviews/findings/FINDING-<issue>-<id>.md`.
 
 Each durable finding record should capture:
 

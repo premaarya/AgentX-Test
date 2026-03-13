@@ -11,7 +11,7 @@ You are building an AI agent for issue {{issue_number}}.
 
 **Before writing code**, review these resources:
 1. **AI Agent Development Skill**: `.github/skills/ai-systems/ai-agent-development/SKILL.md`
-2. **Architecture Decision**: `docs/adr/ADR-{{issue_number}}.md` (if exists)
+2. **Architecture Decision**: `docs/artifacts/adr/ADR-{{issue_number}}.md` (if exists)
 3. **AI Instructions**: `.github/instructions/ai.instructions.md`
 
 ## Instructions
