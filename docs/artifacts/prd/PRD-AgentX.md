@@ -1286,6 +1286,8 @@ The clarification protocol is **rule-based orchestration** (routing, round track
 
 #### Clarification Ledger Schema
 
+Canonical schema file: [clarification-ledger.schema.json](../../../.github/schemas/clarification-ledger.schema.json)
+
 ```json
 {
   "issueNumber": 42,

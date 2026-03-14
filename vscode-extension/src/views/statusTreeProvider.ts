@@ -25,6 +25,7 @@ import {
 import { getHarnessStatusDisplay, readHarnessState } from '../utils/harnessState';
 import { checkHandoffGate, getLoopStatusDisplay } from '../utils/loopStateChecker';
 import { getAzureCompanionState } from '../utils/companionExtensions';
+import { evaluateWorkflowGuidance } from '../utils/workflowGuidance';
 import { WORKFLOW_OPTIONS } from '../commands/workflow';
 import { SidebarTreeItem } from './sidebarTreeItem';
 
@@ -103,6 +104,7 @@ export class StatusTreeProvider implements vscode.TreeDataProvider<SidebarTreeIt
   const harnessState = readHarnessState(root);
   const activeThread = harnessState.threads.find((t) => t.status === 'active');
   const plans = this.agentx.listExecutionPlanFiles();
+    const workflowGuidance = evaluateWorkflowGuidance(root, !!(await this.agentx.getPendingClarification()));
 
   const stateChildren = [
    SidebarTreeItem.detail('Loop', 'sync', getLoopStatusDisplay(root)),
@@ -135,6 +137,28 @@ export class StatusTreeProvider implements vscode.TreeDataProvider<SidebarTreeIt
    SidebarTreeItem.detail('Reviewer handoff', gateIcon, gateState, handoff.reason),
   ];
 
+    const nextStepChildren = workflowGuidance
+     ? [
+        workflowGuidance.recommendedCommand && workflowGuidance.recommendedCommandTitle
+         ? SidebarTreeItem.action(
+            workflowGuidance.recommendedAction,
+            'play-circle',
+            workflowGuidance.recommendedCommand,
+            workflowGuidance.recommendedCommandTitle,
+         )
+         : SidebarTreeItem.detail('Recommended action', 'play-circle', workflowGuidance.recommendedAction),
+        SidebarTreeItem.detail('Current checkpoint', 'milestone', workflowGuidance.currentCheckpoint),
+        SidebarTreeItem.detail('Why now', 'comment', workflowGuidance.rationale),
+        ...(workflowGuidance.planDeepening.allowed
+         ? [SidebarTreeItem.action('Deepen plan', 'notebook', 'agentx.deepenPlan', 'Deepen Plan')]
+         : []),
+        ...(workflowGuidance.reviewKickoff.allowed
+         ? [SidebarTreeItem.action('Kick off review', 'comment-discussion', 'agentx.kickoffReview', 'Kick Off Review')]
+         : []),
+        ...workflowGuidance.blockers.map((blocker) => SidebarTreeItem.detail('Blocker', 'warning', blocker)),
+     ]
+     : [SidebarTreeItem.info('Open a workspace folder to resolve workflow guidance.')];
+
   // Workflows section — runnable workflow types
   const workflowChildren = WORKFLOW_OPTIONS.map((workflow) => SidebarTreeItem.action(
    workflow.label,
@@ -147,6 +171,11 @@ export class StatusTreeProvider implements vscode.TreeDataProvider<SidebarTreeIt
 
   // Actions section — deduplicated across all former panels
   const actionsChildren = [
+    SidebarTreeItem.action('Workflow next step', 'debug-step-over', 'agentx.showWorkflowNextStep', 'Show Workflow Next Step'),
+    SidebarTreeItem.action('Deepen plan', 'notebook', 'agentx.deepenPlan', 'Deepen Plan'),
+    SidebarTreeItem.action('Kick off review', 'comment-discussion', 'agentx.kickoffReview', 'Kick Off Review'),
+    SidebarTreeItem.action('Rollout scorecard', 'graph', 'agentx.showWorkflowRolloutScorecard', 'Show Workflow Rollout Scorecard'),
+    SidebarTreeItem.action('Operator checklist', 'checklist', 'agentx.showOperatorEnablementChecklist', 'Show Operator Enablement Checklist'),
    SidebarTreeItem.action('Loop status', 'history', 'agentx.loopStatus', 'Loop Status'),
    SidebarTreeItem.action('Start loop', 'play', 'agentx.loopStart', 'Loop Start'),
    SidebarTreeItem.action('Complete loop', 'check', 'agentx.loopComplete', 'Loop Complete'),
@@ -163,6 +192,7 @@ export class StatusTreeProvider implements vscode.TreeDataProvider<SidebarTreeIt
    SidebarTreeItem.section('Overview', 'plug', overviewChildren),
    SidebarTreeItem.section('State', 'git-pull-request', stateChildren),
    SidebarTreeItem.section('Quality', 'checklist', qualityChildren),
+    SidebarTreeItem.section('Next step', 'debug-step-over', nextStepChildren),
    SidebarTreeItem.section('Workflows', 'symbol-class', workflowChildren, String(workflowChildren.length)),
    SidebarTreeItem.section('Actions', 'tools', actionsChildren),
   ];

@@ -2,10 +2,15 @@ import * as vscode from 'vscode';
 import { AgentXContext } from '../agentxContext';
 import {
  createLearningCapture,
+ launchPlanDeepening,
+ launchReviewKickoff,
  showBrainstorm,
  showCaptureGuidance,
  showCompoundLoop,
+ showOperatorEnablementChecklist,
  showRankedLearnings,
+ showWorkflowNextStep,
+ showWorkflowRolloutScorecard,
 } from './learningsCommandInternals';
 
 export function registerLearningsCommands(
@@ -27,6 +32,21 @@ export function registerLearningsCommands(
     }),
     vscode.commands.registerCommand('agentx.showCompoundLoop', async () => {
       await showCompoundLoop(agentx);
+    }),
+    vscode.commands.registerCommand('agentx.showWorkflowNextStep', async () => {
+      await showWorkflowNextStep(agentx);
+    }),
+    vscode.commands.registerCommand('agentx.deepenPlan', async () => {
+      await launchPlanDeepening(agentx);
+    }),
+    vscode.commands.registerCommand('agentx.kickoffReview', async () => {
+      await launchReviewKickoff(agentx);
+    }),
+    vscode.commands.registerCommand('agentx.showWorkflowRolloutScorecard', async () => {
+      await showWorkflowRolloutScorecard(agentx);
+    }),
+    vscode.commands.registerCommand('agentx.showOperatorEnablementChecklist', async () => {
+      await showOperatorEnablementChecklist(agentx);
     }),
     vscode.commands.registerCommand('agentx.createLearningCapture', async () => {
       await createLearningCapture(agentx);

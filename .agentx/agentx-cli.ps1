@@ -32,6 +32,8 @@ $Script:AGENTX_DIR = Join-Path $ROOT '.agentx'
 $Script:STATE_FILE = Join-Path $AGENTX_DIR 'state' 'agent-status.json'
 $Script:LOOP_STATE_FILE = Join-Path $AGENTX_DIR 'state' 'loop-state.json'
 $Script:ISSUES_DIR = Join-Path $AGENTX_DIR 'issues'
+$Script:TASK_BUNDLES_DIR = Join-Path $ROOT 'docs' 'execution' 'task-bundles'
+$Script:BOUNDED_PARALLEL_DIR = Join-Path $ROOT 'docs' 'execution' 'bounded-parallel'
 $Script:DIGESTS_DIR = Join-Path $AGENTX_DIR 'digests'
 $Script:CONFIG_FILE = Join-Path $AGENTX_DIR 'config.json'
 $Script:VERSION_FILE = Join-Path $AGENTX_DIR 'version.json'
@@ -817,8 +819,1105 @@ function Test-Flag([string[]]$flags) {
 $Script:JsonOutput = Test-Flag @('--json', '-j')
 
 # ---------------------------------------------------------------------------
+# BUNDLE: Task bundle management
+# ---------------------------------------------------------------------------
+
+function Get-TaskBundleDirectory {
+    return $Script:TASK_BUNDLES_DIR
+}
+
+function Get-TaskBundleFilePath([string]$bundleId) {
+    return Join-Path (Get-TaskBundleDirectory) ("$bundleId.json")
+}
+
+function Normalize-TaskBundleState([string]$value, [string]$default = 'Ready') {
+    if ([string]::IsNullOrWhiteSpace($value)) { return $default }
+    switch ($value.Trim().ToLowerInvariant()) {
+        'proposed' { return 'Proposed' }
+        'ready' { return 'Ready' }
+        'in progress' { return 'In Progress' }
+        'in-progress' { return 'In Progress' }
+        'in_review' { return 'In Review' }
+        'in review' { return 'In Review' }
+        'in-review' { return 'In Review' }
+        'done' { return 'Done' }
+        'archived' { return 'Archived' }
+        default { throw "Unsupported task bundle state '$value'. Use Proposed, Ready, In Progress, In Review, Done, or Archived." }
+    }
+}
+
+function Normalize-TaskBundlePriority([string]$value, [string]$default = 'p1') {
+    if ([string]::IsNullOrWhiteSpace($value)) { return $default }
+    $normalized = $value.Trim().ToLowerInvariant()
+    if ($normalized -notin @('p0', 'p1', 'p2', 'p3')) {
+        throw "Unsupported task bundle priority '$value'. Use p0, p1, p2, or p3."
+    }
+    return $normalized
+}
+
+function Normalize-TaskBundlePromotionMode([string]$value, [string]$default = 'none') {
+    if ([string]::IsNullOrWhiteSpace($value)) { return $default }
+    switch ($value.Trim().ToLowerInvariant()) {
+        'none' { return 'none' }
+        'story' { return 'story_candidate' }
+        'story_candidate' { return 'story_candidate' }
+        'feature' { return 'feature_candidate' }
+        'feature_candidate' { return 'feature_candidate' }
+        'review-finding' { return 'review_finding_candidate' }
+        'review_finding' { return 'review_finding_candidate' }
+        'review_finding_candidate' { return 'review_finding_candidate' }
+        'review-finding_candidate' { return 'review_finding_candidate' }
+        default { throw "Unsupported task bundle promotion mode '$value'." }
+    }
+}
+
+function Normalize-TaskBundleTargetType([string]$value, [string]$default = '') {
+    if ([string]::IsNullOrWhiteSpace($value)) { return $default }
+    switch ($value.Trim().ToLowerInvariant()) {
+        'story' { return 'story' }
+        'feature' { return 'feature' }
+        'review-finding' { return 'review-finding' }
+        'review_finding' { return 'review-finding' }
+        'none' { return 'none' }
+        default { throw "Unsupported task bundle promotion target '$value'." }
+    }
+}
+
+function Normalize-TaskBundleTitleKey([string]$value) {
+    if ([string]::IsNullOrWhiteSpace($value)) { return '' }
+    return (($value.ToLowerInvariant() -replace '[^a-z0-9]+', '-') -replace '^-+', '' -replace '-+$', '')
+}
+
+function ConvertTo-StringArray([string]$raw) {
+    if ([string]::IsNullOrWhiteSpace($raw)) { return @() }
+    return @(($raw -split ',') | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+}
+
+function ConvertTo-RelativeWorkspacePath([string]$pathValue) {
+    if ([string]::IsNullOrWhiteSpace($pathValue)) { return '' }
+    $candidate = $pathValue.Replace('/', [IO.Path]::DirectorySeparatorChar).Replace('\\', [IO.Path]::DirectorySeparatorChar)
+    if ([IO.Path]::IsPathRooted($candidate)) {
+        $resolved = [IO.Path]::GetFullPath($candidate)
+    } else {
+        $resolved = [IO.Path]::GetFullPath((Join-Path $Script:ROOT $candidate))
+    }
+
+    $rootWithSeparator = $Script:ROOT.TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
+    if ($resolved.StartsWith($rootWithSeparator, [System.StringComparison]::OrdinalIgnoreCase)) {
+        return $resolved.Substring($rootWithSeparator.Length).Replace([IO.Path]::DirectorySeparatorChar, '/')
+    }
+
+    return $resolved.Replace([IO.Path]::DirectorySeparatorChar, '/')
+}
+
+function Get-AgentXIssueByNumber([int]$number) {
+    $provider = Get-AgentXProvider
+    if ($provider -eq 'github') { return Get-GitHubIssue $number }
+    if ($provider -eq 'ado') { return Get-AdoIssue $number }
+    return Get-Issue $number
+}
+
+function Get-TaskBundleActiveThreadContext {
+    $filePath = Join-Path $Script:AGENTX_DIR 'state' 'harness-state.json'
+    $state = Read-JsonFile $filePath
+    if (-not $state) { return $null }
+    $activeThreads = @($state.threads | Where-Object { $_.status -eq 'active' })
+    if (@($activeThreads).Count -gt 1) {
+        return [PSCustomObject]@{ ambiguous = $true; source = 'active-thread' }
+    }
+    if (@($activeThreads).Count -ne 1) { return $null }
+
+    $thread = $activeThreads[0]
+    return [PSCustomObject]@{
+        issueNumber = if ($thread.PSObject.Properties['issueNumber'] -and $thread.issueNumber) { [int]$thread.issueNumber } else { $null }
+        planReference = if ($thread.PSObject.Properties['planPath']) { [string]$thread.planPath } else { '' }
+        threadId = if ($thread.PSObject.Properties['id']) { [string]$thread.id } else { '' }
+        source = 'active-thread'
+    }
+}
+
+function Get-TaskBundleActiveIssueContext {
+    $activeIssues = @(
+        Get-AllIssues | Where-Object {
+            $state = if ($_.state) { [string]$_.state } else { 'open' }
+            $status = if ($_.status) { [string]$_.status } else { '' }
+            ($state -eq 'open') -and ($status.Trim().ToLowerInvariant() -eq 'in progress')
+        }
+    )
+    if (@($activeIssues).Count -gt 1) {
+        return [PSCustomObject]@{ ambiguous = $true; source = 'active-issue' }
+    }
+    if (@($activeIssues).Count -ne 1) { return $null }
+
+    return [PSCustomObject]@{
+        issueNumber = [int]$activeIssues[0].number
+        issueTitle = [string]$activeIssues[0].title
+        source = 'active-issue'
+    }
+}
+
+function Get-TaskBundlePlanCandidates {
+    $candidates = @()
+    foreach ($relativeDir in @('docs/execution/plans', 'docs/plans')) {
+        $directory = Join-Path $Script:ROOT $relativeDir.Replace('/', [IO.Path]::DirectorySeparatorChar)
+        if (-not (Test-Path $directory)) { continue }
+        $candidates += @(Get-ChildItem -Path $directory -Filter '*.md' -File -Recurse | ForEach-Object {
+            ConvertTo-RelativeWorkspacePath $_.FullName
+        })
+    }
+    return @($candidates | Sort-Object -Unique)
+}
+
+function Resolve-TaskBundleContext([int]$issueNumber = 0, [string]$planReference = '', [switch]$AllowAll) {
+    $normalizedPlan = if ([string]::IsNullOrWhiteSpace($planReference)) { '' } else { ConvertTo-RelativeWorkspacePath $planReference }
+
+    if ($issueNumber -gt 0 -or $normalizedPlan) {
+        $issue = if ($issueNumber -gt 0) { Get-AgentXIssueByNumber $issueNumber } else { $null }
+        if ($issueNumber -gt 0 -and -not $issue) {
+            throw "Task bundle parent issue #$issueNumber was not found."
+        }
+        if ($normalizedPlan) {
+            $absolutePlanPath = Join-Path $Script:ROOT $normalizedPlan.Replace('/', [IO.Path]::DirectorySeparatorChar)
+            if (-not (Test-Path $absolutePlanPath)) {
+                throw "Task bundle parent plan '$normalizedPlan' was not found."
+            }
+        }
+
+        return [PSCustomObject]@{
+            issueNumber = if ($issueNumber -gt 0) { $issueNumber } else { $null }
+            issueTitle = if ($issue) { [string]$issue.title } else { '' }
+            planReference = $normalizedPlan
+            threadId = ''
+            source = if ($issueNumber -gt 0 -and $normalizedPlan) { 'explicit-issue-and-plan' } elseif ($issueNumber -gt 0) { 'explicit-issue' } else { 'explicit-plan' }
+        }
+    }
+
+    $threadContext = Get-TaskBundleActiveThreadContext
+    if ($threadContext -and $threadContext.PSObject.Properties['ambiguous'] -and $threadContext.ambiguous) {
+        throw 'Task bundle context is ambiguous. Use --issue <number>, --plan <path>, or --all for a repo-wide list.'
+    }
+    if ($threadContext -and ($threadContext.issueNumber -or $threadContext.planReference)) {
+        $issueTitle = ''
+        if ($threadContext.issueNumber) {
+            $issue = Get-AgentXIssueByNumber ([int]$threadContext.issueNumber)
+            if ($issue) { $issueTitle = [string]$issue.title }
+        }
+        return [PSCustomObject]@{
+            issueNumber = $threadContext.issueNumber
+            issueTitle = $issueTitle
+            planReference = $threadContext.planReference
+            threadId = $threadContext.threadId
+            source = $threadContext.source
+        }
+    }
+
+    $issueContext = Get-TaskBundleActiveIssueContext
+    if ($issueContext -and $issueContext.PSObject.Properties['ambiguous'] -and $issueContext.ambiguous) {
+        throw 'Task bundle context is ambiguous. Use --issue <number>, --plan <path>, or --all for a repo-wide list.'
+    }
+    if ($issueContext) {
+        return [PSCustomObject]@{
+            issueNumber = $issueContext.issueNumber
+            issueTitle = $issueContext.issueTitle
+            planReference = ''
+            threadId = ''
+            source = $issueContext.source
+        }
+    }
+
+    $planCandidates = Get-TaskBundlePlanCandidates
+    if (@($planCandidates).Count -eq 1) {
+        return [PSCustomObject]@{
+            issueNumber = $null
+            issueTitle = ''
+            planReference = $planCandidates[0]
+            threadId = ''
+            source = 'single-plan'
+        }
+    }
+
+    if ($AllowAll) {
+        return [PSCustomObject]@{
+            issueNumber = $null
+            issueTitle = ''
+            planReference = ''
+            threadId = ''
+            source = 'all'
+        }
+    }
+
+    throw 'Task bundle context is ambiguous. Use --issue <number>, --plan <path>, or --all for a repo-wide list.'
+}
+
+function New-TaskBundleId {
+    $stamp = (Get-Date).ToUniversalTime().ToString('yyyyMMdd-HHmmssfff')
+    $suffix = [System.Guid]::NewGuid().ToString('N').Substring(0, 6)
+    return "bundle-$stamp-$suffix"
+}
+
+function Get-TaskBundles {
+    $directory = Get-TaskBundleDirectory
+    if (-not (Test-Path $directory)) { return @() }
+
+    $records = @()
+    foreach ($file in Get-ChildItem -Path $directory -Filter '*.json' -File) {
+        $record = Read-JsonFile $file.FullName
+        if (-not $record) { continue }
+        if (-not $record.PSObject.Properties['bundle_id']) { continue }
+        $records += @($record)
+    }
+
+    return @($records | Sort-Object -Property @{ Expression = { $_.updated_at } ; Descending = $true })
+}
+
+function Get-TaskBundle([string]$bundleId) {
+    if ([string]::IsNullOrWhiteSpace($bundleId)) { return $null }
+    $filePath = Get-TaskBundleFilePath $bundleId
+    return Read-JsonFile $filePath
+}
+
+function Save-TaskBundle($bundle) {
+    if (-not $bundle) { throw 'Cannot save an empty task bundle.' }
+    $filePath = Get-TaskBundleFilePath ([string]$bundle.bundle_id)
+    Write-JsonFile $filePath $bundle
+}
+
+function Get-TaskBundleFilterMatch($bundle, $context, [string]$stateFilter = '', [string]$priorityFilter = '') {
+    if ($context.issueNumber) {
+        $bundleIssueNumber = if ($bundle.parent_context.PSObject.Properties['issue_number']) { [int]$bundle.parent_context.issue_number } else { 0 }
+        if ($bundleIssueNumber -ne [int]$context.issueNumber) { return $false }
+    }
+    if ($context.planReference) {
+        $bundlePlan = if ($bundle.parent_context.PSObject.Properties['plan_reference']) { [string]$bundle.parent_context.plan_reference } else { '' }
+        if ($bundlePlan -ne [string]$context.planReference) { return $false }
+    }
+    if ($stateFilter) {
+        if ((Normalize-TaskBundleState $bundle.state) -ne (Normalize-TaskBundleState $stateFilter)) { return $false }
+    }
+    if ($priorityFilter) {
+        if ((Normalize-TaskBundlePriority $bundle.priority) -ne (Normalize-TaskBundlePriority $priorityFilter)) { return $false }
+    }
+    return $true
+}
+
+function Get-TaskBundleDefaultEvidence($context) {
+    $evidence = @()
+    if ($context.issueNumber) { $evidence += @("issue:#$($context.issueNumber)") }
+    if ($context.planReference) { $evidence += @([string]$context.planReference) }
+    return @($evidence | Sort-Object -Unique)
+}
+
+function Get-TaskBundlePromotionTargetFromMode([string]$promotionMode) {
+    switch (Normalize-TaskBundlePromotionMode $promotionMode) {
+        'story_candidate' { return 'story' }
+        'feature_candidate' { return 'feature' }
+        'review_finding_candidate' { return 'review-finding' }
+        default { return 'none' }
+    }
+}
+
+function Get-TaskBundleIssueDraft($bundle, [string]$targetType) {
+    $labels = @("type:$targetType", "priority:$($bundle.priority)", 'source:task-bundle')
+    $bodyLines = @(
+        '## Source Bundle',
+        "- Bundle ID: $($bundle.bundle_id)",
+        "- Parent Issue: $(if ($bundle.parent_context.issue_number) { "#$($bundle.parent_context.issue_number)" } else { 'none' })",
+        "- Parent Plan: $(if ($bundle.parent_context.plan_reference) { $bundle.parent_context.plan_reference } else { 'none' })",
+        "- Promotion Mode: $($bundle.promotion_mode)",
+        '',
+        '## Summary',
+        $(if ($bundle.summary) { [string]$bundle.summary } else { 'No bundle summary provided.' })
+    )
+    if (@($bundle.evidence_links).Count -gt 0) {
+        $bodyLines += @('', '## Evidence Links')
+        $bodyLines += @($bundle.evidence_links | ForEach-Object { "- $_" })
+    }
+
+    return [PSCustomObject]@{
+        title = $bundle.title
+        body = ($bodyLines -join "`n")
+        labels = $labels
+    }
+}
+
+function Get-TaskBundleDuplicateIssueMatch($bundle, [string]$targetType) {
+    $targetLabel = "type:$targetType"
+    $titleKey = Normalize-TaskBundleTitleKey $bundle.title
+    $parentIssue = if ($bundle.parent_context.issue_number) { [int]$bundle.parent_context.issue_number } else { 0 }
+    $parentPlan = if ($bundle.parent_context.plan_reference) { [string]$bundle.parent_context.plan_reference } else { '' }
+
+    foreach ($issue in @(Get-AllIssues)) {
+        if (($issue.state ?? 'open') -ne 'open') { continue }
+        if ($targetLabel -notin @($issue.labels)) { continue }
+        $issueBody = if ($issue.body) { [string]$issue.body } else { '' }
+        $issueTitleKey = Normalize-TaskBundleTitleKey ([string]$issue.title)
+        if ($issueTitleKey -ne $titleKey) { continue }
+
+        $issueParentMatch = [regex]::Match($issueBody, 'Parent Issue:\s+#(?<issue>\d+)')
+        $issuePlanMatch = [regex]::Match($issueBody, 'Parent Plan:\s+(?<plan>[^\r\n]+)')
+        $issueParent = if ($issueParentMatch.Success) { [int]$issueParentMatch.Groups['issue'].Value } else { 0 }
+        $issuePlan = if ($issuePlanMatch.Success) { $issuePlanMatch.Groups['plan'].Value.Trim() } else { '' }
+
+        if ($parentIssue -gt 0 -and $issueParent -ne $parentIssue) { continue }
+        if ($parentPlan -and $issuePlan -ne $parentPlan) { continue }
+        return $issue
+    }
+
+    return $null
+}
+
+function Get-TaskBundleFindingDirectory {
+    return Join-Path $Script:ROOT 'docs' 'artifacts' 'reviews' 'findings'
+}
+
+function Get-TaskBundleFindingPath([string]$bundleId) {
+    return Join-Path (Get-TaskBundleFindingDirectory) ("FINDING-$bundleId.md")
+}
+
+function New-TaskBundleFinding($bundle) {
+    $directory = Get-TaskBundleFindingDirectory
+    if (-not (Test-Path $directory)) { New-Item -ItemType Directory -Path $directory -Force | Out-Null }
+
+    $findingPath = Get-TaskBundleFindingPath ([string]$bundle.bundle_id)
+    if (-not (Test-Path $findingPath)) {
+        $content = @(
+            '---',
+            "id: FINDING-$($bundle.bundle_id)",
+            "title: $($bundle.title)",
+            "source_review: task-bundle:$($bundle.bundle_id)",
+            "source_issue: $(if ($bundle.parent_context.issue_number) { $bundle.parent_context.issue_number } else { '' })",
+            'severity: medium',
+            'status: Backlog',
+            "priority: $($bundle.priority)",
+            "owner: $($bundle.owner)",
+            'promotion: required',
+            'suggested_type: story',
+            'labels: type:story,source:task-bundle',
+            "evidence: $((@($bundle.evidence_links) -join ','))",
+            'backlog_issue: ',
+            "created: $((Get-Date).ToUniversalTime().ToString('yyyy-MM-dd'))",
+            "updated: $((Get-Date).ToUniversalTime().ToString('yyyy-MM-dd'))",
+            '---',
+            '',
+            "# Review Finding: $($bundle.title)",
+            '',
+            '## Summary',
+            '',
+            $(if ($bundle.summary) { [string]$bundle.summary } else { 'Task bundle promoted into a durable review finding.' }),
+            '',
+            '## Impact',
+            '',
+            '- Follow-up should remain visible in durable review findings.',
+            '',
+            '## Recommended Action',
+            '',
+            '- Promote this finding into the normal backlog if it becomes durable implementation work.',
+            ''
+        ) -join "`n"
+        Set-Content -Path $findingPath -Value $content -Encoding utf8
+    }
+
+    return ConvertTo-RelativeWorkspacePath $findingPath
+}
+
+function Get-TaskBundlePromotionResult($bundle, [string]$targetType, [string]$targetReference, [string]$duplicateCheckResult) {
+    return [PSCustomObject]@{
+        bundle = $bundle
+        targetType = $targetType
+        targetReference = $targetReference
+        duplicateCheckResult = $duplicateCheckResult
+    }
+}
+
+function Invoke-BundleCmd {
+    $action = if ($Script:SubArgs.Count -gt 0) { $Script:SubArgs[0] } else { 'list' }
+    $Script:SubArgs = @(if ($Script:SubArgs.Count -gt 1) { $Script:SubArgs[1..($Script:SubArgs.Count - 1)] } else { @() })
+    switch ($action) {
+        'create' { Invoke-BundleCreate }
+        'list' { Invoke-BundleList }
+        'get' { Invoke-BundleGet }
+        'resolve' { Invoke-BundleResolve }
+        'promote' { Invoke-BundlePromote }
+        default { Write-Host "Unknown bundle action: $action"; exit 1 }
+    }
+}
+
+function Invoke-BundleCreate {
+    $title = Get-DecodedFlag @('-t', '--title') @('--title-base64')
+    $summary = Get-DecodedFlag @('-s', '--summary') @('--summary-base64')
+    $owner = Get-Flag @('-o', '--owner') 'engineer'
+    $priority = Normalize-TaskBundlePriority (Get-Flag @('-p', '--priority') 'p1')
+    $promotionMode = Normalize-TaskBundlePromotionMode (Get-Flag @('--promotion-mode') 'none')
+    $explicitIssueNumber = [int](Get-Flag @('-i', '--issue') '0')
+    $explicitPlan = Get-Flag @('--plan')
+    $tags = ConvertTo-StringArray (Get-Flag @('--tags'))
+    $evidenceLinks = ConvertTo-StringArray (Get-Flag @('-e', '--evidence'))
+
+    if ([string]::IsNullOrWhiteSpace($title)) { Write-Host 'Error: --title is required'; exit 1 }
+
+    try {
+        $context = Resolve-TaskBundleContext -issueNumber $explicitIssueNumber -planReference $explicitPlan
+        $bundle = [PSCustomObject]@{
+            bundle_id = New-TaskBundleId
+            title = $title
+            summary = $summary
+            parent_context = [PSCustomObject]@{
+                issue_number = $context.issueNumber
+                issue_title = $context.issueTitle
+                plan_reference = $context.planReference
+                thread_id = $context.threadId
+                source = $context.source
+            }
+            priority = $priority
+            state = 'Ready'
+            owner = $owner
+            evidence_links = @((@($evidenceLinks) + @(Get-TaskBundleDefaultEvidence $context)) | Sort-Object -Unique)
+            promotion_mode = $promotionMode
+            created_at = Get-Timestamp
+            updated_at = Get-Timestamp
+            tags = @($tags)
+        }
+        Save-TaskBundle $bundle
+        if ($Script:JsonOutput) {
+            $bundle | ConvertTo-Json -Depth 8
+        } else {
+            Write-Host "$($C.g)Created task bundle $($bundle.bundle_id): $($bundle.title)$($C.n)"
+        }
+    } catch {
+        Write-Host "Error: $($_.Exception.Message)"
+        exit 1
+    }
+}
+
+function Invoke-BundleList {
+    $explicitIssueNumber = [int](Get-Flag @('-i', '--issue') '0')
+    $explicitPlan = Get-Flag @('--plan')
+    $stateFilter = Get-Flag @('--state')
+    $priorityFilter = Get-Flag @('--priority')
+    $showAll = Test-Flag @('--all')
+
+    try {
+        $context = Resolve-TaskBundleContext -issueNumber $explicitIssueNumber -planReference $explicitPlan -AllowAll:$showAll
+        $bundles = @(Get-TaskBundles | Where-Object { Get-TaskBundleFilterMatch $_ $context $stateFilter $priorityFilter })
+        if ($Script:JsonOutput) {
+            $bundles | ConvertTo-Json -Depth 8
+            return
+        }
+        if ($bundles.Count -eq 0) {
+            Write-Host "$($C.y)No task bundles found.$($C.n)"
+            return
+        }
+        foreach ($bundle in $bundles) {
+            Write-Host "$($bundle.bundle_id) [$($bundle.state)] $($bundle.priority) - $($bundle.title)"
+        }
+    } catch {
+        Write-Host "Error: $($_.Exception.Message)"
+        exit 1
+    }
+}
+
+function Invoke-BundleGet {
+    $bundleId = Get-Flag @('--id', '-n')
+    if ([string]::IsNullOrWhiteSpace($bundleId)) { Write-Host 'Error: --id is required'; exit 1 }
+    $bundle = Get-TaskBundle $bundleId
+    if (-not $bundle) { Write-Host "Error: Task bundle '$bundleId' was not found."; exit 1 }
+    $bundle | ConvertTo-Json -Depth 8
+}
+
+function Invoke-BundleResolve {
+    $bundleId = Get-Flag @('--id', '-n')
+    $stateValue = Get-Flag @('--state')
+    $archiveReason = Get-DecodedFlag @('--archive-reason') @('--archive-reason-base64')
+    if ([string]::IsNullOrWhiteSpace($bundleId)) { Write-Host 'Error: --id is required'; exit 1 }
+
+    $bundle = Get-TaskBundle $bundleId
+    if (-not $bundle) { Write-Host "Error: Task bundle '$bundleId' was not found."; exit 1 }
+
+    try {
+        $targetState = if ($stateValue) { Normalize-TaskBundleState $stateValue } elseif ($archiveReason) { 'Archived' } else { 'Done' }
+        if ($targetState -eq 'Archived' -and [string]::IsNullOrWhiteSpace($archiveReason)) {
+            throw 'Archived task bundles require --archive-reason.'
+        }
+        $bundle.state = $targetState
+        if ($archiveReason) {
+            $bundle | Add-Member -NotePropertyName 'archive_reason' -NotePropertyValue $archiveReason -Force
+        }
+        $bundle.updated_at = Get-Timestamp
+        Save-TaskBundle $bundle
+        if ($Script:JsonOutput) {
+            $bundle | ConvertTo-Json -Depth 8
+        } else {
+            Write-Host "$($C.g)Resolved task bundle $bundleId as $targetState.$($C.n)"
+        }
+    } catch {
+        Write-Host "Error: $($_.Exception.Message)"
+        exit 1
+    }
+}
+
+function Invoke-BundlePromote {
+    $bundleId = Get-Flag @('--id', '-n')
+    $targetType = Normalize-TaskBundleTargetType (Get-Flag @('--target') (Get-TaskBundlePromotionTargetFromMode (Get-Flag @('--promotion-mode'))))
+    if ([string]::IsNullOrWhiteSpace($bundleId)) { Write-Host 'Error: --id is required'; exit 1 }
+
+    $bundle = Get-TaskBundle $bundleId
+    if (-not $bundle) { Write-Host "Error: Task bundle '$bundleId' was not found."; exit 1 }
+    if ([string]::IsNullOrWhiteSpace($targetType)) {
+        $targetType = Get-TaskBundlePromotionTargetFromMode ([string]$bundle.promotion_mode)
+    }
+    if ($targetType -eq 'none') {
+        Write-Host "Error: Task bundle '$bundleId' has no durable promotion target. Set --target or use a candidate promotion mode."
+        exit 1
+    }
+
+    if ($bundle.PSObject.Properties['promotion_history'] -and $bundle.promotion_history -and $bundle.promotion_history.target_reference) {
+        $result = Get-TaskBundlePromotionResult $bundle ([string]$bundle.promotion_history.target_type) ([string]$bundle.promotion_history.target_reference) 'already-promoted'
+        if ($Script:JsonOutput) { $result | ConvertTo-Json -Depth 8 } else { Write-Host "$($C.y)Task bundle $bundleId already promoted to $($bundle.promotion_history.target_reference).$($C.n)" }
+        return
+    }
+
+    try {
+        $targetReference = ''
+        $duplicateCheckResult = 'created-new'
+
+        switch ($targetType) {
+            'story' {
+                $existing = Get-TaskBundleDuplicateIssueMatch $bundle 'story'
+                if ($existing) {
+                    $targetReference = "#$($existing.number)"
+                    $duplicateCheckResult = 'linked-existing'
+                } else {
+                    $draft = Get-TaskBundleIssueDraft $bundle 'story'
+                    $issue = New-AgentXIssue $draft.title $draft.body $draft.labels
+                    $targetReference = "#$($issue.number)"
+                }
+            }
+            'feature' {
+                $existing = Get-TaskBundleDuplicateIssueMatch $bundle 'feature'
+                if ($existing) {
+                    $targetReference = "#$($existing.number)"
+                    $duplicateCheckResult = 'linked-existing'
+                } else {
+                    $draft = Get-TaskBundleIssueDraft $bundle 'feature'
+                    $issue = New-AgentXIssue $draft.title $draft.body $draft.labels
+                    $targetReference = "#$($issue.number)"
+                }
+            }
+            'review-finding' {
+                $targetReference = New-TaskBundleFinding $bundle
+            }
+            default {
+                throw "Unsupported promotion target '$targetType'."
+            }
+        }
+
+        $bundle | Add-Member -NotePropertyName 'promotion_history' -NotePropertyValue ([PSCustomObject]@{
+            promotion_decision = $targetType
+            target_type = $targetType
+            target_reference = $targetReference
+            duplicate_check_result = $duplicateCheckResult
+            searchable_status = 'archived'
+            promoted_at = Get-Timestamp
+        }) -Force
+        $bundle.state = 'Archived'
+        $bundle | Add-Member -NotePropertyName 'archive_reason' -NotePropertyValue "Promoted to $targetReference" -Force
+        $bundle.updated_at = Get-Timestamp
+        Save-TaskBundle $bundle
+
+        $result = Get-TaskBundlePromotionResult $bundle $targetType $targetReference $duplicateCheckResult
+        if ($Script:JsonOutput) {
+            $result | ConvertTo-Json -Depth 8
+        } else {
+            Write-Host "$($C.g)Promoted task bundle $bundleId -> $targetReference.$($C.n)"
+        }
+    } catch {
+        Write-Host "Error: $($_.Exception.Message)"
+        exit 1
+    }
+}
+
+# ---------------------------------------------------------------------------
+# PARALLEL: Bounded parallel delivery
+# ---------------------------------------------------------------------------
+
+function Get-BoundedParallelDirectory {
+    return $Script:BOUNDED_PARALLEL_DIR
+}
+
+function Get-BoundedParallelFilePath([string]$parallelId) {
+    return Join-Path (Get-BoundedParallelDirectory) ("$parallelId.json")
+}
+
+function New-BoundedParallelId {
+    $stamp = (Get-Date).ToUniversalTime().ToString('yyyyMMdd-HHmmssfff')
+    $suffix = [System.Guid]::NewGuid().ToString('N').Substring(0, 6)
+    return "parallel-$stamp-$suffix"
+}
+
+function Normalize-ParallelScopeIndependence([string]$value) {
+    switch ($value.Trim().ToLowerInvariant()) {
+        'independent' { return 'independent' }
+        'loosely-coupled' { return 'loosely-coupled' }
+        'loosely_coupled' { return 'loosely-coupled' }
+        'coupled' { return 'coupled' }
+        default { throw "Unsupported scope independence '$value'." }
+    }
+}
+
+function Normalize-ParallelRisk([string]$value, [string]$fieldName) {
+    $normalized = $value.Trim().ToLowerInvariant()
+    if ($normalized -notin @('low', 'medium', 'high')) {
+        throw "Unsupported $fieldName '$value'. Use low, medium, or high."
+    }
+    return $normalized
+}
+
+function Normalize-ParallelReviewComplexity([string]$value) {
+    switch ($value.Trim().ToLowerInvariant()) {
+        'bounded' { return 'bounded' }
+        'heightened' { return 'heightened' }
+        'high' { return 'high' }
+        default { throw "Unsupported review complexity '$value'. Use bounded, heightened, or high." }
+    }
+}
+
+function Normalize-ParallelRecoveryComplexity([string]$value) {
+    switch ($value.Trim().ToLowerInvariant()) {
+        'recoverable' { return 'recoverable' }
+        'contained' { return 'contained' }
+        'high' { return 'high' }
+        default { throw "Unsupported recovery complexity '$value'. Use recoverable, contained, or high." }
+    }
+}
+
+function Normalize-TaskUnitIsolationMode([string]$value, [string]$default = 'logical') {
+    if ([string]::IsNullOrWhiteSpace($value)) { return $default }
+    switch ($value.Trim().ToLowerInvariant()) {
+        'logical' { return 'logical' }
+        'file_scoped' { return 'file_scoped' }
+        'file-scoped' { return 'file_scoped' }
+        'branch_scoped' { return 'branch_scoped' }
+        'branch-scoped' { return 'branch_scoped' }
+        'worktree_scoped' { return 'worktree_scoped' }
+        'worktree-scoped' { return 'worktree_scoped' }
+        default { throw "Unsupported isolation mode '$value'." }
+    }
+}
+
+function Normalize-TaskUnitStatus([string]$value, [string]$default = 'Ready') {
+    if ([string]::IsNullOrWhiteSpace($value)) { return $default }
+    switch ($value.Trim().ToLowerInvariant()) {
+        'ready' { return 'Ready' }
+        'in progress' { return 'In Progress' }
+        'in-progress' { return 'In Progress' }
+        'in review' { return 'In Review' }
+        'in-review' { return 'In Review' }
+        'done' { return 'Done' }
+        'blocked' { return 'Blocked' }
+        'abandoned' { return 'Abandoned' }
+        default { throw "Unsupported task-unit status '$value'." }
+    }
+}
+
+function Normalize-TaskUnitMergeReadiness([string]$value, [string]$default = 'Not Ready') {
+    if ([string]::IsNullOrWhiteSpace($value)) { return $default }
+    switch ($value.Trim().ToLowerInvariant()) {
+        'not ready' { return 'Not Ready' }
+        'ready for review' { return 'Ready For Review' }
+        'ready for reconciliation' { return 'Ready For Reconciliation' }
+        'do not merge' { return 'Do Not Merge' }
+        default { throw "Unsupported task-unit merge readiness '$value'." }
+    }
+}
+
+function Normalize-ReconciliationVerdict([string]$value, [string]$fieldName) {
+    switch ($value.Trim().ToLowerInvariant()) {
+        'pending' { return 'pending' }
+        'pass' { return 'pass' }
+        'fail' { return 'fail' }
+        default { throw "Unsupported $fieldName '$value'. Use pending, pass, or fail." }
+    }
+}
+
+function Normalize-OwnerApproval([string]$value) {
+    switch ($value.Trim().ToLowerInvariant()) {
+        'pending' { return 'pending' }
+        'approved' { return 'approved' }
+        'rejected' { return 'rejected' }
+        default { throw "Unsupported owner approval '$value'. Use pending, approved, or rejected." }
+    }
+}
+
+function Get-BoundedParallelDecision($assessment) {
+    if ($assessment.scope_independence -notin @('independent', 'loosely-coupled')) { return 'ineligible' }
+    if ($assessment.dependency_coupling -ne 'low') { return 'ineligible' }
+    if ($assessment.artifact_overlap -ne 'low') { return 'ineligible' }
+    if ($assessment.review_complexity -ne 'bounded') { return 'ineligible' }
+    if ($assessment.recovery_complexity -ne 'recoverable') { return 'ineligible' }
+    return 'eligible'
+}
+
+function Get-BoundedParallelReviewLevel($assessment) {
+    if ((Get-BoundedParallelDecision $assessment) -eq 'eligible') { return 'tightened' }
+    return 'sequential-only'
+}
+
+function Get-BoundedParallelRuns {
+    $directory = Get-BoundedParallelDirectory
+    if (-not (Test-Path $directory)) { return @() }
+    return @(
+        Get-ChildItem -Path $directory -Filter '*.json' -File |
+            ForEach-Object { Read-JsonFile $_.FullName } |
+            Where-Object { $_ -and $_.PSObject.Properties['parallel_id'] }
+    )
+}
+
+function Get-BoundedParallelRun([string]$parallelId) {
+    if ([string]::IsNullOrWhiteSpace($parallelId)) { return $null }
+    return Read-JsonFile (Get-BoundedParallelFilePath $parallelId)
+}
+
+function Save-BoundedParallelRun($run) {
+    Write-JsonFile (Get-BoundedParallelFilePath ([string]$run.parallel_id)) $run
+}
+
+function Get-BoundedParallelSummary($run) {
+    $units = @($run.units)
+    $unitCount = @($units).Count
+    $blockedCount = @($units | Where-Object {
+        $_.status -in @('Blocked', 'Abandoned') -or ([string]$_.summary_signal).Trim().ToLowerInvariant() -eq 'blocked'
+    }).Count
+    $readyForReconciliationCount = @($units | Where-Object { $_.merge_readiness -eq 'Ready For Reconciliation' }).Count
+    $summaryState = if ($blockedCount -gt 0) {
+        'blocked'
+    } elseif ($unitCount -eq 0) {
+        'assessed'
+    } elseif ($readyForReconciliationCount -eq $unitCount) {
+        'ready-for-reconciliation'
+    } else {
+        'active'
+    }
+    $closeoutReady = ($run.reconciliation.final_decision -eq 'passed')
+
+    return [PSCustomObject]@{
+        unit_count = $unitCount
+        blocked_count = $blockedCount
+        ready_for_reconciliation_count = $readyForReconciliationCount
+        summary_state = $summaryState
+        closeout_ready = $closeoutReady
+    }
+}
+
+function ConvertTo-TaskUnits([string]$encodedUnits) {
+    if ([string]::IsNullOrWhiteSpace($encodedUnits)) { throw 'Task units are required. Use --units-base64 with a JSON array.' }
+    try {
+        $json = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($encodedUnits))
+        $parsed = ConvertFrom-Json $json -Depth 10
+    } catch {
+        throw 'Task units must be a valid base64-encoded JSON array.'
+    }
+    if ($parsed -isnot [System.Collections.IEnumerable]) {
+        throw 'Task units must be a JSON array.'
+    }
+    $units = @()
+    $index = 1
+    foreach ($unit in @($parsed)) {
+        $title = [string]$unit.title
+        $scopeBoundary = [string]$unit.scope_boundary
+        $owner = [string]$unit.owner
+        $recoveryGuidance = [string]$unit.recovery_guidance
+        $isolationMode = if ($unit.PSObject.Properties['isolation_mode']) { [string]$unit.isolation_mode } else { '' }
+        $status = if ($unit.PSObject.Properties['status']) { [string]$unit.status } else { '' }
+        $mergeReadiness = if ($unit.PSObject.Properties['merge_readiness']) { [string]$unit.merge_readiness } else { '' }
+        $summarySignal = if ($unit.PSObject.Properties['summary_signal']) { [string]$unit.summary_signal } else { '' }
+
+        if (-not $title -or -not $scopeBoundary -or -not $owner -or -not $recoveryGuidance) {
+            throw 'Each task unit requires title, scope_boundary, owner, and recovery_guidance.'
+        }
+        $units += @([PSCustomObject]@{
+            unit_id = ("unit-{0:D2}" -f $index)
+            title = $title
+            scope_boundary = $scopeBoundary
+            owner = $owner
+            isolation_mode = Normalize-TaskUnitIsolationMode $isolationMode
+            status = Normalize-TaskUnitStatus $status
+            merge_readiness = Normalize-TaskUnitMergeReadiness $mergeReadiness
+            recovery_guidance = $recoveryGuidance
+            summary_signal = if ($summarySignal) { $summarySignal } else { $title }
+        })
+        $index++
+    }
+    return $units
+}
+
+function New-ParallelReviewFinding($run, [string]$title, [string]$summary) {
+    $directory = Get-TaskBundleFindingDirectory
+    if (-not (Test-Path $directory)) { New-Item -ItemType Directory -Path $directory -Force | Out-Null }
+    $findingId = "FINDING-$($run.parallel_id)"
+    $findingPath = Join-Path $directory "$findingId.md"
+    if (-not (Test-Path $findingPath)) {
+        $content = @(
+            '---',
+            "id: $findingId",
+            "title: $title",
+            "source_review: bounded-parallel:$($run.parallel_id)",
+            "source_issue: $(if ($run.parent_context.issue_number) { $run.parent_context.issue_number } else { '' })",
+            'severity: medium',
+            'status: Backlog',
+            "priority: $($run.priority)",
+            'owner: engineer',
+            'promotion: required',
+            'suggested_type: story',
+            'labels: type:story,source:bounded-parallel',
+            "evidence: $((@($run.parent_context.plan_reference, $run.parallel_id) | Where-Object { $_ }) -join ',' )",
+            'backlog_issue: ',
+            "created: $((Get-Date).ToUniversalTime().ToString('yyyy-MM-dd'))",
+            "updated: $((Get-Date).ToUniversalTime().ToString('yyyy-MM-dd'))",
+            '---',
+            '',
+            "# Review Finding: $title",
+            '',
+            '## Summary',
+            '',
+            $summary,
+            ''
+        ) -join "`n"
+        Set-Content -Path $findingPath -Value $content -Encoding utf8
+    }
+    return ConvertTo-RelativeWorkspacePath $findingPath
+}
+
+function Invoke-ParallelCmd {
+    $action = if ($Script:SubArgs.Count -gt 0) { $Script:SubArgs[0] } else { 'list' }
+    $Script:SubArgs = @(if ($Script:SubArgs.Count -gt 1) { $Script:SubArgs[1..($Script:SubArgs.Count - 1)] } else { @() })
+    switch ($action) {
+        'assess' { Invoke-ParallelAssess }
+        'start' { Invoke-ParallelStart }
+        'list' { Invoke-ParallelList }
+        'get' { Invoke-ParallelGet }
+        'reconcile' { Invoke-ParallelReconcile }
+        default { Write-Host "Unknown parallel action: $action"; exit 1 }
+    }
+}
+
+function Invoke-ParallelAssess {
+    $title = Get-DecodedFlag @('-t', '--title') @('--title-base64') 'Bounded parallel delivery'
+    $issueNumber = [int](Get-Flag @('-i', '--issue') '0')
+    $planReference = Get-Flag @('--plan')
+    try {
+        $context = Resolve-TaskBundleContext -issueNumber $issueNumber -planReference $planReference
+        $assessment = [PSCustomObject]@{
+            scope_independence = Normalize-ParallelScopeIndependence (Get-Flag @('--scope-independence') 'coupled')
+            dependency_coupling = Normalize-ParallelRisk (Get-Flag @('--dependency-coupling') 'high') 'dependency coupling'
+            artifact_overlap = Normalize-ParallelRisk (Get-Flag @('--artifact-overlap') 'high') 'artifact overlap'
+            review_complexity = Normalize-ParallelReviewComplexity (Get-Flag @('--review-complexity') 'high')
+            recovery_complexity = Normalize-ParallelRecoveryComplexity (Get-Flag @('--recovery-complexity') 'high')
+        }
+        $assessment | Add-Member -NotePropertyName 'decision' -NotePropertyValue (Get-BoundedParallelDecision $assessment) -Force
+        $assessment | Add-Member -NotePropertyName 'required_review_level' -NotePropertyValue (Get-BoundedParallelReviewLevel $assessment) -Force
+
+        $run = [PSCustomObject]@{
+            parallel_id = New-BoundedParallelId
+            title = $title
+            priority = 'p1'
+            mode = 'opt-in'
+            parent_context = [PSCustomObject]@{
+                issue_number = $context.issueNumber
+                issue_title = $context.issueTitle
+                plan_reference = $context.planReference
+                thread_id = $context.threadId
+                source = $context.source
+            }
+            assessment = $assessment
+            units = @()
+            reconciliation = [PSCustomObject]@{
+                state = 'pending'
+                overlap_review = 'pending'
+                conflict_review = 'pending'
+                acceptance_evidence = 'pending'
+                owner_approval = 'pending'
+                follow_up_disposition = 'none'
+                follow_up_references = @()
+                final_decision = 'blocked'
+            }
+            created_at = Get-Timestamp
+            updated_at = Get-Timestamp
+        }
+        $run | Add-Member -NotePropertyName 'parent_summary' -NotePropertyValue (Get-BoundedParallelSummary $run) -Force
+        Save-BoundedParallelRun $run
+        if ($Script:JsonOutput) { $run | ConvertTo-Json -Depth 10 } else { Write-Host "$($C.g)Recorded bounded parallel assessment $($run.parallel_id): $($assessment.decision).$($C.n)" }
+    } catch {
+        Write-Host "Error: $($_.Exception.Message)"
+        exit 1
+    }
+}
+
+function Invoke-ParallelStart {
+    $parallelId = Get-Flag @('--id', '-n')
+    $unitsBase64 = Get-Flag @('--units-base64')
+    if ([string]::IsNullOrWhiteSpace($parallelId)) { Write-Host 'Error: --id is required'; exit 1 }
+    $run = Get-BoundedParallelRun $parallelId
+    if (-not $run) { Write-Host "Error: Bounded parallel record '$parallelId' was not found."; exit 1 }
+    if ($run.assessment.decision -ne 'eligible') { Write-Host "Error: Bounded parallel record '$parallelId' is ineligible and must remain sequential."; exit 1 }
+
+    try {
+        $run.units = @(ConvertTo-TaskUnits $unitsBase64)
+        $run.updated_at = Get-Timestamp
+        $run.parent_summary = Get-BoundedParallelSummary $run
+        Save-BoundedParallelRun $run
+        if ($Script:JsonOutput) { $run | ConvertTo-Json -Depth 10 } else { Write-Host "$($C.g)Started bounded parallel run $parallelId with $(@($run.units).Count) task units.$($C.n)" }
+    } catch {
+        Write-Host "Error: $($_.Exception.Message)"
+        exit 1
+    }
+}
+
+function Invoke-ParallelList {
+    $runs = @(Get-BoundedParallelRuns)
+    if ($Script:JsonOutput) { $runs | ConvertTo-Json -Depth 10; return }
+    if ($runs.Count -eq 0) { Write-Host "$($C.y)No bounded parallel records found.$($C.n)"; return }
+    foreach ($run in $runs) {
+        Write-Host "$($run.parallel_id) [$($run.assessment.decision)] $($run.title) -> $($run.parent_summary.summary_state)"
+    }
+}
+
+function Invoke-ParallelGet {
+    $parallelId = Get-Flag @('--id', '-n')
+    if ([string]::IsNullOrWhiteSpace($parallelId)) { Write-Host 'Error: --id is required'; exit 1 }
+    $run = Get-BoundedParallelRun $parallelId
+    if (-not $run) { Write-Host "Error: Bounded parallel record '$parallelId' was not found."; exit 1 }
+    $run | ConvertTo-Json -Depth 10
+}
+
+function Invoke-ParallelReconcile {
+    $parallelId = Get-Flag @('--id', '-n')
+    $followUpTarget = Normalize-TaskBundleTargetType (Get-Flag @('--follow-up-target') 'none')
+    $followUpTitle = Get-DecodedFlag @('--follow-up-title') @('--follow-up-title-base64')
+    $followUpSummary = Get-DecodedFlag @('--follow-up-summary') @('--follow-up-summary-base64')
+    if ([string]::IsNullOrWhiteSpace($parallelId)) { Write-Host 'Error: --id is required'; exit 1 }
+
+    $run = Get-BoundedParallelRun $parallelId
+    if (-not $run) { Write-Host "Error: Bounded parallel record '$parallelId' was not found."; exit 1 }
+
+    try {
+        $run.reconciliation.overlap_review = Normalize-ReconciliationVerdict (Get-Flag @('--overlap-review') 'pending') 'overlap review'
+        $run.reconciliation.conflict_review = Normalize-ReconciliationVerdict (Get-Flag @('--conflict-review') 'pending') 'conflict review'
+        $run.reconciliation.acceptance_evidence = Normalize-ReconciliationVerdict (Get-Flag @('--acceptance-evidence') 'pending') 'acceptance evidence'
+        $run.reconciliation.owner_approval = Normalize-OwnerApproval (Get-Flag @('--owner-approval') 'pending')
+
+        $allUnitsReady = @($run.units).Count -gt 0 -and @($run.units | Where-Object { $_.merge_readiness -eq 'Ready For Reconciliation' }).Count -eq @($run.units).Count
+        $passed = (
+            $run.reconciliation.overlap_review -eq 'pass' -and
+            $run.reconciliation.conflict_review -eq 'pass' -and
+            $run.reconciliation.acceptance_evidence -eq 'pass' -and
+            $run.reconciliation.owner_approval -eq 'approved' -and
+            $allUnitsReady
+        )
+        $run.reconciliation.final_decision = if ($passed) { 'passed' } else { 'blocked' }
+        $run.reconciliation.state = if ($passed) { 'passed' } else { 'blocked' }
+
+        if (-not $passed -and $followUpTarget -ne 'none' -and $followUpTitle) {
+            $reference = ''
+            $followUpBody = if ($followUpSummary) { $followUpSummary } else { $followUpTitle }
+            switch ($followUpTarget) {
+                'story' {
+                    $issue = New-AgentXIssue $followUpTitle $followUpBody @('type:story', 'source:bounded-parallel')
+                    $reference = "#$($issue.number)"
+                }
+                'feature' {
+                    $issue = New-AgentXIssue $followUpTitle $followUpBody @('type:feature', 'source:bounded-parallel')
+                    $reference = "#$($issue.number)"
+                }
+                'review-finding' {
+                    $findingSummary = if ($followUpSummary) { $followUpSummary } else { 'Parallel reconciliation follow-up.' }
+                    $reference = New-ParallelReviewFinding $run $followUpTitle $findingSummary
+                }
+            }
+            if ($reference) {
+                $run.reconciliation.follow_up_disposition = 'captured'
+                $run.reconciliation.follow_up_references = @($run.reconciliation.follow_up_references) + @($reference)
+            }
+        }
+
+        $run.updated_at = Get-Timestamp
+        $run.parent_summary = Get-BoundedParallelSummary $run
+        Save-BoundedParallelRun $run
+        if ($Script:JsonOutput) { $run | ConvertTo-Json -Depth 10 } else { Write-Host "$($C.g)Reconciled bounded parallel run $parallelId -> $($run.reconciliation.final_decision).$($C.n)" }
+    } catch {
+        Write-Host "Error: $($_.Exception.Message)"
+        exit 1
+    }
+}
+
+# ---------------------------------------------------------------------------
 # ISSUE: Local issue manager
 # ---------------------------------------------------------------------------
+
+function New-AgentXIssue([string]$title, [string]$body, [string[]]$labels, [string]$issueType = '') {
+    $provider = Get-AgentXProvider
+    $normalizedLabels = @($labels | Where-Object { $_ })
+
+    if ($provider -eq 'github') {
+        $args = @('issue', 'create', '--title', $title)
+        $issueBody = if ([string]::IsNullOrWhiteSpace($body)) { $title } else { $body }
+        $args += @('--body', $issueBody)
+        foreach ($label in $normalizedLabels) {
+            $args += @('--label', $label)
+        }
+
+        $result = Invoke-GitHubCli $args "Failed to create GitHub issue '$title'."
+        $issueNumber = 0
+        $resultText = ($result | Out-String).Trim()
+        if ($resultText -match '/issues/(\d+)') {
+            $issueNumber = [int]$Matches[1]
+        }
+        $issue = if ($issueNumber -gt 0) { Get-GitHubIssue $issueNumber } else { $null }
+        if (-not $issue) {
+            throw 'GitHub issue was created but could not be read back for verification.'
+        }
+        if (Test-GitHubProjectConfigured) {
+            if (-not (Set-GitHubProjectIssueStatus $issue.number 'Backlog' $true) -and -not $Script:JsonOutput) {
+                Write-Host "$($C.y)GitHub project status was not updated for issue #$($issue.number). Ensure the configured project is accessible and has a matching Status option.$($C.n)"
+            }
+        }
+        return $issue
+    }
+
+    if ($provider -eq 'ado') {
+        Assert-AdoCliAvailable
+        $orgUrl = Get-AdoOrganizationUrl
+        $project = Get-AdoProjectName
+        if ([string]::IsNullOrWhiteSpace($orgUrl) -or [string]::IsNullOrWhiteSpace($project)) {
+            throw 'ADO provider requires organization and project in .agentx/config.json.'
+        }
+
+        $workItemType = if ($issueType) { $issueType } else { Convert-AgentXTypeToAdoWorkItemType $normalizedLabels }
+        $args = @('boards', 'work-item', 'create', '--title', $title, '--type', $workItemType, '--organization', $orgUrl, '--project', $project, '--output', 'json')
+        if ($body) { $args += @('--description', $body) }
+        if ($normalizedLabels.Count -gt 0) { $args += @('--fields', "System.Tags=$($normalizedLabels -join '; ')") }
+        $json = & az @args 2>$null
+        $issue = if ($json) { Convert-AdoWorkItemToAgentXIssue ($json | ConvertFrom-Json) } else { $null }
+        if (-not $issue) {
+            throw "ADO work item '$title' was created but could not be read back for verification."
+        }
+        return $issue
+    }
+
+    $num = Get-NextIssueNumber
+    $issue = [PSCustomObject]@{
+        number = $num
+        title = $title
+        body = $body
+        labels = @($normalizedLabels)
+        status = 'Backlog'
+        state = 'open'
+        created = Get-Timestamp
+        updated = Get-Timestamp
+        comments = @()
+    }
+    Save-Issue $issue
+    return $issue
+}
 
 function Invoke-IssueCmd {
     $action = if ($Script:SubArgs.Count -gt 0) { $Script:SubArgs[0] } else { 'list' }
@@ -1189,90 +2288,21 @@ function Save-Issue($issue) {
 }
 
 function Invoke-IssueCreate {
-    $provider = Get-AgentXProvider
     $title = Get-DecodedFlag @('-t', '--title') @('--title-base64')
     $body = Get-DecodedFlag @('-b', '--body') @('--body-base64')
     $labelStr = Get-Flag @('-l', '--labels')
+    $issueType = Get-Flag @('--type')
     if (-not $title) { Write-Host 'Error: --title is required'; exit 1 }
 
     $labels = ConvertTo-IssueLabels $labelStr
-
-    if ($provider -eq 'github') {
-        $args = @('issue', 'create', '--title', $title)
-        $issueBody = if ([string]::IsNullOrWhiteSpace($body)) { $title } else { $body }
-        $args += @('--body', $issueBody)
-        foreach ($label in $labels) {
-            $args += @('--label', $label)
-        }
-
-        try {
-            $result = Invoke-GitHubCli $args "Failed to create GitHub issue '$title'."
-        } catch {
-            Write-Host "Error: $($_.Exception.Message)"
-            exit 1
-        }
-        $issueNumber = 0
-        $resultText = ($result | Out-String).Trim()
-        if ($resultText -match '/issues/(\d+)') {
-            $issueNumber = [int]$Matches[1]
-        }
-        $issue = if ($issueNumber -gt 0) { Get-GitHubIssue $issueNumber } else { $null }
-        if (-not $issue) {
-            Write-Host "Error: GitHub issue was created but could not be read back for verification."
-            exit 1
-        }
-        if (Test-GitHubProjectConfigured) {
-            if (-not (Set-GitHubProjectIssueStatus $issue.number 'Backlog' $true)) {
-                Write-Host "$($C.y)GitHub project status was not updated for issue #$($issue.number). Ensure the configured project is accessible and has a matching Status option.$($C.n)"
-            }
-        }
+    try {
+        $issue = New-AgentXIssue $title $body $labels $issueType
         Write-Host "$($C.g)Created issue #$($issue.number): $($issue.title)$($C.n)"
         if ($Script:JsonOutput) { $issue | ConvertTo-Json -Depth 5 }
-        return
+    } catch {
+        Write-Host "Error: $($_.Exception.Message)"
+        exit 1
     }
-
-    if ($provider -eq 'ado') {
-        Assert-AdoCliAvailable
-        $orgUrl = Get-AdoOrganizationUrl
-        $project = Get-AdoProjectName
-        if ([string]::IsNullOrWhiteSpace($orgUrl) -or [string]::IsNullOrWhiteSpace($project)) {
-            Write-Host 'Error: ADO provider requires organization and project in .agentx/config.json'; exit 1
-        }
-
-        $workItemType = Get-Flag @('--type')
-        if (-not $workItemType) { $workItemType = Convert-AgentXTypeToAdoWorkItemType $labels }
-
-        $args = @('boards', 'work-item', 'create', '--title', $title, '--type', $workItemType, '--organization', $orgUrl, '--project', $project, '--output', 'json')
-        if ($body) { $args += @('--description', $body) }
-        if ($labels.Count -gt 0) { $args += @('--fields', "System.Tags=$($labels -join '; ')") }
-
-        $json = & az @args 2>$null
-        $issue = if ($json) { Convert-AdoWorkItemToAgentXIssue ($json | ConvertFrom-Json) } else { $null }
-        if (-not $issue) {
-            Write-Host "$($C.g)Created ADO work item: $title$($C.n)"
-            return
-        }
-        Write-Host "$($C.g)Created issue #$($issue.number): $($issue.title)$($C.n)"
-        if ($Script:JsonOutput) { $issue | ConvertTo-Json -Depth 5 }
-        return
-    }
-
-    $num = Get-NextIssueNumber
-
-    $issue = [PSCustomObject]@{
-        number   = $num
-        title    = $title
-        body     = $body
-        labels   = @($labels)
-        status   = 'Backlog'
-        state    = 'open'
-        created  = Get-Timestamp
-        updated  = Get-Timestamp
-        comments = @()
-    }
-    Save-Issue $issue
-    Write-Host "$($C.g)Created issue #${num}: ${title}$($C.n)"
-    if ($Script:JsonOutput) { $issue | ConvertTo-Json -Depth 5 }
 }
 
 function Invoke-IssueUpdate {
@@ -2602,6 +3632,8 @@ $($C.w)  Commands:$($C.n)
   hooks install                    Install git hooks
   config [show|get|set]            View/update configuration
   issue <create|list|get|update|close|comment>  Issue management
+    bundle <create|list|get|resolve|promote>  Task bundle management
+    parallel <assess|start|list|get|reconcile>  Bounded parallel delivery
     backlog-sync [github] [--force]  Force sync local backlog to GitHub on demand
   lessons [list|query|show|stats|promote|archive|clean]  Learning pipeline management
   tokens [count|check|report]      Token budget management
@@ -2623,6 +3655,18 @@ $($C.w)  Issue Commands:$($C.n)
   issue update -n 1 -s "In Progress"
   issue close -n 1
   issue comment -n 1 -c "Started"
+
+$($C.w)  Task Bundle Commands:$($C.n)
+    bundle create -t "Slice work" --issue 42
+    bundle list --all
+    bundle get --id bundle-20260313-010203000-abc123
+    bundle resolve --id <bundle> --state Archived --archive-reason "Merged into parent"
+    bundle promote --id <bundle> --target story
+
+$($C.w)  Bounded Parallel Commands:$($C.n)
+    parallel assess --issue 42 --scope-independence independent --dependency-coupling low --artifact-overlap low --review-complexity bounded --recovery-complexity recoverable
+    parallel start --id <parallel-id> --units-base64 <base64-json-array>
+    parallel reconcile --id <parallel-id> --overlap-review pass --conflict-review pass --acceptance-evidence pass --owner-approval approved
 
 $($C.w)  Flags:$($C.n)
   --json / -j                      Output as JSON
@@ -2646,6 +3690,8 @@ switch ($Script:Command) {
     'hooks'    { Invoke-HooksCmd }
     'config'   { Invoke-ConfigCmd }
     'issue'    { Invoke-IssueCmd }
+    'bundle'   { Invoke-BundleCmd }
+    'parallel' { Invoke-ParallelCmd }
     'backlog-sync' { Invoke-BacklogSyncCmd }
     'lessons'  { Invoke-LessonsCmd }
     'git-sync' { Invoke-GitSyncCmd }

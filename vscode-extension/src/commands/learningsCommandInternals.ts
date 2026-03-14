@@ -12,6 +12,13 @@ import {
  renderCaptureGuidanceMarkdown,
  renderRankedLearningsText,
 } from '../utils/learnings';
+import {
+ evaluateWorkflowGuidance,
+ renderOperatorEnablementChecklistMarkdown,
+ renderWorkflowEntryPointMarkdown,
+ renderWorkflowGuidanceMarkdown,
+ renderWorkflowRolloutScorecardMarkdown,
+} from '../utils/workflowGuidance';
 
 let learningsChannel: vscode.OutputChannel | undefined;
 
@@ -73,6 +80,76 @@ export async function showCompoundLoop(agentx: AgentXContext): Promise<void> {
  const channel = getLearningsChannel();
  channel.clear();
  channel.appendLine(renderCompoundLoopMarkdown(root));
+ channel.show(true);
+}
+
+export async function showWorkflowNextStep(agentx: AgentXContext): Promise<void> {
+ const root = agentx.workspaceRoot;
+ if (!root) {
+  vscode.window.showWarningMessage('AgentX needs an open workspace to resolve the next workflow step.');
+  return;
+ }
+
+ const snapshot = evaluateWorkflowGuidance(root, !!(await agentx.getPendingClarification?.()));
+ const channel = getLearningsChannel();
+ channel.clear();
+ channel.appendLine(renderWorkflowGuidanceMarkdown(snapshot));
+ channel.show(true);
+}
+
+export async function showWorkflowRolloutScorecard(agentx: AgentXContext): Promise<void> {
+ const root = agentx.workspaceRoot;
+ if (!root) {
+  vscode.window.showWarningMessage('AgentX needs an open workspace to show the workflow rollout scorecard.');
+  return;
+ }
+
+ const snapshot = evaluateWorkflowGuidance(root, !!(await agentx.getPendingClarification?.()));
+ const channel = getLearningsChannel();
+ channel.clear();
+ channel.appendLine(renderWorkflowRolloutScorecardMarkdown(snapshot));
+ channel.show(true);
+}
+
+export async function showOperatorEnablementChecklist(agentx: AgentXContext): Promise<void> {
+ const root = agentx.workspaceRoot;
+ if (!root) {
+  vscode.window.showWarningMessage('AgentX needs an open workspace to show the operator enablement checklist.');
+  return;
+ }
+
+ const snapshot = evaluateWorkflowGuidance(root, !!(await agentx.getPendingClarification?.()));
+ const channel = getLearningsChannel();
+ channel.clear();
+ channel.appendLine(renderOperatorEnablementChecklistMarkdown(snapshot));
+ channel.show(true);
+}
+
+export async function launchPlanDeepening(agentx: AgentXContext): Promise<void> {
+ const root = agentx.workspaceRoot;
+ if (!root) {
+  vscode.window.showWarningMessage('AgentX needs an open workspace to prepare plan deepening.');
+  return;
+ }
+
+ const snapshot = evaluateWorkflowGuidance(root, !!(await agentx.getPendingClarification?.()));
+ const channel = getLearningsChannel();
+ channel.clear();
+ channel.appendLine(renderWorkflowEntryPointMarkdown(snapshot, 'plan-deepening'));
+ channel.show(true);
+}
+
+export async function launchReviewKickoff(agentx: AgentXContext): Promise<void> {
+ const root = agentx.workspaceRoot;
+ if (!root) {
+  vscode.window.showWarningMessage('AgentX needs an open workspace to prepare review kickoff.');
+  return;
+ }
+
+ const snapshot = evaluateWorkflowGuidance(root, !!(await agentx.getPendingClarification?.()));
+ const channel = getLearningsChannel();
+ channel.clear();
+ channel.appendLine(renderWorkflowEntryPointMarkdown(snapshot, 'review-kickoff'));
  channel.show(true);
 }
 

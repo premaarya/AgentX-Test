@@ -120,6 +120,36 @@
         "icon": "$(book)"
       },
       {
+        "command": "agentx.showWorkflowNextStep",
+        "title": "Show Workflow Next Step",
+        "category": "AgentX",
+        "icon": "$(debug-step-over)"
+      },
+      {
+        "command": "agentx.deepenPlan",
+        "title": "Deepen Plan",
+        "category": "AgentX",
+        "icon": "$(notebook)"
+      },
+      {
+        "command": "agentx.kickoffReview",
+        "title": "Kick Off Review",
+        "category": "AgentX",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "agentx.showWorkflowRolloutScorecard",
+        "title": "Show Workflow Rollout Scorecard",
+        "category": "AgentX",
+        "icon": "$(graph)"
+      },
+      {
+        "command": "agentx.showOperatorEnablementChecklist",
+        "title": "Show Operator Enablement Checklist",
+        "category": "AgentX",
+        "icon": "$(checklist)"
+      },
+      {
         "command": "agentx.showBrainstormGuide",
         "title": "Show Brainstorm Guide",
         "category": "AgentX",
@@ -166,6 +196,54 @@
         "title": "Promote Review Finding",
         "category": "AgentX",
         "icon": "$(repo-push)"
+      },
+      {
+        "command": "agentx.showTaskBundles",
+        "title": "Show Task Bundles",
+        "category": "AgentX",
+        "icon": "$(list-tree)"
+      },
+      {
+        "command": "agentx.createTaskBundle",
+        "title": "Create Task Bundle",
+        "category": "AgentX",
+        "icon": "$(new-file)"
+      },
+      {
+        "command": "agentx.resolveTaskBundle",
+        "title": "Resolve Task Bundle",
+        "category": "AgentX",
+        "icon": "$(archive)"
+      },
+      {
+        "command": "agentx.promoteTaskBundle",
+        "title": "Promote Task Bundle",
+        "category": "AgentX",
+        "icon": "$(repo-push)"
+      },
+      {
+        "command": "agentx.showBoundedParallelRuns",
+        "title": "Show Bounded Parallel Runs",
+        "category": "AgentX",
+        "icon": "$(split-horizontal)"
+      },
+      {
+        "command": "agentx.assessBoundedParallelDelivery",
+        "title": "Assess Bounded Parallel Delivery",
+        "category": "AgentX",
+        "icon": "$(beaker)"
+      },
+      {
+        "command": "agentx.startBoundedParallelDelivery",
+        "title": "Start Bounded Parallel Delivery",
+        "category": "AgentX",
+        "icon": "$(run)"
+      },
+      {
+        "command": "agentx.reconcileBoundedParallelRun",
+        "title": "Reconcile Bounded Parallel Run",
+        "category": "AgentX",
+        "icon": "$(git-merge)"
       }
     ],
     "viewsContainers": {
@@ -253,6 +331,21 @@
           "command": "agentx.generateDigest"
         },
         {
+          "command": "agentx.showWorkflowNextStep"
+        },
+        {
+          "command": "agentx.deepenPlan"
+        },
+        {
+          "command": "agentx.kickoffReview"
+        },
+        {
+          "command": "agentx.showWorkflowRolloutScorecard"
+        },
+        {
+          "command": "agentx.showOperatorEnablementChecklist"
+        },
+        {
           "command": "agentx.showBrainstormGuide"
         },
         {
@@ -278,6 +371,30 @@
         },
         {
           "command": "agentx.promoteReviewFinding"
+        },
+        {
+          "command": "agentx.showTaskBundles"
+        },
+        {
+          "command": "agentx.createTaskBundle"
+        },
+        {
+          "command": "agentx.resolveTaskBundle"
+        },
+        {
+          "command": "agentx.promoteTaskBundle"
+        },
+        {
+          "command": "agentx.showBoundedParallelRuns"
+        },
+        {
+          "command": "agentx.assessBoundedParallelDelivery"
+        },
+        {
+          "command": "agentx.startBoundedParallelDelivery"
+        },
+        {
+          "command": "agentx.reconcileBoundedParallelRun"
         }
       ]
     },

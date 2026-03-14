@@ -1,0 +1,124 @@
+import { strict as assert } from 'assert';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
+import {
+  evaluateWorkflowGuidance,
+  renderOperatorEnablementChecklistMarkdown,
+  renderWorkflowEntryPointMarkdown,
+  renderWorkflowGuidanceMarkdown,
+  renderWorkflowRolloutScorecardMarkdown,
+} from '../../utils/workflowGuidance';
+
+function writeFile(root: string, relativePath: string, content: string): void {
+  const filePath = path.join(root, ...relativePath.split('/'));
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, content, 'utf-8');
+}
+
+describe('workflow guidance utility', () => {
+  let tmpDir: string;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentx-workflow-guidance-'));
+    writeFile(tmpDir, '.agentx/issues/219.json', JSON.stringify({
+      number: 219,
+      title: 'Create rollout scorecard',
+      state: 'open',
+      status: 'In Progress',
+    }));
+    writeFile(tmpDir, '.agentx/state/harness-state.json', JSON.stringify({
+      version: 1,
+      threads: [{
+        id: 'thread-1',
+        title: 'Create rollout scorecard',
+        taskType: 'story',
+        status: 'active',
+        issueNumber: 219,
+        planPath: 'docs/execution/plans/ROLLOUT-SCORECARD-IMPLEMENTATION-PLAN.md',
+        startedAt: '2026-03-13T10:00:00Z',
+        updatedAt: '2026-03-13T10:05:00Z',
+      }],
+      turns: [],
+      items: [],
+      evidence: [],
+    }));
+    writeFile(tmpDir, '.agentx/state/loop-state.json', JSON.stringify({
+      active: false,
+      status: 'complete',
+      prompt: 'done',
+      iteration: 2,
+      maxIterations: 10,
+      completionCriteria: 'TASK_COMPLETE',
+      issueNumber: 219,
+      startedAt: '2026-03-13T10:00:00Z',
+      lastIterationAt: '2026-03-13T10:08:00Z',
+      history: [],
+    }));
+    writeFile(tmpDir, 'docs/execution/plans/ROLLOUT-SCORECARD-IMPLEMENTATION-PLAN.md', '# Plan\n');
+    writeFile(tmpDir, 'docs/execution/progress/ROLLOUT-SCORECARD-IMPLEMENTATION-PROGRESS.md', '# Progress\n');
+    writeFile(tmpDir, 'docs/guides/WORKFLOW-ROLLOUT-SCORECARD.md', '# Scorecard\n');
+    writeFile(tmpDir, 'docs/guides/WORKFLOW-PILOT-ORDER.md', '# Pilot\n');
+    writeFile(tmpDir, 'docs/guides/WORKFLOW-OPERATOR-CHECKLIST.md', '# Checklist\n');
+    writeFile(tmpDir, 'docs/artifacts/specs/SPEC-218.md', '# Spec\n');
+    writeFile(tmpDir, 'docs/artifacts/specs/SPEC-219.md', '# Spec\n');
+    writeFile(tmpDir, 'docs/artifacts/specs/SPEC-220.md', '# Spec\n');
+    writeFile(tmpDir, 'docs/artifacts/specs/SPEC-221.md', '# Spec\n');
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('resolves review-ready guidance from the active issue and linked plan', () => {
+    const snapshot = evaluateWorkflowGuidance(tmpDir);
+
+    assert.ok(snapshot);
+    assert.equal(snapshot?.currentCheckpoint, 'Review');
+    assert.equal(snapshot?.planDeepening.allowed, true);
+    assert.equal(snapshot?.reviewKickoff.allowed, true);
+    assert.equal(snapshot?.rolloutRows[0]?.state, 'pilot-ready');
+  });
+
+  it('fails closed to plan guidance when no plan is linked', () => {
+    writeFile(tmpDir, '.agentx/state/harness-state.json', JSON.stringify({
+      version: 1,
+      threads: [{
+        id: 'thread-1',
+        title: 'Create rollout scorecard',
+        taskType: 'story',
+        status: 'active',
+        issueNumber: 219,
+        startedAt: '2026-03-13T10:00:00Z',
+        updatedAt: '2026-03-13T10:05:00Z',
+      }],
+      turns: [],
+      items: [],
+      evidence: [],
+    }));
+    fs.rmSync(path.join(tmpDir, 'docs', 'execution', 'plans', 'ROLLOUT-SCORECARD-IMPLEMENTATION-PLAN.md'), { force: true });
+    fs.rmSync(path.join(tmpDir, 'docs', 'execution', 'progress', 'ROLLOUT-SCORECARD-IMPLEMENTATION-PROGRESS.md'), { force: true });
+    fs.rmSync(path.join(tmpDir, '.agentx', 'state', 'loop-state.json'), { force: true });
+
+    const snapshot = evaluateWorkflowGuidance(tmpDir);
+
+    assert.ok(snapshot);
+    assert.equal(snapshot?.currentCheckpoint, 'Plan');
+    assert.equal(snapshot?.recommendedAction, 'Deepen the plan before implementation continues');
+  });
+
+  it('renders workflow guidance, entry point, rollout, and checklist markdown', () => {
+    const snapshot = evaluateWorkflowGuidance(tmpDir);
+
+    const guidance = renderWorkflowGuidanceMarkdown(snapshot);
+    const entryPoint = renderWorkflowEntryPointMarkdown(snapshot, 'review-kickoff');
+    const rollout = renderWorkflowRolloutScorecardMarkdown(snapshot);
+    const checklist = renderOperatorEnablementChecklistMarkdown(snapshot);
+
+    assert.ok(guidance.includes('Workflow Guidance'));
+    assert.ok(guidance.includes('Current checkpoint'));
+    assert.ok(entryPoint.includes('Kick Off Review'));
+    assert.ok(rollout.includes('Workflow Rollout Scorecard'));
+    assert.ok(checklist.includes('Operator Enablement Checklist'));
+  });
+});

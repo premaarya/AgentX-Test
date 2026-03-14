@@ -10,6 +10,8 @@ This guide defines the shared workflow contract for three related AgentX concern
 
 These concerns are intentionally documented together because they form one compound-engineering workflow: shape the work with prior learnings, evaluate parity, decide what should be preserved, and track durable follow-up work when review findings require it.
 
+The canonical checkpoint names for this loop live in `docs/WORKFLOW.md`. This guide extends the `Review` and `Compound Capture` checkpoints and MUST reuse those names verbatim.
+
 ## Workflow Chain
 
 1. Start with a brainstorm step when planning would benefit from prior learnings or known workflow constraints.

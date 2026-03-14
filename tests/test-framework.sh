@@ -112,7 +112,7 @@ assert_file_exists ".agentx/agentx-cli.ps1" "CLI implementation exists"
 assert_file_exists ".agentx/agentic-runner.ps1" "CLI agentic loop runner exists"
 
 # Test CLI commands exist in the implementation
-for cmd in ready state deps digest workflow hook version run clarify loop validate config issue; do
+for cmd in ready state deps digest workflow hook version run clarify loop validate config issue bundle parallel; do
   assert_file_contains ".agentx/agentx-cli.ps1" "'$cmd'" "CLI supports: $cmd"
 done
 

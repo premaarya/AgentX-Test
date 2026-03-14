@@ -13,9 +13,14 @@ import {
   tryHandleCompoundRequest,
   tryHandleContinueRequest,
   tryHandleCreateLearningCaptureRequest,
+  tryHandleEnablementChecklistRequest,
   tryHandleLearningsRequest,
+  tryHandlePlanDeepeningRequest,
   tryHandlePromoteFindingRequest,
+  tryHandleReviewKickoffRequest,
   tryHandleReviewFindingsRequest,
+  tryHandleWorkflowNextStepRequest,
+  tryHandleWorkflowRolloutRequest,
 } from './requestRouterInternals';
 
 export async function getAgentXChatFollowups(
@@ -65,6 +70,31 @@ export async function routeAgentXChatRequest(
   }
 
   const root = agentx.workspaceRoot;
+
+  const workflowNextStepResult = await tryHandleWorkflowNextStepRequest(userText, response, root, pending);
+  if (workflowNextStepResult) {
+    return workflowNextStepResult;
+  }
+
+  const planDeepeningResult = await tryHandlePlanDeepeningRequest(userText, response, root, pending);
+  if (planDeepeningResult) {
+    return planDeepeningResult;
+  }
+
+  const reviewKickoffResult = await tryHandleReviewKickoffRequest(userText, response, root, pending);
+  if (reviewKickoffResult) {
+    return reviewKickoffResult;
+  }
+
+  const workflowRolloutResult = await tryHandleWorkflowRolloutRequest(userText, response, root, pending);
+  if (workflowRolloutResult) {
+    return workflowRolloutResult;
+  }
+
+  const enablementChecklistResult = await tryHandleEnablementChecklistRequest(userText, response, root, pending);
+  if (enablementChecklistResult) {
+    return enablementChecklistResult;
+  }
 
   const learningsResult = await tryHandleLearningsRequest(userText, response, root);
   if (learningsResult) {

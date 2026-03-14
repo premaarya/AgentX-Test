@@ -210,6 +210,70 @@ describe('chatParticipant', () => {
     assert.ok(markdown.includes('Top planning learnings'));
   });
 
+  it('returns workflow next-step guidance from chat', async () => {
+    fs.mkdirSync(path.join(tmpDir, '.agentx', 'issues'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, '.agentx', 'state'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, 'docs', 'execution', 'plans'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, 'docs', 'execution', 'progress'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, 'docs', 'artifacts', 'specs'), { recursive: true });
+    fs.writeFileSync(path.join(tmpDir, '.agentx', 'issues', '219.json'), JSON.stringify({ number: 219, title: 'Create rollout scorecard', state: 'open', status: 'In Progress' }), 'utf-8');
+    fs.writeFileSync(path.join(tmpDir, '.agentx', 'state', 'harness-state.json'), JSON.stringify({ version: 1, threads: [{ id: 'thread-1', title: 'Create rollout scorecard', taskType: 'story', status: 'active', issueNumber: 219, planPath: 'docs/execution/plans/ROLLOUT-SCORECARD-IMPLEMENTATION-PLAN.md', startedAt: '2026-03-13T10:00:00Z', updatedAt: '2026-03-13T10:05:00Z' }], turns: [], items: [], evidence: [] }), 'utf-8');
+    fs.writeFileSync(path.join(tmpDir, '.agentx', 'state', 'loop-state.json'), JSON.stringify({ active: false, status: 'complete', prompt: 'Done', iteration: 2, maxIterations: 10, completionCriteria: 'TASK_COMPLETE', startedAt: '2026-03-13T10:00:00Z', lastIterationAt: '2026-03-13T10:05:00Z', history: [] }), 'utf-8');
+    fs.writeFileSync(path.join(tmpDir, 'docs', 'execution', 'plans', 'ROLLOUT-SCORECARD-IMPLEMENTATION-PLAN.md'), '# Plan', 'utf-8');
+    fs.writeFileSync(path.join(tmpDir, 'docs', 'execution', 'progress', 'ROLLOUT-SCORECARD-IMPLEMENTATION-PROGRESS.md'), '# Progress', 'utf-8');
+    fs.writeFileSync(path.join(tmpDir, 'docs', 'guides', 'WORKFLOW-ROLLOUT-SCORECARD.md'), '# Scorecard', 'utf-8');
+    fs.writeFileSync(path.join(tmpDir, 'docs', 'guides', 'WORKFLOW-PILOT-ORDER.md'), '# Pilot', 'utf-8');
+    fs.writeFileSync(path.join(tmpDir, 'docs', 'guides', 'WORKFLOW-OPERATOR-CHECKLIST.md'), '# Checklist', 'utf-8');
+    fs.writeFileSync(path.join(tmpDir, 'docs', 'artifacts', 'specs', 'SPEC-218.md'), '# Spec', 'utf-8');
+    fs.writeFileSync(path.join(tmpDir, 'docs', 'artifacts', 'specs', 'SPEC-219.md'), '# Spec', 'utf-8');
+    fs.writeFileSync(path.join(tmpDir, 'docs', 'artifacts', 'specs', 'SPEC-220.md'), '# Spec', 'utf-8');
+    fs.writeFileSync(path.join(tmpDir, 'docs', 'artifacts', 'specs', 'SPEC-221.md'), '# Spec', 'utf-8');
+
+    const response = createMockResponseStream();
+    const agentx = {
+      checkInitialized: async () => true,
+      workspaceRoot: tmpDir,
+    };
+
+    await handleAgentXChatRequest(
+      { prompt: 'workflow next step' } as any,
+      response as any,
+      agentx as any,
+    );
+
+    const markdown = response.getMarkdown();
+    assert.ok(markdown.includes('Workflow Guidance'));
+    assert.ok(markdown.includes('Current checkpoint'));
+  });
+
+  it('returns review kickoff context from chat', async () => {
+    fs.mkdirSync(path.join(tmpDir, '.agentx', 'issues'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, '.agentx', 'state'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, 'docs', 'execution', 'plans'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, 'docs', 'execution', 'progress'), { recursive: true });
+    fs.writeFileSync(path.join(tmpDir, '.agentx', 'issues', '219.json'), JSON.stringify({ number: 219, title: 'Create rollout scorecard', state: 'open', status: 'In Progress' }), 'utf-8');
+    fs.writeFileSync(path.join(tmpDir, '.agentx', 'state', 'harness-state.json'), JSON.stringify({ version: 1, threads: [{ id: 'thread-1', title: 'Create rollout scorecard', taskType: 'story', status: 'active', issueNumber: 219, planPath: 'docs/execution/plans/ROLLOUT-SCORECARD-IMPLEMENTATION-PLAN.md', startedAt: '2026-03-13T10:00:00Z', updatedAt: '2026-03-13T10:05:00Z' }], turns: [], items: [], evidence: [] }), 'utf-8');
+    fs.writeFileSync(path.join(tmpDir, '.agentx', 'state', 'loop-state.json'), JSON.stringify({ active: false, status: 'complete', prompt: 'Done', iteration: 2, maxIterations: 10, completionCriteria: 'TASK_COMPLETE', startedAt: '2026-03-13T10:00:00Z', lastIterationAt: '2026-03-13T10:05:00Z', history: [] }), 'utf-8');
+    fs.writeFileSync(path.join(tmpDir, 'docs', 'execution', 'plans', 'ROLLOUT-SCORECARD-IMPLEMENTATION-PLAN.md'), '# Plan', 'utf-8');
+    fs.writeFileSync(path.join(tmpDir, 'docs', 'execution', 'progress', 'ROLLOUT-SCORECARD-IMPLEMENTATION-PROGRESS.md'), '# Progress', 'utf-8');
+
+    const response = createMockResponseStream();
+    const agentx = {
+      checkInitialized: async () => true,
+      workspaceRoot: tmpDir,
+    };
+
+    await handleAgentXChatRequest(
+      { prompt: 'kick off review' } as any,
+      response as any,
+      agentx as any,
+    );
+
+    const markdown = response.getMarkdown();
+    assert.ok(markdown.includes('Kick Off Review'));
+    assert.ok(markdown.includes('Context Package'));
+  });
+
   it('returns compound loop guidance from chat', async () => {
     const response = createMockResponseStream();
     const agentx = {

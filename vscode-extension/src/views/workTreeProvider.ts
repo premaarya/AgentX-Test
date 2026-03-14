@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { AgentXContext } from '../agentxContext';
 import { readHarnessState } from '../utils/harnessState';
+import { evaluateWorkflowGuidance } from '../utils/workflowGuidance';
 import { SidebarTreeItem } from './sidebarTreeItem';
 import * as path from 'path';
 import {
@@ -10,6 +11,7 @@ import {
  buildActiveThreadChildren,
  buildIssueChildren,
  buildOverviewChildren,
+ buildWorkflowGuidanceChildren,
  getLocalIssues,
  readJsonFile,
 } from './workTreeProviderInternals';
@@ -54,6 +56,9 @@ export class WorkTreeProvider implements vscode.TreeDataProvider<SidebarTreeItem
   const openIssues = localIssues.filter((issue) => (issue.state ?? 'open') !== 'closed');
 
   const overviewChildren = buildOverviewChildren(root, pendingClarification, openIssues.length);
+    const workflowGuidanceChildren = buildWorkflowGuidanceChildren(
+     evaluateWorkflowGuidance(root, !!pendingClarification),
+    );
   const activeThreadChildren = buildActiveThreadChildren(root, activeThread, activeTurn?.sequence);
   const activeAgentChildren = buildActiveAgentChildren(activeAgents);
   const issueChildren = buildIssueChildren(openIssues);
@@ -61,6 +66,7 @@ export class WorkTreeProvider implements vscode.TreeDataProvider<SidebarTreeItem
 
   return [
    SidebarTreeItem.section('Overview', 'dashboard', overviewChildren),
+     SidebarTreeItem.section('Next step', 'debug-step-over', workflowGuidanceChildren),
    SidebarTreeItem.section(
     activeThread ? activeThread.title : 'Active thread',
     'run-all',

@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { WorkflowGuidanceSnapshot } from '../utils/workflowGuidance';
 import { SidebarTreeItem } from './sidebarTreeItem';
 
 export interface AgentStatusEntry {
@@ -164,11 +165,14 @@ export function buildIssueChildren(openIssues: ReadonlyArray<LocalIssue>): Sideb
 export function buildActionChildren(): SidebarTreeItem[] {
  return [
   SidebarTreeItem.action('Run workflow', 'play', 'agentx.runWorkflow', 'Run Workflow'),
+  SidebarTreeItem.action('Workflow next step', 'debug-step-over', 'agentx.showWorkflowNextStep', 'Show Workflow Next Step'),
   SidebarTreeItem.action('Brainstorm', 'lightbulb', 'agentx.showBrainstormGuide', 'Brainstorm'),
   SidebarTreeItem.action('Planning learnings', 'book', 'agentx.showPlanningLearnings', 'Planning Learnings'),
   SidebarTreeItem.action('Review learnings', 'checklist', 'agentx.showReviewLearnings', 'Review Learnings'),
   SidebarTreeItem.action('Compound loop', 'layers', 'agentx.showCompoundLoop', 'Compound Loop'),
   SidebarTreeItem.action('Create learning capture', 'new-file', 'agentx.createLearningCapture', 'Create Learning Capture'),
+  SidebarTreeItem.action('Rollout scorecard', 'graph', 'agentx.showWorkflowRolloutScorecard', 'Show Workflow Rollout Scorecard'),
+  SidebarTreeItem.action('Operator checklist', 'checklist', 'agentx.showOperatorEnablementChecklist', 'Show Operator Enablement Checklist'),
   SidebarTreeItem.action('Capture guidance', 'archive', 'agentx.showKnowledgeCaptureGuidance', 'Knowledge Capture Guidance'),
   SidebarTreeItem.action('Review findings', 'comment-discussion', 'agentx.showReviewFindings', 'Review Findings'),
   SidebarTreeItem.action('Promote review finding', 'repo-push', 'agentx.promoteReviewFinding', 'Promote Review Finding'),
@@ -176,4 +180,46 @@ export function buildActionChildren(): SidebarTreeItem[] {
   SidebarTreeItem.action('Check environment', 'beaker', 'agentx.checkEnvironment', 'Check Environment'),
   SidebarTreeItem.action('Generate digest', 'notebook', 'agentx.generateDigest', 'Generate Digest'),
  ];
+}
+
+export function buildWorkflowGuidanceChildren(snapshot: WorkflowGuidanceSnapshot | undefined): SidebarTreeItem[] {
+ if (!snapshot) {
+  return [SidebarTreeItem.info('Open a workspace folder to resolve workflow guidance.')];
+ }
+
+ const children: SidebarTreeItem[] = [
+  SidebarTreeItem.detail('Current checkpoint', 'milestone', snapshot.currentCheckpoint),
+  SidebarTreeItem.detail('Why now', 'comment', snapshot.rationale),
+ ];
+
+ if (snapshot.recommendedCommand && snapshot.recommendedCommandTitle) {
+  children.unshift(
+   SidebarTreeItem.action(
+    snapshot.recommendedAction,
+    'play-circle',
+    snapshot.recommendedCommand,
+    snapshot.recommendedCommandTitle,
+   ),
+  );
+ } else {
+  children.unshift(SidebarTreeItem.detail('Recommended action', 'play-circle', snapshot.recommendedAction));
+ }
+
+ if (snapshot.planDeepening.allowed) {
+  children.push(SidebarTreeItem.action('Deepen plan', 'notebook', 'agentx.deepenPlan', 'Deepen Plan'));
+ }
+ if (snapshot.reviewKickoff.allowed) {
+  children.push(SidebarTreeItem.action('Kick off review', 'comment-discussion', 'agentx.kickoffReview', 'Kick Off Review'));
+ }
+
+ for (const blocker of snapshot.blockers) {
+  children.push(SidebarTreeItem.detail('Blocker', 'warning', blocker));
+ }
+
+ children.push(
+  SidebarTreeItem.action('Show rollout scorecard', 'graph', 'agentx.showWorkflowRolloutScorecard', 'Show Workflow Rollout Scorecard'),
+  SidebarTreeItem.action('Show operator checklist', 'checklist', 'agentx.showOperatorEnablementChecklist', 'Show Operator Enablement Checklist'),
+ );
+
+ return children;
 }

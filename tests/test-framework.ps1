@@ -94,7 +94,7 @@ Assert-FileExists ".agentx/agentx.sh" "Bash CLI launcher exists"
 Assert-FileExists ".agentx/agentic-runner.ps1" "CLI agentic loop runner exists"
 
 # Test CLI commands exist in the implementation file
-$cliCommands = @("ready", "state", "deps", "digest", "workflow", "hook", "version", "run", "loop", "validate", "config", "issue", "backlog-sync")
+$cliCommands = @("ready", "state", "deps", "digest", "workflow", "hook", "version", "run", "loop", "validate", "config", "issue", "bundle", "parallel", "backlog-sync")
 foreach ($cmd in $cliCommands) {
  Assert-FileContains ".agentx/agentx-cli.ps1" "'$cmd'" "CLI supports: $cmd"
 }
@@ -105,6 +105,8 @@ Assert-FileContains ".agentx/agentic-runner.ps1" "file_read" "Agentic runner has
 Assert-FileContains ".agentx/agentic-runner.ps1" "terminal_exec" "Agentic runner has terminal_exec tool"
 Assert-FileContains ".agentx/agentic-runner.ps1" "Copilot" "Agentic runner supports Copilot API"
 Assert-FileExists "tests/provider-behavior.ps1" "Provider behavior test script"
+Assert-FileExists "tests/task-bundle-behavior.ps1" "Task bundle behavior test script"
+Assert-FileExists "tests/bounded-parallel-behavior.ps1" "Bounded parallel behavior test script"
 Assert-FileExists "tests/agentic-runner-behavior.ps1" "Agentic runner behavior test script"
 
 $providerBehaviorResult = & pwsh -NoProfile -File (Join-Path $script:root "tests/provider-behavior.ps1") 2>&1
@@ -112,6 +114,18 @@ if ($LASTEXITCODE -ne 0) {
  Write-Host $providerBehaviorResult
 }
 Assert-True ($LASTEXITCODE -eq 0) "Provider CLI behavior tests pass"
+
+$taskBundleBehaviorResult = & pwsh -NoProfile -File (Join-Path $script:root "tests/task-bundle-behavior.ps1") 2>&1
+if ($LASTEXITCODE -ne 0) {
+ Write-Host $taskBundleBehaviorResult
+}
+Assert-True ($LASTEXITCODE -eq 0) "Task bundle CLI behavior tests pass"
+
+$boundedParallelBehaviorResult = & pwsh -NoProfile -File (Join-Path $script:root "tests/bounded-parallel-behavior.ps1") 2>&1
+if ($LASTEXITCODE -ne 0) {
+ Write-Host $boundedParallelBehaviorResult
+}
+Assert-True ($LASTEXITCODE -eq 0) "Bounded parallel CLI behavior tests pass"
 
 $agenticRunnerBehaviorResult = & pwsh -NoProfile -File (Join-Path $script:root "tests/agentic-runner-behavior.ps1") 2>&1
 if ($LASTEXITCODE -ne 0) {

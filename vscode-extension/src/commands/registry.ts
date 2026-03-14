@@ -8,8 +8,10 @@ import { registerDigestCommand } from './digest';
 import { registerLoopCommand } from './loopCommand';
 import { registerAgentNativeReviewCommand } from './agent-native-review';
 import { registerLearningsCommands } from './learnings';
+import { registerParallelDeliveryCommands } from './parallel-delivery';
 import { registerReviewFindingCommands } from './review-findings';
 import { registerShowIssueCommand } from './showIssue';
+import { registerTaskBundleCommands } from './task-bundles';
 import { registerPendingClarificationCommand } from './pendingClarification';
 
 export function registerAgentXCommands(
@@ -24,7 +26,9 @@ export function registerAgentXCommands(
  registerLoopCommand(context, agentx);
  registerAgentNativeReviewCommand(context, agentx);
  registerLearningsCommands(context, agentx);
+ registerParallelDeliveryCommands(context, agentx);
  registerReviewFindingCommands(context, agentx);
+ registerTaskBundleCommands(context, agentx);
  registerShowIssueCommand(context, agentx);
  registerPendingClarificationCommand(context, agentx);
 }

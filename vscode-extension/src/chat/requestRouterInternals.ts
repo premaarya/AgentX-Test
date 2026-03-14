@@ -10,6 +10,13 @@ import {
   renderRankedLearningsMarkdown,
 } from '../utils/learnings';
 import {
+  evaluateWorkflowGuidance,
+  renderOperatorEnablementChecklistMarkdown,
+  renderWorkflowEntryPointMarkdown,
+  renderWorkflowGuidanceMarkdown,
+  renderWorkflowRolloutScorecardMarkdown,
+} from '../utils/workflowGuidance';
+import {
   evaluateAgentNativeReview,
   renderAgentNativeReviewMarkdown,
 } from '../review/agent-native-review';
@@ -171,6 +178,11 @@ export function renderUsageGuidance(): string {
     + '- `@agentx run engineer "implement the health endpoint for issue #42"`\n'
     + '- `@agentx continue "use the existing auth flow and keep refresh tokens"`\n'
     + '- `@agentx brainstorm auth rollout constraints`\n'
+    + '- `@agentx workflow next step`\n'
+    + '- `@agentx deepen plan`\n'
+    + '- `@agentx kick off review`\n'
+    + '- `@agentx rollout scorecard`\n'
+    + '- `@agentx enablement checklist`\n'
     + '- `@agentx learnings planning`\n'
     + '- `@agentx learnings review auth workflow`\n'
     + '- `@agentx compound`\n'
@@ -183,6 +195,88 @@ export function renderUsageGuidance(): string {
     + '- `@agentx run reviewer "review the changes in issue #42"`\n\n'
     + 'During execution, live status updates for compaction, clarification, loop progress, tool activity, and self-review are streamed into chat.'
   );
+}
+
+export async function tryHandleWorkflowNextStepRequest(
+  userText: string,
+  response: vscode.ChatResponseStream,
+  workspaceRoot: string | undefined,
+  pending: PendingClarification | undefined,
+): Promise<vscode.ChatResult | undefined> {
+  if (!/^(workflow next step|workflow guidance|next workflow step)$/i.test(userText)) {
+    return undefined;
+  }
+
+  response.markdown(renderWorkflowGuidanceMarkdown(
+    evaluateWorkflowGuidance(workspaceRoot, !!pending),
+  ));
+  return {};
+}
+
+export async function tryHandlePlanDeepeningRequest(
+  userText: string,
+  response: vscode.ChatResponseStream,
+  workspaceRoot: string | undefined,
+  pending: PendingClarification | undefined,
+): Promise<vscode.ChatResult | undefined> {
+  if (!/^(deepen plan|plan deepening)$/i.test(userText)) {
+    return undefined;
+  }
+
+  response.markdown(renderWorkflowEntryPointMarkdown(
+    evaluateWorkflowGuidance(workspaceRoot, !!pending),
+    'plan-deepening',
+  ));
+  return {};
+}
+
+export async function tryHandleReviewKickoffRequest(
+  userText: string,
+  response: vscode.ChatResponseStream,
+  workspaceRoot: string | undefined,
+  pending: PendingClarification | undefined,
+): Promise<vscode.ChatResult | undefined> {
+  if (!/^(kick off review|review kickoff)$/i.test(userText)) {
+    return undefined;
+  }
+
+  response.markdown(renderWorkflowEntryPointMarkdown(
+    evaluateWorkflowGuidance(workspaceRoot, !!pending),
+    'review-kickoff',
+  ));
+  return {};
+}
+
+export async function tryHandleWorkflowRolloutRequest(
+  userText: string,
+  response: vscode.ChatResponseStream,
+  workspaceRoot: string | undefined,
+  pending: PendingClarification | undefined,
+): Promise<vscode.ChatResult | undefined> {
+  if (!/^(rollout scorecard|workflow rollout)$/i.test(userText)) {
+    return undefined;
+  }
+
+  response.markdown(renderWorkflowRolloutScorecardMarkdown(
+    evaluateWorkflowGuidance(workspaceRoot, !!pending),
+  ));
+  return {};
+}
+
+export async function tryHandleEnablementChecklistRequest(
+  userText: string,
+  response: vscode.ChatResponseStream,
+  workspaceRoot: string | undefined,
+  pending: PendingClarification | undefined,
+): Promise<vscode.ChatResult | undefined> {
+  if (!/^(enablement checklist|operator checklist)$/i.test(userText)) {
+    return undefined;
+  }
+
+  response.markdown(renderOperatorEnablementChecklistMarkdown(
+    evaluateWorkflowGuidance(workspaceRoot, !!pending),
+  ));
+  return {};
 }
 
 export function buildContinueGuidance(agentName: string): string {

@@ -428,6 +428,8 @@ erDiagram
 
 #### 4.2 Clarification Ledger JSON Schema
 
+Canonical schema file: [clarification-ledger.schema.json](../../../.github/schemas/clarification-ledger.schema.json)
+
 ```
 File: .agentx/state/clarifications/issue-{N}.json
 

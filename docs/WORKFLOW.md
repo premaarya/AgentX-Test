@@ -88,6 +88,72 @@ Canonical locations:
 
 **Why this exists:** Harness-oriented workflows depend on durable, repo-local state. If a complex task cannot be resumed from artifacts in the repository, it is not yet legible enough for reliable agent execution.
 
+### Workflow Checkpoint Contract
+
+AgentX also uses a deterministic checkpoint overlay so docs, chat, commands, sidebars, and CLI surfaces can describe the same operating loop without introducing a second workflow state machine.
+
+Checkpoint names are canonical and MUST be reused verbatim:
+
+- `Brainstorm`
+- `Plan`
+- `Work`
+- `Review`
+- `Compound Capture`
+- `Done`
+
+These checkpoints layer on top of the existing issue statuses (`Backlog`, `Ready`, `In Progress`, `In Review`, `Validating`, `Done`) and do not replace them. Status remains the routing and backlog source of truth. Checkpoints describe the current operating stage within that status model.
+
+#### Deterministic Resolution Rules
+
+The current checkpoint is resolved from durable evidence, not chat history or model judgment.
+
+| Checkpoint | When AgentX Resolves It | Required Evidence | Closeout Expectation | Typical Next Move |
+|------------|-------------------------|-------------------|----------------------|-------------------|
+| `Brainstorm` | No active issue or harness thread is linked yet | Open workspace plus missing scoped issue context | Frame the work before durable planning starts | Use brainstorm guidance to tighten scope |
+| `Plan` | Scope exists, but no durable execution plan is linked yet | Active issue or harness thread, but no execution plan/progress pair | Attach or refine the plan before implementation spreads across surfaces | Use `Deepen Plan` |
+| `Work` | A durable plan exists and review evidence does not yet exist | Execution plan, optionally progress log, active issue context | Produce validation-ready work without outrunning the plan | Continue implementation and validation |
+| `Review` | Review evidence exists, or the quality loop is complete and review is the next bounded checkpoint | Review artifact, durable finding, `In Review` status, or completed quality loop | Settle correctness and risk before closure | Use `Kick Off Review` or resume review |
+| `Compound Capture` | The issue is effectively closed for delivery, but reusable learning capture is still unresolved | Closed issue plus review evidence, but no curated learning capture | Preserve reusable learning or record an explicit closeout rationale | Create learning capture or document why none is needed |
+| `Done` | Delivery and compound closeout are both complete | Closed issue, review evidence, and durable compound-closeout evidence | No further lifecycle action is required | Review rollout posture or move to the next slice |
+
+#### Checkpoint Definitions
+
+| Checkpoint | Intent | Entry Criteria | Exit Criteria | Dependencies And Artifacts |
+|------------|--------|----------------|---------------|----------------------------|
+| `Brainstorm` | Shape the problem before planning | Need is visible, but issue scope is not yet durable enough to plan | A concrete issue, thread, or bounded task exists | Brainstorm guidance, issue discovery, prior learnings when available |
+| `Plan` | Turn scope into a durable execution path | Active issue or task context exists, but no linked plan anchors the work | Execution plan exists and can carry progress forward | Issue context, `docs/execution/plans/`, optional `docs/execution/progress/` |
+| `Work` | Produce the change while keeping evidence current | Durable plan exists and the task is in active delivery | Validation evidence is strong enough to begin or resume review | Execution plan, progress log, loop state, implementation evidence |
+| `Review` | Assess readiness, correctness, and follow-up work | Validation-ready output exists or review has already started | Review outcome is explicit: approved, changes requested, or follow-up captured | Review artifact, durable findings, `In Review` or `Validating` status |
+| `Compound Capture` | Preserve reusable learning before final closure drifts | Delivery is closed or closing, but reusable outcome capture is unresolved | Curated learning capture exists or an explicit closeout rationale is recorded | `docs/artifacts/learnings/`, issue closeout comment, related ADR/spec/review links |
+| `Done` | Mark the lifecycle complete with no remaining compound work | Review outcome and compound closeout are both settled | No further required lifecycle work remains | Closed issue, stable review outcome, durable capture or documented skip |
+
+#### Transition Guardrails
+
+| Transition | Required Before Transition | Blockers |
+|------------|----------------------------|----------|
+| `Brainstorm -> Plan` | The work is named and scoped to an issue, thread, or bounded task | Missing scope owner, unresolved problem statement |
+| `Plan -> Work` | A durable execution plan exists and the main constraints are explicit | No plan, no progress anchor for complex work, pending clarification |
+| `Work -> Review` | Validation evidence is ready and the quality loop is complete when applicable | Incomplete validation, unresolved clarification, no plan context for review |
+| `Review -> Compound Capture` | Review outcome is explicit and any durable findings are captured | Review still in progress, unresolved findings, approval state unclear |
+| `Compound Capture -> Done` | Curated learning exists or the closeout rationale is explicitly recorded in durable artifacts | Missing learning capture and no durable skip rationale |
+
+#### Surface-Language Contract
+
+The checkpoint names above are the shared vocabulary for:
+
+- `docs/WORKFLOW.md` as the canonical lifecycle reference
+- `docs/guides/KNOWLEDGE-REVIEW-WORKFLOWS.md` for post-review and compound guidance
+- VS Code sidebars that render `Current checkpoint` and `Next step`
+- VS Code commands such as `Workflow next step`, `Deepen Plan`, and `Kick Off Review`
+- Chat responses that explain the current checkpoint and recommended action
+- CLI or automation summaries that need to explain why a transition is or is not ready
+
+Surfaces MAY add local rationale or blockers, but they MUST NOT rename the checkpoints or imply a transition succeeded when the required evidence is missing.
+
+#### Current Runtime Note
+
+The current extension resolver in `vscode-extension/src/utils/workflowGuidance.ts` treats curated learning capture as the durable machine-readable signal for leaving `Compound Capture`. An explicit human skip rationale is still a valid process closeout, but until it is represented in a durable artifact the resolver will remain conservative and keep the workflow at `Compound Capture` instead of inferring `Done`.
+
 ---
 
 ## Architecture
