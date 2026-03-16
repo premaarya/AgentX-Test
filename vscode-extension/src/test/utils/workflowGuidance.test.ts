@@ -107,6 +107,34 @@ describe('workflow guidance utility', () => {
     assert.equal(snapshot?.recommendedAction, 'Deepen the plan before implementation continues');
   });
 
+  it('resolves brainstorm guidance when no issue or harness thread is linked', () => {
+    fs.rmSync(path.join(tmpDir, '.agentx', 'issues'), { recursive: true, force: true });
+    fs.rmSync(path.join(tmpDir, '.agentx', 'state', 'harness-state.json'), { force: true });
+    fs.rmSync(path.join(tmpDir, '.agentx', 'state', 'loop-state.json'), { force: true });
+
+    const snapshot = evaluateWorkflowGuidance(tmpDir);
+
+    assert.ok(snapshot);
+    assert.equal(snapshot?.currentCheckpoint, 'Brainstorm');
+    assert.equal(snapshot?.recommendedAction, 'Frame the work with the brainstorm guide');
+  });
+
+  it('resolves compound capture when the issue is closed with review evidence but no learning capture', () => {
+    writeFile(tmpDir, '.agentx/issues/219.json', JSON.stringify({
+      number: 219,
+      title: 'Create rollout scorecard',
+      state: 'closed',
+      status: 'Done',
+    }));
+    writeFile(tmpDir, 'docs/artifacts/reviews/REVIEW-219.md', '# Review\n');
+
+    const snapshot = evaluateWorkflowGuidance(tmpDir);
+
+    assert.ok(snapshot);
+    assert.equal(snapshot?.currentCheckpoint, 'Compound Capture');
+    assert.equal(snapshot?.recommendedAction, 'Record the curated learning capture before final closeout');
+  });
+
   it('renders workflow guidance, entry point, rollout, and checklist markdown', () => {
     const snapshot = evaluateWorkflowGuidance(tmpDir);
 

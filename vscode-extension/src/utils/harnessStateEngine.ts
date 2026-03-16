@@ -44,9 +44,16 @@ export function readHarnessState(workspaceRoot: string): HarnessState {
 }
 
 export function findDefaultExecutionPlanPath(workspaceRoot: string): string | undefined {
- const explicitPlansDir = path.join(workspaceRoot, 'docs', 'plans');
+ // Canonical location per docs/WORKFLOW.md is docs/execution/plans/.
+ // Legacy docs/plans/ is checked as a fallback for older workspaces.
+ const canonicalPlansDir = path.join(workspaceRoot, 'docs', 'execution', 'plans');
+ const legacyPlansDir = path.join(workspaceRoot, 'docs', 'plans');
  const candidates: string[] = [];
- findMarkdownFiles(explicitPlansDir, candidates);
+ findMarkdownFiles(canonicalPlansDir, candidates);
+
+ if (candidates.length === 0) {
+  findMarkdownFiles(legacyPlansDir, candidates);
+ }
 
  if (candidates.length === 0) {
   const docsDir = path.join(workspaceRoot, 'docs');
@@ -56,7 +63,12 @@ export function findDefaultExecutionPlanPath(workspaceRoot: string): string | un
  return candidates
   .map((candidate) => toPosixRelative(workspaceRoot, candidate))
   .sort()
-  .find((candidate) => candidate.startsWith('docs/plans/') || /(^|\/)EXEC-PLAN.+\.md$/i.test(candidate));
+  .find(
+   (candidate) =>
+    candidate.startsWith('docs/execution/plans/') ||
+    candidate.startsWith('docs/plans/') ||
+    /(^|\/)EXEC-PLAN.+\.md$/i.test(candidate),
+  );
 }
 
 export function startHarnessThread(

@@ -2,7 +2,7 @@
   "name": "agentx",
   "displayName": "AgentX - Multi-Agent Orchestration",
   "description": "AI-powered multi-agent orchestration framework for GitHub Copilot. Coordinate PM, UX, Architect, Data Scientist, Engineer, Reviewer, DevOps, Tester, Power BI Analyst, and Consulting Research agents in a structured software development workflow.",
-  "version": "8.3.0",
+  "version": "8.3.1",
   "publisher": "jnPiyush",
   "extensionKind": [
     "workspace",
@@ -67,7 +67,7 @@
       },
       {
         "command": "agentx.runWorkflow",
-        "title": "Run Workflow",
+        "title": "Show Workflow Steps",
         "category": "AgentX",
         "icon": "$(play)"
       },
@@ -291,7 +291,7 @@
       },
       {
         "view": "agentx-work",
-        "contents": "No active work yet.\n\n[Run Workflow](command:agentx.runWorkflow)\n[Show Agent Status](command:agentx.showStatus)",
+        "contents": "No active work yet.\n\n[Show Workflow Steps](command:agentx.runWorkflow)\n[Show Agent Status](command:agentx.showStatus)",
         "when": "agentx.initialized"
       }
     ],

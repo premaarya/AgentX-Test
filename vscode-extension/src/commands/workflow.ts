@@ -19,15 +19,15 @@ export const WORKFLOW_OPTIONS: ReadonlyArray<WorkflowOption> = [
 ];
 
 /**
- * Register the AgentX: Run Workflow command.
- * Lets user pick a workflow type and runs it.
- * Auto-starts an iterative loop when a workflow step has iterate=true.
+ * Register the AgentX workflow-steps command.
+ * Lets the user inspect workflow steps for a selected type.
+ * Auto-starts an iterative loop when the rendered workflow includes iterate=true.
  */
 export function registerWorkflowCommand(
  context: vscode.ExtensionContext,
  agentx: AgentXContext
 ) {
- const runWorkflow = async (workflowLabel?: string) => {
+ const showWorkflowSteps = async (workflowLabel?: string) => {
  if (!await agentx.checkInitialized()) {
  vscode.window.showWarningMessage('AgentX is not initialized.');
  return;
@@ -37,15 +37,15 @@ export function registerWorkflowCommand(
   ? WORKFLOW_OPTIONS.find((option) => option.label === workflowLabel)
   : await vscode.window.showQuickPick(
    WORKFLOW_OPTIONS,
-   { placeHolder: 'Select workflow type', title: 'AgentX Workflow' },
+   { placeHolder: 'Select workflow type', title: 'AgentX Workflow Steps' },
   );
  if (!workflowType) { return; }
 
  try {
-    const output = await agentx.runCli('workflow', [workflowType.label]);
- const channel = vscode.window.createOutputChannel('AgentX Workflow');
+     const output = await agentx.runCli('workflow', [workflowType.label]);
+   const channel = vscode.window.createOutputChannel('AgentX Workflow Steps');
  channel.clear();
- channel.appendLine(`=== AgentX Workflow: ${workflowType.label} ===\n`);
+   channel.appendLine(`=== AgentX Workflow Steps: ${workflowType.label} ===\n`);
  channel.appendLine(output);
  channel.show();
 
@@ -74,11 +74,11 @@ export function registerWorkflowCommand(
  };
 
  const cmd = vscode.commands.registerCommand('agentx.runWorkflow', async () => {
-  await runWorkflow();
+  await showWorkflowSteps();
  });
 
  const directCmd = vscode.commands.registerCommand('agentx.runWorkflowType', async (workflowLabel: string) => {
-  await runWorkflow(workflowLabel);
+  await showWorkflowSteps(workflowLabel);
  });
 
  context.subscriptions.push(cmd, directCmd);

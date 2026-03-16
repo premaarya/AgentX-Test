@@ -1,5 +1,5 @@
 #!/bin/bash
-# AgentX v8.3.0 Installer - Download, copy, configure.
+# AgentX v8.3.1 Installer - Download, copy, configure.
 #
 # Modes: local (default), github
 #
@@ -111,7 +111,7 @@ skip() { echo -e "${D}[--] $1${N}"; }
 # -- Banner ----------------------------------------------
 echo ""
 echo -e "${C}+===================================================+${N}"
-echo -e "${C}| AgentX v8.3.0 - AI Agent Orchestration |${N}"
+echo -e "${C}| AgentX v8.3.1 - AI Agent Orchestration |${N}"
 echo -e "${C}+===================================================+${N}"
 echo ""
 
@@ -143,11 +143,11 @@ if [ -f ".agentx/version.json" ]; then
  PREVIOUS_VERSION=$(grep -o '"version"[[:space:]]*:[[:space:]]*"[^"]*"' .agentx/version.json 2>/dev/null | head -1 | sed 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)"/\1/')
 fi
 
-if [ -n "$PREVIOUS_VERSION" ] && [ "$PREVIOUS_VERSION" != "8.3.0" ]; then
+if [ -n "$PREVIOUS_VERSION" ] && [ "$PREVIOUS_VERSION" != "8.3.1" ]; then
  MAJOR_VERSION=$(echo "$PREVIOUS_VERSION" | cut -d. -f1)
 
  if [ "$MAJOR_VERSION" -lt 8 ] 2>/dev/null; then
-  echo -e "${Y}[!] Detected AgentX v$PREVIOUS_VERSION - upgrading to v8.3.0...${N}"
+  echo -e "${Y}[!] Detected AgentX v$PREVIOUS_VERSION - upgrading to v8.3.1...${N}"
   echo -e "${D}  Uninstalling v$PREVIOUS_VERSION and performing clean install.${N}"
 
   # Back up user data that must survive the upgrade
@@ -200,7 +200,7 @@ mkdir -p "$TMP"
 $FETCH "$ARCHIVE_URL" > "$TMPARCHIVE"
 [ -s "$TMPARCHIVE" ] || { echo "Download failed. Check network."; exit 1; }
 
-# Extract only essential paths (skip vscode-extension, tests, docs, MD files, CHANGELOG, CONTRIBUTING, etc.)
+# Extract only essential paths (skip vscode-extension, tests, and large historical docs content)
 tar xzf "$TMPARCHIVE" --strip-components=1 -C "$TMP" \
  "$PREFIX/.agentx" \
  "$PREFIX/.github" \
@@ -208,7 +208,14 @@ tar xzf "$TMPARCHIVE" --strip-components=1 -C "$TMP" \
  "$PREFIX/.vscode" \
  "$PREFIX/scripts" \
  "$PREFIX/packs" \
- "$PREFIX/.gitignore" 2>/dev/null || true
+ "$PREFIX/.gitignore" \
+ "$PREFIX/AGENTS.md" \
+ "$PREFIX/Skills.md" \
+ "$PREFIX/docs/WORKFLOW.md" \
+ "$PREFIX/docs/GUIDE.md" \
+ "$PREFIX/docs/GOLDEN_PRINCIPLES.md" \
+ "$PREFIX/docs/QUALITY_SCORE.md" \
+ "$PREFIX/docs/tech-debt-tracker.md" 2>/dev/null || true
 
 [ -d "$TMP/.agentx" ] || { echo "Download failed. Check network."; exit 1; }
 ok "AgentX downloaded (essential files only)"
@@ -219,6 +226,11 @@ copied=0; skipped=0
 
 while IFS= read -r src; do
  rel="${src#$TMP/}"
+ case "$rel" in
+  .agentx/config.json|.agentx/version.json|.agentx/issues/*|.agentx/digests/*|.agentx/sessions/*|.agentx/memory/*|.agentx/state/*)
+   continue
+   ;;
+ esac
  dest="./$rel"
  mkdir -p "$(dirname "$dest")"
  if [ "$FORCE" = "true" ] || [ ! -f "$dest" ]; then
@@ -232,12 +244,12 @@ ok "$copied files installed ($skipped existing skipped)"
 
 # -- Step 3: Generate runtime files ----------------------
 echo -e "${C}[3] Configuring runtime...${N}"
-mkdir -p .agentx/state .agentx/digests docs/{prd,adr,specs,architecture} memories/session
+mkdir -p .agentx/state .agentx/digests docs/artifacts/{prd,adr,specs,reviews} docs/execution/{plans,progress} docs/{ux,architecture} memories/session
 
 # Version tracking
 VERSION_FILE=".agentx/version.json"
-echo "{ \"version\": \"8.3.0\", \"mode\": \"$MODE\", \"installedAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\", \"updatedAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\" }" > "$VERSION_FILE"
-ok "Version 8.3.0 recorded"
+echo "{ \"version\": \"8.3.1\", \"mode\": \"$MODE\", \"installedAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\", \"updatedAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\" }" > "$VERSION_FILE"
+ok "Version 8.3.1 recorded"
 
 # Merge AgentX entries into user's .gitignore
 MARKER_START="# --- AgentX (auto-generated, do not edit this block) ---"
@@ -460,7 +472,7 @@ fi
 # -- Done ------------------------------------------------
 echo ""
 echo -e "${G}===================================================${N}"
-echo -e "${G} AgentX v8.3.0 installed! [$DISPLAY_MODE]${N}"
+echo -e "${G} AgentX v8.3.1 installed! [$DISPLAY_MODE]${N}"
 echo -e "${G}===================================================${N}"
 echo ""
 echo " CLI: ./.agentx/agentx.sh help"

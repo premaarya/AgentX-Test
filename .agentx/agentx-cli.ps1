@@ -9,7 +9,7 @@
 #   pwsh .agentx/agentx-cli.ps1 issue create -t "Title" -l "type:story"
 #   pwsh .agentx/agentx-cli.ps1 state -a engineer -s working -i 42
 #   pwsh .agentx/agentx-cli.ps1 deps 42
-#   pwsh .agentx/agentx-cli.ps1 workflow feature
+#   pwsh .agentx/agentx-cli.ps1 workflow engineer
 #   pwsh .agentx/agentx-cli.ps1 loop start -p "Fix tests" -m 20
 #   pwsh .agentx/agentx-cli.ps1 run engineer "Fix the failing tests"
 #   pwsh .agentx/agentx-cli.ps1 validate 42 engineer
@@ -2812,8 +2812,25 @@ function Invoke-WorkflowCmd {
                 Write-Host "  $($C.w)$name$($C.n) $($C.d)- $desc$($C.n)"
             }
         }
-        Write-Host "`n$($C.d)  Usage: agentx workflow <agent-name>$($C.n)`n"
+        Write-Host "`n$($C.d)  Usage: agentx workflow <agent-name|issue-type>$($C.n)"
+        Write-Host "$($C.d)  Examples: agentx workflow engineer, agentx workflow feature, agentx workflow bug$($C.n)`n"
         return
+    }
+
+    $typeAliasMap = @{
+        'bug' = 'engineer'
+        'data-science' = 'data-scientist'
+        'devops' = 'devops'
+        'docs' = 'engineer'
+        'epic' = 'product-manager'
+        'feature' = 'architect'
+        'powerbi' = 'powerbi-analyst'
+        'spike' = 'architect'
+        'story' = 'engineer'
+        'testing' = 'tester'
+    }
+    if ($typeAliasMap.ContainsKey($agentName)) {
+        $agentName = $typeAliasMap[$agentName]
     }
 
     $agentFile = Join-Path $agentsDir "$agentName.agent.md"
@@ -3624,7 +3641,7 @@ $($C.w)  Commands:$($C.n)
   state [-a agent -s status]       Show/update agent states
   deps <issue>                     Check dependencies for an issue
   digest                           Generate weekly digest
-  workflow [type]                   List/show workflow steps
+    workflow [agent-name]            List/show workflow steps for an agent
   loop <start|status|iterate|complete|cancel>  Iterative refinement
   run <agent> <prompt>             Run agentic loop (LLM + tools via GitHub Models API)
   validate <issue> <role>          Pre-handoff validation

@@ -311,6 +311,16 @@ When a GitHub project number is configured, the CLI will:
 - update Project V2 status when `agentx issue update -s ...` is used
 - set Project V2 status to `Done` before `agentx issue close`
 
+GitHub does not emit a normal workflow event when a Project V2 Status field changes. After moving an issue between Status values, rerun Agent X routing by adding an issue comment with exactly:
+
+```text
+/agentx route
+```
+
+The same router workflow also remains available through manual `workflow_dispatch` when needed.
+
+When `.agentx/config.json` includes a GitHub project number, AgentX also ships a scheduled reroute poller workflow that scans recent Project V2 item changes and redispatches `agent-x.yml` automatically. Use `/agentx route` when you need an immediate reroute instead of waiting for the next scheduled scan.
+
 ### Status Transitions
 
 | Phase | Status Transition | Meaning |
@@ -404,6 +414,8 @@ gh issue close <ID> --reason completed
 
 - **Status not visible**: Ensure issue is added to project and Status field exists
 - **Agent coordination issues**: Verify Status field value in Projects board
+- **Status changed but routing did not re-run**: Add the issue comment `/agentx route` to trigger an explicit status-based reroute
+- **Automatic reroute still not happening**: Verify `.agentx/config.json` includes the GitHub project number and that the `Agent X Project Reroute Poller` workflow is enabled
 - **Manual add**: `gh project item-add <PROJECT_ID> --owner <OWNER> --url <ISSUE_URL>`
 
 ---
@@ -527,10 +539,10 @@ The CLI works across Local, GitHub, and ADO providers. It resolves the active pl
 # PowerShell
 .\.agentx\agentx.ps1 ready                          # Show priority-sorted work queue
 .\.agentx\agentx.ps1 state                          # Show all agent states
-.\.agentx\agentx.ps1 state -Agent engineer -Set working -Issue 42
-.\.agentx\agentx.ps1 deps -IssueNumber 42           # Check issue dependencies
+.\.agentx\agentx.ps1 state -a engineer -s working -i 42
+.\.agentx\agentx.ps1 deps 42                        # Check issue dependencies
 .\.agentx\agentx.ps1 digest                         # Generate weekly digest
-.\.agentx\agentx.ps1 workflow -Type feature          # Show workflow steps
+.\.agentx\agentx.ps1 workflow engineer              # Show workflow steps
 .\.agentx\agentx.ps1 hook -Phase start -Agent engineer -Issue 42
 .\.agentx\agentx.ps1 run engineer "Fix the tests"   # Run agentic loop (LLM + tools)
 .\.agentx\agentx.ps1 config show                    # View current configuration
@@ -877,8 +889,8 @@ go install github.com/github/github-mcp-server@latest
 |------|---------|
 | **See pending work** | `.\.agentx\agentx.ps1 ready` |
 | **Check agent states** | `.\.agentx\agentx.ps1 state` |
-| **View workflow steps** | `.\.agentx\agentx.ps1 workflow -Type story` |
-| **Check dependencies** | `.\.agentx\agentx.ps1 deps -IssueNumber 1` |
+| **View workflow steps** | `.\.agentx\agentx.ps1 workflow engineer` |
+| **Check dependencies** | `.\.agentx\agentx.ps1 deps 1` |
 | **Scaffold an AI agent** | `python .github/skills/ai-systems/ai-agent-development/scripts/scaffold-agent.py --name my-agent` |
 | **Scaffold RAG/Memory** | `python .github/skills/ai-systems/cognitive-architecture/scripts/scaffold-cognitive.py --name my-agent` |
 | **Run security scan** | `.github/skills/architecture/security/scripts/scan-secrets.ps1` |

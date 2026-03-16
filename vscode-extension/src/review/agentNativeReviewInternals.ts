@@ -66,7 +66,7 @@ const CAPABILITIES: ReadonlyArray<CapabilityDefinition> = [
  {
   id: 'workflow-execution',
   label: 'Workflow execution',
-  userSignals: ['agentx.runWorkflow', 'Run workflow'],
+    userSignals: ['agentx.runWorkflow', 'Show workflow steps'],
   agentSignals: ['run engineer', 'run reviewer', 'run architect'],
   sharedSignals: ['workspaceRoot', 'listExecutionPlanFiles'],
   summary: 'Workflow execution should exist for both operator-triggered commands and agent-triggered review flows.',

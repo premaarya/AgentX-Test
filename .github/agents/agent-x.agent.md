@@ -255,32 +255,9 @@ If execution is ambiguous, context is missing, or a specialist phase is blocked:
 
 ## Inter-Agent Clarification Protocol
 
-### Step 1: Read Artifacts First (MANDATORY)
+Canonical guidance: [WORKFLOW.md](../../docs/WORKFLOW.md#agentx-auto-mode)
 
-Before asking any agent for help, read all relevant filesystem artifacts:
-
-- PRD at `docs/artifacts/prd/PRD-{issue}.md`
-- ADR at `docs/artifacts/adr/ADR-{issue}.md`
-- Tech Spec at `docs/artifacts/specs/SPEC-{issue}.md`
-- UX Design at `docs/ux/UX-{issue}.md`
-
-Only proceed to Step 2 if a question remains unanswered after reading all artifacts.
-
-### Step 2: Apply the Specialist Lens Internally
-
-If a question remains after reading artifacts, continue in the same session using the relevant specialist lens and constraints.
-
-Only ask the user to switch agents when the platform cannot preserve the required context or when the user explicitly wants manual specialist isolation.
-
-### Step 3: Follow Up If Needed
-
-If the user returns with an incomplete answer, ask them to follow up with the same agent.
-Maximum 3 follow-up exchanges per topic.
-
-### Step 4: Escalate to User If Unresolved
-
-After 3 internal clarification attempts with no resolution, tell the user:
-"I need clarification on <topic> before I can continue. The unresolved question is: <question>."
+Use the shared guide for the artifact-first clarification flow, internal specialist-lens fallback, follow-up limits, and escalation behavior. Keep this file focused on AgentX Auto routing and orchestration rules.
 
 ## Iterative Quality Loop (MANDATORY)
 

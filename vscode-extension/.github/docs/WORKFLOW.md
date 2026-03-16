@@ -58,6 +58,10 @@ git commit -m "fix: resolve login timeout (#1)"
 > **Status Tracking**: Use GitHub Projects V2 **Status** field (GitHub mode) or local JSON status (Local mode).
 > See [GUIDE.md](GUIDE.md#local-mode-no-github) for local mode details.
 
+> **GitHub reroute trigger**: GitHub does not emit a normal workflow event when a Project V2 Status field changes. After moving an issue to a new Status value in GitHub mode, add the issue comment `/agentx route` to rerun the router against the latest board state.
+
+> **Automatic GitHub reroute**: When `.agentx/config.json` includes a GitHub project number, the scheduled `Agent X Project Reroute Poller` workflow scans recent Project V2 item changes and redispatches `agent-x.yml`. The comment trigger remains the immediate fallback between scheduled scans.
+
 ### Execution Plans For Complex Work
 
 For simple work, the standard issue-first flow is sufficient. For complex work, the issue-first flow is necessary but not sufficient.
@@ -142,7 +146,7 @@ The current checkpoint is resolved from durable evidence, not chat history or mo
 The checkpoint names above are the shared vocabulary for:
 
 - `docs/WORKFLOW.md` as the canonical lifecycle reference
-- `docs/guides/KNOWLEDGE-REVIEW-WORKFLOWS.md` for post-review and compound guidance
+- `docs/WORKFLOW.md` for post-review and compound guidance
 - VS Code sidebars that render `Current checkpoint` and `Next step`
 - VS Code commands such as `Workflow next step`, `Deepen Plan`, and `Kick Off Review`
 - Chat responses that explain the current checkpoint and recommended action

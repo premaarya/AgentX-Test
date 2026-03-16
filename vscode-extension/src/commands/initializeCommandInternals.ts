@@ -285,8 +285,8 @@ export async function runInitializeCommand(
     progress.report({ message: 'Configuring runtime...', increment: 20 });
     const runtimeDirs = [
      '.agentx/state', '.agentx/digests',
-     'docs/prd', 'docs/adr', 'docs/specs',
-     'docs/ux', 'docs/reviews', 'docs/progress',
+     'docs/artifacts/prd', 'docs/artifacts/adr', 'docs/artifacts/specs',
+     'docs/ux', 'docs/artifacts/reviews', 'docs/execution/plans', 'docs/execution/progress',
      'docs/architecture',
      'memories', 'memories/session',
     ];

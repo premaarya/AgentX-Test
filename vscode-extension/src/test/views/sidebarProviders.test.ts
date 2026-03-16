@@ -28,7 +28,7 @@ function createAgentxStub(root: string) {
     githubConnected: true,
     adoConnected: false,
     getPendingClarification: async () => undefined,
-    listExecutionPlanFiles: () => ['docs/plans/EXEC-PLAN-1.md'],
+    listExecutionPlanFiles: () => ['docs/execution/plans/EXEC-PLAN-1.md'],
     getStatePath: (fileName: string) => path.join(root, '.agentx', 'state', fileName),
   } as any;
 }
@@ -134,11 +134,10 @@ describe('sidebar providers', () => {
 
   it('StatusTreeProvider should show current state, quality signals, and workflow catalog', async () => {
     const root = createWorkspaceRoot();
-    fs.mkdirSync(path.join(root, 'docs', 'progress'), { recursive: true });
     fs.mkdirSync(path.join(root, 'docs', 'guides'), { recursive: true });
     fs.mkdirSync(path.join(root, 'docs', 'artifacts', 'specs'), { recursive: true });
-    fs.writeFileSync(path.join(root, 'docs', 'plans', 'EXEC-PLAN-1.md'), '# Plan', 'utf-8');
-    fs.writeFileSync(path.join(root, 'docs', 'progress', 'EXEC-PLAN-1.md'), '# Progress', 'utf-8');
+    fs.writeFileSync(path.join(root, 'docs', 'execution', 'plans', 'EXEC-PLAN-1.md'), '# Plan', 'utf-8');
+    fs.writeFileSync(path.join(root, 'docs', 'execution', 'progress', 'EXEC-PLAN-1.md'), '# Progress', 'utf-8');
     fs.writeFileSync(path.join(root, 'docs', 'guides', 'WORKFLOW-ROLLOUT-SCORECARD.md'), '# Scorecard', 'utf-8');
     fs.writeFileSync(path.join(root, 'docs', 'guides', 'WORKFLOW-PILOT-ORDER.md'), '# Pilot', 'utf-8');
     fs.writeFileSync(path.join(root, 'docs', 'guides', 'WORKFLOW-OPERATOR-CHECKLIST.md'), '# Checklist', 'utf-8');
@@ -218,7 +217,7 @@ describe('sidebar providers', () => {
     const root = createWorkspaceRoot();
     fs.writeFileSync(
       path.join(root, '.agentx', 'version.json'),
-      JSON.stringify({ version: '8.3.0', mode: 'github' }),
+      JSON.stringify({ version: '8.3.1', mode: 'github' }),
       'utf-8',
     );
     fs.writeFileSync(
@@ -232,7 +231,7 @@ describe('sidebar providers', () => {
     const items = await provider.getChildren();
 
     const overviewChildren = await provider.getChildren(items[0]);
-    assert.ok(overviewChildren.some((item) => item.label === 'Version' && item.description === '8.3.0'));
+    assert.ok(overviewChildren.some((item) => item.label === 'Version' && item.description === '8.3.1'));
     assert.ok(overviewChildren.some((item) => item.label === 'Mode' && item.description === 'github'));
     assert.ok(overviewChildren.some((item) => item.label === 'GitHub MCP' && item.description === 'connected'));
     assert.ok(overviewChildren.some((item) => item.label === 'Azure skills' && item.description === 'installed'));

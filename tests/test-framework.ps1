@@ -47,6 +47,12 @@ Assert-FileExists "README.md" "README.md"
 Assert-FileExists "install.ps1" "install.ps1"
 Assert-FileExists "install.sh" "install.sh"
 Assert-FileExists "LICENSE" "LICENSE"
+Assert-FileContains "install.ps1" "docs/WORKFLOW\.md" "install.ps1 bundles WORKFLOW reference doc"
+Assert-FileContains "install.ps1" "docs/GUIDE\.md" "install.ps1 bundles GUIDE reference doc"
+Assert-FileContains "install.sh" "docs/WORKFLOW\.md" "install.sh bundles WORKFLOW reference doc"
+Assert-FileContains "install.sh" "docs/GUIDE\.md" "install.sh bundles GUIDE reference doc"
+Assert-FileContains "install.ps1" "runtimeStatePatterns" "install.ps1 excludes repo runtime state from fresh installs"
+Assert-FileContains "install.sh" "\.agentx/config\.json|\.agentx/issues/\*|\.agentx/state/\*" "install.sh excludes repo runtime state from fresh installs"
 
 # --- 2. Agent Definitions ---------------------------------------------------------------
 Write-Host ""

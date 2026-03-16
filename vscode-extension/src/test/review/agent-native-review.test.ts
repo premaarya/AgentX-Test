@@ -42,7 +42,7 @@ describe('agent-native review', () => {
       'showKnowledgeCaptureGuidance',
     ].join('\n'));
     writeFile(tmpDir, 'vscode-extension/src/views/workTreeProvider.ts', [
-      'Run workflow',
+      'Show workflow steps',
       'agentx.runWorkflow',
       'Review learnings',
       'agentx.showReviewLearnings',

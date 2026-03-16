@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
- Install AgentX v8.3.0 - Download, copy, configure.
+ Install AgentX v8.3.1 - Download, copy, configure.
 
 .PARAMETER Mode
  github - Full features: GitHub Actions, PRs, Projects (asks for repo/project info)
@@ -156,7 +156,7 @@ try {
 # -- Banner ----------------------------------------------
 Write-Host ""
 Write-Host "+===================================================+" -ForegroundColor Cyan
-Write-Host "| AgentX v8.3.0 - AI Agent Orchestration |" -ForegroundColor Cyan
+Write-Host "| AgentX v8.3.1 - AI Agent Orchestration |" -ForegroundColor Cyan
 Write-Host "+===================================================+" -ForegroundColor Cyan
 Write-Host ""
 
@@ -183,12 +183,12 @@ if (Test-Path ".agentx/version.json") {
  } catch {}
 }
 
-if ($previousVersion -and $previousVersion -ne "8.3.0") {
+if ($previousVersion -and $previousVersion -ne "8.3.1") {
  $majorVersion = 0
  try { $majorVersion = [int]($previousVersion -split '\.')[0] } catch {}
 
  if ($majorVersion -lt 8) {
-    Write-Host "[!] Detected AgentX v$previousVersion - upgrading to v8.3.0..." -ForegroundColor Yellow
+    Write-Host "[!] Detected AgentX v$previousVersion - upgrading to v8.3.1..." -ForegroundColor Yellow
   Write-Host "  Uninstalling v$previousVersion and performing clean install." -ForegroundColor DarkGray
 
   # Back up user data that must survive the upgrade
@@ -263,14 +263,28 @@ $root = (Get-ChildItem $TMPRAW -Directory | Select-Object -First 1).FullName
 # Copy only essential paths (skip vscode-extension, tests, and large docs content)
 New-Item -ItemType Directory -Path $TMP -Force | Out-Null
 $neededDirs = @(".agentx", ".github", ".claude", ".vscode", "scripts", "packs")
-$neededFiles = @(".gitignore", "AGENTS.md", "Skills.md")
+$neededFiles = @(
+ ".gitignore",
+ "AGENTS.md",
+ "Skills.md",
+ "docs/WORKFLOW.md",
+ "docs/GUIDE.md",
+ "docs/GOLDEN_PRINCIPLES.md",
+ "docs/QUALITY_SCORE.md",
+ "docs/tech-debt-tracker.md"
+)
 foreach ($d in $neededDirs) {
  $src = Join-Path $root $d
  if (Test-Path $src) { Copy-Item $src (Join-Path $TMP $d) -Recurse -Force }
 }
 foreach ($f in $neededFiles) {
  $src = Join-Path $root $f
- if (Test-Path $src) { Copy-Item $src (Join-Path $TMP $f) -Force }
+ if (Test-Path $src) {
+  $dest = Join-Path $TMP $f
+  $parent = Split-Path $dest -Parent
+  if ($parent -and -not (Test-Path $parent)) { New-Item -ItemType Directory -Path $parent -Force | Out-Null }
+  Copy-Item $src $dest -Force
+ }
 }
 
 
@@ -288,9 +302,22 @@ Write-Host "[2] Installing files..." -ForegroundColor Cyan
 
 $tmpFull = (Resolve-Path $TMP).Path.TrimEnd('\', '/')
 $copied = 0; $skipped = 0
+$runtimeStatePatterns = @(
+ '^\.agentx/config\.json$',
+ '^\.agentx/version\.json$',
+ '^\.agentx/issues/',
+ '^\.agentx/digests/',
+ '^\.agentx/sessions/',
+ '^\.agentx/memory/',
+ '^\.agentx/state/'
+)
 
 Get-ChildItem $TMP -Recurse -File -Force | ForEach-Object {
  $rel = $_.FullName.Substring($tmpFull.Length + 1)
+ $normalizedRel = $rel -replace '\\', '/'
+ if ($runtimeStatePatterns | Where-Object { $normalizedRel -match $_ }) {
+  return
+ }
  $dest = Join-Path "." $rel
  $dir = Split-Path $dest -Parent
  if ($dir -and -not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
@@ -307,12 +334,13 @@ Write-Host "[3] Configuring runtime..." -ForegroundColor Cyan
 @(
  ".agentx/state",
  ".agentx/digests",
- "docs/prd",
- "docs/adr",
- "docs/specs",
+ "docs/artifacts/prd",
+ "docs/artifacts/adr",
+ "docs/artifacts/specs",
  "docs/ux",
- "docs/reviews",
- "docs/progress",
+ "docs/artifacts/reviews",
+ "docs/execution/plans",
+ "docs/execution/progress",
  "docs/architecture",
  "memories",
  "memories/session"
@@ -323,12 +351,12 @@ Write-Host "[3] Configuring runtime..." -ForegroundColor Cyan
 # Version tracking
 $versionFile = ".agentx/version.json"
 @{
-  version = "8.3.0"
+  version = "8.3.1"
  mode = $Mode
  installedAt = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
  updatedAt = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
 } | ConvertTo-Json | Set-Content $versionFile
-Write-OK "Version 8.3.0 recorded"
+Write-OK "Version 8.3.1 recorded"
 
 # Merge AgentX entries into user's .gitignore
 $MARKER_START = "# --- AgentX (auto-generated, do not edit this block) ---"
@@ -564,7 +592,7 @@ if (-not $azureCompanionRequested) {
 # -- Done --------------------------------------------
 Write-Host ""
 Write-Host "===================================================" -ForegroundColor Green
-Write-Host " AgentX v8.3.0 installed! [$displayMode]" -ForegroundColor Green
+Write-Host " AgentX v8.3.1 installed! [$displayMode]" -ForegroundColor Green
 Write-Host "===================================================" -ForegroundColor Green
 Write-Host ""
 Write-Host " CLI: .\.agentx\agentx.ps1 help" -ForegroundColor White

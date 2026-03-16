@@ -93,11 +93,11 @@ jobs:
         run: |
           echo "Validating file structure..."
 
-          # Check for proper docs structure
+          # Check for proper docs structure (canonical artifact paths)
           if [ -d "docs" ]; then
-            for dir in prd adr specs reviews ux; do
-              if [ ! -d "docs/$dir" ]; then
-                echo "[WARN] WARNING: docs/$dir/ directory not found"
+            for dir in docs/artifacts/prd docs/artifacts/adr docs/artifacts/specs docs/artifacts/reviews docs/ux; do
+              if [ ! -d "$dir" ]; then
+                echo "[WARN] WARNING: $dir/ directory not found"
               fi
             done
           fi

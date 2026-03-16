@@ -63,7 +63,8 @@ $codeFileCount = @($changedFiles | Where-Object { $_ -match $codeLikePattern }).
 $domainCount = @($changedFiles | ForEach-Object { Get-Domain $_ } | Select-Object -Unique).Count
 
 $requiresPlan = $changedCount -ge 8 -or $codeFileCount -ge 4 -or $domainCount -ge 3
-$planFiles = @($changedFiles | Where-Object { $_ -match '^docs/plans/.+\.md$' -or $_ -match '(^|/)EXEC-PLAN.+\.md$' })
+# docs/execution/plans/ is the canonical location; docs/plans/ is the legacy fallback
+$planFiles = @($changedFiles | Where-Object { $_ -match '^docs/execution/plans/.+\.md$' -or $_ -match '^docs/plans/.+\.md$' -or $_ -match '(^|/)EXEC-PLAN.+\.md$' })
 
 Write-Host "[INFO] Changed files: $changedCount"
 Write-Host "[INFO] Code-like files: $codeFileCount"

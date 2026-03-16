@@ -298,6 +298,7 @@ $localRoot = $null
 $githubRoot = $null
 $inferredRoot = $null
 $remoteDetectedRoot = $null
+$workflowRoot = $null
 
 try {
     $localRoot = New-TestWorkspace 'local'
@@ -330,6 +331,34 @@ try {
     $localIssue = Get-Content $issueFile -Raw | ConvertFrom-Json -Depth 10
     Assert-True ($close.ExitCode -eq 0) 'Local issue close exits successfully'
     Assert-True ($localIssue.state -eq 'closed' -and $localIssue.status -eq 'Done') 'Local issue close updates state and status'
+
+    $version = Invoke-AgentX $localRoot @('version')
+    Assert-True ($version.ExitCode -eq 0) 'Version exits cleanly on success'
+    Assert-True ($version.Output -match 'AgentX version') 'Version prints version details'
+
+    $config = Invoke-AgentX $localRoot @('config', 'show')
+    $configOutput = [string]::Join("`n", @($config.Output))
+    $localConfigAfterShow = Get-Content (Join-Path $localRoot '.agentx\config.json') -Raw | ConvertFrom-Json -Depth 10
+    Assert-True ($config.ExitCode -eq 0) 'Config show exits cleanly on success'
+    Assert-True ($configOutput.Trim().Length -gt 0 -and $localConfigAfterShow.provider -eq 'local' -and $localConfigAfterShow.mode -eq 'local') 'Config show reports local mode'
+
+    $workflowRoot = New-TestWorkspace 'workflow-type'
+    Write-Utf8File (Join-Path $workflowRoot '.agentx\config.json') (@{
+        provider = 'local'
+        mode = 'local'
+        created = '2026-03-08T00:00:00Z'
+        enforceIssues = $false
+        nextIssueNumber = 1
+    } | ConvertTo-Json -Depth 5)
+    Copy-Item (Join-Path $script:repoRoot '.github') (Join-Path $workflowRoot '.github') -Recurse -Force
+
+    $featureWorkflow = Invoke-AgentX $workflowRoot @('workflow', 'feature')
+    Assert-True ($featureWorkflow.ExitCode -eq 0) 'workflow feature exits successfully'
+    Assert-True ($featureWorkflow.Output -match 'Handoff Chain: architect') 'workflow feature maps to architect'
+
+    $bugWorkflow = Invoke-AgentX $workflowRoot @('workflow', 'bug')
+    Assert-True ($bugWorkflow.ExitCode -eq 0) 'workflow bug exits successfully'
+    Assert-True ($bugWorkflow.Output -match 'Handoff Chain: engineer') 'workflow bug maps to engineer'
 
     $githubRoot = New-TestWorkspace 'github'
     $toolsDir = Initialize-GitHubMock $githubRoot
@@ -512,6 +541,7 @@ finally {
     Remove-TestWorkspace $githubRoot
     Remove-TestWorkspace $inferredRoot
     Remove-TestWorkspace $remoteDetectedRoot
+    Remove-TestWorkspace $workflowRoot
 }
 
 Write-Host ''

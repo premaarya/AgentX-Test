@@ -213,31 +213,9 @@ If requirements are unclear or stakeholder input is needed:
 
 ## Inter-Agent Clarification Protocol
 
-### Step 1: Read Artifacts First (MANDATORY)
+Canonical guidance: [WORKFLOW.md](../../docs/WORKFLOW.md#specialist-agent-mode)
 
-Before asking any agent for help, read all relevant filesystem artifacts:
-
-- PRD at `docs/artifacts/prd/PRD-{issue}.md`
-- ADR at `docs/artifacts/adr/ADR-{issue}.md`
-- Tech Spec at `docs/artifacts/specs/SPEC-{issue}.md`
-- UX Design at `docs/ux/UX-{issue}.md`
-
-Only proceed to Step 2 if a question remains unanswered after reading all artifacts.
-
-### Step 2: Ask the User for Cross-Agent Help
-
-If the question is for a different agent (Architect, UX Designer, etc.), ask the user:
-"This question is better suited for the <AgentName> agent. Please switch to that agent mode and ask: <specific question>."
-
-### Step 3: Follow Up If Needed
-
-If the response does not fully answer, re-spawn with a more specific follow-up.
-Maximum 3 follow-up exchanges per topic.
-
-### Step 4: Escalate to User If Unresolved
-
-After 3 exchanges with no resolution, tell the user:
-"I need clarification on <topic>. <AgentName> could not resolve: <question>. Can you help?"
+Use the shared guide for the artifact-first clarification flow, agent-switch wording, follow-up limits, and escalation behavior. Keep this file focused on product-management-specific constraints.
 
 ## Iterative Quality Loop (MANDATORY)
 

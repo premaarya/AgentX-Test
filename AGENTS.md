@@ -77,9 +77,9 @@ All agents MUST create deliverable files locally using `editFiles` -- MUST NOT u
 
 ```powershell
 .\.agentx\agentx.ps1 ready                    # Show unblocked work
-.\.agentx\agentx.ps1 state -Agent engineer -Set working -Issue 42
-.\.agentx\agentx.ps1 deps -IssueNumber 42     # Check blockers
-.\.agentx\agentx.ps1 workflow -Type feature    # Show workflow steps
+.\.agentx\agentx.ps1 state -a engineer -s working -i 42
+.\.agentx\agentx.ps1 deps 42                  # Check blockers
+.\.agentx\agentx.ps1 workflow engineer        # Show workflow steps
 .\.agentx\agentx.ps1 loop -LoopAction status   # Check quality loop
 .\.agentx\agentx.ps1 config show               # View configuration
 ```

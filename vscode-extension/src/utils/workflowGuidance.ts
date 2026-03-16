@@ -2,14 +2,13 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { readHarnessState } from './harnessState';
 import { readLoopState } from './loopStateChecker';
+import {
+  resolveWorkflowCheckpoint,
+  resolveWorkflowRecommendation,
+} from './workflowGuidanceEngine';
+import type { WorkflowCheckpoint } from './workflowGuidanceEngine';
 
-export type WorkflowCheckpoint =
-  | 'Brainstorm'
-  | 'Plan'
-  | 'Work'
-  | 'Review'
-  | 'Compound Capture'
-  | 'Done';
+export type { WorkflowCheckpoint } from './workflowGuidanceEngine';
 
 export interface WorkflowEntryPoint {
   readonly label: string;
@@ -118,20 +117,16 @@ export function evaluateWorkflowGuidance(
   const hasReviewEvidence = !!reviewPath || reviewFindingPaths.length > 0 || statusText.includes('review');
   const hasCompoundEvidence = !!learningPath;
 
-  let currentCheckpoint: WorkflowCheckpoint;
-  if (!issueNumber && !issueTitle) {
-    currentCheckpoint = 'Brainstorm';
-  } else if (issueClosed && hasReviewEvidence && hasCompoundEvidence) {
-    currentCheckpoint = 'Done';
-  } else if (issueClosed && hasReviewEvidence) {
-    currentCheckpoint = 'Compound Capture';
-  } else if (hasReviewEvidence || loopComplete) {
-    currentCheckpoint = 'Review';
-  } else if (hasPlanEvidence) {
-    currentCheckpoint = 'Work';
-  } else {
-    currentCheckpoint = 'Plan';
-  }
+  const currentCheckpoint = resolveWorkflowCheckpoint({
+    issueNumber,
+    issueTitle,
+    issueStatus,
+    hasPlanEvidence,
+    hasReviewEvidence,
+    hasCompoundEvidence,
+    loopComplete,
+    issueClosed,
+  });
 
   const planDeepening = buildPlanDeepeningEntryPoint(
     issueNumber,
@@ -161,7 +156,7 @@ export function evaluateWorkflowGuidance(
   const rolloutRows = buildRolloutRows(rolloutArtifactsReady);
   const operatorChecklist = buildOperatorChecklist();
 
-  const recommended = resolveRecommendation(
+  const recommended = resolveWorkflowRecommendation({
     currentCheckpoint,
     issueNumber,
     hasPlanEvidence,
@@ -169,9 +164,10 @@ export function evaluateWorkflowGuidance(
     hasCompoundEvidence,
     loopComplete,
     pendingClarification,
-    planDeepening,
-    reviewKickoff,
-  );
+    planDeepeningBlockers: planDeepening.blockers,
+    reviewKickoffAllowed: reviewKickoff.allowed,
+    reviewKickoffBlockers: reviewKickoff.blockers,
+  });
 
   return {
     issueNumber,
@@ -346,98 +342,6 @@ export function renderOperatorEnablementChecklistMarkdown(
   lines.push(`- ${snapshot.currentCheckpoint} -> ${snapshot.recommendedAction}`);
 
   return lines.join('\n');
-}
-
-function resolveRecommendation(
-  currentCheckpoint: WorkflowCheckpoint,
-  issueNumber: number | undefined,
-  hasPlanEvidence: boolean,
-  hasReviewEvidence: boolean,
-  hasCompoundEvidence: boolean,
-  loopComplete: boolean,
-  pendingClarification: boolean,
-  planDeepening: WorkflowEntryPoint,
-  reviewKickoff: WorkflowEntryPoint,
-): {
-  readonly action: string;
-  readonly command?: string;
-  readonly commandTitle?: string;
-  readonly rationale: string;
-  readonly blockers: readonly string[];
-} {
-  if (pendingClarification) {
-    return {
-      action: 'Resolve the pending clarification before advancing the workflow',
-      command: 'agentx.showPendingClarification',
-      commandTitle: 'Show Pending Clarification',
-      rationale: 'The current session is waiting on human guidance, so AgentX should fail closed instead of guessing the next transition.',
-      blockers: ['A pending clarification must be resolved before the next checkpoint is reliable.'],
-    };
-  }
-
-  switch (currentCheckpoint) {
-  case 'Brainstorm':
-    return {
-      action: 'Frame the work with the brainstorm guide',
-      command: 'agentx.showBrainstormGuide',
-      commandTitle: 'Show Brainstorm Guide',
-      rationale: 'No active issue or durable plan evidence is linked yet, so the safest next move is to tighten scope before planning.',
-      blockers: issueNumber ? [] : ['No active issue or harness thread is linked to the workflow.'],
-    };
-  case 'Plan':
-    return {
-      action: 'Deepen the plan before implementation continues',
-      command: 'agentx.deepenPlan',
-      commandTitle: 'Deepen Plan',
-      rationale: 'The workflow has scope context but is missing a durable plan or progress pair, so planning should be made explicit first.',
-      blockers: planDeepening.blockers,
-    };
-  case 'Work':
-    if (loopComplete && reviewKickoff.allowed) {
-      return {
-        action: 'Kick off review with the current issue and plan context',
-        command: 'agentx.kickoffReview',
-        commandTitle: 'Kick Off Review',
-        rationale: 'The quality loop is complete and the plan is linked, so review is the next bounded checkpoint.',
-        blockers: reviewKickoff.blockers,
-      };
-    }
-    return {
-      action: 'Continue implementation and validation evidence',
-      rationale: hasPlanEvidence
-        ? 'The plan is linked, but review readiness is not yet fully supported by validation evidence.'
-        : 'Implementation should not outrun planning evidence.',
-      blockers: loopComplete ? [] : ['The quality loop is not complete yet, so review kickoff should wait.'],
-    };
-  case 'Review':
-    return {
-      action: hasCompoundEvidence
-        ? 'Resolve any remaining review follow-up before marking the work done'
-        : 'Capture reusable learning or record the explicit skip rationale',
-      command: hasCompoundEvidence ? undefined : 'agentx.createLearningCapture',
-      commandTitle: hasCompoundEvidence ? undefined : 'Create Learning Capture',
-      rationale: hasReviewEvidence
-        ? 'Review evidence exists, so the workflow should preserve what was learned before closure drifts.'
-        : 'Review is active, so the next safe move is to settle the review outcome and capture what should compound forward.',
-      blockers: hasCompoundEvidence ? [] : ['No curated learning capture exists for the current issue yet.'],
-    };
-  case 'Compound Capture':
-    return {
-      action: 'Record the curated learning capture before final closeout',
-      command: 'agentx.createLearningCapture',
-      commandTitle: 'Create Learning Capture',
-      rationale: 'The issue is effectively closed, but the compound-capture step remains unresolved.',
-      blockers: hasCompoundEvidence ? [] : ['A curated learning capture is still missing.'],
-    };
-  case 'Done':
-    return {
-      action: 'Review the rollout scorecard before promoting the next slice',
-      command: 'agentx.showWorkflowRolloutScorecard',
-      commandTitle: 'Show Workflow Rollout Scorecard',
-      rationale: 'The active issue is complete, so the next decision is a governance decision rather than another workflow transition.',
-      blockers: [],
-    };
-  }
 }
 
 function buildPlanDeepeningEntryPoint(

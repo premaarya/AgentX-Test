@@ -164,7 +164,7 @@ export class StatusTreeProvider implements vscode.TreeDataProvider<SidebarTreeIt
    workflow.label,
    'play-circle',
    'agentx.runWorkflowType',
-   'Run Workflow Type',
+   'Show Workflow Steps',
    [workflow.label],
    workflow.description,
   ));

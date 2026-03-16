@@ -19,6 +19,24 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $ROOT = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 
+function Get-ItemCount($value) {
+    if ($null -eq $value) { return 0 }
+    return @($value).Count
+}
+
+function Get-NodeProjectRoot {
+    $candidatePaths = @(
+        $ROOT,
+        (Join-Path $ROOT 'vscode-extension')
+    )
+    foreach ($candidate in $candidatePaths) {
+        if (Test-Path (Join-Path $candidate 'package.json')) {
+            return $candidate
+        }
+    }
+    return $null
+}
+
 function Test-FileExists([string]$pattern) {
     $found = Get-ChildItem -Path $ROOT -Filter $pattern -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 1
     return $null -ne $found
@@ -26,12 +44,12 @@ function Test-FileExists([string]$pattern) {
 
 function Score-Engineer {
     $score = 0; $max = 45; $checks = @()
+    $nodeProjectRoot = Get-NodeProjectRoot
 
     # Tests pass (10 pts) - check if test command exits cleanly
-    $testDir = Join-Path $ROOT 'vscode-extension'
-    if (Test-Path (Join-Path $testDir 'package.json')) {
+    if ($nodeProjectRoot) {
         try {
-            Push-Location $testDir
+            Push-Location $nodeProjectRoot
             $null = npm test 2>&1
             if ($LASTEXITCODE -eq 0) { $score += 10; $checks += '[PASS] Tests pass (+10)' }
             else { $checks += '[FAIL] Tests failing (+0)' }
@@ -40,9 +58,9 @@ function Score-Engineer {
     } else { $checks += '[SKIP] No test framework detected (+0)' }
 
     # Lint clean (5 pts)
-    if (Test-Path (Join-Path $testDir 'package.json')) {
+    if ($nodeProjectRoot) {
         try {
-            Push-Location $testDir
+            Push-Location $nodeProjectRoot
             $null = npm run lint 2>&1
             if ($LASTEXITCODE -eq 0) { $score += 5; $checks += '[PASS] Lint clean (+5)' }
             else { $score += 2; $checks += '[WARN] Lint warnings present (+2)' }
@@ -56,7 +74,7 @@ function Score-Engineer {
     foreach ($p in $secretPatterns) {
         $matches = Get-ChildItem -Path (Join-Path $ROOT 'src'), (Join-Path $ROOT 'vscode-extension/src') -Filter '*.ts' -Recurse -File -ErrorAction SilentlyContinue |
             Select-String -Pattern $p -ErrorAction SilentlyContinue
-        if ($matches) { $secretFound = $true; break }
+        if ((Get-ItemCount $matches) -gt 0) { $secretFound = $true; break }
     }
     if (-not $secretFound) { $score += 5; $checks += '[PASS] No hardcoded secrets (+5)' }
     else { $checks += '[FAIL] Hardcoded secrets detected (+0)' }
@@ -64,27 +82,34 @@ function Score-Engineer {
     # SQL parameterized (5 pts) - check for string concatenation in SQL
     $sqlConcat = Get-ChildItem -Path $ROOT -Include '*.ts','*.cs','*.py' -Recurse -File -ErrorAction SilentlyContinue |
         Select-String -Pattern '(\$"|f")[^"]*SELECT|INSERT|UPDATE|DELETE' -ErrorAction SilentlyContinue
-    if (-not $sqlConcat -or $sqlConcat.Count -eq 0) { $score += 5; $checks += '[PASS] SQL parameterized (+5)' }
+    if ((Get-ItemCount $sqlConcat) -eq 0) { $score += 5; $checks += '[PASS] SQL parameterized (+5)' }
     else { $checks += '[FAIL] SQL string concatenation found (+0)' }
 
     # No TODO/FIXME (2 pts)
     $todos = Get-ChildItem -Path $ROOT -Include '*.ts','*.cs','*.py' -Recurse -File -ErrorAction SilentlyContinue |
         Where-Object { $_.FullName -notmatch 'node_modules|\.git' } |
         Select-String -Pattern 'TODO|FIXME' -ErrorAction SilentlyContinue
-    if (-not $todos -or $todos.Count -eq 0) { $score += 2; $checks += '[PASS] No TODO/FIXME markers (+2)' }
-    else { $checks += "[WARN] $($todos.Count) TODO/FIXME markers found (+0)" }
+    $todoCount = Get-ItemCount $todos
+    if ($todoCount -eq 0) { $score += 2; $checks += '[PASS] No TODO/FIXME markers (+2)' }
+    else { $checks += "[WARN] $todoCount TODO/FIXME markers found (+0)" }
 
     # Docs updated (3 pts) - check if README or docs were modified in recent commits
     try {
-        $recentDocs = & git -C $ROOT diff --name-only HEAD~3 2>$null | Where-Object { $_ -match '\.md$' }
+        $recentDocs = @(& git -C $ROOT diff --name-only HEAD~3 2>$null | Where-Object { $_ -match '\.md$' })
         if ($recentDocs) { $score += 3; $checks += '[PASS] Documentation updated (+3)' }
         else { $checks += '[WARN] No doc updates in recent commits (+0)' }
     } catch { $checks += '[SKIP] Git history check failed (+0)' }
 
     # Coverage check (10 pts) - approximate from test file count vs source file count
-    $srcFiles = (Get-ChildItem -Path (Join-Path $ROOT 'vscode-extension/src') -Filter '*.ts' -Recurse -File -ErrorAction SilentlyContinue |
-        Where-Object { $_.FullName -notmatch 'test' }).Count
-    $testFiles = (Get-ChildItem -Path (Join-Path $ROOT 'vscode-extension/src/test') -Filter '*.test.ts' -Recurse -File -ErrorAction SilentlyContinue).Count
+    $srcRoots = @()
+    if (Test-Path (Join-Path $ROOT 'src')) { $srcRoots += (Join-Path $ROOT 'src') }
+    if (Test-Path (Join-Path $ROOT 'vscode-extension/src')) { $srcRoots += (Join-Path $ROOT 'vscode-extension/src') }
+    $testRoots = @()
+    if (Test-Path (Join-Path $ROOT 'tests')) { $testRoots += (Join-Path $ROOT 'tests') }
+    if (Test-Path (Join-Path $ROOT 'vscode-extension/src/test')) { $testRoots += (Join-Path $ROOT 'vscode-extension/src/test') }
+    $srcFiles = Get-ItemCount (Get-ChildItem -Path $srcRoots -Filter '*.ts' -Recurse -File -ErrorAction SilentlyContinue |
+        Where-Object { $_.FullName -notmatch 'test' })
+    $testFiles = Get-ItemCount (Get-ChildItem -Path $testRoots -Include '*.test.ts','*.spec.ts' -Recurse -File -ErrorAction SilentlyContinue)
     if ($srcFiles -gt 0) {
         $ratio = [math]::Round(($testFiles / $srcFiles) * 100, 0)
         if ($ratio -ge 50) { $score += 10; $checks += "[PASS] Test coverage proxy: $ratio% test-to-source ratio (+10)" }
@@ -100,7 +125,7 @@ function Score-Architect {
     $id = if ($IssueNumber -gt 0) { $IssueNumber } else { '*' }
 
     # ADR exists (3 pts)
-    $adrFiles = Get-ChildItem -Path (Join-Path $ROOT 'docs/adr') -Filter "ADR-$id*.md" -File -ErrorAction SilentlyContinue
+    $adrFiles = @(Get-ChildItem -Path (Join-Path $ROOT 'docs/artifacts/adr') -Filter "ADR-$id*.md" -File -ErrorAction SilentlyContinue)
     if ($adrFiles) {
         $score += 3; $checks += '[PASS] ADR exists (+3)'
         $adrContent = Get-Content $adrFiles[0].FullName -Raw -Encoding utf8
@@ -131,7 +156,7 @@ function Score-Architect {
     } else { $checks += '[FAIL] No ADR found (+0)' }
 
     # Spec exists with 13 sections (13 pts)
-    $specFiles = Get-ChildItem -Path (Join-Path $ROOT 'docs/specs') -Filter "SPEC-$id*.md" -File -ErrorAction SilentlyContinue
+    $specFiles = @(Get-ChildItem -Path (Join-Path $ROOT 'docs/artifacts/specs') -Filter "SPEC-$id*.md" -File -ErrorAction SilentlyContinue)
     if ($specFiles) {
         $specContent = Get-Content $specFiles[0].FullName -Raw -Encoding utf8
         $reqSections = @('Overview','Goals','Architecture','Component','Data Model','API','Security','Performance','Error','Monitor','Test','Migration','Open Questions')
@@ -155,7 +180,7 @@ function Score-PM {
     $id = if ($IssueNumber -gt 0) { $IssueNumber } else { '*' }
 
     # PRD exists (3 pts)
-    $prdFiles = Get-ChildItem -Path (Join-Path $ROOT 'docs/prd') -Filter "PRD-$id*.md" -File -ErrorAction SilentlyContinue
+    $prdFiles = @(Get-ChildItem -Path (Join-Path $ROOT 'docs/artifacts/prd') -Filter "PRD-$id*.md" -File -ErrorAction SilentlyContinue)
     if ($prdFiles) {
         $score += 3; $checks += '[PASS] PRD exists (+3)'
         $prdContent = Get-Content $prdFiles[0].FullName -Raw -Encoding utf8

@@ -6,10 +6,11 @@ const dnsLookup = promisify(dns.lookup);
 export const ALLOWED_SCHEMES: readonly string[] = ['http:', 'https:'];
 
 export const BLOCKED_METADATA_HOSTS: ReadonlySet<string> = new Set([
-  '169.254.169.254',
-  'metadata.google.internal',
-  '100.100.100.200',
-  'fd00:ec2::254',
+  '169.254.169.254',       // AWS, Azure, and generic link-local IMDS
+  'metadata.google.internal', // GCP IMDS
+  'metadata.azure.internal',  // Azure IMDS alternate hostname
+  '100.100.100.200',       // Alibaba Cloud IMDS
+  'fd00:ec2::254',         // AWS IMDSv2 IPv6 access point
 ]);
 
 export const PRIVATE_IPV4_PATTERNS: readonly RegExp[] = [

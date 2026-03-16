@@ -58,8 +58,8 @@ function buildObservations(input: HarnessEvaluationInput): {
  readonly observations: ReadonlyArray<ArtifactObservation>;
  readonly progressFiles: ReadonlyArray<string>;
 } {
- const progressDir = path.join(input.root, 'docs', 'progress');
- const progressFiles = countMarkdownFiles(progressDir).map((name) => `docs/progress/${name}`);
+ const progressDir = path.join(input.root, 'docs', 'execution', 'progress');
+ const progressFiles = countMarkdownFiles(progressDir).map((name) => `docs/execution/progress/${name}`);
 
  const observations: ArtifactObservation[] = [
   {
@@ -78,7 +78,7 @@ function buildObservations(input: HarnessEvaluationInput): {
    present: progressFiles.length > 0,
    detail: progressFiles.length > 0
     ? `${formatCount('progress log', progressFiles.length)} discovered`
-    : 'No progress logs discovered',
+    : 'No progress log found under docs/execution/progress',
   },
   {
    id: 'loop-state',

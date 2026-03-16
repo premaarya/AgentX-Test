@@ -164,7 +164,7 @@ export function buildIssueChildren(openIssues: ReadonlyArray<LocalIssue>): Sideb
 
 export function buildActionChildren(): SidebarTreeItem[] {
  return [
-  SidebarTreeItem.action('Run workflow', 'play', 'agentx.runWorkflow', 'Run Workflow'),
+  SidebarTreeItem.action('Show workflow steps', 'play', 'agentx.runWorkflow', 'Show Workflow Steps'),
   SidebarTreeItem.action('Workflow next step', 'debug-step-over', 'agentx.showWorkflowNextStep', 'Show Workflow Next Step'),
   SidebarTreeItem.action('Brainstorm', 'lightbulb', 'agentx.showBrainstormGuide', 'Brainstorm'),
   SidebarTreeItem.action('Planning learnings', 'book', 'agentx.showPlanningLearnings', 'Planning Learnings'),

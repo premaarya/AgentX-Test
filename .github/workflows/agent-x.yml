@@ -1,12 +1,14 @@
 # Agent X (Auto) - Adaptive Issue Router
-# Routes issues to agents based on type labels and status
-# Status tracked via GitHub Projects V2 (not labels)
+# Uses GitHub Projects V2 status as the primary routing signal on manual dispatch and explicit reroute comments when configured.
+# Falls back to label classification when project status is unavailable, including issue-open events.
 
 name: Agent X (Auto)
 
 on:
   issues:
     types: [opened]
+  issue_comment:
+    types: [created]
   workflow_dispatch:
     inputs:
       issue_number:
@@ -22,6 +24,7 @@ concurrency:
 permissions:
   issues: write
   contents: write
+  repository-projects: read
 
 jobs:
   route:
@@ -36,6 +39,28 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            const rerouteCommand = '/agentx route';
+            const isIssueComment = context.eventName === 'issue_comment';
+
+            if (isIssueComment && context.payload.issue?.pull_request) {
+              console.log('[SKIP] Ignoring pull request comment event');
+              core.setOutput('agent', '');
+              core.setOutput('issue_number', '');
+              return;
+            }
+
+            if (isIssueComment) {
+              const commentBody = (context.payload.comment?.body || '').trim();
+              if (commentBody !== rerouteCommand) {
+                console.log(`[SKIP] Comment did not request reroute: expected "${rerouteCommand}"`);
+                core.setOutput('agent', '');
+                core.setOutput('issue_number', '');
+                return;
+              }
+
+              console.log(`[INFO] Explicit reroute requested via issue comment command ${rerouteCommand}`);
+            }
+
             // Get issue number
             const issueNumber = context.eventName === 'workflow_dispatch'
               ? parseInt(context.payload.inputs.issue_number)
@@ -56,13 +81,109 @@ jobs:
             const labels = issue.labels.map(l => l.name);
             console.log(`Issue #${issueNumber}: ${labels.join(', ')}`);
 
-            // Route based on AGENTS.md Phase 2 workflow:
-            // Epic + Backlog -> PM
-            // Ready + needs:ux -> UX
-            // Ready + (no architecture) -> Architect
-            // Ready + (has architecture) -> Engineer
-            // In Review -> Reviewer
-            // Bug + Backlog -> Engineer (skip PM/Architect)
+            const loadAgentXConfig = async () => {
+              try {
+                const response = await github.rest.repos.getContent({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  path: '.agentx/config.json'
+                });
+
+                if (!('content' in response.data) || !response.data.content) {
+                  return {};
+                }
+
+                const raw = Buffer.from(response.data.content, response.data.encoding || 'base64').toString('utf8');
+                return JSON.parse(raw);
+              } catch (error) {
+                console.log(`[INFO] Unable to load .agentx/config.json: ${error.message}`);
+                return {};
+              }
+            };
+
+            const fileExists = async (path) => {
+              try {
+                await github.rest.repos.getContent({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  path,
+                });
+                return true;
+              } catch (error) {
+                return false;
+              }
+            };
+
+            const normalizeStatus = (value) => (value || '').trim().toLowerCase();
+
+            const readProjectStatus = async (config) => {
+              const projectNumber = Number(config.project || 0);
+              const projectOwner = config.projectOwner || context.repo.owner;
+
+              if (projectNumber <= 0) {
+                return { status: '', source: 'labels' };
+              }
+
+              try {
+                const result = await github.graphql(
+                  `query($issueId: ID!) {
+                    node(id: $issueId) {
+                      ... on Issue {
+                        projectItems(first: 20) {
+                          nodes {
+                            project {
+                              ... on ProjectV2 {
+                                number
+                                owner {
+                                  __typename
+                                  ... on User { login }
+                                  ... on Organization { login }
+                                }
+                              }
+                            }
+                            fieldValues(first: 20) {
+                              nodes {
+                                ... on ProjectV2ItemFieldSingleSelectValue {
+                                  name
+                                  field {
+                                    ... on ProjectV2SingleSelectField {
+                                      name
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }`,
+                  { issueId: issue.node_id }
+                );
+
+                const items = result.node?.projectItems?.nodes || [];
+                for (const item of items) {
+                  const project = item.project;
+                  if (!project || project.number !== projectNumber) {
+                    continue;
+                  }
+
+                  const ownerLogin = project.owner?.login || '';
+                  if (projectOwner && ownerLogin && ownerLogin !== projectOwner) {
+                    continue;
+                  }
+
+                  const statusField = (item.fieldValues?.nodes || []).find((entry) => entry.field?.name === 'Status' && entry.name);
+                  if (statusField?.name) {
+                    return { status: statusField.name, source: 'project' };
+                  }
+                }
+              } catch (error) {
+                console.log(`[INFO] Project status lookup failed: ${error.message}`);
+              }
+
+              return { status: '', source: 'labels' };
+            };
 
             // --- Domain Classification (AI-First Intent Preservation) ---
             const aiKeywords = /\b(AI|LLM|ML|machine learning|deep learning|GPT|model inference|NLP|neural|agent framework|foundry|openai|anthropic|gemini|intelligent|smart analysis|automated reasoning|natural language|embedding|rag|fine.?tun|prompt engineering)\b/i;
@@ -79,33 +200,79 @@ jobs:
               labels.push('needs:ai');
             }
 
+            const config = await loadAgentXConfig();
+            const { status: projectStatus, source: statusSource } = await readProjectStatus(config);
+            const normalizedStatus = normalizeStatus(projectStatus);
+            const hasArchitecture = (await fileExists(`docs/artifacts/adr/ADR-${issueNumber}.md`))
+              && (await fileExists(`docs/artifacts/specs/SPEC-${issueNumber}.md`));
+
+            if (projectStatus) {
+              console.log(`[INFO] Project status for #${issueNumber}: ${projectStatus}`);
+            } else {
+              console.log('[INFO] No project status resolved; falling back to label classification');
+            }
+
             // --- Routing ---
             let agent = null;
 
-            if (labels.includes('type:epic')) {
+            if (normalizedStatus === 'in review') {
+              agent = 'reviewer';
+            } else if (normalizedStatus === 'ready') {
+              if (labels.includes('needs:ux')) {
+                agent = 'ux';
+              } else if (labels.includes('type:devops')) {
+                agent = 'devops';
+              } else if (labels.includes('type:data-science')) {
+                agent = 'data-scientist';
+              } else if (labels.includes('type:testing') || labels.includes('needs:testing')) {
+                agent = 'tester';
+              } else if (hasArchitecture) {
+                agent = 'engineer';
+              } else if (labels.includes('type:feature') || labels.includes('type:spike') || labels.includes('type:story')) {
+                agent = 'architect';
+              }
+            } else if (normalizedStatus === 'in progress') {
+              if (labels.includes('type:devops')) {
+                agent = 'devops';
+              } else if (labels.includes('type:data-science')) {
+                agent = 'data-scientist';
+              } else if (labels.includes('type:testing') || labels.includes('needs:testing')) {
+                agent = 'tester';
+              } else {
+                agent = 'engineer';
+              }
+            } else if (normalizedStatus === 'validating') {
+              if (labels.includes('type:devops')) {
+                agent = 'devops';
+              } else if (labels.includes('type:testing') || labels.includes('needs:testing')) {
+                agent = 'tester';
+              }
+            }
+
+            if (!agent && labels.includes('type:epic')) {
               agent = 'pm';
-            } else if (labels.includes('type:bug')) {
+            } else if (!agent && labels.includes('type:bug')) {
               agent = 'engineer'; // Bugs skip PM/Architect
-            } else if (labels.includes('needs:ux')) {
+            } else if (!agent && labels.includes('needs:ux')) {
               agent = 'ux';
-            } else if (labels.includes('type:devops')) {
+            } else if (!agent && labels.includes('type:devops')) {
               agent = 'devops';
-            } else if (labels.includes('type:data-science')) {
+            } else if (!agent && labels.includes('type:data-science')) {
               agent = 'data-scientist';
-            } else if (labels.includes('type:testing') || labels.includes('needs:testing')) {
+            } else if (!agent && (labels.includes('type:testing') || labels.includes('needs:testing'))) {
               agent = 'tester';
-            } else if (labels.includes('type:feature') || labels.includes('type:spike')) {
+            } else if (!agent && (labels.includes('type:feature') || labels.includes('type:spike'))) {
               agent = 'architect';
-            } else if (labels.includes('type:story') || labels.includes('type:docs')) {
+            } else if (!agent && (labels.includes('type:story') || labels.includes('type:docs'))) {
               agent = 'engineer';
-            } else if (labels.includes('needs:review')) {
+            } else if (!agent && labels.includes('needs:review')) {
               agent = 'reviewer';
             }
 
             core.setOutput('agent', agent || '');
             core.setOutput('issue_number', issueNumber);
             console.log(agent ? `[PASS] Routing to: ${agent}` : '[PAUSE] No routing needed');
-            console.log('[INFO] Status-based routing via Projects V2 GraphQL available for advanced workflows');
+            console.log(`[INFO] Routing source: ${statusSource}`);
 
   pm:
     name: Product Manager
@@ -117,7 +284,7 @@ jobs:
 
       - name: Create PRD Scaffold
         run: |
-          mkdir -p docs/prd
+          mkdir -p docs/artifacts/prd
           ISSUE="${{ needs.route.outputs.issue_number }}"
           if [ ! -f "docs/artifacts/prd/PRD-${ISSUE}.md" ]; then
             cp .github/templates/PRD-TEMPLATE.md "docs/artifacts/prd/PRD-${ISSUE}.md"
@@ -158,7 +325,7 @@ jobs:
 
       - name: Create UX Scaffold
         run: |
-          mkdir -p docs/ux
+          mkdir -p docs/ux docs/artifacts
           ISSUE="${{ needs.route.outputs.issue_number }}"
           if [ ! -f "docs/ux/UX-${ISSUE}.md" ]; then
             cp .github/templates/UX-TEMPLATE.md "docs/ux/UX-${ISSUE}.md"
@@ -190,7 +357,7 @@ jobs:
 
       - name: Create ADR + Spec Scaffold
         run: |
-          mkdir -p docs/adr docs/specs
+          mkdir -p docs/artifacts/adr docs/artifacts/specs
           ISSUE="${{ needs.route.outputs.issue_number }}"
 
           if [ ! -f "docs/artifacts/adr/ADR-${ISSUE}.md" ]; then
@@ -238,7 +405,7 @@ jobs:
 
       - name: Create Review Scaffold
         run: |
-          mkdir -p docs/reviews
+          mkdir -p docs/artifacts/reviews
           ISSUE="${{ needs.route.outputs.issue_number }}"
           if [ ! -f "docs/artifacts/reviews/REVIEW-${ISSUE}.md" ]; then
             cp .github/templates/REVIEW-TEMPLATE.md "docs/artifacts/reviews/REVIEW-${ISSUE}.md"
