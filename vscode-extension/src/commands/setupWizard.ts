@@ -23,8 +23,9 @@ export async function runSetupWizard(agentx: AgentXContext): Promise<void> {
 
 /**
  * Lightweight startup check - runs silently after activation and only
- * surfaces a notification when critical problems are detected.
- * When missing required dependencies are found it offers to auto-install them.
+ * surfaces an advisory notification when critical problems are detected.
+ * Missing required dependencies are routed to the explicit environment wizard
+ * instead of starting installs automatically during activation.
  */
 export async function runStartupCheck(agentx: AgentXContext): Promise<void> {
   await runStartupCheckFlow(agentx);

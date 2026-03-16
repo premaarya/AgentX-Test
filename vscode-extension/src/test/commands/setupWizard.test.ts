@@ -431,10 +431,12 @@ describe('setupWizard - runCriticalPreCheck', () => {
 describe('setupWizard - runStartupCheck', () => {
   let checkAllStub: sinon.SinonStub;
   let showWarningStub: sinon.SinonStub;
+  let createTerminalStub: sinon.SinonStub;
 
   beforeEach(() => {
     checkAllStub = sinon.stub(depChecker, 'checkAllDependencies');
     showWarningStub = sinon.stub(vscode.window, 'showWarningMessage');
+    createTerminalStub = sinon.stub(vscode.window, 'createTerminal');
   });
 
   afterEach(() => {
@@ -454,12 +456,28 @@ describe('setupWizard - runStartupCheck', () => {
     checkAllStub.resolves(report);
 
     // User dismisses
-    showWarningStub.resolves(undefined);
+    showWarningStub.resolves('Dismiss');
 
     await runStartupCheck(fakeAgentx());
 
     // Should have shown a warning because deps are missing
-    sinon.assert.called(showWarningStub);
+    sinon.assert.calledOnce(showWarningStub);
+    sinon.assert.notCalled(createTerminalStub);
+    assert.equal(showWarningStub.getCall(0).args[1], 'Check Environment');
+  });
+
+  it('should open the full environment wizard only when requested', async () => {
+    const report = makeUnhealthyReport(['Git']);
+    checkAllStub.onFirstCall().resolves(report);
+    checkAllStub.onSecondCall().resolves(report);
+
+    showWarningStub.onFirstCall().resolves('Check Environment');
+
+    await runStartupCheck(fakeAgentx());
+
+    sinon.assert.calledOnce(showWarningStub);
+    sinon.assert.calledTwice(checkAllStub);
+    sinon.assert.notCalled(createTerminalStub);
   });
 });
 

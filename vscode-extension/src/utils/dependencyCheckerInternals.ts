@@ -1,8 +1,43 @@
 import { exec } from 'child_process';
+import * as fs from 'fs';
+import * as path from 'path';
 
 import type { DependencyResult } from './dependencyCheckerTypes';
 
 const MIN_POWERSHELL_VERSION = '7.4.0';
+
+export function getWindowsPowerShellCorePathCandidates(
+  env: NodeJS.ProcessEnv = process.env,
+): string[] {
+  const baseDirs = [
+    env.ProgramFiles,
+    env.ProgramW6432,
+    'C:\\Program Files',
+  ].filter((value): value is string => Boolean(value));
+
+  return [...new Set(baseDirs)].flatMap((baseDir) => [
+    path.join(baseDir, 'PowerShell', '7', 'pwsh.exe'),
+    path.join(baseDir, 'PowerShell', '7-preview', 'pwsh.exe'),
+  ]);
+}
+
+export function resolvePowerShellCoreExecutable(
+  platform: NodeJS.Platform = process.platform,
+  pathExists: (candidate: string) => boolean = fs.existsSync,
+  env: NodeJS.ProcessEnv = process.env,
+): string {
+  if (platform !== 'win32') {
+    return 'pwsh';
+  }
+
+  for (const candidate of getWindowsPowerShellCorePathCandidates(env)) {
+    if (pathExists(candidate)) {
+      return `"${candidate}"`;
+    }
+  }
+
+  return 'pwsh';
+}
 
 export function tryExec(command: string, timeoutMs = 10_000): Promise<string> {
   return new Promise((resolve) => {
@@ -70,7 +105,10 @@ export async function checkNodeJs(): Promise<DependencyResult> {
 }
 
 export async function checkPowerShell(): Promise<DependencyResult> {
-  const rawPwsh = await tryExec('pwsh -NoProfile -Command "$PSVersionTable.PSVersion.ToString()"');
+  const pwshExecutable = resolvePowerShellCoreExecutable();
+  const rawPwsh = await tryExec(
+    `${pwshExecutable} -NoProfile -Command "$PSVersionTable.PSVersion.ToString()"`,
+  );
   const hasPwsh = rawPwsh.length > 0;
   const pwshVersion = hasPwsh ? parseVersion(rawPwsh) : '';
   const meetsMinimum = hasPwsh && compareSemver(pwshVersion, MIN_POWERSHELL_VERSION) >= 0;

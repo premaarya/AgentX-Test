@@ -1,5 +1,12 @@
 import { strict as assert } from 'assert';
-import { checkAllDependencies, type EnvironmentReport } from '../../utils/dependencyChecker';
+import {
+  checkAllDependencies,
+  type EnvironmentReport,
+} from '../../utils/dependencyChecker';
+import {
+  getWindowsPowerShellCorePathCandidates,
+  resolvePowerShellCoreExecutable,
+} from '../../utils/dependencyCheckerInternals';
 
 // ---------------------------------------------------------------------------
 // Integration tests for dependencyChecker.
@@ -11,6 +18,40 @@ import { checkAllDependencies, type EnvironmentReport } from '../../utils/depend
 // ---------------------------------------------------------------------------
 
 describe('dependencyChecker', () => {
+  describe('resolvePowerShellCoreExecutable', () => {
+    it('should prefer a discovered Windows PowerShell 7 path over PATH lookup', () => {
+      const env = {
+        ProgramFiles: 'C:\\Program Files',
+      } as NodeJS.ProcessEnv;
+      const candidate = 'C:\\Program Files\\PowerShell\\7\\pwsh.exe';
+
+      const executable = resolvePowerShellCoreExecutable(
+        'win32',
+        (value) => value === candidate,
+        env,
+      );
+
+      assert.equal(executable, `"${candidate}"`);
+    });
+
+    it('should fall back to pwsh when no Windows PowerShell 7 path exists', () => {
+      const executable = resolvePowerShellCoreExecutable('win32', () => false, {
+        ProgramFiles: 'C:\\Program Files',
+      } as NodeJS.ProcessEnv);
+
+      assert.equal(executable, 'pwsh');
+    });
+
+    it('should list stable Windows PowerShell install candidates', () => {
+      const candidates = getWindowsPowerShellCorePathCandidates({
+        ProgramFiles: 'C:\\Program Files',
+      } as NodeJS.ProcessEnv);
+
+      assert.ok(candidates.includes('C:\\Program Files\\PowerShell\\7\\pwsh.exe'));
+      assert.ok(candidates.includes('C:\\Program Files\\PowerShell\\7-preview\\pwsh.exe'));
+    });
+  });
+
   describe('checkAllDependencies', () => {
     let report: EnvironmentReport;
 

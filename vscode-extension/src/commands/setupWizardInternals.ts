@@ -38,10 +38,33 @@ export async function runSetupWizardFlow(agentx: AgentXContext): Promise<void> {
 }
 
 export async function runStartupCheckFlow(agentx: AgentXContext): Promise<void> {
-  const result = await runCriticalPreCheckFlow(agentx, false);
-  if (!result.passed) {
-    console.warn('AgentX: Environment pre-check did not pass.');
+  const report = await checkAllDependencies(agentx);
+
+  if (report.healthy) {
+    return;
   }
+
+  const missingRequired = report.results.filter(
+    (result) => result.severity === 'required' && !result.found,
+  );
+
+  if (missingRequired.length === 0) {
+    return;
+  }
+
+  const missingNames = missingRequired.map((result) => result.name).join(', ');
+  const action = await vscode.window.showWarningMessage(
+    `AgentX: Missing required dependencies: ${missingNames}`,
+    'Check Environment',
+    'Dismiss',
+  );
+
+  if (action === 'Check Environment') {
+    await runSetupWizardFlow(agentx);
+    return;
+  }
+
+  console.warn(`AgentX: Startup dependency check dismissed. Missing: ${missingNames}`);
 }
 
 export async function runSilentInstallFlow(agentx: AgentXContext): Promise<PreCheckResult> {
