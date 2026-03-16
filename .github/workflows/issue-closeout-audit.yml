@@ -162,12 +162,12 @@ jobs:
 
               const body = [
                 marker,
-                `Issue closeout audit found commits on \`${defaultBranch}\` that reference this issue but do not include a GitHub closing keyword.`,
+                 'Issue closeout audit found commits on `' + defaultBranch + '` that reference this issue but do not include a GitHub closing keyword.',
                 '',
                 'Recent commit references:',
                 recentCommits,
                 '',
-                `If this issue is complete, close it manually or use \`fixes #${candidate.issueNumber}\`, \`closes #${candidate.issueNumber}\`, or \`resolves #${candidate.issueNumber}\` in the final PR body or delivery commit next time.`,
+                 'If this issue is complete, close it manually or use `fixes #' + candidate.issueNumber + '`, `closes #' + candidate.issueNumber + '`, or `resolves #' + candidate.issueNumber + '` in the final PR body or delivery commit next time.',
                 '',
                 'This audit is advisory and does not auto-close issues.',
               ].join('\n');
