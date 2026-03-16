@@ -68,6 +68,26 @@ inputs:
 - {Measurable success criterion 1}
 - {Measurable success criterion 2}
 
+### 1.1 Selected Tech Stack (REQUIRED before implementation)
+
+> Engineers SHOULD NOT start implementation until this table is completed and the chosen stack is explicit.
+
+| Layer / Concern | Selected Technology | Version / SKU | Why This Was Chosen | Rejected Alternatives |
+|-----------------|---------------------|---------------|---------------------|-----------------------|
+| Frontend / UI | {e.g. React, Blazor, none} | {version} | {brief rationale} | {alternatives considered} |
+| Backend / Runtime | {e.g. Node.js, .NET, Python} | {version} | {brief rationale} | {alternatives considered} |
+| API Style | {e.g. REST, GraphQL, gRPC, none} | {n/a or version} | {brief rationale} | {alternatives considered} |
+| Data Store | {e.g. PostgreSQL, Cosmos DB, none} | {version / tier} | {brief rationale} | {alternatives considered} |
+| Hosting / Compute | {e.g. App Service, AKS, Functions} | {plan / SKU} | {brief rationale} | {alternatives considered} |
+| Authentication / Security | {e.g. Entra ID, Auth0, existing platform auth} | {version / tier} | {brief rationale} | {alternatives considered} |
+| Observability | {e.g. Application Insights, OpenTelemetry} | {version / tier} | {brief rationale} | {alternatives considered} |
+| CI/CD | {e.g. GitHub Actions, Azure Pipelines} | {version / n/a} | {brief rationale} | {alternatives considered} |
+
+**Implementation Preconditions:**
+- The selected stack above is consistent with the ADR decision.
+- Major versions, managed service tiers, and externally hosted platforms are named explicitly.
+- Any unresolved stack choice is captured under Open Questions and blocks implementation.
+
 ---
 
 ## 2. Architecture Diagrams

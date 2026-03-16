@@ -7,7 +7,7 @@ constraints:
   - "MUST read `.github/skills/architecture` for architecture work"
   - "MUST evaluate at least 3 options in each ADR"
   - "MUST use diagrams (Mermaid, tables) to illustrate -- NO CODE EXAMPLES in specs"
-  - "MUST produce a Tech Spec with all 13 required sections"
+  - "MUST produce a Tech Spec with all required template sections, including an explicit selected tech stack before implementation"
   - "MUST NOT write implementation code or include code snippets -- zero code in any deliverable, no exceptions"
   - "MUST NOT generate pseudocode, shell commands, SQL queries, config files, or code examples of any kind"
   - "MUST NOT modify source code, PRD, or UX documents"
@@ -134,7 +134,7 @@ Create `docs/artifacts/adr/ADR-{issue}.md` from template at `.github/templates/A
 
 Create `docs/artifacts/specs/SPEC-{issue}.md` from template at `.github/templates/SPEC-TEMPLATE.md`.
 
-**13 required sections**: Overview, Goals & Non-Goals, Architecture (Mermaid), Component Design, Data Model, API Design, Security, Performance, Error Handling, Monitoring, Testing Strategy, Migration Plan, Open Questions.
+**Required Tech Spec sections**: Follow `.github/templates/SPEC-TEMPLATE.md` exactly, including the required `Selected Tech Stack` subsection before implementation can begin.
 
 **Rules**:
 - Diagrams (Mermaid): MUST use for architecture, sequences, data flow
@@ -172,7 +172,8 @@ Apply to: technology choices, pattern selections, trade-off conclusions, risk as
 ### 6. Self-Review
 
 - [ ] ADR evaluates 3+ options with clear criteria
-- [ ] Tech Spec covers all 13 sections
+- [ ] Tech Spec covers all required template sections
+- [ ] Selected tech stack is explicit, versioned where relevant, and aligned with the ADR decision
 - [ ] All architecture communicated via diagrams, not code
 - [ ] Security considerations documented (auth, data protection, input validation)
 - [ ] Performance targets specified with measurable thresholds
@@ -223,7 +224,8 @@ Update Status to `Ready` in GitHub Projects.
 ### Exit
 
 - PASS ADR exists with 3+ evaluated options (skip for spikes)
-- PASS Tech Spec has all 13 sections (skip for spikes)
+- PASS Tech Spec has all required template sections (skip for spikes)
+- PASS Selected tech stack is explicitly documented before implementation handoff
 - PASS Zero code examples in any spec
 - PASS ADR Context section includes research evidence with sources (benchmarks, failure modes, security)
 - PASS Validation passes: `.github/scripts/validate-handoff.sh <issue> architect`
@@ -266,7 +268,7 @@ Copilot runs this loop natively within its agentic session.
 
 ### Done Criteria
 
-ADR documents 3+ options with decision rationale; Tech Spec has all required sections, diagrams only -- no code examples.
+ADR documents 3+ options with decision rationale; Tech Spec has all required sections, includes an explicit selected tech stack, and uses diagrams only -- no code examples.
 
 ### Quantitative Scoring Gate
 
