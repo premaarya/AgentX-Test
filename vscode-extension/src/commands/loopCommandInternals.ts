@@ -89,6 +89,7 @@ export async function loopStart(agentx: AgentXContext): Promise<void> {
     const output = await agentx.runCli('loop', args);
     syncHarnessStart(agentx, prompt, criteria, issueStr);
     showLoopOutput('Loop Started', output, getHarnessDisplay(agentx));
+    vscode.window.showInformationMessage('Iterative loop started with a default minimum of 3 review iterations.');
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     vscode.window.showErrorMessage(`Loop start failed: ${message}`);

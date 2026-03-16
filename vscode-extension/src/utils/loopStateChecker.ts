@@ -25,6 +25,7 @@ export interface LoopState {
   readonly status: 'active' | 'complete' | 'cancelled';
   readonly prompt: string;
   readonly iteration: number;
+  readonly minIterations?: number;
   readonly maxIterations: number;
   readonly completionCriteria: string;
   readonly issueNumber?: number | null;
@@ -50,6 +51,15 @@ export interface LoopGateResult {
 
 /** Relative path from workspace root to the loop state file. */
 const LOOP_STATE_REL = '.agentx/state/loop-state.json';
+
+function getEffectiveMinIterations(state: LoopState): number {
+  const defaultMin = Math.min(3, state.maxIterations);
+  if (typeof state.minIterations === 'number' && state.minIterations > 0) {
+    return Math.min(state.minIterations, state.maxIterations);
+  }
+
+  return defaultMin;
+}
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -111,6 +121,16 @@ export function checkHandoffGate(workspaceRoot: string): LoopGateResult {
   }
 
   if (state.status === 'complete') {
+    const minIterations = getEffectiveMinIterations(state);
+    if (state.iteration < minIterations) {
+      return {
+        allowed: false,
+        reason: `Quality loop completed too early (${state.iteration}/${minIterations} minimum review iterations). `
+          + 'Run additional `agentx loop iterate` passes and complete the loop again.',
+        state,
+      };
+    }
+
     return {
       allowed: true,
       reason: 'Quality loop completed successfully.',
@@ -144,10 +164,11 @@ export function getLoopStatusDisplay(workspaceRoot: string): string {
   if (!state) {
     return 'No loop';
   }
+  const minIterations = getEffectiveMinIterations(state);
   if (state.active) {
-    return `Loop ${state.iteration}/${state.maxIterations} [${state.completionCriteria}]`;
+    return `Loop ${state.iteration}/${state.maxIterations} (min ${minIterations}) [${state.completionCriteria}]`;
   }
-  return `Loop ${state.status} (${state.iteration} iterations)`;
+  return `Loop ${state.status} (${state.iteration} iterations, min ${minIterations})`;
 }
 
 /**

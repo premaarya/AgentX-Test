@@ -112,6 +112,69 @@ try {
     Remove-Item $tmpRoot -Recurse -Force -ErrorAction SilentlyContinue
 }
 
+$runnerTestRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("agentx-runner-loop-" + [System.IO.Path]::GetRandomFileName())
+New-Item -ItemType Directory -Path $runnerTestRoot -Force | Out-Null
+try {
+    $script:runnerMessages = [System.Collections.Generic.List[object]]::new()
+    $script:runnerLlmCalls = 0
+    $script:selfReviewCalls = 0
+
+    function Get-GitHubToken { return 'fake-token' }
+    function Initialize-ApiMode { param([string]$ghToken) $Script:ApiMode = 'models' }
+    function Read-AgentDef { param([string]$agentName, [string]$root) return @{ name = $agentName; description = ''; model = ''; modelFallback = ''; body = ''; canModify = @(); cannotModify = @() } }
+    function Get-ModelCandidates { param([string]$preferredModel, [string]$modelFallback) return @('gpt-4o') }
+    function Build-SystemPrompt { param($agentDef, [string]$agentName) return 'system prompt' }
+    function Get-ToolSchemas { return @() }
+    function Save-Session { param($sessionId, $messages, $meta, $root) }
+    function New-LoopDetector { return [PSCustomObject]@{} }
+    function Add-LoopRecord { param($detector, $toolName, $paramsJson, $resultSnippet) }
+    function Test-LoopDetection { param($detector) return @{ severity = 'none'; message = '' } }
+    function Invoke-LlmChat {
+        param($token, $modelId, $messages, $tools, $maxTokens)
+        $script:runnerLlmCalls++
+        $script:runnerMessages.Add(($messages[-1]).content) | Out-Null
+        return [PSCustomObject]@{
+            choices = @(
+                [PSCustomObject]@{
+                    message = [PSCustomObject]@{
+                        content = 'Candidate final answer'
+                        tool_calls = @()
+                    }
+                }
+            )
+        }
+    }
+    function Invoke-SelfReviewLoop {
+        param($AgentName, $WorkOutput, $Token, $ModelId, $WorkspaceRoot, $MaxReviewerIterations)
+        $script:selfReviewCalls++
+        return @{ approved = $true; findings = @(); feedback = 'Looks good' }
+    }
+
+    $result = Invoke-AgenticLoop -Agent 'engineer' -Prompt 'Implement the login fix' -MaxIterations 6 -WorkspaceRoot $runnerTestRoot
+
+    Assert-Equal $result.exitReason 'text_response' 'Invoke-AgenticLoop still exits normally after minimum self-review passes are met'
+    Assert-Equal $script:selfReviewCalls 3 'Invoke-AgenticLoop requires three approved self-review passes before finishing'
+    Assert-Equal $result.iterations 3 'Invoke-AgenticLoop continues the main loop until the minimum self-review passes are complete'
+    $minimumReminderSeen = @($script:runnerMessages | Where-Object {
+        $_ -match '^\[Self-Review MINIMUM NOT YET MET - Iteration 1/3\]' -and $_ -match 'every role must complete at least 3 self-review passes before finishing'
+    }).Count -gt 0
+    Assert-True $minimumReminderSeen 'Invoke-AgenticLoop injects a minimum-self-review reminder after the first approved pass'
+} finally {
+    Remove-Item Function:Get-GitHubToken -ErrorAction SilentlyContinue
+    Remove-Item Function:Initialize-ApiMode -ErrorAction SilentlyContinue
+    Remove-Item Function:Read-AgentDef -ErrorAction SilentlyContinue
+    Remove-Item Function:Get-ModelCandidates -ErrorAction SilentlyContinue
+    Remove-Item Function:Build-SystemPrompt -ErrorAction SilentlyContinue
+    Remove-Item Function:Get-ToolSchemas -ErrorAction SilentlyContinue
+    Remove-Item Function:Save-Session -ErrorAction SilentlyContinue
+    Remove-Item Function:New-LoopDetector -ErrorAction SilentlyContinue
+    Remove-Item Function:Add-LoopRecord -ErrorAction SilentlyContinue
+    Remove-Item Function:Test-LoopDetection -ErrorAction SilentlyContinue
+    Remove-Item Function:Invoke-LlmChat -ErrorAction SilentlyContinue
+    Remove-Item Function:Invoke-SelfReviewLoop -ErrorAction SilentlyContinue
+    Remove-Item $runnerTestRoot -Recurse -Force -ErrorAction SilentlyContinue
+}
+
 Write-Host ''
 Write-Host ' ================================================' -ForegroundColor DarkGray
 $total = $script:pass + $script:fail

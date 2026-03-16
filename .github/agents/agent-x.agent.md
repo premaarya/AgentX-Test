@@ -146,6 +146,8 @@ Before routing, scan the issue for domain-specific intent and add labels:
 
 ALL workflows include iteration by default (`iterate = true` in TOML). Default limits:
 
+- Minimum review iterations for every role: 3
+
 | Workflow | Max Iterations |
 |----------|---------------|
 | story, feature | 10 |

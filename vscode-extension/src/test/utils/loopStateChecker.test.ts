@@ -31,6 +31,7 @@ function makeCompleteState(overrides?: Partial<LoopState>): Record<string, unkno
     status: 'complete',
     prompt: 'Implement feature X',
     iteration: 3,
+    minIterations: 3,
     maxIterations: 10,
     completionCriteria: 'ALL_TESTS_PASSING',
     issueNumber: 42,
@@ -51,6 +52,7 @@ function makeActiveState(overrides?: Partial<LoopState>): Record<string, unknown
     status: 'active',
     prompt: 'Implement feature X',
     iteration: 2,
+    minIterations: 3,
     maxIterations: 10,
     completionCriteria: 'ALL_TESTS_PASSING',
     issueNumber: 42,
@@ -69,6 +71,7 @@ function makeCancelledState(): Record<string, unknown> {
     status: 'cancelled',
     prompt: 'Implement feature X',
     iteration: 1,
+    minIterations: 3,
     maxIterations: 10,
     completionCriteria: 'ALL_TESTS_PASSING',
     issueNumber: null,
@@ -112,6 +115,7 @@ describe('readLoopState', () => {
     assert.equal(result!.active, false);
     assert.equal(result!.status, 'complete');
     assert.equal(result!.iteration, 3);
+    assert.equal(result!.minIterations, 3);
     assert.equal(result!.maxIterations, 10);
     assert.equal(result!.completionCriteria, 'ALL_TESTS_PASSING');
     assert.equal(result!.issueNumber, 42);
@@ -198,6 +202,15 @@ describe('checkHandoffGate', () => {
     assert.equal(gate.state!.status, 'complete');
   });
 
+  it('blocks when a completed loop does not meet the minimum review iterations', () => {
+    writeLoopState(wsRoot, makeCompleteState({ iteration: 1, minIterations: 3 }));
+
+    const gate = checkHandoffGate(wsRoot);
+    assert.equal(gate.allowed, false);
+    assert.ok(gate.reason.includes('completed too early'));
+    assert.ok(gate.reason.includes('1/3'));
+  });
+
   it('blocks for unexpected status values', () => {
     writeLoopState(wsRoot, makeCompleteState({ status: 'unknown' as any, active: false }));
 
@@ -265,6 +278,7 @@ describe('getLoopStatusDisplay', () => {
     writeLoopState(wsRoot, makeActiveState());
     const display = getLoopStatusDisplay(wsRoot);
     assert.ok(display.includes('2/10'));
+    assert.ok(display.includes('min 3'));
     assert.ok(display.includes('ALL_TESTS_PASSING'));
   });
 
@@ -273,6 +287,25 @@ describe('getLoopStatusDisplay', () => {
     const display = getLoopStatusDisplay(wsRoot);
     assert.ok(display.includes('complete'));
     assert.ok(display.includes('3 iterations'));
+    assert.ok(display.includes('min 3'));
+  });
+
+  it('uses the default minimum when reading a legacy loop-state file', () => {
+    writeLoopState(wsRoot, {
+      active: true,
+      status: 'active',
+      prompt: 'Legacy loop',
+      iteration: 1,
+      maxIterations: 10,
+      completionCriteria: 'TASK_COMPLETE',
+      issueNumber: null,
+      startedAt: '2025-01-01T00:00:00Z',
+      lastIterationAt: '2025-01-01T00:05:00Z',
+      history: [],
+    });
+
+    const display = getLoopStatusDisplay(wsRoot);
+    assert.ok(display.includes('min 3'));
   });
 
   it('returns cancelled status', () => {

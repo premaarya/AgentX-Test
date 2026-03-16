@@ -13,6 +13,7 @@ describe('registerLoopCommand', () => {
   let fakeContext: vscode.ExtensionContext;
   let fakeAgentx: sinon.SinonStubbedInstance<AgentXContext>;
   let registeredCallbacks: Record<string, (...args: unknown[]) => unknown>;
+  let infoSpy: sinon.SinonSpy;
 
   beforeEach(() => {
     sandbox = sinon.createSandbox();
@@ -26,6 +27,8 @@ describe('registerLoopCommand', () => {
       checkInitialized: sandbox.stub(),
       runCli: sandbox.stub(),
     } as unknown as sinon.SinonStubbedInstance<AgentXContext>;
+
+    infoSpy = sandbox.spy(vscode.window, 'showInformationMessage');
 
     sandbox.stub(vscode.commands, 'registerCommand').callsFake(
       (cmd: string, cb: (...args: unknown[]) => unknown) => {
@@ -102,6 +105,7 @@ describe('registerLoopCommand', () => {
       assert.ok(fakeAgentx.runCli.calledWith('loop', sinon.match.array.deepEquals([
         'start', '-p', '"Implement harness"', '-m', '10', '-c', '"ALL_TESTS_PASSING"', '-i', '42',
       ])));
+      assert.ok(infoSpy.calledWith('Iterative loop started with a default minimum of 3 review iterations.'));
     });
   });
 

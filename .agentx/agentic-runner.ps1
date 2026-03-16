@@ -42,6 +42,7 @@ $Script:ApiMode = $null  # 'copilot' or 'models'
 
 # Self-review & clarification defaults (configurable per invocation)
 $Script:SELF_REVIEW_MAX_ITERATIONS = 15
+$Script:SELF_REVIEW_MIN_ITERATIONS = 3
 $Script:SELF_REVIEW_REVIEWER_MAX_ITERATIONS = 8
 $Script:CLARIFICATION_MAX_ITERATIONS = 6
 $Script:CLARIFICATION_RESPONDER_MAX_ITERATIONS = 5
@@ -1599,6 +1600,7 @@ function Invoke-AgenticLoop {
     # Self-review state (tracks review iterations across the main loop)
     $selfReviewIteration = 0
     $selfReviewMax = $Script:SELF_REVIEW_MAX_ITERATIONS
+    $selfReviewMin = [Math]::Min($Script:SELF_REVIEW_MIN_ITERATIONS, $selfReviewMax)
 
     Write-Host "`e[90m  -----------------------------------------------`e[0m"
 
@@ -1706,6 +1708,14 @@ function Invoke-AgenticLoop {
                 }
 
                 Write-Host "`e[32m  [SELF-REVIEW] Approved on iteration $selfReviewIteration`e[0m"
+                if ($selfReviewIteration -lt $selfReviewMin) {
+                    $messages += @{
+                        role = 'user'
+                        content = "[Self-Review MINIMUM NOT YET MET - Iteration $selfReviewIteration/$selfReviewMin]`nThe work passed review, but every role must complete at least $selfReviewMin self-review passes before finishing. Re-check the work, confirm there are no regressions, and only finish after the minimum review count is met."
+                    }
+                    $finalText = ''
+                    continue
+                }
             }
 
             $exitReason = 'text_response'
