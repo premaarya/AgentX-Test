@@ -202,6 +202,8 @@ export function renderUsageGuidance(): string {
   return (
     '**AgentX** - Multi-Agent Orchestration\n\n'
     + 'Usage:\n'
+    + '- `@agentx config advance`\n'
+    + '- `@agentx add plugin`\n'
     + '- `@agentx run engineer "implement the health endpoint for issue #42"`\n'
     + '- `@agentx continue "use the existing auth flow and keep refresh tokens"`\n'
     + '- `@agentx brainstorm auth rollout constraints`\n'
@@ -222,6 +224,35 @@ export function renderUsageGuidance(): string {
     + '- `@agentx run reviewer "review the changes in issue #42"`\n\n'
     + 'During execution, live status updates for compaction, clarification, loop progress, tool activity, and self-review are streamed into chat.'
   );
+}
+
+export async function tryHandleWorkspaceSetupRequest(
+  userText: string,
+  response: vscode.ChatResponseStream,
+): Promise<vscode.ChatResult | undefined> {
+  if (/^(?:agentx:\s*)?(?:config advance|initialize(?: project| workspace)?|setup workspace)$/i.test(userText)) {
+    try {
+      await vscode.commands.executeCommand('agentx.initialize');
+      response.markdown('Opened **AgentX: Config Advance** for this workspace.');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      response.markdown(`**AgentX error:** ${message}`);
+    }
+    return {};
+  }
+
+  if (/^(?:agentx:\s*)?(?:add plugin|install plugin)$/i.test(userText)) {
+    try {
+      await vscode.commands.executeCommand('agentx.addPlugin');
+      response.markdown('Opened **AgentX: Add Plugin** for this workspace.');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      response.markdown(`**AgentX error:** ${message}`);
+    }
+    return {};
+  }
+
+  return undefined;
 }
 
 export async function tryHandleWorkflowNextStepRequest(

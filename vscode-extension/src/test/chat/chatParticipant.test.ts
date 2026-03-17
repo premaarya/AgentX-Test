@@ -159,6 +159,62 @@ describe('chatParticipant', () => {
     assert.ok(response.getMarkdown().includes('During execution, live status updates'));
   });
 
+  it('launches Config Advance directly from chat', async () => {
+    const response = createMockResponseStream();
+    const executed: string[] = [];
+    const originalExecuteCommand = vscode.commands.executeCommand;
+    (vscode.commands as any).executeCommand = async (command: string) => {
+      executed.push(command);
+      return undefined;
+    };
+
+    const agentx = {
+      checkInitialized: async () => true,
+      workspaceRoot: tmpDir,
+    };
+
+    try {
+      await handleAgentXChatRequest(
+        { prompt: 'config advance' } as any,
+        response as any,
+        agentx as any,
+      );
+    } finally {
+      (vscode.commands as any).executeCommand = originalExecuteCommand;
+    }
+
+    assert.deepEqual(executed, ['agentx.initialize']);
+    assert.ok(response.getMarkdown().includes('Opened **AgentX: Config Advance** for this workspace.'));
+  });
+
+  it('launches Add Plugin directly from chat', async () => {
+    const response = createMockResponseStream();
+    const executed: string[] = [];
+    const originalExecuteCommand = vscode.commands.executeCommand;
+    (vscode.commands as any).executeCommand = async (command: string) => {
+      executed.push(command);
+      return undefined;
+    };
+
+    const agentx = {
+      checkInitialized: async () => true,
+      workspaceRoot: tmpDir,
+    };
+
+    try {
+      await handleAgentXChatRequest(
+        { prompt: 'add plugin' } as any,
+        response as any,
+        agentx as any,
+      );
+    } finally {
+      (vscode.commands as any).executeCommand = originalExecuteCommand;
+    }
+
+    assert.deepEqual(executed, ['agentx.addPlugin']);
+    assert.ok(response.getMarkdown().includes('Opened **AgentX: Add Plugin** for this workspace.'));
+  });
+
   it('explains that formal AgentX execution needs workspace runtime files', async () => {
     const response = createMockResponseStream();
     const agentx = {

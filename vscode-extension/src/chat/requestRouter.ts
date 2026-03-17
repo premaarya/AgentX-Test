@@ -6,6 +6,7 @@ import {
   resetChatRouterInternalStateForTests,
   resumePendingClarification,
   runAgentCommand,
+  tryHandleWorkspaceSetupRequest,
   tryHandleAgentNativeReviewRequest,
   tryHandleBrainstormRequest,
   tryHandleCaptureGuidanceRequest,
@@ -52,6 +53,11 @@ export async function routeAgentXChatRequest(
   response: vscode.ChatResponseStream,
   agentx: AgentXContext,
 ): Promise<vscode.ChatResult> {
+  const workspaceSetupResult = await tryHandleWorkspaceSetupRequest(userText, response);
+  if (workspaceSetupResult) {
+    return workspaceSetupResult;
+  }
+
   const runMatch = userText.match(/^run\s+(\S+)\s+(.+)$/is);
   if (runMatch) {
     return runAgentCommand(response, agentx, runMatch[1].toLowerCase(), runMatch[2].trim());
