@@ -39,7 +39,7 @@ describe('harness evaluator', () => {
       active: false,
       status: 'complete',
       prompt: 'Ship evaluation',
-      iteration: 2,
+      iteration: 3,
       maxIterations: 10,
       completionCriteria: 'TASK_COMPLETE',
       startedAt: '2026-03-09T10:00:00Z',

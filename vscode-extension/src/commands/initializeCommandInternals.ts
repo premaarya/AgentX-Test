@@ -13,6 +13,7 @@ import {
   promptWorkspaceRoot,
   readJsonWithComments,
 } from './initializeInternals';
+import { syncDetectedAdoAdapter, syncDetectedGitHubAdapter } from './adaptersCommandInternals';
 import { runSilentInstall } from './setupWizard';
 
 interface ExistingVersionStamp {
@@ -199,6 +200,9 @@ export async function runInitializeLocalRuntimeCommand(
     } catch {
      // Git not available - skip silently
     }
+
+    await syncDetectedGitHubAdapter(agentx);
+    await syncDetectedAdoAdapter(agentx);
 
     progress.report({ message: 'Finalizing...', increment: 10 });
     agentx.invalidateCache();

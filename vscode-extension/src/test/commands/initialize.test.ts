@@ -98,7 +98,7 @@ describe('runInitializeLocalRuntimeCommand', () => {
     fakeContext = {
       subscriptions: [],
       extensionUri: vscode.Uri.file('/test/extension'),
-      extension: { packageJSON: { version: '8.3.8' } },
+      extension: { packageJSON: { version: '8.4.0' } },
     } as unknown as vscode.ExtensionContext;
     fakeAgentx = {} as unknown as sinon.SinonStubbedInstance<AgentXContext>;
     originalWorkspaceFolders = vscode.workspace.workspaceFolders;

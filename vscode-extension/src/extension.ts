@@ -9,6 +9,7 @@ import { AgentXContext } from './agentxContext';
 import { registerChatParticipant } from './chat/chatParticipant';
 import { clearInstructionCache } from './chat/agentContextLoader';
 import { runSetupWizard } from './commands/setupWizard';
+import { syncDetectedAdoAdapter, syncDetectedGitHubAdapter } from './commands/adaptersCommandInternals';
 import { silentVersionSync } from './utils/versionChecker';
 import { checkCompanionExtensions } from './utils/companionExtensions';
 import { getQualityStateDisplay } from './utils/loopStateChecker';
@@ -47,6 +48,16 @@ export function activate(context: vscode.ExtensionContext) {
   await vscode.commands.executeCommand('setContext', 'agentx.harnessActive', harnessActive);
  };
 
+ const syncAutoAdapters = async (): Promise<void> => {
+   const githubChanged = await syncDetectedGitHubAdapter(agentxContext);
+   const adoChanged = await syncDetectedAdoAdapter(agentxContext);
+   const changed = githubChanged || adoChanged;
+  if (changed) {
+   clearInstructionCache();
+   refreshSidebarProviders(sidebarProviders);
+  }
+ };
+
  // Register sidebar tree view providers (VS Code-only value)
  registerSidebarProviders(sidebarProviders);
 
@@ -79,6 +90,7 @@ export function activate(context: vscode.ExtensionContext) {
  // Auto-discover AgentX when config or MCP files change
  const configWatcher = vscode.workspace.createFileSystemWatcher('**/.agentx/config.json');
  const mcpWatcher = vscode.workspace.createFileSystemWatcher('**/.vscode/mcp.json');
+ const gitConfigWatcher = vscode.workspace.createFileSystemWatcher('**/.git/config');
  const onConfigChange = () => {
   agentxContext.invalidateCache();
   clearInstructionCache();
@@ -88,12 +100,20 @@ export function activate(context: vscode.ExtensionContext) {
      }
     });
  };
+ const onGitRemoteChange = () => {
+   void syncAutoAdapters()
+    .catch(() => { /* ignore */ })
+    .finally(() => onConfigChange());
+ };
  configWatcher.onDidCreate(onConfigChange);
  configWatcher.onDidDelete(onConfigChange);
  mcpWatcher.onDidCreate(onConfigChange);
  mcpWatcher.onDidChange(onConfigChange);
  mcpWatcher.onDidDelete(onConfigChange);
- context.subscriptions.push(configWatcher, mcpWatcher);
+ gitConfigWatcher.onDidCreate(onGitRemoteChange);
+ gitConfigWatcher.onDidChange(onGitRemoteChange);
+ gitConfigWatcher.onDidDelete(onGitRemoteChange);
+ context.subscriptions.push(configWatcher, mcpWatcher, gitConfigWatcher);
 
  // Silently sync workspace version.json to match extension version (non-blocking)
  silentVersionSync(
@@ -106,7 +126,11 @@ export function activate(context: vscode.ExtensionContext) {
  checkCompanionExtensions(agentxContext.workspaceRoot).catch(() => { /* ignore */ });
 
  // Set initial context flags
- void updateUiState();
+ void syncAutoAdapters()
+  .catch(() => { /* ignore */ })
+  .finally(() => {
+   void updateUiState();
+  });
 
  console.log('AgentX extension activated.');
 }
