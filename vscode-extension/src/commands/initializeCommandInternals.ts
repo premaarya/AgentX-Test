@@ -14,7 +14,7 @@ import {
   readJsonWithComments,
 } from './initializeInternals';
 import { syncDetectedAdoAdapter, syncDetectedGitHubAdapter } from './adaptersCommandInternals';
-import { runSilentInstall } from './setupWizard';
+import { checkAllDependencies } from '../utils/dependencyChecker';
 
 interface ExistingVersionStamp {
   readonly installedAt?: string;
@@ -31,14 +31,6 @@ export async function runInitializeLocalRuntimeCommand(
 ): Promise<void> {
  const root = await promptWorkspaceRoot('AgentX - Initialize Local Runtime');
  if (!root) {
-  return;
- }
-
- const preCheck = await runSilentInstall(agentx);
- if (!preCheck.passed) {
-  vscode.window.showWarningMessage(
-   'AgentX: Some required dependencies could not be installed. Run "AgentX: Check Environment" for details.',
-  );
   return;
  }
 
@@ -212,6 +204,23 @@ export async function runInitializeLocalRuntimeCommand(
     vscode.commands.executeCommand('setContext', 'agentx.adoConnected', agentx.adoConnected);
 
     vscode.window.showInformationMessage('AgentX: Local runtime initialized.');
+
+    // Non-blocking advisory: notify if recommended tools are missing (never blocks init).
+    checkAllDependencies(agentx).then((report) => {
+      const missing = report.results
+        .filter((r) => (r.severity === 'required' || r.severity === 'recommended') && !r.found)
+        .map((r) => r.name);
+      if (missing.length > 0) {
+        void vscode.window.showWarningMessage(
+          `AgentX: Optional tools not detected: ${missing.join(', ')}. Run "AgentX: Check Environment" to install.`,
+          'Check Environment',
+        ).then((action) => {
+          if (action === 'Check Environment') {
+            void vscode.commands.executeCommand('agentx.checkEnvironment');
+          }
+        });
+      }
+    }).catch(() => { /* non-blocking - ignore errors */ });
 
     vscode.commands.executeCommand('agentx.refresh');
    } catch (err: unknown) {

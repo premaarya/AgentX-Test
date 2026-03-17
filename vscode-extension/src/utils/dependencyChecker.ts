@@ -50,8 +50,11 @@ export async function checkAllDependencies(
     if (r.name === 'Azure CLI (az)') {
       r.severity = ado ? 'required' : 'optional';
     }
-    // PowerShell on non-Windows without any integration is optional (bash works)
-    if (r.name === 'PowerShell' && process.platform !== 'win32' && !github && !ado) {
+    // PowerShell is recommended (not required) in local mode.
+    // It is only required when GitHub or ADO integrations are active, because
+    // those workflows rely on .ps1 CLI scripts. In local mode the workspace can
+    // be initialised and used via Node.js alone; PowerShell can be added later.
+    if (r.name === 'PowerShell' && !github && !ado) {
       r.severity = 'recommended';
     }
     return r;
