@@ -247,10 +247,14 @@ export async function checkAzureCli(): Promise<DependencyResult> {
     message,
     fixUrl: 'https://learn.microsoft.com/cli/azure/install-azure-cli',
     fixLabel: 'Install Azure CLI',
-    fixCommand: process.platform === 'win32'
-      ? 'winget install Microsoft.AzureCLI'
-      : process.platform === 'darwin'
-        ? 'brew install azure-cli'
-        : 'curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash',
+    // When the CLI is already installed but the extension is missing, the correct
+    // fix is to add the extension — not reinstall the CLI binary.
+    fixCommand: !found
+      ? (process.platform === 'win32'
+          ? 'winget install Microsoft.AzureCLI'
+          : process.platform === 'darwin'
+            ? 'brew install azure-cli'
+            : 'curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash')
+      : 'az extension add --name azure-devops',
   };
 }

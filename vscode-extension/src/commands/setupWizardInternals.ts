@@ -111,13 +111,11 @@ export async function runSilentInstallFlow(agentx: AgentXContext): Promise<PreCh
 
       progress.report({ message: `Waiting for ${terminalNames}...` });
 
-      const pollMs = 5_000;
-      const maxWaitMs = 180_000;
       let elapsed = 0;
 
-      while (elapsed < maxWaitMs) {
-        await new Promise<void>((resolve) => setTimeout(resolve, pollMs));
-        elapsed += pollMs;
+      while (elapsed < POLL_MAX_WAIT_MS) {
+        await new Promise<void>((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+        elapsed += POLL_INTERVAL_MS;
 
         progress.report({
           message: `Checking ${terminalNames}... (${Math.round(elapsed / 1000)}s)`,
@@ -199,12 +197,12 @@ export async function runCriticalPreCheckFlow(
       for (const tool of toolsWithFix) {
         if (tool.fixCommand) {
           terminal.sendText(
-            `Write-Host '--- Installing ${tool.name} ---'; ${tool.fixCommand}`,
+            `echo "--- Installing ${tool.name} ---"; ${tool.fixCommand}`,
           );
         }
       }
       terminal.sendText(
-        'Write-Host "--- All installations complete. You may close this terminal. ---"',
+        'echo "--- All installations complete. You may close this terminal. ---"',
       );
 
       const toolNames = toolsWithFix.map((tool) => tool.name);
