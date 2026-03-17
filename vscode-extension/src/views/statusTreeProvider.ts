@@ -7,8 +7,9 @@ import { SidebarTreeItem } from './sidebarTreeItem';
 
 interface VersionStamp {
  readonly version?: string;
- readonly mode?: string;
+ readonly provider?: string;
  readonly integration?: string;
+ readonly mode?: string;
 }
 
 function readJsonFile<T>(filePath: string): T | undefined {
@@ -66,7 +67,7 @@ export class StatusTreeProvider implements vscode.TreeDataProvider<SidebarTreeIt
   const overviewChildren = [
    SidebarTreeItem.detail('Workspace', 'root-folder', root ? 'ready' : 'none'),
    SidebarTreeItem.detail('Version', 'versions', versionInfo?.version ?? 'not installed'),
-   SidebarTreeItem.detail('Mode', 'server-environment', configInfo?.mode ?? configInfo?.integration ?? versionInfo?.mode ?? 'workspace only'),
+   SidebarTreeItem.detail('Mode', 'server-environment', configInfo?.provider ?? configInfo?.integration ?? configInfo?.mode ?? versionInfo?.mode ?? 'workspace only'),
    SidebarTreeItem.detail('GitHub MCP', 'github', formatConnection(this.agentx.githubConnected)),
    SidebarTreeItem.detail('ADO MCP', 'repo', formatConnection(this.agentx.adoConnected)),
    SidebarTreeItem.detail('Azure skills', azureCompanionIcon, azureCompanionDescription),

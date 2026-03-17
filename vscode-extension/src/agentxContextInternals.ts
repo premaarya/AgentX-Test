@@ -282,15 +282,22 @@ export function buildCliCommand(root: string | undefined, shell: string): string
   return path.join(root, '.agentx', 'agentx.ps1');
 }
 
-function safeQuoteArg(arg: string): string {
-  const trimmed = arg.trim();
-  if (
-    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
-    (trimmed.startsWith("'") && trimmed.endsWith("'"))
-  ) {
-    return arg; // already quoted by caller
+function safeQuoteArg(arg: string, isPwsh: boolean): string {
+  if (isPwsh) {
+    // PowerShell: quote if the arg contains whitespace, quotes, or $ (variable expansion).
+    // Escape inner double-quotes as "" (the canonical PowerShell convention).
+    if (/[\s"$`]/.test(arg)) {
+      return `"${arg.replace(/"/g, '""')}"`;
+    }
+    return arg;
+  } else {
+    // bash: quote if the arg contains whitespace or shell-special characters.
+    // Escape backslashes first, then inner double-quotes as \".
+    if (/[\s"$`\\]/.test(arg)) {
+      return `"${arg.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+    }
+    return arg;
   }
-  return /\s/.test(arg) ? `"${arg}"` : arg;
 }
 
 export function buildCliInvocation(
@@ -300,7 +307,7 @@ export function buildCliInvocation(
   cliArgs: string[],
 ): { command: string; shellKind: 'pwsh' | 'bash' } {
   const isPwsh = shell === 'pwsh' || (shell === 'auto' && process.platform === 'win32');
-  const argStr = cliArgs.length > 0 ? ' ' + cliArgs.map(safeQuoteArg).join(' ') : '';
+  const argStr = cliArgs.length > 0 ? ' ' + cliArgs.map((a) => safeQuoteArg(a, isPwsh)).join(' ') : '';
 
   return {
     command: isPwsh

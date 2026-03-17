@@ -76,7 +76,7 @@ export async function runAgentCommand(
     let pendingSessionId = '';
     const output = await agentx.runCliStreaming(
       'run',
-      [agentName, `"${task.replace(/"/g, '\\"')}"`],
+      [agentName, task],
       (line) => {
         const normalized = normalizeCliLine(line);
         const sessionMatch = normalized.match(HUMAN_REQUIRED_SESSION_PATTERN);
@@ -131,7 +131,7 @@ export async function resumePendingClarification(
       'run',
       [
         '--resume-session', pending.sessionId,
-        '--clarification-response', `"${guidance.replace(/"/g, '\\"')}"`,
+        '--clarification-response', guidance,
       ],
       (line) => {
         const normalized = normalizeCliLine(line);

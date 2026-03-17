@@ -81,7 +81,7 @@ export async function loopStart(agentx: AgentXContext): Promise<void> {
   });
 
   try {
-    const args: string[] = ['start', '-p', `"${prompt}"`, '-m', maxIterStr, '-c', `"${criteria}"`];
+    const args: string[] = ['start', '-p', prompt, '-m', maxIterStr, '-c', criteria];
     if (issueStr && parseInt(issueStr, 10) > 0) {
       args.push('-i', issueStr);
     }
@@ -116,7 +116,7 @@ export async function loopIterate(agentx: AgentXContext): Promise<void> {
   if (!summary) { return; }
 
   try {
-    const output = await agentx.runCli('loop', ['iterate', '-s', `"${summary}"`]);
+    const output = await agentx.runCli('loop', ['iterate', '-s', summary]);
     syncHarnessIteration(agentx, summary);
     showLoopOutput('Loop Iteration', output, getHarnessDisplay(agentx));
   } catch (err: unknown) {
@@ -134,7 +134,7 @@ export async function loopComplete(agentx: AgentXContext): Promise<void> {
   try {
     const args = ['complete'];
     if (summary) {
-      args.push('-s', `"${summary}"`);
+      args.push('-s', summary);
     }
 
     const output = await agentx.runCli('loop', args);
