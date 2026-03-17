@@ -15,17 +15,16 @@ export type { PreCheckResult } from './setupWizardTypes';
 
 /**
  * Run the full environment check and present an interactive report.
- * Called by the `agentx.checkEnvironment` command and on first activation.
+ * Called by the `agentx.checkEnvironment` command.
  */
 export async function runSetupWizard(agentx: AgentXContext): Promise<void> {
   await runSetupWizardFlow(agentx);
 }
 
 /**
- * Lightweight startup check - runs silently after activation and only
- * surfaces an advisory notification when critical problems are detected.
- * Missing required dependencies are routed to the explicit environment wizard
- * instead of starting installs automatically during activation.
+ * Legacy background startup check.
+ * Dependency validation is now expected to happen during explicit install/setup
+ * flows, so activation should not call this automatically.
  */
 export async function runStartupCheck(agentx: AgentXContext): Promise<void> {
   await runStartupCheckFlow(agentx);

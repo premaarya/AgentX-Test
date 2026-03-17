@@ -22,7 +22,7 @@ Running autonomous agents from the CLI lacks visibility. The AgentX VS Code exte
 | Feature | Description |
 |:--------|:------------|
 | **Copilot Chat Integration** | Native chat participant for triggering AgentX routines seamlessly. |
-| **Workspace Setup Wizard** | Single-click initialization of local, GitHub, or Azure DevOps setups. |
+| **Workspace Setup Wizard** | Local-runtime-first setup with optional remote adapters for GitHub or Azure DevOps. |
 | **Live Sidebar Views** | Instantly visualize queues, active workflows, agent roles, and output templates. |
 | **Quality & Integration Gates** | Sidebar dashboards that track loop states, unresolved dependencies, and constraints. |
 | **Command Palette Access** | Fast workflow-oriented actions like Status sync, Ready Queue checks, Digests, brainstorm, and compound-loop inspection. |
@@ -68,9 +68,10 @@ To run AgentX successfully within VS Code:
 
 1. **Install** the extension from the VS Code Marketplace.
 2. **Open** to your target project workspace.
-3. **Initialize** the environment by running AgentX: Initialize Project in the Command Palette.
-4. **Brainstorm or run work** from Copilot Chat with prompts like `@agentx brainstorm rollout constraints`, `@agentx run engineer "implement the health endpoint"`, or `@agentx compound`.
-5. **Capture reusable outcomes** with `AgentX: Create Learning Capture` once review confirms the result should compound future work.
+3. **Initialize** the local runtime by running AgentX: Initialize Local Runtime in the Command Palette.
+4. **Optionally add a remote adapter** with AgentX: Add Remote Adapter when you want GitHub or Azure DevOps repo operations.
+5. **Brainstorm or run work** from Copilot Chat with prompts like `@agentx brainstorm rollout constraints`, `@agentx run engineer "implement the health endpoint"`, or `@agentx compound`.
+6. **Capture reusable outcomes** with `AgentX: Create Learning Capture` once review confirms the result should compound future work.
 
 ## Compound Loop In The IDE
 

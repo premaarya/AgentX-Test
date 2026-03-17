@@ -419,24 +419,37 @@ try {
         Assert-True ($failedIssue.state -eq 'OPEN' -and $failedItem.status -eq 'In review') 'GitHub project status is unchanged when gh close fails'
 
         $inferredRoot = New-TestWorkspace 'inferred-github'
+        New-Item -ItemType Directory -Path (Join-Path $inferredRoot '.agentx\issues') -Force | Out-Null
         Write-Utf8File (Join-Path $inferredRoot '.agentx\config.json') (@{
             mode = 'local'
             repo = 'test-owner/test-repo'
             project = 4
             created = '2026-03-08T00:00:00Z'
         } | ConvertTo-Json -Depth 5)
+        Write-Utf8File (Join-Path $inferredRoot '.agentx\issues\1.json') (@{
+            number = 1
+            title = '[Story] Local Ready'
+            body = 'Ready local item'
+            labels = @('type:story', 'priority:p1')
+            status = 'Ready'
+            state = 'open'
+            created = '2026-03-08T00:00:00Z'
+            updated = '2026-03-08T00:05:00Z'
+            comments = @()
+        } | ConvertTo-Json -Depth 10)
 
         $inferredReady = Invoke-AgentX $inferredRoot @('ready', '--json')
         $inferredReadyIssues = $inferredReady.Output | ConvertFrom-Json -Depth 10
-        Assert-True ($inferredReady.ExitCode -eq 0) 'Repo-configured workspace infers GitHub provider for ready command'
-        Assert-True (@($inferredReadyIssues).Count -eq 1 -and [int]$inferredReadyIssues[0].number -eq 202) 'Repo-configured workspace uses GitHub issue source instead of local mode'
+        Assert-True ($inferredReady.ExitCode -eq 0) 'Repo-configured workspace keeps ready command available'
+        Assert-True (@($inferredReadyIssues).Count -eq 1 -and [int]$inferredReadyIssues[0].number -eq 1) 'Repo-configured workspace keeps local issue source active by default'
 
         $configShow = Invoke-AgentX $inferredRoot @('config', 'show', '--json')
         $configShowJson = $configShow.Output | ConvertFrom-Json -Depth 10
         Assert-True ($configShow.ExitCode -eq 0) 'Config show succeeds for repo-inferred provider'
-        Assert-True ($configShowJson.activeProvider -eq 'github') 'Config show reports inferred GitHub provider'
+        Assert-True ($configShowJson.activeProvider -eq 'local') 'Config show keeps the local provider active when only a GitHub adapter is configured'
+        Assert-True (@($configShowJson.configuredAdapters) -contains 'github') 'Config show reports GitHub as a configured adapter'
         $persistedConfig = Get-Content (Join-Path $inferredRoot '.agentx\config.json') -Raw | ConvertFrom-Json -Depth 10
-        Assert-True ($persistedConfig.provider -eq 'github' -and $persistedConfig.repo -eq 'test-owner/test-repo') 'Repo-configured workspace auto-persists GitHub provider settings'
+        Assert-True ((-not $persistedConfig.provider -or $persistedConfig.provider -eq 'local') -and $persistedConfig.repo -eq 'test-owner/test-repo') 'Repo-configured workspace does not auto-promote GitHub into the active provider'
 
         $remoteDetectedRoot = New-TestWorkspace 'remote-detected-transition'
         New-Item -ItemType Directory -Path (Join-Path $remoteDetectedRoot '.agentx\issues') -Force | Out-Null
@@ -479,19 +492,10 @@ try {
 
         $transitionRun = Invoke-AgentX $remoteDetectedRoot @('config', 'show', '--json')
         $transitionJson = $transitionRun.Output | ConvertFrom-Json -Depth 10
-        $state = Get-GitHubMockState $toolsDir
         $transitionConfig = Get-Content (Join-Path $remoteDetectedRoot '.agentx\config.json') -Raw | ConvertFrom-Json -Depth 20
-        $migratedOpen = @($state.issues | Where-Object { $_.title -eq '[Story] Migrated Open' } | Select-Object -First 1)[0]
-        $migratedClosed = @($state.issues | Where-Object { $_.title -eq '[Bug] Migrated Closed' } | Select-Object -First 1)[0]
-        $migratedOpenItem = @($state.project.items | Where-Object { [int]$_.content.number -eq [int]$migratedOpen.number } | Select-Object -First 1)[0]
-        $migratedClosedItem = @($state.project.items | Where-Object { [int]$_.content.number -eq [int]$migratedClosed.number } | Select-Object -First 1)[0]
         Assert-True ($transitionRun.ExitCode -eq 0) 'GitHub remote detection transition command succeeds'
-        Assert-True ($transitionJson.activeProvider -eq 'github') 'GitHub remote detection activates GitHub provider'
-        Assert-True ($transitionConfig.provider -eq 'github' -and $transitionConfig.repo -eq 'test-owner/test-repo') 'GitHub remote detection persists provider and repo'
-        Assert-True ($transitionConfig.githubBacklogSync.completed -and $transitionConfig.githubBacklogSync.issueMap.'1' -and $transitionConfig.githubBacklogSync.issueMap.'2') 'GitHub remote detection records completed backlog sync with issue mappings'
-        Assert-True ($migratedOpenItem.status -eq 'In progress') 'Migrated open local issue keeps latest status in GitHub project'
-        Assert-True ($migratedClosed.state -eq 'CLOSED' -and $migratedClosedItem.status -eq 'Done') 'Migrated closed local issue is closed remotely and marked Done'
-        Assert-True (@($migratedOpen.comments).Count -ge 2) 'Migrated open local issue preserves migration summary and local comments'
+        Assert-True ($transitionJson.activeProvider -eq 'local') 'GitHub remote detection leaves the local provider active'
+        Assert-True ((-not $transitionConfig.provider -or $transitionConfig.provider -eq 'local') -and (-not $transitionConfig.githubBacklogSync)) 'GitHub remote detection no longer auto-syncs or persists a provider transition'
 
         Write-Utf8File (Join-Path $remoteDetectedRoot '.agentx\issues\1.json') (@{
             number = 1
@@ -524,11 +528,14 @@ try {
 
         $forceSync = Invoke-AgentX $remoteDetectedRoot @('backlog-sync', 'github', '--force')
         $state = Get-GitHubMockState $toolsDir
+        $transitionConfig = Get-Content (Join-Path $remoteDetectedRoot '.agentx\config.json') -Raw | ConvertFrom-Json -Depth 20
         $forceSyncedOpen = @($state.issues | Where-Object { [int]$_.number -eq [int]$transitionConfig.githubBacklogSync.issueMap.'1' } | Select-Object -First 1)[0]
         $forceSyncedReopened = @($state.issues | Where-Object { [int]$_.number -eq [int]$transitionConfig.githubBacklogSync.issueMap.'2' } | Select-Object -First 1)[0]
         $forceOpenItem = @($state.project.items | Where-Object { [int]$_.content.number -eq [int]$forceSyncedOpen.number } | Select-Object -First 1)[0]
         $forceReopenedItem = @($state.project.items | Where-Object { [int]$_.content.number -eq [int]$forceSyncedReopened.number } | Select-Object -First 1)[0]
         Assert-True ($forceSync.ExitCode -eq 0) 'backlog-sync github --force exits successfully'
+        Assert-True ((-not $transitionConfig.provider -or $transitionConfig.provider -eq 'local') -and $transitionConfig.adapters.github.repo -eq 'test-owner/test-repo') 'Forced backlog sync stores GitHub adapter metadata without changing the active provider'
+        Assert-True ($transitionConfig.githubBacklogSync.completed -and $transitionConfig.githubBacklogSync.issueMap.'1' -and $transitionConfig.githubBacklogSync.issueMap.'2') 'Forced backlog sync records completed backlog sync with issue mappings'
         Assert-True ($forceSyncedOpen.title -eq '[Story] Migrated Open Updated' -and $forceOpenItem.status -eq 'Ready') 'Forced backlog sync refreshes mapped open issues with latest title and status'
         Assert-True ($forceSyncedReopened.state -eq 'OPEN' -and $forceReopenedItem.status -eq 'In review') 'Forced backlog sync can reopen mapped issues and apply latest status'
         Assert-True (@($forceSyncedReopened.comments).Count -ge 3) 'Forced backlog sync adds newly introduced local comments without dropping existing migration history'

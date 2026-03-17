@@ -154,6 +154,63 @@ function Get-AgentXConfig {
     return $cfg
 }
 
+function Ensure-AgentXAdapters($cfg) {
+    $adapters = Get-ConfigValue $cfg 'adapters'
+    if ($adapters) { return $adapters }
+
+    $adapters = @{}
+    Set-ConfigValue $cfg 'adapters' $adapters
+    return $adapters
+}
+
+function Get-AgentXAdapterValue($cfg, [string]$adapterName, [string]$name, $default = $null) {
+    $adapters = Get-ConfigValue $cfg 'adapters'
+    if (-not $adapters) { return $default }
+
+    $adapter = Get-ConfigValue $adapters $adapterName
+    if (-not $adapter) { return $default }
+
+    return Get-ConfigValue $adapter $name $default
+}
+
+function Set-AgentXAdapterValue($cfg, [string]$adapterName, [string]$name, $value) {
+    $adapters = Ensure-AgentXAdapters $cfg
+    $adapter = Get-ConfigValue $adapters $adapterName
+    if (-not $adapter) {
+        $adapter = @{}
+        Set-ConfigValue $adapters $adapterName $adapter
+    }
+
+    Set-ConfigValue $adapter $name $value
+}
+
+function Get-AgentXConfiguredAdapters {
+    $cfg = Get-AgentXConfig
+    $configured = @()
+
+    $githubRepo = [string](Get-AgentXAdapterValue $cfg 'github' 'repo' '')
+    if ([string]::IsNullOrWhiteSpace($githubRepo)) {
+        $githubRepo = [string](Get-ConfigValue $cfg 'repo' '')
+    }
+    if (-not [string]::IsNullOrWhiteSpace($githubRepo)) {
+        $configured += 'github'
+    }
+
+    $adoOrg = [string](Get-AgentXAdapterValue $cfg 'ado' 'organization' '')
+    if ([string]::IsNullOrWhiteSpace($adoOrg)) {
+        $adoOrg = [string](Get-ConfigValue $cfg 'organization' '')
+    }
+    $adoProject = [string](Get-AgentXAdapterValue $cfg 'ado' 'project' '')
+    if ([string]::IsNullOrWhiteSpace($adoProject)) {
+        $adoProject = [string](Get-ConfigValue $cfg 'project' '')
+    }
+    if (-not [string]::IsNullOrWhiteSpace($adoOrg) -and -not [string]::IsNullOrWhiteSpace($adoProject)) {
+        $configured += 'ado'
+    }
+
+    return @($configured | Sort-Object -Unique)
+}
+
 function Resolve-AgentXProviderName([string]$value) {
     $normalized = if ($value) { $value.Trim().ToLowerInvariant() } else { 'local' }
     switch ($normalized) {
@@ -175,6 +232,9 @@ function Get-AgentXMode { return Get-AgentXProvider }
 function Get-AdoOrganizationUrl {
     $cfg = Get-AgentXConfig
     $organization = [string](Get-ConfigValue $cfg 'organization' '')
+    if ([string]::IsNullOrWhiteSpace($organization)) {
+        $organization = [string](Get-AgentXAdapterValue $cfg 'ado' 'organization' '')
+    }
     if ([string]::IsNullOrWhiteSpace($organization)) { return '' }
     if ($organization -match '^https?://') { return $organization.TrimEnd('/') }
     return "https://dev.azure.com/$($organization.Trim('/'))"
@@ -182,7 +242,11 @@ function Get-AdoOrganizationUrl {
 
 function Get-AdoProjectName {
     $cfg = Get-AgentXConfig
-    return [string](Get-ConfigValue $cfg 'project' '')
+    $project = [string](Get-ConfigValue $cfg 'project' '')
+    if ([string]::IsNullOrWhiteSpace($project)) {
+        $project = [string](Get-AgentXAdapterValue $cfg 'ado' 'project' '')
+    }
+    return $project
 }
 
 function Test-CommandAvailable([string]$commandName) {
@@ -272,20 +336,6 @@ function Get-AgentXProviderResolution {
         return [PSCustomObject]@{ name = $resolved; source = 'integration'; inferred = $false; warning = '' }
     }
 
-    $repoSlug = Get-GitHubRepoSlug
-    if (-not [string]::IsNullOrWhiteSpace($repoSlug) -and (Test-GitHubCliAuthenticated)) {
-        $source = if (-not [string]::IsNullOrWhiteSpace($repo)) { 'repo' } else { 'remote' }
-        $reason = if ($source -eq 'repo') {
-            "repo '$repoSlug' is configured and GitHub CLI authentication is available"
-        } else {
-            "GitHub remote '$repoSlug' is configured and GitHub CLI authentication is available"
-        }
-        if (Resolve-AgentXProviderName "$mode" -eq 'local') {
-            Try-PersistInferredProvider -provider 'github' -reason $reason -repo $repoSlug
-        }
-        return [PSCustomObject]@{ name = 'github'; source = $source; inferred = $true; warning = "Inferred GitHub provider because $reason." }
-    }
-
     $resolved = Resolve-AgentXProviderName "$mode"
     return [PSCustomObject]@{ name = $resolved; source = 'mode'; inferred = $false; warning = '' }
 }
@@ -299,11 +349,13 @@ function Assert-AdoCliAvailable {
 function Get-AgentXProviderInfo {
     $providerResolution = Get-AgentXProviderResolution
     $provider = $providerResolution.name
+    $configuredAdapters = Get-AgentXConfiguredAdapters
     return [PSCustomObject]@{
         name = $provider
         source = $providerResolution.source
         inferred = $providerResolution.inferred
         warning = $providerResolution.warning
+        adapters = $configuredAdapters
         readyUsesExplicitReadyState = ($provider -eq 'local')
         validationHost = if ($provider -eq 'github') { 'github-actions' } elseif ($provider -eq 'ado') { 'azure-pipelines' } else { 'local' }
     }
@@ -484,10 +536,8 @@ function Sync-LocalBacklogToGitHubIfNeeded([string]$Repo, [string]$Reason, [swit
     Invoke-WithJsonLock $Script:CONFIG_FILE 'cli' {
         $cfg = Get-AgentXConfig
         $syncState = Get-GitHubBacklogSyncState $cfg $Repo
-        Set-ConfigValue $cfg 'provider' 'github'
-        Set-ConfigValue $cfg 'integration' 'github'
-        Set-ConfigValue $cfg 'mode' 'github'
         Set-ConfigValue $cfg 'repo' $Repo
+        Set-AgentXAdapterValue $cfg 'github' 'repo' $Repo
         if (-not $syncState.completed) {
             Save-GitHubBacklogSyncState $cfg $Repo $syncState.issueMap $false
         }
@@ -2039,6 +2089,9 @@ function Invoke-GitHubCli([string[]]$arguments, [string]$failureMessage, [switch
 
 function Get-GitHubRepoSlug {
     $cfg = Get-AgentXConfig
+    $adapterRepo = [string](Get-AgentXAdapterValue $cfg 'github' 'repo' '')
+    if (-not [string]::IsNullOrWhiteSpace($adapterRepo)) { return $adapterRepo }
+
     $repo = [string](Get-ConfigValue $cfg 'repo' '')
     if (-not [string]::IsNullOrWhiteSpace($repo)) { return $repo }
 
@@ -2064,7 +2117,10 @@ function Get-GitHubProjectOwner {
 
 function Get-GitHubProjectNumber {
     $cfg = Get-AgentXConfig
-    $project = Get-ConfigValue $cfg 'project'
+    $project = Get-AgentXAdapterValue $cfg 'github' 'project'
+    if ($null -eq $project -or [string]::IsNullOrWhiteSpace("$project")) {
+        $project = Get-ConfigValue $cfg 'project'
+    }
     if ($project -is [int]) { return $project }
     if ($project -and "$project" -match '^\d+$') { return [int]$project }
     return 0
@@ -3113,6 +3169,7 @@ function Invoke-ConfigCmd {
                     providerSource = $providerInfo.source
                     providerInferred = $providerInfo.inferred
                     providerWarning = $providerInfo.warning
+                    configuredAdapters = @($providerInfo.adapters)
                 } | ConvertTo-Json -Depth 10 | Write-Host
             } else {
                 Write-Host "$($C.c)  AgentX Configuration$($C.n)"
@@ -3124,6 +3181,7 @@ function Invoke-ConfigCmd {
                 }
                 Write-Host "  $($C.w)activeProvider$($C.n) = $($providerInfo.name)"
                 Write-Host "  $($C.w)providerSource$($C.n) = $($providerInfo.source)"
+                Write-Host "  $($C.w)configuredAdapters$($C.n) = $(@($providerInfo.adapters) -join ', ')"
                 if ($providerInfo.inferred) {
                     Write-Host "$($C.y)  [WARN] $($providerInfo.warning)$($C.n)"
                 }

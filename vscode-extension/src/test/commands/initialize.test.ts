@@ -4,8 +4,8 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as sinon from 'sinon';
 import * as vscode from 'vscode';
-import { registerInitializeCommand } from '../../commands/initialize';
-import { runInitializeCommand } from '../../commands/initializeCommandInternals';
+import { registerInitializeLocalRuntimeCommand } from '../../commands/initialize';
+import { runInitializeLocalRuntimeCommand } from '../../commands/initializeCommandInternals';
 import * as setupWizard from '../../commands/setupWizard';
 import { AgentXContext } from '../../agentxContext';
 
@@ -13,7 +13,7 @@ import { AgentXContext } from '../../agentxContext';
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('registerInitializeCommand', () => {
+describe('registerInitializeLocalRuntimeCommand', () => {
   let sandbox: sinon.SinonSandbox;
   let fakeContext: vscode.ExtensionContext;
   let fakeAgentx: sinon.SinonStubbedInstance<AgentXContext>;
@@ -42,7 +42,7 @@ describe('registerInitializeCommand', () => {
       },
     );
 
-    registerInitializeCommand(fakeContext, fakeAgentx as unknown as AgentXContext);
+    registerInitializeLocalRuntimeCommand(fakeContext, fakeAgentx as unknown as AgentXContext);
   });
 
   afterEach(() => {
@@ -51,9 +51,9 @@ describe('registerInitializeCommand', () => {
     sandbox.restore();
   });
 
-  it('should register agentx.initialize command', () => {
+  it('should register agentx.initializeLocalRuntime command', () => {
     assert.ok(
-      (vscode.commands.registerCommand as sinon.SinonStub).calledWith('agentx.initialize'),
+      (vscode.commands.registerCommand as sinon.SinonStub).calledWith('agentx.initializeLocalRuntime'),
     );
   });
 
@@ -87,7 +87,7 @@ describe('registerInitializeCommand', () => {
   });
 });
 
-describe('runInitializeCommand', () => {
+describe('runInitializeLocalRuntimeCommand', () => {
   let sandbox: sinon.SinonSandbox;
   let fakeContext: vscode.ExtensionContext;
   let fakeAgentx: sinon.SinonStubbedInstance<AgentXContext>;
@@ -113,7 +113,7 @@ describe('runInitializeCommand', () => {
     (vscode.workspace as any).workspaceFolders = undefined;
     const errorStub = sandbox.stub(vscode.window, 'showErrorMessage');
 
-    await runInitializeCommand(fakeContext, fakeAgentx as unknown as AgentXContext);
+    await runInitializeLocalRuntimeCommand(fakeContext, fakeAgentx as unknown as AgentXContext);
 
     sinon.assert.calledOnce(errorStub);
     assert.ok(String(errorStub.firstCall.args[0]).includes('Open a workspace folder first'));
@@ -142,7 +142,7 @@ describe('runInitializeCommand', () => {
     const quickPickStub = sandbox.stub(vscode.window, 'showQuickPick');
 
     try {
-      await runInitializeCommand(fakeContext, fakeAgentx as unknown as AgentXContext);
+      await runInitializeLocalRuntimeCommand(fakeContext, fakeAgentx as unknown as AgentXContext);
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
     }

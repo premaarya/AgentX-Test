@@ -159,7 +159,7 @@ describe('chatParticipant', () => {
     assert.ok(response.getMarkdown().includes('During execution, live status updates'));
   });
 
-  it('launches Config Advance directly from chat', async () => {
+  it('launches Initialize Local Runtime directly from chat', async () => {
     const response = createMockResponseStream();
     const executed: string[] = [];
     const originalExecuteCommand = vscode.commands.executeCommand;
@@ -175,7 +175,7 @@ describe('chatParticipant', () => {
 
     try {
       await handleAgentXChatRequest(
-        { prompt: 'config advance' } as any,
+        { prompt: 'initialize local runtime' } as any,
         response as any,
         agentx as any,
       );
@@ -183,8 +183,36 @@ describe('chatParticipant', () => {
       (vscode.commands as any).executeCommand = originalExecuteCommand;
     }
 
-    assert.deepEqual(executed, ['agentx.initialize']);
-    assert.ok(response.getMarkdown().includes('Opened **AgentX: Config Advance** for this workspace.'));
+    assert.deepEqual(executed, ['agentx.initializeLocalRuntime']);
+    assert.ok(response.getMarkdown().includes('Opened **AgentX: Initialize Local Runtime** for this workspace.'));
+  });
+
+  it('launches Add Remote Adapter directly from chat', async () => {
+    const response = createMockResponseStream();
+    const executed: string[] = [];
+    const originalExecuteCommand = vscode.commands.executeCommand;
+    (vscode.commands as any).executeCommand = async (command: string) => {
+      executed.push(command);
+      return undefined;
+    };
+
+    const agentx = {
+      checkInitialized: async () => true,
+      workspaceRoot: tmpDir,
+    };
+
+    try {
+      await handleAgentXChatRequest(
+        { prompt: 'add remote adapter' } as any,
+        response as any,
+        agentx as any,
+      );
+    } finally {
+      (vscode.commands as any).executeCommand = originalExecuteCommand;
+    }
+
+    assert.deepEqual(executed, ['agentx.addRemoteAdapter']);
+    assert.ok(response.getMarkdown().includes('Opened **AgentX: Add Remote Adapter** for this workspace.'));
   });
 
   it('launches Add Plugin directly from chat', async () => {
@@ -231,7 +259,7 @@ describe('chatParticipant', () => {
 
     const markdown = response.getMarkdown();
     assert.ok(markdown.includes('AgentX CLI runtime is not available in this workspace.'));
-    assert.ok(markdown.includes('AgentX: Config Advance'));
+    assert.ok(markdown.includes('AgentX: Initialize Local Runtime'));
   });
 
   it('returns ranked planning learnings from chat', async () => {
@@ -580,7 +608,7 @@ describe('chatParticipant', () => {
 
     const markdown = response.getMarkdown();
     assert.ok(markdown.includes('AgentX CLI runtime is not available in this workspace.'));
-    assert.ok(markdown.includes('AgentX: Config Advance'));
+    assert.ok(markdown.includes('AgentX: Initialize Local Runtime'));
   });
 
   it('shows pending clarification context for bare continue', async () => {

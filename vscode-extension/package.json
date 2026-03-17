@@ -54,10 +54,16 @@
   "contributes": {
     "commands": [
       {
-        "command": "agentx.initialize",
-        "title": "Config Advance",
+        "command": "agentx.initializeLocalRuntime",
+        "title": "Initialize Local Runtime",
         "category": "AgentX",
         "icon": "$(plug)"
+      },
+      {
+        "command": "agentx.addRemoteAdapter",
+        "title": "Add Remote Adapter",
+        "category": "AgentX",
+        "icon": "$(repo)"
       },
       {
         "command": "agentx.addPlugin",
