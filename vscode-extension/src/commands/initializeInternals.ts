@@ -118,11 +118,23 @@ export function copyDirRecursive(src: string, dest: string, overwrite = false): 
   }
 }
 
-export function downloadFile(url: string, dest: string): Promise<void> {
+export function downloadFile(url: string, dest: string, timeoutMs = 60_000): Promise<void> {
   return new Promise((resolve, reject) => {
     const file = fs.createWriteStream(dest);
+    let done = false;
+
+    const timer = setTimeout(() => {
+      if (done) { return; }
+      done = true;
+      file.destroy();
+      fs.unlink(dest, () => {});
+      reject(new Error(`Download timed out after ${timeoutMs / 1000}s`));
+    }, timeoutMs);
+
     const request = (requestUrl: string, redirectCount = 0) => {
       if (redirectCount > 5) {
+        clearTimeout(timer);
+        done = true;
         reject(new Error('Too many redirects'));
         return;
       }
@@ -146,16 +158,22 @@ export function downloadFile(url: string, dest: string): Promise<void> {
         }
 
         if (response.statusCode && response.statusCode !== 200) {
+          clearTimeout(timer);
+          done = true;
           reject(new Error(`Download failed with status ${response.statusCode}`));
           return;
         }
 
         response.pipe(file);
         file.on('finish', () => {
+          clearTimeout(timer);
+          done = true;
           file.close();
           resolve();
         });
       }).on('error', (err: Error) => {
+        clearTimeout(timer);
+        done = true;
         fs.unlink(dest, () => {});
         reject(err);
       });

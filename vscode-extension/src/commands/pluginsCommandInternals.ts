@@ -7,6 +7,7 @@ import {
  copyDirRecursive,
  downloadFile,
  extractZip,
+ promptWorkspaceRoot,
 } from './initializeInternals';
 
 interface PluginManifest {
@@ -17,15 +18,6 @@ interface PluginManifest {
 
 interface PluginPick extends vscode.QuickPickItem {
  readonly pluginDir: string;
-}
-
-function resolveWorkspaceRoot(): string | undefined {
- const folders = vscode.workspace.workspaceFolders;
- if (!folders || folders.length === 0) {
-  return undefined;
- }
-
- return folders.length === 1 ? folders[0].uri.fsPath : undefined;
 }
 
 function loadPluginManifest(pluginDir: string): PluginManifest {
@@ -60,12 +52,11 @@ function getPluginPicks(pluginsRoot: string): PluginPick[] {
 }
 
 export async function runAddPluginCommand(
- context: vscode.ExtensionContext,
+ _context: vscode.ExtensionContext,
  _agentx: AgentXContext,
 ): Promise<void> {
- const root = resolveWorkspaceRoot();
+ const root = await promptWorkspaceRoot('AgentX - Add Plugin');
  if (!root) {
-  vscode.window.showErrorMessage('AgentX: Open a workspace folder first.');
   return;
  }
 
@@ -76,15 +67,12 @@ export async function runAddPluginCommand(
   return;
  }
 
- const tmpDir = path.join(root, '.agentx-plugin-install-tmp');
  const rawDir = path.join(root, '.agentx-plugin-install-raw');
  const zipFile = path.join(root, '.agentx-plugin-install.zip');
 
  try {
-  for (const currentPath of [tmpDir, rawDir]) {
-   if (fs.existsSync(currentPath)) {
-    fs.rmSync(currentPath, { recursive: true, force: true });
-   }
+  if (fs.existsSync(rawDir)) {
+   fs.rmSync(rawDir, { recursive: true, force: true });
   }
   if (fs.existsSync(zipFile)) {
    fs.unlinkSync(zipFile);
@@ -158,14 +146,12 @@ export async function runAddPluginCommand(
   const message = err instanceof Error ? err.message : String(err);
   vscode.window.showErrorMessage(`AgentX plugin install failed: ${message}`);
  } finally {
-  for (const currentPath of [tmpDir, rawDir]) {
-   try {
-    if (fs.existsSync(currentPath)) {
-     fs.rmSync(currentPath, { recursive: true, force: true });
-    }
-   } catch {
-    // ignore cleanup failures
+  try {
+   if (fs.existsSync(rawDir)) {
+    fs.rmSync(rawDir, { recursive: true, force: true });
    }
+  } catch {
+   // ignore cleanup failures
   }
   try {
    if (fs.existsSync(zipFile)) {
@@ -174,6 +160,5 @@ export async function runAddPluginCommand(
   } catch {
    // ignore cleanup failures
   }
-  void context;
  }
 }
