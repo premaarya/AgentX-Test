@@ -96,34 +96,6 @@ export function compareSemver(left: string, right: string): number {
   return 0;
 }
 
-export async function checkNodeJs(): Promise<DependencyResult> {
-  const raw = await tryExec('node --version');
-  const found = raw.length > 0;
-  const version = found ? parseVersion(raw) : '';
-
-  let message = '';
-  if (!found) {
-    message = 'Node.js is not installed. Only needed for extension development (not required for end users).';
-  } else {
-    const major = parseInt(version.split('.')[0], 10);
-    if (major < 18) {
-      message = `Node.js ${version} found but v18+ is recommended for development.`;
-    } else {
-      message = `Node.js ${version} detected.`;
-    }
-  }
-
-  return {
-    name: 'Node.js',
-    found,
-    version,
-    severity: 'optional',
-    message,
-    fixUrl: 'https://nodejs.org/',
-    fixLabel: 'Download Node.js',
-  };
-}
-
 export async function checkPowerShell(options: PowerShellCheckOptions = {}): Promise<DependencyResult> {
   const platform = options.platform ?? process.platform;
   const execute = options.execute ?? tryExec;

@@ -9,6 +9,8 @@ import {
   getWindowsPowerShellCorePathCandidates,
   resolvePowerShellCoreExecutable,
 } from '../../utils/dependencyCheckerInternals';
+// Note: checkNodeJs has been removed from the dependency list.
+// Node.js is always present (it hosts the extension) so checking for it is redundant.
 
 // ---------------------------------------------------------------------------
 // Integration tests for dependencyChecker.
@@ -106,17 +108,10 @@ describe('dependencyChecker', () => {
     it('should return EnvironmentReport shape', () => {
       assert.ok(report.timestamp, 'timestamp should be set');
       assert.ok(Array.isArray(report.results), 'results should be an array');
-      assert.strictEqual(report.results.length, 5, 'should check 5 dependencies');
+      assert.strictEqual(report.results.length, 4, 'should check 4 dependencies');
       assert.strictEqual(typeof report.healthy, 'boolean');
       assert.strictEqual(typeof report.criticalCount, 'number');
       assert.strictEqual(typeof report.warningCount, 'number');
-    });
-
-    it('should detect Node.js as installed', () => {
-      const node = report.results.find((r) => r.name === 'Node.js');
-      assert.ok(node, 'Node.js entry should exist');
-      assert.strictEqual(node.found, true, 'Node.js should be found');
-      assert.ok(node.version.length > 0, 'version should be non-empty');
     });
 
     it('should include fix metadata for every result', () => {

@@ -2,7 +2,6 @@ import {
   checkAzureCli,
   checkGit,
   checkGitHubCli,
-  checkNodeJs,
   checkPowerShell,
 } from './dependencyCheckerInternals';
 import type {
@@ -34,7 +33,6 @@ export async function checkAllDependencies(
   // (vscode.chat?.createChatParticipant) provides graceful
   // degradation on older VS Code versions.
   const checks = await Promise.all([
-    checkNodeJs(),
     checkPowerShell(),
     checkGit(),
     checkGitHubCli(),
