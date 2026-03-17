@@ -4,6 +4,8 @@ import {
   type EnvironmentReport,
 } from '../../utils/dependencyChecker';
 import {
+  buildPowerShellVersionCommand,
+  checkPowerShell,
   getWindowsPowerShellCorePathCandidates,
   resolvePowerShellCoreExecutable,
 } from '../../utils/dependencyCheckerInternals';
@@ -49,6 +51,40 @@ describe('dependencyChecker', () => {
 
       assert.ok(candidates.includes('C:\\Program Files\\PowerShell\\7\\pwsh.exe'));
       assert.ok(candidates.includes('C:\\Program Files\\PowerShell\\7-preview\\pwsh.exe'));
+    });
+
+    it('should build a shell-safe version probe command', () => {
+      assert.equal(
+        buildPowerShellVersionCommand('pwsh'),
+        "pwsh -NoProfile -Command '$PSVersionTable.PSVersion.ToString()'",
+      );
+    });
+
+    it('should detect PowerShell Core on Windows without double-quote expansion', async () => {
+      const commands: string[] = [];
+
+      const result = await checkPowerShell({
+        platform: 'win32',
+        resolveExecutable: () => 'pwsh',
+        execute: async (command) => {
+          commands.push(command);
+          if (command.startsWith('pwsh ')) {
+            return 'PowerShell 7.5.4';
+          }
+          if (command.startsWith('powershell.exe ')) {
+            return '5.1.22621.2506';
+          }
+          return '';
+        },
+      });
+
+      assert.deepEqual(commands, [
+        "pwsh -NoProfile -Command '$PSVersionTable.PSVersion.ToString()'",
+        "powershell.exe -NoProfile -Command '$PSVersionTable.PSVersion.ToString()'",
+      ]);
+      assert.equal(result.found, true);
+      assert.equal(result.version, '7.5.4');
+      assert.equal(result.message, 'PowerShell 7.5.4 detected.');
     });
   });
 

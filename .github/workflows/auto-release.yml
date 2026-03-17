@@ -59,6 +59,9 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Stamp repo version across release surfaces
+        run: node scripts/stamp-version.js --set "${{ needs.create-release.outputs.version }}"
+
       - name: Install dependencies
         working-directory: vscode-extension
         run: npm ci

@@ -5,6 +5,13 @@ import * as path from 'path';
 import type { DependencyResult } from './dependencyCheckerTypes';
 
 const MIN_POWERSHELL_VERSION = '7.4.0';
+const POWERSHELL_VERSION_COMMAND = '$PSVersionTable.PSVersion.ToString()';
+
+export interface PowerShellCheckOptions {
+  platform?: NodeJS.Platform;
+  resolveExecutable?: () => string;
+  execute?: (command: string, timeoutMs?: number) => Promise<string>;
+}
 
 export function getWindowsPowerShellCorePathCandidates(
   env: NodeJS.ProcessEnv = process.env,
@@ -50,6 +57,10 @@ export function tryExec(command: string, timeoutMs = 10_000): Promise<string> {
       resolve(stdout.trim());
     });
   });
+}
+
+export function buildPowerShellVersionCommand(executable: string): string {
+  return `${executable} -NoProfile -Command '${POWERSHELL_VERSION_COMMAND}'`;
 }
 
 export function parseVersion(raw: string): string {
@@ -104,18 +115,20 @@ export async function checkNodeJs(): Promise<DependencyResult> {
   };
 }
 
-export async function checkPowerShell(): Promise<DependencyResult> {
-  const pwshExecutable = resolvePowerShellCoreExecutable();
-  const rawPwsh = await tryExec(
-    `${pwshExecutable} -NoProfile -Command "$PSVersionTable.PSVersion.ToString()"`,
-  );
+export async function checkPowerShell(options: PowerShellCheckOptions = {}): Promise<DependencyResult> {
+  const platform = options.platform ?? process.platform;
+  const execute = options.execute ?? tryExec;
+  const pwshExecutable = options.resolveExecutable
+    ? options.resolveExecutable()
+    : resolvePowerShellCoreExecutable(platform);
+  const rawPwsh = await execute(buildPowerShellVersionCommand(pwshExecutable));
   const hasPwsh = rawPwsh.length > 0;
   const pwshVersion = hasPwsh ? parseVersion(rawPwsh) : '';
   const meetsMinimum = hasPwsh && compareSemver(pwshVersion, MIN_POWERSHELL_VERSION) >= 0;
 
   let legacyVersion = '';
-  if (process.platform === 'win32') {
-    const rawLegacy = await tryExec('powershell.exe -NoProfile -Command "$PSVersionTable.PSVersion.ToString()"');
+  if (platform === 'win32') {
+    const rawLegacy = await execute(buildPowerShellVersionCommand('powershell.exe'));
     legacyVersion = rawLegacy.length > 0 ? parseVersion(rawLegacy) : '';
   }
 
@@ -138,9 +151,9 @@ export async function checkPowerShell(): Promise<DependencyResult> {
     message,
     fixUrl: 'https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell',
     fixLabel: 'Install PowerShell 7.4+',
-    fixCommand: process.platform === 'win32'
+    fixCommand: platform === 'win32'
       ? 'winget install Microsoft.PowerShell'
-      : process.platform === 'darwin'
+      : platform === 'darwin'
         ? 'brew install powershell/tap/powershell'
         : 'sudo apt-get install -y powershell',
   };
