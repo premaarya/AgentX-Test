@@ -1252,6 +1252,32 @@ Produce a structured review with APPROVED status and FINDINGS list.
     }
 }
 
+function Format-SelfReviewSummary {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][AllowEmptyCollection()][object[]]$ReviewHistory,
+        [Parameter(Mandatory)][int]$RequiredIterations
+    )
+
+    if (-not $ReviewHistory -or $ReviewHistory.Count -eq 0) {
+        return ''
+    }
+
+    $completedIterations = @($ReviewHistory | Where-Object { $_.approved }).Count
+    $parts = @("[SELF-REVIEW SUMMARY] Completed $completedIterations/$RequiredIterations required review iterations")
+
+    foreach ($entry in $ReviewHistory) {
+        $status = if ($entry.approved) { 'APPROVED' } else { 'NOT APPROVED' }
+        $details = @("$($entry.findings) findings", "$($entry.actionable) actionable")
+        if ($entry.minimumNotYetMet) {
+            $details += 'minimum not yet met'
+        }
+        $parts += "[SELF-REVIEW SUMMARY] Iteration $($entry.iteration): $status ($($details -join ', '))"
+    }
+
+    return ($parts -join "`n")
+}
+
 # ---------------------------------------------------------------------------
 # Clarification Loop (iterative inter-agent Q&A with human fallback)
 # ---------------------------------------------------------------------------
@@ -1601,6 +1627,7 @@ function Invoke-AgenticLoop {
     $selfReviewIteration = 0
     $selfReviewMax = $Script:SELF_REVIEW_MAX_ITERATIONS
     $selfReviewMin = [Math]::Min($Script:SELF_REVIEW_MIN_ITERATIONS, $selfReviewMax)
+    $selfReviewHistory = @()
 
     Write-Host "`e[90m  -----------------------------------------------`e[0m"
 
@@ -1697,6 +1724,17 @@ function Invoke-AgenticLoop {
                     -ModelId $modelId `
                     -WorkspaceRoot $WorkspaceRoot
 
+                $reviewFindings = if ($reviewResult.findings) { @($reviewResult.findings) } else { @() }
+                $reviewActionable = @($reviewFindings | Where-Object { $_.impact -ne 'low' })
+                $historyEntry = [PSCustomObject]@{
+                    iteration = $selfReviewIteration
+                    approved = [bool]$reviewResult.approved
+                    findings = @($reviewFindings).Count
+                    actionable = @($reviewActionable).Count
+                    minimumNotYetMet = $false
+                }
+                $selfReviewHistory += $historyEntry
+
                 if (-not $reviewResult.approved) {
                     # Inject feedback and continue the main loop
                     $messages += @{
@@ -1709,12 +1747,22 @@ function Invoke-AgenticLoop {
 
                 Write-Host "`e[32m  [SELF-REVIEW] Approved on iteration $selfReviewIteration`e[0m"
                 if ($selfReviewIteration -lt $selfReviewMin) {
+                    $historyEntry.minimumNotYetMet = $true
                     $messages += @{
                         role = 'user'
                         content = "[Self-Review MINIMUM NOT YET MET - Iteration $selfReviewIteration/$selfReviewMin]`nThe work passed review, but every role must complete at least $selfReviewMin self-review passes before finishing. Re-check the work, confirm there are no regressions, and only finish after the minimum review count is met."
                     }
                     $finalText = ''
                     continue
+                }
+
+                $selfReviewSummary = Format-SelfReviewSummary -ReviewHistory $selfReviewHistory -RequiredIterations $selfReviewMin
+                if ($selfReviewSummary) {
+                    $finalText = if ($finalText) {
+                        "$selfReviewSummary`n`n$finalText"
+                    } else {
+                        $selfReviewSummary
+                    }
                 }
             }
 

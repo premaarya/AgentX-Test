@@ -30,8 +30,9 @@ import { stripAnsi } from '../utils/stripAnsi';
 const CHAT_OUTPUT_CHANNEL_NAME = 'AgentX Chat';
 const CHAT_OUTPUT_INLINE_LIMIT = 4000;
 const CHAT_OUTPUT_PREVIEW_LINES = 8;
-const LIVE_STATUS_PATTERN = /\[(?:COMPACTION|CLARIFY(?: RESPONSE| DETAIL| \d+\/\d+)?|SELF-REVIEW|MODEL FALLBACK|LOOP WARNING|CIRCUIT BREAKER|TOOL ERROR|BOUNDARY BLOCKED|FAIL|WARN|PASS|HUMAN ESCALATION|HUMAN REQUIRED|HUMAN RESPONSE|HUMAN REQUIRED SESSION)\]|^\s*Iteration \d+\/\d+|^\s*Tool:/i;
+const LIVE_STATUS_PATTERN = /\[(?:COMPACTION|CLARIFY(?: RESPONSE| DETAIL| \d+\/\d+)?|SELF-REVIEW(?: SUMMARY)?|MODEL FALLBACK|LOOP WARNING|CIRCUIT BREAKER|TOOL ERROR|BOUNDARY BLOCKED|FAIL|WARN|PASS|HUMAN ESCALATION|HUMAN REQUIRED|HUMAN RESPONSE|HUMAN REQUIRED SESSION)\]|^\s*Iteration \d+\/\d+|^\s*Tool:/i;
 const HUMAN_REQUIRED_SESSION_PATTERN = /\[HUMAN REQUIRED SESSION\]\s+(.+)$/i;
+const SELF_REVIEW_SUMMARY_PATTERN = /^\[SELF-REVIEW SUMMARY\].*$/gim;
 
 export type PendingClarification = NonNullable<
   Awaited<ReturnType<AgentXContext['getPendingClarification']>>
@@ -513,6 +514,8 @@ function formatOutputPreview(output: string): string {
     return 'No output was produced.';
   }
 
+  const selfReviewSummary = getSelfReviewSummary(normalized);
+
   if (normalized.length <= CHAT_OUTPUT_INLINE_LIMIT) {
     return normalized;
   }
@@ -533,11 +536,27 @@ function formatOutputPreview(output: string): string {
   return [
     `Large output detected (${lines.length} lines, ${normalized.length} chars). Full output was written to the **${CHAT_OUTPUT_CHANNEL_NAME}** output channel.`,
     '',
+    ...(selfReviewSummary ? [
+      'Self-review summary:',
+      '```text',
+      selfReviewSummary,
+      '```',
+      '',
+    ] : []),
     'Preview:',
     '```text',
     previewLines.join('\n'),
     '```',
   ].join('\n');
+}
+
+function getSelfReviewSummary(output: string): string {
+  const matches = output.match(SELF_REVIEW_SUMMARY_PATTERN);
+  if (!matches || matches.length === 0) {
+    return '';
+  }
+
+  return matches.join('\n');
 }
 
 function writeOutputToChannel(title: string, output: string): void {

@@ -118,7 +118,7 @@ describe('chatParticipant', () => {
         onLine?.('  [SELF-REVIEW] Approved on iteration 1', 'stdout');
         onLine?.('  [SELF-REVIEW] Approved on iteration 2', 'stdout');
         onLine?.('  [SELF-REVIEW] Approved on iteration 3', 'stdout');
-        return 'Final answer from AgentX';
+        return '[SELF-REVIEW SUMMARY] Completed 3/3 required review iterations\n[SELF-REVIEW SUMMARY] Iteration 1: APPROVED (0 findings, 0 actionable, minimum not yet met)\n[SELF-REVIEW SUMMARY] Iteration 2: APPROVED (0 findings, 0 actionable, minimum not yet met)\n[SELF-REVIEW SUMMARY] Iteration 3: APPROVED (0 findings, 0 actionable)\n\nFinal answer from AgentX';
       },
       clearPendingClarification: async () => undefined,
     };
@@ -139,6 +139,7 @@ describe('chatParticipant', () => {
     assert.ok(progressCalls.some((value) => value.includes('[CLARIFY DETAIL]')));
     assert.ok(progressCalls.some((value) => value.includes('[SELF-REVIEW] Approved')));
     assert.ok(progressCalls.some((value) => value.includes('iteration 3')));
+    assert.ok(progressStream.getMarkdown().includes('[SELF-REVIEW SUMMARY] Completed 3/3 required review iterations'));
     assert.ok(progressStream.getMarkdown().includes('Final answer from AgentX'));
   });
 
@@ -414,7 +415,14 @@ describe('chatParticipant', () => {
 
   it('summarizes large output in chat and writes the full transcript to the output channel', async () => {
     const response = createMockResponseStream();
-    const largeOutput = Array.from({ length: 40 }, (_, index) => `line ${index + 1} ${'x'.repeat(120)}`).join('\n');
+    const largeOutput = [
+      ...Array.from({ length: 34 }, (_, index) => `line ${index + 1} ${'x'.repeat(120)}`),
+      '[SELF-REVIEW SUMMARY] Completed 3/3 required review iterations',
+      '[SELF-REVIEW SUMMARY] Iteration 1: APPROVED (0 findings, 0 actionable, minimum not yet met)',
+      '[SELF-REVIEW SUMMARY] Iteration 2: APPROVED (0 findings, 0 actionable, minimum not yet met)',
+      '[SELF-REVIEW SUMMARY] Iteration 3: APPROVED (0 findings, 0 actionable)',
+      'Final answer from AgentX',
+    ].join('\n');
     const written: string[] = [];
     const originalCreateOutputChannel = vscode.window.createOutputChannel;
     resetChatParticipantStateForTests();
@@ -446,11 +454,13 @@ describe('chatParticipant', () => {
     const markdown = response.getMarkdown();
     assert.ok(markdown.includes('Large output detected'));
     assert.ok(markdown.includes('Full output was written to the **AgentX Chat** output channel'));
-    assert.ok(markdown.includes('... (24 lines omitted) ...'));
+    assert.ok(markdown.includes('Self-review summary:'));
+    assert.ok(markdown.includes('[SELF-REVIEW SUMMARY] Completed 3/3 required review iterations'));
+    assert.ok(/\.\.\. \(\d+ lines omitted\) \.\.\./.test(markdown));
     assert.ok(!markdown.includes(largeOutput));
     assert.ok(written.some((value) => value.includes('AgentX Chat Run: engineer')));
     assert.ok(written.some((value) => value.includes('line 1')));
-    assert.ok(written.some((value) => value.includes('line 40')));
+    assert.ok(written.some((value) => value.includes('Final answer from AgentX')));
   });
 
   it('resumes a pending clarification with continue', async () => {

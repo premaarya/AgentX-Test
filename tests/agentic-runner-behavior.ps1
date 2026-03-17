@@ -155,6 +155,8 @@ try {
     Assert-Equal $result.exitReason 'text_response' 'Invoke-AgenticLoop still exits normally after minimum self-review passes are met'
     Assert-Equal $script:selfReviewCalls 3 'Invoke-AgenticLoop requires three approved self-review passes before finishing'
     Assert-Equal $result.iterations 3 'Invoke-AgenticLoop continues the main loop until the minimum self-review passes are complete'
+    Assert-True ($result.finalText -match '\[SELF-REVIEW SUMMARY\] Completed 3/3 required review iterations') 'Invoke-AgenticLoop appends a final self-review summary once the minimum passes are met'
+    Assert-True ($result.finalText -match '\[SELF-REVIEW SUMMARY\] Iteration 3: APPROVED') 'Invoke-AgenticLoop records the final approved review iteration in the summary'
     $minimumReminderSeen = @($script:runnerMessages | Where-Object {
         $_ -match '^\[Self-Review MINIMUM NOT YET MET - Iteration 1/3\]' -and $_ -match 'every role must complete at least 3 self-review passes before finishing'
     }).Count -gt 0
