@@ -181,8 +181,12 @@ export async function runInitializeLocalRuntimeCommand(
      const hooksDir = path.join(root, '.git', 'hooks');
      for (const hook of ['pre-commit', 'commit-msg']) {
       const hookSrc = path.join(root, '.github', 'hooks', hook);
+      const hookDest = path.join(hooksDir, hook);
       if (fs.existsSync(hookSrc)) {
-       fs.copyFileSync(hookSrc, path.join(hooksDir, hook));
+       fs.copyFileSync(hookSrc, hookDest);
+       if (process.platform !== 'win32') {
+        try { fs.chmodSync(hookDest, 0o755); } catch { /* best-effort */ }
+       }
       }
      }
      const preCommitPs1 = path.join(root, '.github', 'hooks', 'pre-commit.ps1');

@@ -142,6 +142,7 @@ export async function runAddPluginCommand(
   );
 
   vscode.window.showInformationMessage(`AgentX plugin installed: ${pick.label}`);
+  vscode.commands.executeCommand('agentx.refresh');
  } catch (err: unknown) {
   const message = err instanceof Error ? err.message : String(err);
   vscode.window.showErrorMessage(`AgentX plugin install failed: ${message}`);

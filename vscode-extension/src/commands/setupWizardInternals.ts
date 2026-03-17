@@ -34,7 +34,7 @@ export async function runSetupWizardFlow(agentx: AgentXContext): Promise<void> {
     return;
   }
 
-  await showEnvironmentReport(report);
+  await showEnvironmentReport(report, agentx);
 }
 
 export async function runStartupCheckFlow(agentx: AgentXContext): Promise<void> {
@@ -130,7 +130,8 @@ export async function runSilentInstallFlow(agentx: AgentXContext): Promise<PreCh
       }
 
       terminal.dispose();
-      const stillMissing = (await checkAllDependencies(agentx)).results
+      const finalReport = await checkAllDependencies(agentx);
+      const stillMissing = finalReport.results
         .filter((result) => result.severity === 'required' && !result.found)
         .map((result) => result.name)
         .join(', ');
@@ -138,7 +139,7 @@ export async function runSilentInstallFlow(agentx: AgentXContext): Promise<PreCh
       vscode.window.showWarningMessage(
         `AgentX: Could not install: ${stillMissing}. Run "AgentX: Check Environment" to retry.`,
       );
-      return { passed: false, report };
+      return { passed: false, report: finalReport };
     },
   );
 }
@@ -310,7 +311,7 @@ export async function pollForExternalTools(
   );
 }
 
-export async function showEnvironmentReport(report: EnvironmentReport): Promise<void> {
+export async function showEnvironmentReport(report: EnvironmentReport, integration?: IntegrationProvider): Promise<void> {
   type DepItem = vscode.QuickPickItem & { dep?: DependencyResult };
 
   const items: DepItem[] = [];
@@ -381,11 +382,7 @@ export async function showEnvironmentReport(report: EnvironmentReport): Promise<
   }
 
   if (pick.label.includes('Re-check')) {
-    const recheckProvider: IntegrationProvider = {
-      githubConnected: false,
-      adoConnected: false,
-    };
-    const recheckReport = await checkAllDependencies(recheckProvider);
+    const recheckReport = await checkAllDependencies(integration);
     if (recheckReport.healthy && recheckReport.warningCount === 0) {
       vscode.window.showInformationMessage(
         'AgentX: Environment is healthy - all dependencies found.',
@@ -393,7 +390,7 @@ export async function showEnvironmentReport(report: EnvironmentReport): Promise<
       return;
     }
 
-    await showEnvironmentReport(recheckReport);
+    await showEnvironmentReport(recheckReport, integration);
     return;
   }
 
