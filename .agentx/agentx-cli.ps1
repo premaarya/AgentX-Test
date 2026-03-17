@@ -610,7 +610,10 @@ $Script:EMPTY_TREE_HASH = '4b825dc642cb6eb9a060e54bf899d15f3277a76d'
 
 function Get-PersistenceMode {
     $cfg = Get-AgentXConfig
-    if ($cfg -is [hashtable]) { return $cfg['persistence'] ?? 'file' }
+    if ($cfg -is [hashtable]) {
+        if ($cfg.ContainsKey('persistence') -and $null -ne $cfg['persistence']) { return $cfg['persistence'] }
+        return 'file'
+    }
     $p = $cfg.PSObject.Properties['persistence']
     if ($p) { return $p.Value }
     return 'file'
@@ -1197,7 +1200,8 @@ function Get-TaskBundleDuplicateIssueMatch($bundle, [string]$targetType) {
     $parentPlan = if ($bundle.parent_context.plan_reference) { [string]$bundle.parent_context.plan_reference } else { '' }
 
     foreach ($issue in @(Get-AllIssues)) {
-        if (($issue.state ?? 'open') -ne 'open') { continue }
+        $issueState = if ($null -ne $issue.state -and $issue.state) { $issue.state } else { 'open' }
+        if ($issueState -ne 'open') { continue }
         if ($targetLabel -notin @($issue.labels)) { continue }
         $issueBody = if ($issue.body) { [string]$issue.body } else { '' }
         $issueTitleKey = Normalize-TaskBundleTitleKey ([string]$issue.title)
@@ -1908,14 +1912,14 @@ function New-AgentXIssue([string]$title, [string]$body, [string[]]$labels, [stri
     $normalizedLabels = @($labels | Where-Object { $_ })
 
     if ($provider -eq 'github') {
-        $args = @('issue', 'create', '--title', $title)
+        $ghArgs = @('issue', 'create', '--title', $title)
         $issueBody = if ([string]::IsNullOrWhiteSpace($body)) { $title } else { $body }
-        $args += @('--body', $issueBody)
+        $ghArgs += @('--body', $issueBody)
         foreach ($label in $normalizedLabels) {
-            $args += @('--label', $label)
+            $ghArgs += @('--label', $label)
         }
 
-        $result = Invoke-GitHubCli $args "Failed to create GitHub issue '$title'."
+        $result = Invoke-GitHubCli $ghArgs "Failed to create GitHub issue '$title'."
         $issueNumber = 0
         $resultText = ($result | Out-String).Trim()
         if ($resultText -match '/issues/(\d+)') {
@@ -1942,10 +1946,10 @@ function New-AgentXIssue([string]$title, [string]$body, [string[]]$labels, [stri
         }
 
         $workItemType = if ($issueType) { $issueType } else { Convert-AgentXTypeToAdoWorkItemType $normalizedLabels }
-        $args = @('boards', 'work-item', 'create', '--title', $title, '--type', $workItemType, '--organization', $orgUrl, '--project', $project, '--output', 'json')
-        if ($body) { $args += @('--description', $body) }
-        if ($normalizedLabels.Count -gt 0) { $args += @('--fields', "System.Tags=$($normalizedLabels -join '; ')") }
-        $json = & az @args 2>$null
+        $adoArgs = @('boards', 'work-item', 'create', '--title', $title, '--type', $workItemType, '--organization', $orgUrl, '--project', $project, '--output', 'json')
+        if ($body) { $adoArgs += @('--description', $body) }
+        if ($normalizedLabels.Count -gt 0) { $adoArgs += @('--fields', "System.Tags=$($normalizedLabels -join '; ')") }
+        $json = & az @adoArgs 2>$null
         $issue = if ($json) { Convert-AdoWorkItemToAgentXIssue ($json | ConvertFrom-Json) } else { $null }
         if (-not $issue) {
             throw "ADO work item '$title' was created but could not be read back for verification."
@@ -2014,13 +2018,14 @@ function Convert-GitHubIssueStateToIssueState([string]$state) {
 }
 
 function Convert-GitHubIssueToAgentXIssue($issue, [string]$status = '') {
+    $issueLabels = if ($null -ne $issue.labels) { @($issue.labels) } else { @() }
     return [PSCustomObject]@{
         number = $issue.number
         title = $issue.title
         body = if ($issue.body) { $issue.body } else { '' }
         state = Convert-GitHubIssueStateToIssueState $(if ($issue.state) { [string]$issue.state } else { '' })
         url = if ($issue.url) { $issue.url } else { '' }
-        labels = @(($issue.labels ?? @()) | ForEach-Object {
+        labels = @($issueLabels | ForEach-Object {
             if ($_ -is [string]) { $_ } else { $_.name }
         } | Where-Object { $_ })
         status = $status
@@ -2240,8 +2245,8 @@ function Ensure-GitHubIssueInProject([int]$issueNumber) {
 
     $issueUrl = "https://github.com/$repo/issues/$issueNumber"
     try {
-        $args = @('project', 'item-add', "$projectNumber", '--owner', $owner, '--url', $issueUrl)
-        $null = Invoke-GitHubCli $args "Failed to add GitHub issue #$issueNumber to project $projectNumber." -AllowEmptyOutput
+        $projectArgs = @('project', 'item-add', "$projectNumber", '--owner', $owner, '--url', $issueUrl)
+        $null = Invoke-GitHubCli $projectArgs "Failed to add GitHub issue #$issueNumber to project $projectNumber." -AllowEmptyOutput
     } catch {
         return $null
     }
@@ -2263,8 +2268,8 @@ function Set-GitHubProjectIssueStatus([int]$issueNumber, [string]$status, [bool]
     if (-not $item) { return $false }
 
     try {
-        $args = @('project', 'item-edit', '--id', $item.id, '--project-id', $projectInfo.id, '--field-id', $statusField.id, '--single-select-option-id', $targetOption.id)
-        $null = Invoke-GitHubCli $args "Failed to set GitHub project status for issue #$issueNumber." -AllowEmptyOutput
+        $projectArgs = @('project', 'item-edit', '--id', $item.id, '--project-id', $projectInfo.id, '--field-id', $statusField.id, '--single-select-option-id', $targetOption.id)
+        $null = Invoke-GitHubCli $projectArgs "Failed to set GitHub project status for issue #$issueNumber." -AllowEmptyOutput
         return $true
     } catch {
         return $false
@@ -2374,33 +2379,33 @@ function Invoke-IssueUpdate {
     $labelStr = Get-Flag @('-l', '--labels')
 
     if ($provider -eq 'github') {
-        $args = @('issue', 'edit', "$num")
+        $ghArgs = @('issue', 'edit', "$num")
         $hasEdit = $false
 
         if ($title) {
-            $args += @('--title', $title)
+            $ghArgs += @('--title', $title)
             $hasEdit = $true
         }
         if ($body) {
-            $args += @('--body', $body)
+            $ghArgs += @('--body', $body)
             $hasEdit = $true
         }
         if ($labelStr) {
             $newLabels = ConvertTo-IssueLabels $labelStr
             $existingLabels = @($issue.labels)
             foreach ($label in $newLabels | Where-Object { $_ -notin $existingLabels }) {
-                $args += @('--add-label', $label)
+                $ghArgs += @('--add-label', $label)
                 $hasEdit = $true
             }
             foreach ($label in $existingLabels | Where-Object { $_ -notin $newLabels }) {
-                $args += @('--remove-label', $label)
+                $ghArgs += @('--remove-label', $label)
                 $hasEdit = $true
             }
         }
 
         if ($hasEdit) {
             try {
-                $null = Invoke-GitHubCli $args "Failed to update GitHub issue #$num." -AllowEmptyOutput
+                $null = Invoke-GitHubCli $ghArgs "Failed to update GitHub issue #$num." -AllowEmptyOutput
             } catch {
                 Write-Host "Error: $($_.Exception.Message)"
                 exit 1
@@ -2426,29 +2431,29 @@ function Invoke-IssueUpdate {
         Assert-AdoCliAvailable
         $orgUrl = Get-AdoOrganizationUrl
         $project = Get-AdoProjectName
-        $args = @('boards', 'work-item', 'update', '--id', "$num", '--organization', $orgUrl, '--project', $project, '--output', 'json')
+        $adoArgs = @('boards', 'work-item', 'update', '--id', "$num", '--organization', $orgUrl, '--project', $project, '--output', 'json')
         $hasEdit = $false
 
         if ($title) {
-            $args += @('--title', $title)
+            $adoArgs += @('--title', $title)
             $hasEdit = $true
         }
         if ($body) {
-            $args += @('--description', $body)
+            $adoArgs += @('--description', $body)
             $hasEdit = $true
         }
         if ($status) {
-            $args += @('--state', (Convert-AgentXStatusToAdoState $status))
+            $adoArgs += @('--state', (Convert-AgentXStatusToAdoState $status))
             $hasEdit = $true
         }
         if ($labelStr) {
             $labels = ConvertTo-IssueLabels $labelStr
-            $args += @('--fields', "System.Tags=$($labels -join '; ')")
+            $adoArgs += @('--fields', "System.Tags=$($labels -join '; ')")
             $hasEdit = $true
         }
 
         if ($hasEdit) {
-            $null = & az @args 2>$null
+            $null = & az @adoArgs 2>$null
         }
 
         $updatedIssue = Get-AdoIssue $num
@@ -2475,8 +2480,8 @@ function Invoke-IssueClose {
 
     if ($provider -eq 'github') {
         try {
-            $args = @('issue', 'close', "$num", '--reason', 'completed')
-            $null = Invoke-GitHubCli $args "Failed to close GitHub issue #$num." -AllowEmptyOutput
+            $ghArgs = @('issue', 'close', "$num", '--reason', 'completed')
+            $null = Invoke-GitHubCli $ghArgs "Failed to close GitHub issue #$num." -AllowEmptyOutput
         } catch {
             Write-Host "Error: $($_.Exception.Message)"
             exit 1
@@ -2532,8 +2537,8 @@ function Invoke-IssueComment {
 
     if ($provider -eq 'github') {
         try {
-            $args = @('issue', 'comment', "$num", '--body', $body)
-            $null = Invoke-GitHubCli $args "Failed to add a comment to GitHub issue #$num." -AllowEmptyOutput
+            $ghArgs = @('issue', 'comment', "$num", '--body', $body)
+            $null = Invoke-GitHubCli $ghArgs "Failed to add a comment to GitHub issue #$num." -AllowEmptyOutput
         } catch {
             Write-Host "Error: $($_.Exception.Message)"
             exit 1
@@ -2666,16 +2671,18 @@ function Get-IssueDeps($issue) {
 }
 
 function Get-IssuePriority($issue) {
-    foreach ($l in @($issue.labels ?? @())) {
-        $label = if ($l -is [string]) { $l } else { $l.name ?? '' }
+    $issueLabels = if ($null -ne $issue.labels) { @($issue.labels) } else { @() }
+    foreach ($l in $issueLabels) {
+        $label = if ($l -is [string]) { $l } elseif ($null -ne $l.name) { $l.name } else { '' }
         if ($label -match 'priority:p(\d)') { return [int]$Matches[1] }
     }
     return 9
 }
 
 function Get-IssueType($issue) {
-    foreach ($l in @($issue.labels ?? @())) {
-        $label = if ($l -is [string]) { $l } else { $l.name ?? '' }
+    $issueLabels = if ($null -ne $issue.labels) { @($issue.labels) } else { @() }
+    foreach ($l in $issueLabels) {
+        $label = if ($l -is [string]) { $l } elseif ($null -ne $l.name) { $l.name } else { '' }
         if ($label -match 'type:(\w+)') { return $Matches[1] }
     }
     return 'story'
@@ -2814,7 +2821,9 @@ function Invoke-DepsCmd {
 function Invoke-DigestCmd {
     if (-not (Test-Path $Script:DIGESTS_DIR)) { New-Item -ItemType Directory -Path $Script:DIGESTS_DIR -Force | Out-Null }
     $all = Get-AllIssues
-    $closed = @($all | Where-Object { $_.state -eq 'closed' } | Sort-Object { $_.updated ?? '' } -Descending)
+    $closed = @($all | Where-Object { $_.state -eq 'closed' } | Sort-Object {
+        if ($null -ne $_.updated) { $_.updated } else { '' }
+    } -Descending)
 
     if ($closed.Count -eq 0) { Write-Host 'No closed issues to digest.'; return }
 
@@ -2831,7 +2840,7 @@ function Invoke-DigestCmd {
     )
     foreach ($i in $closed) {
         $typ = Get-IssueType $i
-        $updatedStr = "$($i.updated ?? '')"
+        $updatedStr = if ($null -ne $i.updated) { "$($i.updated)" } else { '' }
         $closedDate = if ($updatedStr.Length -ge 10) { $updatedStr.Substring(0, 10) } else { $updatedStr }
         $lines += "| #$($i.number) | $typ | $($i.title) | $closedDate |"
     }
@@ -3174,7 +3183,8 @@ function Invoke-ConfigCmd {
             } else {
                 Write-Host "$($C.c)  AgentX Configuration$($C.n)"
                 Write-Host "$($C.d)  -----------------------------------$($C.n)"
-                foreach ($key in ($cfg.PSObject.Properties ?? $cfg.Keys)) {
+                $cfgKeys = if ($cfg -is [hashtable]) { $cfg.Keys } else { $cfg.PSObject.Properties }
+                foreach ($key in $cfgKeys) {
                     $k = if ($key -is [string]) { $key } else { $key.Name }
                     $v = $cfg.$k
                     Write-Host "  $($C.w)$k$($C.n) = $v"

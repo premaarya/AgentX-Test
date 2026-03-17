@@ -29,7 +29,6 @@ jobs:
   publish:
     name: Publish ${{ github.event.inputs.tag }} to Marketplace
     runs-on: ubuntu-latest
-    environment: marketplace
     steps:
       - uses: actions/checkout@v4
         with:
