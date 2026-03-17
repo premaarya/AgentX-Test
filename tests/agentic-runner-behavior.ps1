@@ -57,6 +57,16 @@ Assert-True ($compacted.Count -lt $largeMessages.Count) 'Invoke-ContextCompactio
 Assert-True ($compacted[1].content -match '^\[Context Compaction\]') 'Invoke-ContextCompaction inserts a compaction summary message'
 Assert-True ($compactionUsage.totalTokens -le $compactionUsage.thresholdTokens) 'Invoke-ContextCompaction compacts to within the configured token threshold'
 
+Push-ExecutionSummaryScope
+Add-ExecutionSummaryEvent -Type 'COMPACTION' -Message 'Initial compaction event.'
+Add-ExecutionSummaryEvent -Type 'COMPACTION' -Message 'Latest compaction event.' -ReplaceExisting
+Add-ExecutionSummaryEvent -Type 'HUMAN RESPONSE' -Message 'Use the existing auth flow.' -ReplaceExisting
+$executionSummaryEvents = @(Pop-ExecutionSummaryScope)
+$executionSummary = Format-ExecutionSummary -Events $executionSummaryEvents
+Assert-True ($executionSummary -match '\[EXECUTION SUMMARY\] COMPACTION: Latest compaction event\.') 'Format-ExecutionSummary keeps the latest replaceable event per type'
+Assert-True (-not ($executionSummary -match 'Initial compaction event')) 'Format-ExecutionSummary replaces superseded singleton events'
+Assert-True ($executionSummary -match '\[EXECUTION SUMMARY\] HUMAN RESPONSE: Use the existing auth flow\.') 'Format-ExecutionSummary includes other captured runtime events'
+
 $clarificationSummary = Build-ClarificationSummary -FromAgent 'engineer' -TargetAgent 'architect' -Topic 'database indexing' -Exchanges @(
     @{ question = 'What index should we use?'; response = 'Use a composite index on tenant_id and created_at.'; iteration = 1; respondedBy = 'sub-agent' },
     @{ question = 'Any caveats?'; response = 'Keep write amplification in mind for high-ingest tables.'; iteration = 2; respondedBy = 'sub-agent' }

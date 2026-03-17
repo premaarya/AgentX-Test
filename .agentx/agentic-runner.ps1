@@ -880,6 +880,7 @@ function Invoke-ContextCompaction {
     }
 
     Write-Host "`e[90m  [COMPACTION] $pruned messages pruned ($($Messages.Count) -> $($result.Count), approx tokens $($resultUsage.totalTokens)/$($resultUsage.thresholdTokens))`e[0m"
+    Add-ExecutionSummaryEvent -Type 'COMPACTION' -Message "$pruned messages pruned to stay within the token threshold." -ReplaceExisting
 
     return $result
 }
@@ -1278,6 +1279,100 @@ function Format-SelfReviewSummary {
     return ($parts -join "`n")
 }
 
+$Script:ExecutionSummaryEventStack = @()
+
+function Push-ExecutionSummaryScope {
+    $Script:ExecutionSummaryEventStack += ,@{ events = @() }
+}
+
+function Pop-ExecutionSummaryScope {
+    if (-not $Script:ExecutionSummaryEventStack -or $Script:ExecutionSummaryEventStack.Count -eq 0) {
+        return @()
+    }
+
+    $lastIndex = $Script:ExecutionSummaryEventStack.Count - 1
+    $scope = $Script:ExecutionSummaryEventStack[$lastIndex]
+    $events = @($scope.events)
+    if ($lastIndex -eq 0) {
+        $Script:ExecutionSummaryEventStack = @()
+    } else {
+        $Script:ExecutionSummaryEventStack = @($Script:ExecutionSummaryEventStack[0..($lastIndex - 1)])
+    }
+
+    return @($events)
+}
+
+function Add-ExecutionSummaryEvent {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$Type,
+        [Parameter(Mandatory)][string]$Message,
+        [switch]$ReplaceExisting
+    )
+
+    if (-not $Script:ExecutionSummaryEventStack -or $Script:ExecutionSummaryEventStack.Count -eq 0) {
+        return
+    }
+
+    $normalizedType = $Type.Trim().ToUpper()
+    $normalizedMessage = ($Message -replace '\s+', ' ').Trim()
+    if (-not $normalizedType -or -not $normalizedMessage) {
+        return
+    }
+
+    if ($normalizedMessage.Length -gt 220) {
+        $normalizedMessage = $normalizedMessage.Substring(0, 220) + '...'
+    }
+
+    $lastIndex = $Script:ExecutionSummaryEventStack.Count - 1
+    $scope = $Script:ExecutionSummaryEventStack[$lastIndex]
+    $events = @($scope.events)
+    $entry = [PSCustomObject]@{
+        type = $normalizedType
+        message = $normalizedMessage
+    }
+
+    if ($ReplaceExisting) {
+        for ($i = 0; $i -lt $events.Count; $i++) {
+            if ($events[$i].type -eq $normalizedType) {
+                $events[$i] = $entry
+                $scope.events = @($events)
+                $Script:ExecutionSummaryEventStack[$lastIndex] = $scope
+                return
+            }
+        }
+    }
+
+    if ($events.Count -gt 0) {
+        $lastEvent = $events[$events.Count - 1]
+        if ($lastEvent.type -eq $normalizedType -and $lastEvent.message -eq $normalizedMessage) {
+            return
+        }
+    }
+
+    $events += $entry
+    $scope.events = @($events)
+    $Script:ExecutionSummaryEventStack[$lastIndex] = $scope
+}
+
+function Format-ExecutionSummary {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][AllowEmptyCollection()][object[]]$Events
+    )
+
+    if (-not $Events -or $Events.Count -eq 0) {
+        return ''
+    }
+
+    $parts = @("[EXECUTION SUMMARY] Notable runtime events ($($Events.Count))")
+    foreach ($entry in $Events) {
+        $parts += "[EXECUTION SUMMARY] $($entry.type): $($entry.message)"
+    }
+
+    return ($parts -join "`n")
+}
+
 # ---------------------------------------------------------------------------
 # Clarification Loop (iterative inter-agent Q&A with human fallback)
 # ---------------------------------------------------------------------------
@@ -1335,6 +1430,9 @@ function Invoke-ClarificationLoop {
 
     for ($i = 1; $i -le $MaxIterations; $i++) {
         Write-Host "`e[33m  [CLARIFY $i/$MaxIterations] Asking $TargetAgent about: $Topic`e[0m"
+        if ($i -eq 1) {
+            Add-ExecutionSummaryEvent -Type 'CLARIFY' -Message "Asked $TargetAgent about $Topic."
+        }
 
         $discussionHistory = Format-ClarificationHistory -Exchanges $exchanges -MaxItems 3
         $clarificationPrompt = @(
@@ -1358,7 +1456,8 @@ function Invoke-ClarificationLoop {
             -Prompt $clarificationPrompt `
             -MaxIterations $Script:CLARIFICATION_RESPONDER_MAX_ITERATIONS `
             -WorkspaceRoot $WorkspaceRoot `
-            -Model $ModelId
+            -Model $ModelId `
+            -SuppressUserSummary
 
         $answer = if ($subResult.finalText) { $subResult.finalText } else { '(No response from sub-agent)' }
 
@@ -1370,12 +1469,14 @@ function Invoke-ClarificationLoop {
         }
 
         Write-Host "`e[32m  [CLARIFY RESPONSE] $TargetAgent answered ($($answer.Length) chars)`e[0m"
+        Add-ExecutionSummaryEvent -Type 'CLARIFY RESPONSE' -Message "$TargetAgent answered on iteration $i."
         $answerPreview = ($answer -replace '\s+', ' ').Trim()
         if ($answerPreview.Length -gt 220) {
             $answerPreview = $answerPreview.Substring(0, 220) + '...'
         }
         if ($answerPreview) {
             Write-Host "`e[90m  [CLARIFY DETAIL] $answerPreview`e[0m"
+            Add-ExecutionSummaryEvent -Type 'CLARIFY DETAIL' -Message $answerPreview
         }
 
         # Evaluate the answer using heuristics
@@ -1400,6 +1501,7 @@ function Invoke-ClarificationLoop {
 
     # Exhausted iterations -- escalate to human
     Write-Host "`e[35m  [HUMAN ESCALATION] Clarification not resolved after $MaxIterations iterations.`e[0m"
+    Add-ExecutionSummaryEvent -Type 'HUMAN ESCALATION' -Message "Clarification on $Topic was not resolved after $MaxIterations attempts." -ReplaceExisting
     $escalationContext = "The $FromAgent agent asked the $TargetAgent agent about '$Topic' but could not get a satisfactory answer after $MaxIterations attempts.`n"
     $escalationContext += "Original question: $Question`n"
     foreach ($ex in $exchanges) {
@@ -1407,6 +1509,7 @@ function Invoke-ClarificationLoop {
     }
 
     Write-Host "`e[35m  [HUMAN REQUIRED]`n$escalationContext`e[0m"
+    Add-ExecutionSummaryEvent -Type 'HUMAN REQUIRED' -Message "Awaiting human guidance for $Topic." -ReplaceExisting
 
     $humanAnswer = ''
     $awaitingHuman = $false
@@ -1439,6 +1542,7 @@ function Invoke-ClarificationLoop {
     }
     if ($humanPreview) {
         Write-Host "`e[90m  [HUMAN RESPONSE] $humanPreview`e[0m"
+        Add-ExecutionSummaryEvent -Type 'HUMAN RESPONSE' -Message $humanPreview -ReplaceExisting
     }
 
     return @{
@@ -1499,7 +1603,8 @@ function Invoke-AgenticLoop {
         [string]$Model = '',
         [string]$WorkspaceRoot = '',
         [string]$ResumeSessionId = '',
-        [string]$HumanClarificationResponse = ''
+        [string]$HumanClarificationResponse = '',
+        [switch]$SuppressUserSummary
     )
 
     $startTime = Get-Date
@@ -1577,6 +1682,7 @@ function Invoke-AgenticLoop {
     $sessionId = if ($isResume) { $ResumeSessionId } else { "$Agent-$(Get-Date -Format 'yyyyMMddHHmmss')-$([System.IO.Path]::GetRandomFileName().Substring(0,4))" }
     $tools = Get-ToolSchemas
     $loopDetector = New-LoopDetector
+    Push-ExecutionSummaryScope
 
     # Parse boundary rules from agent definition (canModify / cannotModify)
     $boundaryRules = Read-BoundaryRules -AgentDef $agentDef
@@ -1610,6 +1716,7 @@ function Invoke-AgenticLoop {
 
         $messages += @{ role = 'user'; content = "[Clarification from human]`n$resumeSummary" }
         Write-Host "`e[35m  [HUMAN RESPONSE] Resuming session $sessionId with provided guidance.`e[0m"
+        Add-ExecutionSummaryEvent -Type 'HUMAN RESPONSE' -Message 'Resumed the session with human guidance.' -ReplaceExisting
         $pendingHumanClarification = $null
     } else {
         $messages = @(
@@ -1628,6 +1735,7 @@ function Invoke-AgenticLoop {
     $selfReviewMax = $Script:SELF_REVIEW_MAX_ITERATIONS
     $selfReviewMin = [Math]::Min($Script:SELF_REVIEW_MIN_ITERATIONS, $selfReviewMax)
     $selfReviewHistory = @()
+    $finalSelfReviewSummary = ''
 
     Write-Host "`e[90m  -----------------------------------------------`e[0m"
 
@@ -1650,6 +1758,7 @@ function Invoke-AgenticLoop {
             if ($hasNextModel -and (Test-IsModelAvailabilityError -errorText $errorText)) {
                 $nextModelId = $modelCandidates[$currentModelIndex + 1]
                 Write-Host "`e[33m  [MODEL FALLBACK] $modelId unavailable. Retrying with $nextModelId`e[0m"
+                Add-ExecutionSummaryEvent -Type 'MODEL FALLBACK' -Message "$modelId unavailable. Retried with $nextModelId." -ReplaceExisting
                 $modelId = $nextModelId
                 continue
             }
@@ -1657,6 +1766,7 @@ function Invoke-AgenticLoop {
             $finalText = "LLM error: $errorText"
             $exitReason = 'error'
             Write-Host "`e[31m  [FAIL] $finalText`e[0m"
+            Add-ExecutionSummaryEvent -Type 'FAIL' -Message $finalText -ReplaceExisting
             break
         }
 
@@ -1682,6 +1792,7 @@ function Invoke-AgenticLoop {
             $clarifyReq = Find-ClarificationRequest -text $finalText -canClarify $canClarify
             if ($clarifyReq) {
                 Write-Host "`e[33m  [CLARIFY] Asking $($clarifyReq.targetAgent) about: $($clarifyReq.topic)`e[0m"
+                Add-ExecutionSummaryEvent -Type 'CLARIFY' -Message "Asked $($clarifyReq.targetAgent) about $($clarifyReq.topic)."
 
                 # Use the new iterative clarification loop
                 $clarifyResult = Invoke-ClarificationLoop `
@@ -1699,6 +1810,7 @@ function Invoke-AgenticLoop {
                     $finalText = $clarifyResult.humanPrompt
                     $exitReason = 'human_required'
                     Write-Host "`e[35m  [HUMAN REQUIRED SESSION] $sessionId`e[0m"
+                    Add-ExecutionSummaryEvent -Type 'HUMAN REQUIRED' -Message "Waiting for human guidance before session $sessionId can continue." -ReplaceExisting
                     break
                 }
 
@@ -1757,12 +1869,8 @@ function Invoke-AgenticLoop {
                 }
 
                 $selfReviewSummary = Format-SelfReviewSummary -ReviewHistory $selfReviewHistory -RequiredIterations $selfReviewMin
-                if ($selfReviewSummary) {
-                    $finalText = if ($finalText) {
-                        "$selfReviewSummary`n`n$finalText"
-                    } else {
-                        $selfReviewSummary
-                    }
+                if ($selfReviewSummary -and -not $SuppressUserSummary) {
+                    $finalSelfReviewSummary = $selfReviewSummary
                 }
             }
 
@@ -1792,6 +1900,7 @@ function Invoke-AgenticLoop {
                     $boundaryBlocked = $true
                     $result = @{ error = $true; text = "[BOUNDARY BLOCKED] Agent '$Agent' is not allowed to modify '$($toolArgs.filePath)'. Check canModify/cannotModify rules." }
                     Write-Host "`e[31m  [BOUNDARY BLOCKED] $toolName -> $($toolArgs.filePath)`e[0m"
+                    Add-ExecutionSummaryEvent -Type 'BOUNDARY BLOCKED' -Message "$toolName was blocked for $($toolArgs.filePath)."
                 }
             }
 
@@ -1802,6 +1911,7 @@ function Invoke-AgenticLoop {
 
             if ($result.error) {
                 Write-Host "`e[31m  [TOOL ERROR] $toolName`: $($result.text.Substring(0, [Math]::Min(100, $result.text.Length)))`e[0m"
+                Add-ExecutionSummaryEvent -Type 'TOOL ERROR' -Message "$toolName failed: $($result.text.Substring(0, [Math]::Min(160, $result.text.Length)))"
             }
 
             # Record for loop detection
@@ -1820,17 +1930,39 @@ function Invoke-AgenticLoop {
         $loopResult = Test-LoopDetection -detector $loopDetector
         if ($loopResult.severity -eq 'circuit_breaker') {
             Write-Host "`e[31m  [CIRCUIT BREAKER] $($loopResult.message)`e[0m"
+            Add-ExecutionSummaryEvent -Type 'CIRCUIT BREAKER' -Message $loopResult.message -ReplaceExisting
             $finalText = "Loop detection: $($loopResult.message)"
             $exitReason = 'circuit_breaker'
             break
         }
         if ($loopResult.severity -eq 'warning') {
             Write-Host "`e[33m  [LOOP WARNING] $($loopResult.message)`e[0m"
+            Add-ExecutionSummaryEvent -Type 'LOOP WARNING' -Message $loopResult.message -ReplaceExisting
         }
     }
 
     if ($iterations -ge $MaxIterations -and -not $finalText) {
         $exitReason = 'max_iterations'
+    }
+
+    $executionSummaryEvents = @(Pop-ExecutionSummaryScope)
+    if (-not $SuppressUserSummary) {
+        $summarySections = @()
+        $executionSummary = Format-ExecutionSummary -Events $executionSummaryEvents
+        if ($executionSummary) {
+            $summarySections += $executionSummary
+        }
+        if ($finalSelfReviewSummary) {
+            $summarySections += $finalSelfReviewSummary
+        }
+        if ($summarySections.Count -gt 0) {
+            $summaryText = $summarySections -join "`n`n"
+            $finalText = if ($finalText) {
+                "$summaryText`n`n$finalText"
+            } else {
+                $summaryText
+            }
+        }
     }
 
     # Save session

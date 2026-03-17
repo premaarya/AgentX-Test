@@ -417,6 +417,9 @@ describe('chatParticipant', () => {
     const response = createMockResponseStream();
     const largeOutput = [
       ...Array.from({ length: 34 }, (_, index) => `line ${index + 1} ${'x'.repeat(120)}`),
+      '[EXECUTION SUMMARY] Notable runtime events (3)',
+      '[EXECUTION SUMMARY] COMPACTION: 8 messages pruned to stay within the token threshold.',
+      '[EXECUTION SUMMARY] HUMAN RESPONSE: Use the existing auth flow.',
       '[SELF-REVIEW SUMMARY] Completed 3/3 required review iterations',
       '[SELF-REVIEW SUMMARY] Iteration 1: APPROVED (0 findings, 0 actionable, minimum not yet met)',
       '[SELF-REVIEW SUMMARY] Iteration 2: APPROVED (0 findings, 0 actionable, minimum not yet met)',
@@ -454,6 +457,8 @@ describe('chatParticipant', () => {
     const markdown = response.getMarkdown();
     assert.ok(markdown.includes('Large output detected'));
     assert.ok(markdown.includes('Full output was written to the **AgentX Chat** output channel'));
+    assert.ok(markdown.includes('Execution summary:'));
+    assert.ok(markdown.includes('[EXECUTION SUMMARY] COMPACTION: 8 messages pruned to stay within the token threshold.'));
     assert.ok(markdown.includes('Self-review summary:'));
     assert.ok(markdown.includes('[SELF-REVIEW SUMMARY] Completed 3/3 required review iterations'));
     assert.ok(/\.\.\. \(\d+ lines omitted\) \.\.\./.test(markdown));

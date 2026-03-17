@@ -30,8 +30,9 @@ import { stripAnsi } from '../utils/stripAnsi';
 const CHAT_OUTPUT_CHANNEL_NAME = 'AgentX Chat';
 const CHAT_OUTPUT_INLINE_LIMIT = 4000;
 const CHAT_OUTPUT_PREVIEW_LINES = 8;
-const LIVE_STATUS_PATTERN = /\[(?:COMPACTION|CLARIFY(?: RESPONSE| DETAIL| \d+\/\d+)?|SELF-REVIEW(?: SUMMARY)?|MODEL FALLBACK|LOOP WARNING|CIRCUIT BREAKER|TOOL ERROR|BOUNDARY BLOCKED|FAIL|WARN|PASS|HUMAN ESCALATION|HUMAN REQUIRED|HUMAN RESPONSE|HUMAN REQUIRED SESSION)\]|^\s*Iteration \d+\/\d+|^\s*Tool:/i;
+const LIVE_STATUS_PATTERN = /\[(?:COMPACTION|CLARIFY(?: RESPONSE| DETAIL| \d+\/\d+)?|SELF-REVIEW(?: SUMMARY)?|EXECUTION SUMMARY|MODEL FALLBACK|LOOP WARNING|CIRCUIT BREAKER|TOOL ERROR|BOUNDARY BLOCKED|FAIL|WARN|PASS|HUMAN ESCALATION|HUMAN REQUIRED|HUMAN RESPONSE|HUMAN REQUIRED SESSION)\]|^\s*Iteration \d+\/\d+|^\s*Tool:/i;
 const HUMAN_REQUIRED_SESSION_PATTERN = /\[HUMAN REQUIRED SESSION\]\s+(.+)$/i;
+const EXECUTION_SUMMARY_PATTERN = /^\[EXECUTION SUMMARY\].*$/gim;
 const SELF_REVIEW_SUMMARY_PATTERN = /^\[SELF-REVIEW SUMMARY\].*$/gim;
 
 export type PendingClarification = NonNullable<
@@ -514,7 +515,7 @@ function formatOutputPreview(output: string): string {
     return 'No output was produced.';
   }
 
-  const selfReviewSummary = getSelfReviewSummary(normalized);
+  const summarySections = getOutputSummarySections(normalized);
 
   if (normalized.length <= CHAT_OUTPUT_INLINE_LIMIT) {
     return normalized;
@@ -536,13 +537,13 @@ function formatOutputPreview(output: string): string {
   return [
     `Large output detected (${lines.length} lines, ${normalized.length} chars). Full output was written to the **${CHAT_OUTPUT_CHANNEL_NAME}** output channel.`,
     '',
-    ...(selfReviewSummary ? [
-      'Self-review summary:',
+    ...summarySections.flatMap((section) => [
+      `${section.label}:`,
       '```text',
-      selfReviewSummary,
+      section.content,
       '```',
       '',
-    ] : []),
+    ]),
     'Preview:',
     '```text',
     previewLines.join('\n'),
@@ -550,8 +551,24 @@ function formatOutputPreview(output: string): string {
   ].join('\n');
 }
 
-function getSelfReviewSummary(output: string): string {
-  const matches = output.match(SELF_REVIEW_SUMMARY_PATTERN);
+function getOutputSummarySections(output: string): Array<{ label: string; content: string }> {
+  const sections: Array<{ label: string; content: string }> = [];
+  const executionSummary = getSummaryBlock(output, EXECUTION_SUMMARY_PATTERN);
+  const selfReviewSummary = getSummaryBlock(output, SELF_REVIEW_SUMMARY_PATTERN);
+
+  if (executionSummary) {
+    sections.push({ label: 'Execution summary', content: executionSummary });
+  }
+
+  if (selfReviewSummary) {
+    sections.push({ label: 'Self-review summary', content: selfReviewSummary });
+  }
+
+  return sections;
+}
+
+function getSummaryBlock(output: string, pattern: RegExp): string {
+  const matches = output.match(pattern);
   if (!matches || matches.length === 0) {
     return '';
   }
