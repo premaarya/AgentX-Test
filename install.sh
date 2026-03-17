@@ -107,6 +107,62 @@ IS_PIPED=false
 G='\033[0;32m' Y='\033[1;33m' C='\033[0;36m' D='\033[0;90m' N='\033[0m'
 ok() { echo -e "${G}[OK] $1${N}"; }
 skip() { echo -e "${D}[--] $1${N}"; }
+warn() { echo -e "${Y}[WARN] $1${N}"; }
+
+install_with_manager() {
+ local package="$1"
+
+ if command -v brew &>/dev/null; then
+  brew install "$package"
+  return $?
+ fi
+
+ if command -v apt-get &>/dev/null; then
+  sudo apt-get update
+  sudo apt-get install -y "$package"
+  return $?
+ fi
+
+ if command -v dnf &>/dev/null; then
+  sudo dnf install -y "$package"
+  return $?
+ fi
+
+ if command -v yum &>/dev/null; then
+  sudo yum install -y "$package"
+  return $?
+ fi
+
+ if command -v zypper &>/dev/null; then
+  sudo zypper --non-interactive install "$package"
+  return $?
+ fi
+
+ return 1
+}
+
+ensure_dependency() {
+ local command_name="$1"
+ local package_name="$2"
+ local display_name="$3"
+
+ if command -v "$command_name" &>/dev/null; then
+  return 0
+ fi
+
+ echo -e "${Y} $display_name not found. Attempting to install...${N}"
+ if install_with_manager "$package_name"; then
+  hash -r
+ fi
+
+ if command -v "$command_name" &>/dev/null; then
+  ok "$display_name installed"
+  return 0
+ fi
+
+ warn "$display_name could not be installed automatically."
+ return 1
+}
 
 # -- Banner ----------------------------------------------
 echo ""
@@ -127,7 +183,7 @@ echo -e "${G} Mode: $DISPLAY_MODE${N}"
 echo ""
 
 # -- Prerequisites ---------------------------------------
-# curl/wget + tar for download; git is optional (only for Step 5)
+# curl/wget + tar for download; install Git and PowerShell up front when missing
 if command -v curl &>/dev/null; then
  FETCH="curl -fsSL"
 elif command -v wget &>/dev/null; then
@@ -136,6 +192,8 @@ else
  echo "curl or wget is required. Install one and retry."; exit 1
 fi
 command -v tar &>/dev/null || { echo "tar is required for extraction."; exit 1; }
+ensure_dependency git git Git || { echo "Git is required for AgentX install."; exit 1; }
+ensure_dependency pwsh powershell "PowerShell 7.4+ (pwsh)" || { echo "PowerShell 7.4+ (pwsh) is required for AgentX install."; exit 1; }
 
 # -- Upgrade detection: uninstall old version, preserve user data --
 PREVIOUS_VERSION=""

@@ -51,6 +51,84 @@ param(
 
 $MinimumPowerShellVersion = [Version]'7.4.0'
 
+function Add-PathEntryIfExists {
+ param([string]$Candidate)
+
+ if (-not $Candidate -or -not (Test-Path $Candidate)) {
+  return
+ }
+
+ $pathEntries = $env:Path -split ';' | Where-Object { $_ }
+ if ($pathEntries -contains $Candidate) {
+  return
+ }
+
+ $env:Path = "$Candidate;$env:Path"
+}
+
+function Update-WindowsDependencyPaths {
+ Add-PathEntryIfExists 'C:\Program Files\PowerShell\7'
+ Add-PathEntryIfExists 'C:\Program Files\PowerShell\7-preview'
+ Add-PathEntryIfExists 'C:\Program Files\Git\cmd'
+ Add-PathEntryIfExists 'C:\Program Files\Git\bin'
+}
+
+function Get-InstallRelaunchArgs {
+ $args = @()
+ if ($Mode) { $args += @('-Mode', $Mode) }
+ if ($Path) { $args += @('-Path', $Path) }
+ if ($Force) { $args += '-Force' }
+ if ($NoSetup) { $args += '-NoSetup' }
+ if ($Local) { $args += '-Local' }
+ if ($Azure) { $args += '-Azure' }
+ return $args
+}
+
+function Install-WindowsPackageIfPossible {
+ param(
+  [string]$Id,
+  [string]$DisplayName
+ )
+
+ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+  Write-Host " [WARN] winget not found; cannot auto-install $DisplayName." -ForegroundColor Yellow
+  return $false
+ }
+
+ Write-Host " Installing $DisplayName..." -ForegroundColor DarkGray
+ & winget install --id $Id --source winget --accept-package-agreements --accept-source-agreements --silent
+ return $LASTEXITCODE -eq 0
+}
+
+function Ensure-GitInstalled {
+ if (Get-Command git -ErrorAction SilentlyContinue) {
+  return $true
+ }
+
+ Write-Host " Git not found. Attempting to install Git..." -ForegroundColor Yellow
+
+ if ($IsWindows -or $env:OS -eq 'Windows_NT') {
+  if (-not (Install-WindowsPackageIfPossible -Id 'Git.Git' -DisplayName 'Git')) {
+   return $false
+  }
+  Update-WindowsDependencyPaths
+ } elseif (Get-Command brew -ErrorAction SilentlyContinue) {
+  & brew install git
+ } elseif (Get-Command apt-get -ErrorAction SilentlyContinue) {
+  & sudo apt-get update
+  & sudo apt-get install -y git
+ } elseif (Get-Command dnf -ErrorAction SilentlyContinue) {
+  & sudo dnf install -y git
+ } elseif (Get-Command yum -ErrorAction SilentlyContinue) {
+  & sudo yum install -y git
+ } else {
+  Write-Host ' [WARN] No supported package manager found to auto-install Git.' -ForegroundColor Yellow
+  return $false
+ }
+
+ return [bool](Get-Command git -ErrorAction SilentlyContinue)
+}
+
 # Environment variable overrides (for irm | iex one-liner usage)
 if (-not $Mode -and $env:AGENTX_MODE) { $Mode = $env:AGENTX_MODE }
 if (-not $Path -and $env:AGENTX_PATH) { $Path = $env:AGENTX_PATH }
@@ -77,9 +155,29 @@ if ($Mode -and $Mode -notin @("github", "local")) {
  return
 }
 
+if ($IsWindows -or $env:OS -eq 'Windows_NT') {
+ Update-WindowsDependencyPaths
+}
+
 # -- PowerShell version check --
 # Supported runtime: PowerShell 7.4+ only.
 if ($PSVersionTable.PSVersion -lt $MinimumPowerShellVersion) {
+ $relaunchPath = $MyInvocation.MyCommand.Path
+ $relaunchArgs = Get-InstallRelaunchArgs
+
+ if (($IsWindows -or $env:OS -eq 'Windows_NT') -and (Install-WindowsPackageIfPossible -Id 'Microsoft.PowerShell' -DisplayName 'PowerShell 7.4+')) {
+  Update-WindowsDependencyPaths
+  $pwsh = Get-Command pwsh -ErrorAction SilentlyContinue
+  if ($pwsh -and $relaunchPath) {
+   Write-Host ' Relaunching installer in PowerShell 7...' -ForegroundColor DarkGray
+   & $pwsh.Source -File $relaunchPath @relaunchArgs
+   exit $LASTEXITCODE
+  }
+
+  Write-Host ' PowerShell 7 installed. Please rerun the installer with pwsh.' -ForegroundColor Yellow
+  return
+ }
+
  Write-Host "[X] AgentX requires PowerShell 7.4+ to run install.ps1. Current version: $($PSVersionTable.PSVersion)" -ForegroundColor Red
  Write-Host " Install PowerShell 7.4+ from https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell" -ForegroundColor Yellow
  if ($IsWindows -or $env:OS -eq 'Windows_NT') {
@@ -172,7 +270,11 @@ Write-Host " Mode: $displayMode" -ForegroundColor Green
 Write-Host ""
 
 # -- Prerequisites ---------------------------------------
-# Git is optional - only needed for git init and hooks in Step 5
+# Install required CLI prerequisites up front.
+if (-not (Ensure-GitInstalled)) {
+ Write-Error 'Git is required for AgentX install and could not be installed automatically.'
+ return
+}
 
 # -- Upgrade detection: uninstall old version, preserve user data --
 $previousVersion = $null
