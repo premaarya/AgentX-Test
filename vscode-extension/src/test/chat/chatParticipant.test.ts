@@ -158,6 +158,25 @@ describe('chatParticipant', () => {
     assert.ok(response.getMarkdown().includes('During execution, live status updates'));
   });
 
+  it('explains that formal AgentX execution needs workspace runtime files', async () => {
+    const response = createMockResponseStream();
+    const agentx = {
+      checkInitialized: async () => true,
+      hasCliRuntime: () => false,
+      workspaceRoot: tmpDir,
+    };
+
+    await handleAgentXChatRequest(
+      { prompt: 'run engineer implement the login fix' } as any,
+      response as any,
+      agentx as any,
+    );
+
+    const markdown = response.getMarkdown();
+    assert.ok(markdown.includes('AgentX CLI runtime is not available in this workspace.'));
+    assert.ok(markdown.includes('AgentX: Add Integration'));
+  });
+
   it('returns ranked planning learnings from chat', async () => {
     const response = createMockResponseStream();
     const agentx = {
@@ -468,6 +487,29 @@ describe('chatParticipant', () => {
     ]);
     assert.equal(cleared, true);
     assert.ok(response.getMarkdown().includes('Final answer after human clarification'));
+  });
+
+  it('blocks clarification resume when workspace runtime files are missing', async () => {
+    const response = createMockResponseStream();
+    const agentx = {
+      checkInitialized: async () => true,
+      hasCliRuntime: () => false,
+      getPendingClarification: async () => ({
+        sessionId: 'engineer-20260309120000-abcd',
+        agentName: 'engineer',
+        prompt: 'implement the login fix',
+      }),
+    };
+
+    await handleAgentXChatRequest(
+      { prompt: 'continue use the existing auth flow' } as any,
+      response as any,
+      agentx as any,
+    );
+
+    const markdown = response.getMarkdown();
+    assert.ok(markdown.includes('AgentX CLI runtime is not available in this workspace.'));
+    assert.ok(markdown.includes('AgentX: Add Integration'));
   });
 
   it('shows pending clarification context for bare continue', async () => {

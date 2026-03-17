@@ -39,6 +39,21 @@ export type PendingClarification = NonNullable<
 
 let chatOutputChannel: vscode.OutputChannel | undefined;
 
+function hasWorkspaceCliRuntime(agentx: AgentXContext): boolean {
+  return typeof (agentx as AgentXContext & { hasCliRuntime?: () => boolean }).hasCliRuntime !== 'function'
+    || (agentx as AgentXContext & { hasCliRuntime: () => boolean }).hasCliRuntime();
+}
+
+function renderMissingRuntimeMessage(): string {
+  return [
+    '**AgentX CLI runtime is not available in this workspace.**',
+    '',
+    'This workspace has an open folder, but it does not contain the local `.agentx` runtime needed for `run`, loop execution, or clarification resume.',
+    '',
+    'To enable formal AgentX execution in this repo, run **AgentX: Add Integration** first.',
+  ].join('\n');
+}
+
 export function resetChatRouterInternalStateForTests(): void {
   chatOutputChannel = undefined;
 }
@@ -49,6 +64,11 @@ export async function runAgentCommand(
   agentName: string,
   task: string,
 ): Promise<vscode.ChatResult> {
+  if (!hasWorkspaceCliRuntime(agentx)) {
+    response.markdown(renderMissingRuntimeMessage());
+    return {};
+  }
+
   try {
     response.progress(`Running ${agentName} agent...`);
     let pendingSessionId = '';
@@ -97,6 +117,11 @@ export async function resumePendingClarification(
   pending: PendingClarification,
   guidance: string,
 ): Promise<vscode.ChatResult> {
+  if (!hasWorkspaceCliRuntime(agentx)) {
+    response.markdown(renderMissingRuntimeMessage());
+    return {};
+  }
+
   try {
     response.progress(`Resuming ${pending.agentName} agent...`);
     let nextPendingSessionId = '';

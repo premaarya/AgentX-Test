@@ -7,6 +7,7 @@ import {
   buildCliInvocation,
   collectAgentDefinitionFiles,
   getConfiguredShell,
+  hasCliRuntime,
   hasConfiguredIntegration,
   listExecutionPlanFilesForRoot,
   parseAgentDefinition,
@@ -87,6 +88,12 @@ export class AgentXContext {
  async checkInitialized(): Promise<boolean> {
   const root = this.workspaceRoot;
   return !!root;
+ }
+
+ /** Check whether the current workspace contains the AgentX CLI runtime. */
+ hasCliRuntime(): boolean {
+  const root = this.workspaceRoot;
+  return !!root && hasCliRuntime(root);
  }
 
  /**
