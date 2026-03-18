@@ -7,7 +7,7 @@ constraints:
   - "MUST read ALL available artifacts before writing any code: PRD, ADR, Tech Spec, UX Spec, and any Data Science artifacts"
   - "MUST seek inter-agent clarification for ANY spec, ADR, or UX ambiguity BEFORE writing code that depends on the ambiguous requirement"
   - "MUST load and read the skills prescribed for each phase before performing that phase's work"
-  - "MUST start quality loop after first implementation commit: .agentx/agentx.ps1 loop start <issue>"
+  - "MUST start quality loop after first implementation commit: .agentx/agentx.ps1 loop start -p <prompt-text> -i <issue> (--prompt flag is REQUIRED; omitting it causes exit 1 -- see iterative-loop skill for full syntax)"
   - "MUST complete a minimum of 3 quality loop iterations before declaring implementation done"
   - "MUST run the full test suite at the end of EVERY loop iteration"
   - "MUST verify quality loop reached 'complete' status before moving to In Review"
@@ -103,10 +103,10 @@ The quality loop is the execution backbone. MUST be used for every implementatio
 
 | Command | When |
 |---------|------|
-| `.agentx/agentx.ps1 loop start <issue>` | After first implementation commit |
-| `.agentx/agentx.ps1 loop iterate <issue>` | After each fix/improvement cycle |
-| `.agentx/agentx.ps1 loop complete <issue>` | When ALL quality gates pass |
-| `.agentx/agentx.ps1 loop status <issue>` | Check current loop state |
+| `.agentx/agentx.ps1 loop start -p "Implementing #<issue>: <title>" -i <issue>` | After first implementation commit |
+| `.agentx/agentx.ps1 loop iterate -s "Iteration summary"` | After each fix/improvement cycle |
+| `.agentx/agentx.ps1 loop complete -s "All quality gates passed"` | When ALL quality gates pass |
+| `.agentx/agentx.ps1 loop status` | Check current loop state |
 
 **Minimum 3 iterations with a defined focus per iteration:**
 
@@ -371,7 +371,7 @@ After the first commit that completes a meaningful chunk of functionality:
 
 ```bash
 git add -A && git commit -m "feat: implement <description> (#<issue>)"
-.agentx/agentx.ps1 loop start <issue>
+.agentx/agentx.ps1 loop start -p "Implementing #<issue>: <description>" -i <issue>
 ```
 
 **Phase 5 Gate**: Core implementation committed + quality loop started.
@@ -495,7 +495,7 @@ Score must be >= 70% (Medium-High tier). If below threshold, read individual che
 
 ```bash
 git add -A && git commit -m "feat: complete <description> (#<issue>)"
-.agentx/agentx.ps1 loop complete <issue>
+.agentx/agentx.ps1 loop complete -s "All quality gates passed"
 ```
 
 Update GitHub Projects Status to `In Review`.
@@ -638,7 +638,7 @@ See [IMPROVEMENT-LOOP.md](../skills/development/skill-creator/references/IMPROVE
 Before handing off to Reviewer:
 
 ```
-.agentx/agentx.ps1 loop complete <issue>
+.agentx/agentx.ps1 loop complete -s "All quality gates passed"
 ```
 
 The CLI blocks handoff with exit 1 if the loop state is not `complete`.
