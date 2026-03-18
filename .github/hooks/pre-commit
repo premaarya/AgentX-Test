@@ -144,7 +144,7 @@ REVIEW_DOCS=$(git diff --cached --name-only | grep '^docs/artifacts/reviews/.*\.
 if [ -n "$REVIEW_DOCS" ]; then
   LOOP_COMPLETE=0
   if [ -f "$LOOP_STATE" ]; then
-    LOOP_STATUS_CHECK=$(grep -o '"status":\s*"[^"]*"' "$LOOP_STATE" 2>/dev/null | head -1 | sed 's/"status":\s*"//' | sed 's/"//')
+    LOOP_STATUS_CHECK=$(grep -o '"status":[[:space:]]*"[^"]*"' "$LOOP_STATE" 2>/dev/null | head -1 | sed 's/"status":[[:space:]]*"//' | sed 's/"//')
     if [ "$LOOP_STATUS_CHECK" = "complete" ]; then
       LOOP_COMPLETE=1
     fi

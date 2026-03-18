@@ -75,14 +75,21 @@ For final delivery in GitHub mode, plain `(#123)` is traceability only. Use `fix
 
 All agents MUST create deliverable files locally using `editFiles` -- MUST NOT use `mcp_github_create_or_update_file` or `mcp_github_push_files` to push files directly to GitHub. Users must be able to review files locally before committing.
 
+### Quality Loop Hard Rule
+
+> HARD RULE: Every agent MUST run `.agentx/agentx.ps1 loop start -p "<task description>"` as the ABSOLUTE FIRST action before any file edit or tool call. Minimum 3 iterations. Complete with `.agentx/agentx.ps1 loop complete -s "<summary>"`. No exceptions. The pre-commit hook blocks review artifacts when no completed loop exists.
+
 ### CLI Quick Reference
 
 ```powershell
+.\.agentx\agentx.ps1 loop start -p "Task description"  # FIRST command - start before any work
+.\.agentx\agentx.ps1 loop iterate -s "Progress summary"  # After each verification pass
+.\.agentx\agentx.ps1 loop complete -s "All gates passed"  # LAST command - required before handoff
 .\.agentx\agentx.ps1 ready                    # Show unblocked work
 .\.agentx\agentx.ps1 state -a engineer -s working -i 42
 .\.agentx\agentx.ps1 deps 42                  # Check blockers
 .\.agentx\agentx.ps1 workflow engineer        # Show workflow steps
-.\.agentx\agentx.ps1 loop -LoopAction status   # Check quality loop
+.\.agentx\agentx.ps1 loop -LoopAction status   # Check quality loop status
 .\.agentx\agentx.ps1 config show               # View configuration
 ```
 
