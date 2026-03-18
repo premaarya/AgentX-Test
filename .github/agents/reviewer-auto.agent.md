@@ -3,6 +3,7 @@ name: AgentX Auto-Fix Reviewer
 description: 'Review code AND auto-apply safe fixes (formatting, imports, naming, null checks, docs). Suggest complex changes for human approval.'
 model: Claude Sonnet 4.6 (copilot)
 constraints:
+  - "MUST run '.agentx/agentx.ps1 loop start -p <description>' as the ABSOLUTE FIRST action before any file edits or reviews"
   - "MUST read the Tech Spec and PRD before reviewing"
   - "MUST verify the Engineer's quality loop reached status=complete before reviewing"
   - "MUST auto-fix ONLY safe categories (formatting, imports, naming, null checks, docs)"
@@ -12,6 +13,7 @@ constraints:
   - "MUST create all files locally using editFiles -- MUST NOT use mcp_github_create_or_update_file or mcp_github_push_files to push files directly to GitHub"
   - "MUST revert auto-fixes if tests fail after applying them"
   - "MUST iterate until ALL done criteria pass, minimum iterations = 3"
+  - "MUST run '.agentx/agentx.ps1 loop complete -s <summary>' before issuing approval/rejection decision"
   - "MUST verify agentic loop completion before declaring implementation complete"
 boundaries:
   can_modify:

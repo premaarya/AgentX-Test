@@ -135,6 +135,32 @@ if [ -f "$LOOP_STATE" ]; then
   fi
 fi
 
+# ---------------------------------------------------------------
+# Check 9: Review document requires completed loop
+# Block commits of review artifacts when no completed loop exists.
+# Catches agents that skip loop start entirely.
+# ---------------------------------------------------------------
+REVIEW_DOCS=$(git diff --cached --name-only | grep '^docs/artifacts/reviews/.*\.md$')
+if [ -n "$REVIEW_DOCS" ]; then
+  LOOP_COMPLETE=0
+  if [ -f "$LOOP_STATE" ]; then
+    LOOP_STATUS_CHECK=$(grep -o '"status":\s*"[^"]*"' "$LOOP_STATE" 2>/dev/null | head -1 | sed 's/"status":\s*"//' | sed 's/"//')
+    if [ "$LOOP_STATUS_CHECK" = "complete" ]; then
+      LOOP_COMPLETE=1
+    fi
+  fi
+  if [ $LOOP_COMPLETE -eq 0 ]; then
+    echo -e "${RED}[FAIL] Review document staged but quality loop not completed${NC}"
+    echo "  Review agents MUST run the quality loop before committing:"
+    echo "    agentx loop start -p \"Reviewing: <description>\""
+    echo "    ... (verify, self-review, iterate)"
+    echo "    agentx loop complete -s \"All quality gates passed\""
+    FAILED=1
+  else
+    echo -e "${GREEN}[PASS] Review document has completed quality loop${NC}"
+  fi
+fi
+
 if [ $FAILED -eq 1 ]; then
  echo -e "${RED}[FAIL] Pre-commit checks FAILED${NC}"
  exit 1
