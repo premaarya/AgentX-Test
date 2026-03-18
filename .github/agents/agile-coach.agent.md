@@ -207,4 +207,35 @@ If the user cannot answer elicitation questions or the domain is unfamiliar:
 > **Standalone Agent**: This agent is not part of the core SDLC pipeline. Like Consulting Research, it is invoked directly by users.
 > **Shared Protocols**: Follow [WORKFLOW.md](../../docs/WORKFLOW.md#handoff-flow) for agent communication conventions.
 
+## Iterative Quality Loop (MANDATORY)
+
+After completing initial work, iterate until ALL done criteria pass.
+Copilot runs this loop natively within its agentic session.
+
+### Loop Steps (repeat until all criteria met)
+
+1. **Run verification** -- execute the relevant checks for this role (see Done Criteria)
+2. **Evaluate results** -- if any check fails, identify root cause
+3. **Fix** -- address the failure
+4. **Re-run verification** -- confirm the fix works
+5. **Self-review** -- once all checks pass, spawn a same-role reviewer sub-agent:
+   - Reviewer evaluates with structured findings: HIGH, MEDIUM, LOW
+   - APPROVED: true when no HIGH or MEDIUM findings remain
+   - APPROVED: false when any HIGH or MEDIUM findings exist
+6. **Address findings** -- fix all HIGH and MEDIUM findings, then re-run from Step 1
+7. **Repeat** until APPROVED and all Done Criteria pass
+
+### Done Criteria
+
+Story follows As a/I want/So that format; all 6 INVEST properties satisfied; 3-7 acceptance criteria in Given-When-Then format; happy path, error case, and boundary covered; user confirmed the final version.
+
+### Hard Gate (CLI)
+
+Before handing off, mark the loop complete:
+
+`.agentx/agentx.ps1 loop complete <issue>`
+
+The CLI blocks handoff with exit 1 if the loop state is not `complete`.
+
+
 

@@ -8,22 +8,27 @@ import { resolveWindowsShell } from '../utils/shell';
 export const BRANCH = 'master';
 export const ARCHIVE_URL = `https://github.com/jnPiyush/AgentX/archive/refs/heads/${BRANCH}.zip`;
 
-export const ESSENTIAL_DIRS = ['.github/hooks', '.github/workflows', '.github/ISSUE_TEMPLATE'];
+export const ESSENTIAL_DIRS: string[] = [];
 
-export const ESSENTIAL_FILES = [
-  '.agentx/agentx.ps1',
-  '.agentx/agentx-cli.ps1',
-  '.agentx/agentx.sh',
-  '.agentx/local-issue-manager.ps1',
-  '.agentx/local-issue-manager.sh',
-  '.github/PULL_REQUEST_TEMPLATE.md',
-  '.github/agent-delegation.md',
-  '.github/agentx-security.yml',
-  '.github/CODEOWNERS',
-  'AGENTS.md',
-  'Skills.md',
-  'docs/GUIDE.md',
-  'docs/WORKFLOW.md',
+export const RUNTIME_ASSET_DIRS: Array<{ source: string; destination: string }> = [];
+
+export const ESSENTIAL_FILES: string[] = [];
+
+export const RUNTIME_DIRS = [
+  '.agentx/state',
+  '.agentx/digests',
+  '.agentx/sessions',
+  'docs/artifacts/prd',
+  'docs/artifacts/adr',
+  'docs/artifacts/specs',
+  'docs/artifacts/reviews',
+  'docs/artifacts/reviews/findings',
+  'docs/artifacts/learnings',
+  'docs/ux',
+  'docs/execution/plans',
+  'docs/execution/progress',
+  'memories',
+  'memories/session',
 ];
 
 export async function promptWorkspaceRoot(title: string): Promise<string | undefined> {
@@ -187,11 +192,8 @@ export function mergeGitignore(root: string): void {
   const markerStart = '# --- AgentX (auto-generated, do not edit this block) ---';
   const markerEnd = '# --- /AgentX ---';
   const agentxEntries = [
-    '# AgentX runtime (GitHub mode)',
+    '# AgentX runtime state',
     '.agentx/',
-    '.github/hooks/',
-    '.github/workflows/',
-    '.github/ISSUE_TEMPLATE/',
   ];
 
   const gitignorePath = path.join(root, '.gitignore');

@@ -10,6 +10,8 @@ constraints:
   - "MUST version prompts with semantic naming (v1, v2) and track changes"
   - "MUST NOT fabricate evaluation scores or benchmark results"
   - "MUST NOT deploy prompts without passing quality gates"
+  - "MUST iterate until ALL done criteria pass, minimum iterations = 3"
+  - "MUST verify agentic loop completion before declaring implementation complete"
 boundaries:
   can_modify:
     - "prompts/** (prompt templates and versions)"
@@ -154,5 +156,36 @@ Track changes in `.copilot-tracking/prompt-eval/{name}-changelog.md`:
 | Inline prompts in code | Cannot version, diff, or A/B test |
 | No adversarial testing | First jailbreak attempt succeeds |
 | Prompt too long (>8K tokens) | Context window waste, latency increase, quality degradation |
+
+## Iterative Quality Loop (MANDATORY)
+
+After completing initial work, iterate until ALL done criteria pass.
+Copilot runs this loop natively within its agentic session.
+
+### Loop Steps (repeat until all criteria met)
+
+1. **Run verification** -- execute the relevant checks for this role (see Done Criteria)
+2. **Evaluate results** -- if any check fails, identify root cause
+3. **Fix** -- address the failure
+4. **Re-run verification** -- confirm the fix works
+5. **Self-review** -- once all checks pass, spawn a same-role reviewer sub-agent:
+   - Reviewer evaluates with structured findings: HIGH, MEDIUM, LOW
+   - APPROVED: true when no HIGH or MEDIUM findings remain
+   - APPROVED: false when any HIGH or MEDIUM findings exist
+6. **Address findings** -- fix all HIGH and MEDIUM findings, then re-run from Step 1
+7. **Repeat** until APPROVED and all Done Criteria pass
+
+### Done Criteria
+
+All prompts stored as separate files in `prompts/` (never inline strings in code); evaluation passing with structured rubrics (not subjective ratings); tested across at least 2 models (primary + fallback from a different provider); versioned with semantic naming and changelog; adversarial and edge cases covered.
+
+### Hard Gate (CLI)
+
+Before handing off, mark the loop complete:
+
+`.agentx/agentx.ps1 loop complete <issue>`
+
+The CLI blocks handoff with exit 1 if the loop state is not `complete`.
+
 
 

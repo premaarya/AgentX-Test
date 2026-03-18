@@ -15,6 +15,7 @@ constraints:
   - "MUST NOT write application or business logic code"
   - "MUST NOT create technical architecture or ADRs"
   - "MUST create all files locally using editFiles -- MUST NOT use mcp_github_create_or_update_file or mcp_github_push_files to push files directly to GitHub"
+  - "MUST use the iterative quality loop and output scorer to ensure high-quality designs, minimum iterations = 3"
 boundaries:
   can_modify:
     - "docs/ux/**"

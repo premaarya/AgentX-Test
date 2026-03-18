@@ -9,7 +9,7 @@ constraints:
   - "MUST verify no hardcoded secrets, SQL injection, or unvalidated inputs"
   - "MUST NOT modify source code -- request changes via review comments"
   - "MUST NOT approve code with active or cancelled quality loops"
-  - "MUST create all files locally using editFiles -- MUST NOT use mcp_github_create_or_update_file or mcp_github_push_files to push files directly to GitHub"
+  - "MUST create all files locally using editFiles -- MUST NOT use mcp_github_create_or_update_file or mcp_github_push_files to push files directly to GitHub"  
 boundaries:
   can_modify:
     - "docs/artifacts/reviews/**"

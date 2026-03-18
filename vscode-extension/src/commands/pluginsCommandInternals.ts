@@ -62,7 +62,7 @@ export async function runAddPluginCommand(
 
  if (!fs.existsSync(path.join(root, '.agentx', 'config.json'))) {
   vscode.window.showWarningMessage(
-   'AgentX plugins require a local runtime. Run "AgentX: Initialize Local Runtime" first.',
+   'AgentX plugins require workspace initialization. Run "AgentX: Initialize Local Runtime" first.',
   );
   return;
  }

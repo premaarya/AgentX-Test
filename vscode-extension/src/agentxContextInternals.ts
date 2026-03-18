@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { AgentBoundaries, AgentDefinition, AgentHandoff } from './agentxContextTypes';
+import { collectAssetFiles, resolveAssetPath } from './utils/runtimeAssets';
 
 interface McpConfig {
   servers?: Record<string, { type?: string; url?: string; command?: string }>;
@@ -120,18 +121,8 @@ export function resolveAgentDefinitionPath(
   extensionPath: string,
   agentFile: string,
 ): string | undefined {
-  const workspacePath = workspaceRoot ? path.join(workspaceRoot, '.github', 'agents', agentFile) : '';
-  const workspaceInternalPath = workspaceRoot
-    ? path.join(workspaceRoot, '.github', 'agents', 'internal', agentFile)
-    : '';
-  const bundledPath = path.join(extensionPath, '.github', 'agentx', 'agents', agentFile);
-  const bundledInternalPath = path.join(extensionPath, '.github', 'agentx', 'agents', 'internal', agentFile);
-
-  if (workspacePath && fs.existsSync(workspacePath)) { return workspacePath; }
-  if (workspaceInternalPath && fs.existsSync(workspaceInternalPath)) { return workspaceInternalPath; }
-  if (fs.existsSync(bundledPath)) { return bundledPath; }
-  if (fs.existsSync(bundledInternalPath)) { return bundledInternalPath; }
-  return undefined;
+  return resolveAssetPath(workspaceRoot, extensionPath, `.github/agents/${agentFile}`)
+    ?? resolveAssetPath(workspaceRoot, extensionPath, `.github/agents/internal/${agentFile}`);
 }
 
 export function parseAgentDefinition(content: string, agentFile: string): AgentDefinition | undefined {
@@ -270,16 +261,12 @@ export function getConfiguredShell(config: vscode.WorkspaceConfiguration): strin
   return config.get<string>('shell', 'auto');
 }
 
-export function buildCliCommand(root: string | undefined, shell: string): string {
-  if (!root) {
-    return '';
-  }
-
+export function buildCliCommand(extensionPath: string, shell: string): string {
   if (shell === 'bash' || (shell === 'auto' && process.platform !== 'win32')) {
-    return path.join(root, '.agentx', 'agentx.sh');
+    return path.join(extensionPath, '.github', 'agentx', '.agentx', 'agentx.sh');
   }
 
-  return path.join(root, '.agentx', 'agentx.ps1');
+  return path.join(extensionPath, '.github', 'agentx', '.agentx', 'agentx.ps1');
 }
 
 function safeQuoteArg(arg: string, isPwsh: boolean): string {
@@ -340,36 +327,11 @@ export function collectAgentDefinitionFiles(
   extensionPath: string,
 ): string[] {
   const fileSet = new Set<string>();
-
-  const bundledDir = path.join(extensionPath, '.github', 'agentx', 'agents');
-  if (fs.existsSync(bundledDir)) {
-    for (const file of fs.readdirSync(bundledDir).filter((entry) => entry.endsWith('.agent.md'))) {
-      fileSet.add(file);
-    }
+  for (const filePath of collectAssetFiles(workspaceRoot, extensionPath, '.github/agents', (entry) => entry.endsWith('.agent.md'))) {
+    fileSet.add(path.basename(filePath));
   }
-
-  const bundledInternalDir = path.join(bundledDir, 'internal');
-  if (fs.existsSync(bundledInternalDir)) {
-    for (const file of fs.readdirSync(bundledInternalDir).filter((entry) => entry.endsWith('.agent.md'))) {
-      fileSet.add(file);
-    }
+  for (const filePath of collectAssetFiles(workspaceRoot, extensionPath, '.github/agents/internal', (entry) => entry.endsWith('.agent.md'))) {
+    fileSet.add(path.basename(filePath));
   }
-
-  if (workspaceRoot) {
-    const workspaceDir = path.join(workspaceRoot, '.github', 'agents');
-    if (fs.existsSync(workspaceDir)) {
-      for (const file of fs.readdirSync(workspaceDir).filter((entry) => entry.endsWith('.agent.md'))) {
-        fileSet.add(file);
-      }
-    }
-
-    const workspaceInternalDir = path.join(workspaceDir, 'internal');
-    if (fs.existsSync(workspaceInternalDir)) {
-      for (const file of fs.readdirSync(workspaceInternalDir).filter((entry) => entry.endsWith('.agent.md'))) {
-        fileSet.add(file);
-      }
-    }
-  }
-
-  return [...fileSet];
+  return [...fileSet].sort();
 }

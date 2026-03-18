@@ -12,6 +12,13 @@ constraints:
   - "MUST create all files locally using editFiles -- MUST NOT use mcp_github_create_or_update_file or mcp_github_push_files to push files directly to GitHub"
   - "MUST conduct deep research before designing pipelines -- state-of-the-art survey, benchmark analysis, technique comparison, cost-performance research"
   - "MUST document research findings with sources in the Model Card and Evaluation Report"
+  - "MUST include LLM-as-judge evaluation with structured rubrics and known-answer validation"
+  - "MUST use the AgentX Prompt Engineer for prompt design, testing, and versioning"
+  - "MUST use the AgentX Eval Specialist for evaluation framework design and execution"
+  - "MUST use the AgentX Ops Monitor for monitoring and drift detection"
+  - "MUST use the AgentX RAG Specialist for retrieval-augmented generation pipeline design and implementation"
+  - "MUST use the iterative quality loop and output scorer to ensure high-quality implementation, minimum iterations = 3"
+  - "MUST verify agentic loop completion before declaring implementation complete"
 boundaries:
   can_modify:
     - "src/**"

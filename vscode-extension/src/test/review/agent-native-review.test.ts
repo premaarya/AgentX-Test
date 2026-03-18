@@ -90,4 +90,16 @@ describe('agent-native review', () => {
     assert.ok(markdown.includes('Capability map:'));
     assert.ok(markdown.includes(`Reference guide: ${workflowGuidePath}`));
   });
+
+  it('accepts hidden runtime review assets when visible defaults are absent', () => {
+    fs.rmSync(path.join(tmpDir, 'docs', 'guides'), { recursive: true, force: true });
+    fs.rmSync(path.join(tmpDir, '.github', 'templates'), { recursive: true, force: true });
+    writeFile(tmpDir, '.agentx/runtime/docs/guides/KNOWLEDGE-REVIEW-WORKFLOWS.md', '# Runtime Guide\n');
+    writeFile(tmpDir, '.agentx/runtime/templates/REVIEW-TEMPLATE.md', '# Runtime Review\n');
+
+    const report = evaluateAgentNativeReview({ workspaceRoot: tmpDir } as any);
+
+    assert.ok(report);
+    assert.equal(report?.dominantSeverity, 'none');
+  });
 });

@@ -197,7 +197,7 @@ export function renderReviewFindingsMarkdown(records: ReadonlyArray<ReviewFindin
   lines.push(
    'No durable review findings were found.',
    '',
-   `Reference guide: ${workflowGuidePath}`,
+    `Reference guide: ${workflowGuidePath}`,
    'Template: docs/artifacts/reviews/FINDING-TEMPLATE.md',
   );
   return lines.join('\n');

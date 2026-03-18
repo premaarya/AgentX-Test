@@ -11,6 +11,8 @@ constraints:
   - "MUST NOT modify application source code"
   - "MUST NOT modify PRD, ADR, or UX documents"
   - "MUST create all files locally using editFiles -- MUST NOT use mcp_github_create_or_update_file or mcp_github_push_files to push files directly to GitHub"
+  - "MUST iterate until ALL done criteria pass, minimum iterations = 3"
+  - "MUST verify agentic loop completion before declaring implementation complete"
 boundaries:
   can_modify:
     - ".github/workflows/**"

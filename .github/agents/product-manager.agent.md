@@ -14,6 +14,7 @@ constraints:
   - "MUST conduct deep research before writing requirements -- prior art, competitive landscape, industry standards, user needs validation"
   - "MUST document research findings with sources in a Research Summary section within the PRD"
   - "MUST create PRD files locally using editFiles -- MUST NOT use mcp_github_create_or_update_file or mcp_github_push_files to push files directly to GitHub"
+  - "MUST use the iterative quality loop and output scorer to ensure high-quality requirements, minimum iterations = 3"
 boundaries:
   can_modify:
     - "docs/artifacts/prd/**"

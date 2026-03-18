@@ -243,7 +243,7 @@ describe('chatParticipant', () => {
     assert.ok(response.getMarkdown().includes('Opened **AgentX: Add Plugin** for this workspace.'));
   });
 
-  it('explains that formal AgentX execution needs workspace runtime files', async () => {
+  it('explains that formal AgentX execution needs workspace initialization', async () => {
     const response = createMockResponseStream();
     const agentx = {
       checkInitialized: async () => true,
@@ -258,7 +258,7 @@ describe('chatParticipant', () => {
     );
 
     const markdown = response.getMarkdown();
-    assert.ok(markdown.includes('AgentX CLI runtime is not available in this workspace.'));
+    assert.ok(markdown.includes('AgentX workspace initialization is not available in this workspace.'));
     assert.ok(markdown.includes('AgentX: Initialize Local Runtime'));
   });
 
@@ -582,13 +582,13 @@ describe('chatParticipant', () => {
 
     assert.deepEqual(capturedArgs, [
       '--resume-session', 'engineer-20260309120000-abcd',
-      '--clarification-response', '"use the existing auth flow"',
+      '--clarification-response', 'use the existing auth flow',
     ]);
     assert.equal(cleared, true);
     assert.ok(response.getMarkdown().includes('Final answer after human clarification'));
   });
 
-  it('blocks clarification resume when workspace runtime files are missing', async () => {
+  it('blocks clarification resume when workspace initialization is missing', async () => {
     const response = createMockResponseStream();
     const agentx = {
       checkInitialized: async () => true,
@@ -607,7 +607,7 @@ describe('chatParticipant', () => {
     );
 
     const markdown = response.getMarkdown();
-    assert.ok(markdown.includes('AgentX CLI runtime is not available in this workspace.'));
+    assert.ok(markdown.includes('AgentX workspace initialization is not available in this workspace.'));
     assert.ok(markdown.includes('AgentX: Initialize Local Runtime'));
   });
 
@@ -662,7 +662,7 @@ describe('chatParticipant', () => {
 
     assert.deepEqual(capturedArgs, [
       '--resume-session', 'engineer-20260309120000-abcd',
-      '--clarification-response', '"Use the existing auth flow and do not change token semantics."',
+      '--clarification-response', 'Use the existing auth flow and do not change token semantics.',
     ]);
     assert.ok(response.getMarkdown().includes('Resumed with natural-language clarification'));
   });

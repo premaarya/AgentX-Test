@@ -149,4 +149,17 @@ describe('workflow guidance utility', () => {
     assert.ok(rollout.includes('Workflow Rollout Scorecard'));
     assert.ok(checklist.includes('Operator Enablement Checklist'));
   });
+
+  it('falls back to hidden runtime workflow guides when visible guides are absent', () => {
+    fs.rmSync(path.join(tmpDir, 'docs', 'guides'), { recursive: true, force: true });
+    writeFile(tmpDir, '.agentx/runtime/docs/guides/WORKFLOW-ROLLOUT-SCORECARD.md', '# Scorecard\n');
+    writeFile(tmpDir, '.agentx/runtime/docs/guides/WORKFLOW-PILOT-ORDER.md', '# Pilot\n');
+    writeFile(tmpDir, '.agentx/runtime/docs/guides/WORKFLOW-OPERATOR-CHECKLIST.md', '# Checklist\n');
+
+    const snapshot = evaluateWorkflowGuidance(tmpDir);
+
+    assert.ok(snapshot);
+    assert.equal(snapshot?.rolloutRows[0]?.state, 'pilot-ready');
+    assert.equal(snapshot?.rolloutScorecardPath, '.agentx/runtime/docs/guides/WORKFLOW-ROLLOUT-SCORECARD.md');
+  });
 });

@@ -27,8 +27,12 @@ $ErrorActionPreference = 'Stop'
 # Paths
 # ---------------------------------------------------------------------------
 
-$Script:ROOT = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$Script:AGENTX_DIR = Join-Path $ROOT '.agentx'
+$workspaceRootOverride = $env:AGENTX_WORKSPACE_ROOT
+$defaultWorkspaceRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+$Script:ROOT = if ($workspaceRootOverride) { $workspaceRootOverride } else { $defaultWorkspaceRoot }
+$Script:INSTALL_ROOT = $defaultWorkspaceRoot
+$Script:INSTALL_AGENTX_DIR = $PSScriptRoot
+$Script:AGENTX_DIR = Join-Path $Script:ROOT '.agentx'
 $Script:STATE_FILE = Join-Path $AGENTX_DIR 'state' 'agent-status.json'
 $Script:LOOP_STATE_FILE = Join-Path $AGENTX_DIR 'state' 'loop-state.json'
 $Script:ISSUES_DIR = Join-Path $AGENTX_DIR 'issues'
@@ -126,6 +130,52 @@ function Invoke-WithJsonLock([string]$jsonPath, [string]$agent = 'cli', [scriptb
 }
 
 function Get-Timestamp { return (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ') }
+
+function Get-AgentDefinitionDirectories {
+    return @(
+        (Join-Path $Script:ROOT '.github' 'agents'),
+        (Join-Path $Script:AGENTX_DIR 'runtime' 'agents'),
+        (Join-Path $Script:INSTALL_ROOT '.github' 'agents')
+    )
+}
+
+function Get-AgentDefinitionFiles([switch]$IncludeInternal) {
+    $files = @{}
+    foreach ($agentsDir in (Get-AgentDefinitionDirectories)) {
+        if (Test-Path $agentsDir) {
+            foreach ($file in (Get-ChildItem $agentsDir -Filter '*.agent.md' -File -ErrorAction SilentlyContinue)) {
+                $files[$file.Name] = $file.FullName
+            }
+        }
+
+        if ($IncludeInternal) {
+            $internalDir = Join-Path $agentsDir 'internal'
+            if (Test-Path $internalDir) {
+                foreach ($file in (Get-ChildItem $internalDir -Filter '*.agent.md' -File -ErrorAction SilentlyContinue)) {
+                    $files[$file.Name] = $file.FullName
+                }
+            }
+        }
+    }
+
+    return @($files.Values | Sort-Object)
+}
+
+function Resolve-AgentDefinitionFile([string]$agentName) {
+    $fileName = if ($agentName -like '*.agent.md') { $agentName } else { "$agentName.agent.md" }
+    foreach ($agentsDir in (Get-AgentDefinitionDirectories)) {
+        foreach ($candidate in @(
+            (Join-Path $agentsDir $fileName),
+            (Join-Path $agentsDir 'internal' $fileName)
+        )) {
+            if (Test-Path $candidate) {
+                return $candidate
+            }
+        }
+    }
+
+    return $null
+}
 
 function Get-ConfigValue($cfg, [string]$name, $default = $null) {
     if ($cfg -is [hashtable]) {
@@ -2863,19 +2913,16 @@ function Invoke-WorkflowCmd {
         Get-Flag @('-t', '--type', '-Type', '--Type')
     }
 
-    $agentsDir = Join-Path $Script:ROOT '.github' 'agents'
-
     if (-not $agentName) {
         Write-Host "`n$($C.c)  Agent Handoff Chains:$($C.n)"
         Write-Host "$($C.d)  ---------------------------------------------$($C.n)"
-        if (Test-Path $agentsDir) {
-            foreach ($f in (Get-ChildItem $agentsDir -Filter '*.agent.md')) {
+        foreach ($agentFilePath in (Get-AgentDefinitionFiles)) {
+            $f = Get-Item $agentFilePath
                 $name = $f.BaseName -replace '\.agent$', ''
                 $content = Get-Content $f.FullName -Raw -Encoding utf8
                 $desc = ''
                 if ($content -match '(?m)^description:\s*[''"]?(.+?)[''"]?\s*$') { $desc = $Matches[1] }
                 Write-Host "  $($C.w)$name$($C.n) $($C.d)- $desc$($C.n)"
-            }
         }
         Write-Host "`n$($C.d)  Usage: agentx workflow <agent-name|issue-type>$($C.n)"
         Write-Host "$($C.d)  Examples: agentx workflow engineer, agentx workflow feature, agentx workflow bug$($C.n)`n"
@@ -2898,7 +2945,7 @@ function Invoke-WorkflowCmd {
         $agentName = $typeAliasMap[$agentName]
     }
 
-    $agentFile = Join-Path $agentsDir "$agentName.agent.md"
+    $agentFile = Resolve-AgentDefinitionFile $agentName
     if (-not (Test-Path $agentFile)) { Write-Host "Error: Agent '$agentName' not found"; exit 1 }
 
     $content = Get-Content $agentFile -Raw -Encoding utf8
@@ -3358,12 +3405,10 @@ function Invoke-RunCmd {
         Write-Host '  agentx run engineer "Implement login" --max 20 -m gpt-4.1'
         Write-Host '  agentx run --resume-session <session-id> --clarification-response "Use the existing auth flow"'
         Write-Host "`n$($C.w)  Available agents:$($C.n)"
-        $agentsDir = Join-Path $Script:ROOT '.github' 'agents'
-        if (Test-Path $agentsDir) {
-            foreach ($f in (Get-ChildItem $agentsDir -Filter '*.agent.md')) {
+        foreach ($agentFilePath in (Get-AgentDefinitionFiles)) {
+            $f = Get-Item $agentFilePath
                 $name = $f.BaseName -replace '\.agent$', ''
                 Write-Host "  $($C.c)$name$($C.n)"
-            }
         }
         Write-Host ''
         return

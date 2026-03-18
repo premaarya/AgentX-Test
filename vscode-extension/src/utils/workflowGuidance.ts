@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { readHarnessState } from './harnessState';
+import { assetExistsInWorkspaceRuntime, resolveWorkspaceRuntimeAssetPath } from './runtimeAssets';
 import { readLoopState } from './loopStateChecker';
 import {
   resolveWorkflowCheckpoint,
@@ -152,7 +153,7 @@ export function evaluateWorkflowGuidance(
     ROLLOUT_SCORECARD_PATH,
     PILOT_ORDER_PATH,
     OPERATOR_CHECKLIST_PATH,
-  ].every((relativePath) => existsRelativePath(workspaceRoot, relativePath));
+  ].every((relativePath) => assetExistsInWorkspaceRuntime(workspaceRoot, relativePath));
   const rolloutRows = buildRolloutRows(rolloutArtifactsReady);
   const operatorChecklist = buildOperatorChecklist();
 
@@ -187,9 +188,9 @@ export function evaluateWorkflowGuidance(
     learningPath,
     planDeepening,
     reviewKickoff,
-    rolloutScorecardPath: ROLLOUT_SCORECARD_PATH,
-    pilotOrderPath: PILOT_ORDER_PATH,
-    operatorChecklistPath: OPERATOR_CHECKLIST_PATH,
+    rolloutScorecardPath: resolveWorkspaceRuntimeAssetPath(workspaceRoot, ROLLOUT_SCORECARD_PATH) ?? ROLLOUT_SCORECARD_PATH,
+    pilotOrderPath: resolveWorkspaceRuntimeAssetPath(workspaceRoot, PILOT_ORDER_PATH) ?? PILOT_ORDER_PATH,
+    operatorChecklistPath: resolveWorkspaceRuntimeAssetPath(workspaceRoot, OPERATOR_CHECKLIST_PATH) ?? OPERATOR_CHECKLIST_PATH,
     rolloutRows,
     operatorChecklist,
   };
@@ -610,7 +611,7 @@ function collectMarkdownFiles(dir: string, collector: string[]): void {
 }
 
 function existsRelativePath(root: string, relativePath: string): boolean {
-  return fs.existsSync(path.join(root, ...relativePath.split('/')));
+  return assetExistsInWorkspaceRuntime(root, relativePath) || fs.existsSync(path.join(root, ...relativePath.split('/')));
 }
 
 function resolveExistingPath(root: string, ...relativePaths: Array<string | undefined>): string | undefined {

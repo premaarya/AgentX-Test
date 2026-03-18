@@ -103,7 +103,7 @@ describe('registerLoopCommand', () => {
 
       await registeredCallbacks['agentx.loopStart']!();
       assert.ok(fakeAgentx.runCli.calledWith('loop', sinon.match.array.deepEquals([
-        'start', '-p', '"Implement harness"', '-m', '10', '-c', '"ALL_TESTS_PASSING"', '-i', '42',
+        'start', '-p', 'Implement harness', '-m', '10', '-c', 'ALL_TESTS_PASSING', '-i', '42',
       ])));
       assert.ok(infoSpy.calledWith('Iterative loop started with a default minimum of 3 review iterations.'));
     });

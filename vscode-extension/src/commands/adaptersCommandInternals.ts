@@ -383,7 +383,7 @@ export async function runAddRemoteAdapterCommand(agentx: AgentXContext): Promise
   const configFile = path.join(root, '.agentx', 'config.json');
   if (!fs.existsSync(configFile)) {
     vscode.window.showWarningMessage(
-      'AgentX remote adapters require a local runtime. Run "AgentX: Initialize Local Runtime" first.',
+      'AgentX remote adapters require workspace initialization. Run "AgentX: Initialize Local Runtime" first.',
     );
     return;
   }

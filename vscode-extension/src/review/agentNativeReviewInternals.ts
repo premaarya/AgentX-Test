@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { assetExistsInWorkspaceRuntime } from '../utils/runtimeAssets';
 
 export type ReviewPillar = 'action-parity' | 'context-parity' | 'workspace-parity';
 export type ReviewSeverity = 'none' | 'low' | 'medium' | 'high';
@@ -113,7 +114,8 @@ function hasAllSignals(content: string, signals: ReadonlyArray<string>): boolean
 }
 
 function fileExists(root: string, relativePath: string): boolean {
- return fs.existsSync(path.join(root, ...relativePath.split('/')));
+ return assetExistsInWorkspaceRuntime(root, relativePath)
+  || fs.existsSync(path.join(root, ...relativePath.split('/')));
 }
 
 function getSeverity(userSurface: boolean, agentSurface: boolean, sharedArtifacts: boolean): ReviewSeverity {

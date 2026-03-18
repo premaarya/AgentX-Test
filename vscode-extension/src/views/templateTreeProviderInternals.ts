@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { AgentXContext } from '../agentxContext';
+import { collectAssetFiles } from '../utils/runtimeAssets';
 
 interface TemplateInput {
  name: string;
@@ -44,18 +45,13 @@ export class TemplateTreeItem extends vscode.TreeItem {
  }
 }
 
-export function resolveTemplatesDir(agentx: AgentXContext): string {
- const root = agentx.workspaceRoot;
- if (!root && !agentx.extensionContext) {
-  return '';
- }
-
- const workspaceDir = root ? path.join(root, '.github', 'templates') : '';
- const extPath = agentx.extensionContext?.extensionPath;
- const bundledDir = extPath ? path.join(extPath, '.github', 'agentx', 'templates') : '';
- return (workspaceDir && fs.existsSync(workspaceDir))
-  ? workspaceDir
-  : (bundledDir && fs.existsSync(bundledDir)) ? bundledDir : '';
+export function resolveTemplateFiles(agentx: AgentXContext): string[] {
+ return collectAssetFiles(
+  agentx.workspaceRoot,
+  agentx.extensionContext?.extensionPath,
+  '.github/templates',
+  (entry) => entry.endsWith('.md'),
+ );
 }
 
 function buildInputChildren(inputs: TemplateInput[]): TemplateTreeItem[] {
@@ -72,8 +68,7 @@ function buildInputChildren(inputs: TemplateInput[]): TemplateTreeItem[] {
  });
 }
 
-export function createTemplateTreeItem(dir: string, fileName: string): TemplateTreeItem {
- const filePath = path.join(dir, fileName);
+export function createTemplateTreeItem(filePath: string, fileName: string): TemplateTreeItem {
  const def = parseTemplate(filePath, fileName);
  const item = new TemplateTreeItem(
   def.name,

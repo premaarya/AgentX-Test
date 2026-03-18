@@ -15,6 +15,8 @@ constraints:
   - "MUST apply AI-first thinking -- evaluate GenAI/Agentic AI solutions as the default lens for every architecture decision, not only when features explicitly request AI"
   - "MUST conduct deep technology research before designing -- landscape scan, failure modes, benchmarks, security posture, long-term viability"
   - "MUST document research findings with sources in the ADR Context section"
+  - "MUST iterate until ALL the self review done criteria pass, minimum iterations = 3"
+  - "MUST verify agentic loop completion before declaring implementation complete"
 boundaries:
   can_modify:
     - "docs/artifacts/adr/**"

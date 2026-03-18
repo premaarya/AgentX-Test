@@ -11,6 +11,7 @@ import { loadAgentInstructions, clearInstructionCache } from '../../chat/agentCo
 function createFakeAgentx(root: string) {
   return {
     workspaceRoot: root,
+    extensionContext: undefined,
     // Other properties are not used by agentContextLoader
   } as any;
 }
@@ -83,6 +84,17 @@ describe('agentContextLoader', () => {
     assert.ok(result!.includes('## Role'), 'should contain Role section');
     assert.ok(result!.includes('This is the role section'), 'should contain role text');
     assert.ok(result!.includes('## Constraints'), 'should contain Constraints section');
+  });
+
+  it('should fall back to hidden runtime agent definitions', async () => {
+    const filePath = path.join(tmpDir, '.agentx', 'runtime', 'agents', 'runtime.agent.md');
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, '---\nname: Runtime Agent\n---\n\nRuntime body');
+
+    const agentx = createFakeAgentx(tmpDir);
+    const result = await loadAgentInstructions(agentx, 'runtime.agent.md');
+
+    assert.equal(result, 'Runtime body');
   });
 
   it('should cache results on subsequent calls', async () => {

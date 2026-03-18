@@ -10,6 +10,8 @@ constraints:
   - "MUST test across at least 2 models for comparison"
   - "MUST NOT fabricate metrics, benchmarks, or evaluation results"
   - "MUST NOT approve model deployment without all quality gates passing"
+  - "MUST iterate until ALL done criteria pass, minimum iterations = 3"
+  - "MUST verify agentic loop completion before declaring implementation complete"
 boundaries:
   can_modify:
     - ".copilot-tracking/eval-reports/** (evaluation results)"
@@ -184,5 +186,36 @@ Generate side-by-side comparison:
 | Skipping safety testing | First adversarial input succeeds |
 | No baseline for regression | Cannot detect quality degradation after changes |
 | Evaluating on training data | Inflated scores, no generalization signal |
+
+## Iterative Quality Loop (MANDATORY)
+
+After completing initial work, iterate until ALL done criteria pass.
+Copilot runs this loop natively within its agentic session.
+
+### Loop Steps (repeat until all criteria met)
+
+1. **Run verification** -- execute the relevant checks for this role (see Done Criteria)
+2. **Evaluate results** -- if any check fails, identify root cause
+3. **Fix** -- address the failure
+4. **Re-run verification** -- confirm the fix works
+5. **Self-review** -- once all checks pass, spawn a same-role reviewer sub-agent:
+   - Reviewer evaluates with structured findings: HIGH, MEDIUM, LOW
+   - APPROVED: true when no HIGH or MEDIUM findings remain
+   - APPROVED: false when any HIGH or MEDIUM findings exist
+6. **Address findings** -- fix all HIGH and MEDIUM findings, then re-run from Step 1
+7. **Repeat** until APPROVED and all Done Criteria pass
+
+### Done Criteria
+
+Evaluation framework defined with structured rubrics (1-5 scale with criteria per level); judge validated against known-answer set (agreement > 0.6); multi-model comparison completed (primary + at least 1 alternative from a different provider); all quality gates passing; results documented in `.copilot-tracking/eval-reports/`.
+
+### Hard Gate (CLI)
+
+Before handing off, mark the loop complete:
+
+`.agentx/agentx.ps1 loop complete <issue>`
+
+The CLI blocks handoff with exit 1 if the loop state is not `complete`.
+
 
 

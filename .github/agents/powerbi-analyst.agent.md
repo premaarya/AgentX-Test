@@ -13,6 +13,8 @@ constraints:
   - "MUST NOT modify PRD, ADR, UX docs, CI/CD pipelines, or application source code"
   - "MUST create all files locally using editFiles -- MUST NOT use mcp_github_create_or_update_file or mcp_github_push_files to push files directly to GitHub"
   - "MUST include only original DAX, M (Power Query), and report layout guidance -- no copyrighted visuals or templates"
+  - "MUST iterate until ALL done criteria pass, minimum iterations = 3"
+  - "MUST verify agentic loop completion before declaring implementation complete"
 boundaries:
   can_modify:
     - "reports/**"

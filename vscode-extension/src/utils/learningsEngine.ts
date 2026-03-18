@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { readHarnessState } from './harnessState';
+import { resolveWorkspaceRuntimeAssetPath } from './runtimeAssets';
 import {
  CATEGORY_PREFERENCES,
  DEFAULT_QUERY,
@@ -229,7 +230,7 @@ export function renderRankedLearningsText(
 export function renderCaptureGuidanceMarkdown(root?: string): string {
  const guidePath = 'docs/guides/KNOWLEDGE-REVIEW-WORKFLOWS.md';
  const learningsPath = 'docs/artifacts/learnings/LEARNING-<issue>.md';
- const hasGuide = root ? fs.existsSync(path.join(root, guidePath)) : false;
+ const resolvedGuidePath = resolveWorkspaceRuntimeAssetPath(root, guidePath);
 
  const lines = [
   '**Knowledge Capture Guidance**',
@@ -248,8 +249,8 @@ export function renderCaptureGuidanceMarkdown(root?: string): string {
   '- Keep the flow advisory-first until stronger automation is proven.',
  ];
 
- if (hasGuide) {
-  lines.push('', `Reference guide: \`${guidePath}\``);
+ if (resolvedGuidePath) {
+  lines.push('', `Reference guide: \`${resolvedGuidePath}\``);
  }
 
  return lines.join('\n');

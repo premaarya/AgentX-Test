@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { AgentXContext } from '../agentxContext';
+import { resolveAgentDefinitionPath } from '../agentxContextInternals';
 
 /**
  * Cache of loaded agent instructions (markdown body, without frontmatter).
@@ -28,8 +29,8 @@ export async function loadAgentInstructions(
   const safeFileName = path.basename(agentFileName);
   if (safeFileName !== agentFileName) { return undefined; }
 
-  const filePath = path.join(root, '.github', 'agents', safeFileName);
-  if (!fs.existsSync(filePath)) { return undefined; }
+  const filePath = resolveAgentDefinitionPath(root, agentx.extensionContext?.extensionPath ?? '', safeFileName);
+  if (!filePath || !fs.existsSync(filePath)) { return undefined; }
 
   const content = fs.readFileSync(filePath, 'utf-8');
 

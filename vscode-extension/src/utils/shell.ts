@@ -53,7 +53,8 @@ export function resetShellCache(): void {
 export function execShell(
  command: string,
  cwd: string,
- shell: 'pwsh' | 'bash' = 'pwsh'
+ shell: 'pwsh' | 'bash' = 'pwsh',
+ envOverrides?: NodeJS.ProcessEnv,
 ): Promise<string> {
  return new Promise((resolve, reject) => {
  let shellPath: string;
@@ -75,7 +76,7 @@ export function execShell(
  shell: shellPath,
  maxBuffer: 1024 * 1024,
  timeout: 30_000,
- env: { ...process.env, NO_COLOR: '1' },
+ env: { ...process.env, ...envOverrides, NO_COLOR: '1' },
  };
 
  exec(command, options, (error, stdout, stderr) => {

@@ -4,7 +4,8 @@ import { runInitializeLocalRuntimeCommand } from './initializeCommandInternals';
 
 /**
  * Register the AgentX: Initialize Local Runtime command.
- * Installs the repo-local AgentX runtime, hooks, templates, and state files.
+ * Installs the repo-local AgentX runtime substrate used by run, loop,
+ * workflow, memory, and handoff features.
  * Remote providers are configured separately through adapter commands.
  */
 export function registerInitializeLocalRuntimeCommand(

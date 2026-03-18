@@ -12,6 +12,7 @@ constraints:
   - "MUST NOT skip any required role constraints, templates, skills, entry gates, or exit gates for the phase it is acting as"
   - "MUST read relevant SKILL.md files and existing artifacts before each phase begins"
   - "MUST validate prerequisites before every major phase transition"
+  - "MUST iterate until ALL done criteria pass, minimum iterations = 3"
   - "MUST verify agentic loop completion before declaring implementation complete"
   - "MUST escalate from simple execution to the full internal workflow when complexity is detected mid-stream"
 boundaries:

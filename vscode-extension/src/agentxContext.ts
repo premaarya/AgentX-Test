@@ -26,6 +26,7 @@ export type {
 } from './agentxContextTypes';
 
 const PENDING_CLARIFICATION_KEY = 'agentx.pendingClarification';
+const AGENTX_WORKSPACE_ROOT_ENV = 'AGENTX_WORKSPACE_ROOT';
 
 /**
  * Shared context for all AgentX extension components.
@@ -120,7 +121,7 @@ export class AgentXContext {
 
  /** Resolve the AgentX CLI command path for the current platform. */
  getCliCommand(): string {
-  return buildCliCommand(this.workspaceRoot, this.getShell());
+  return buildCliCommand(this.extensionContext.extensionPath, this.getShell());
  }
 
  /**
@@ -134,7 +135,9 @@ export class AgentXContext {
   const shell = this.getShell();
   const invocation = buildCliInvocation(cliPath, shell, subcommand, cliArgs);
 
-  return execShell(invocation.command, root, invocation.shellKind);
+  return execShell(invocation.command, root, invocation.shellKind, {
+   [AGENTX_WORKSPACE_ROOT_ENV]: root,
+  });
  }
 
  /**
@@ -153,7 +156,10 @@ export class AgentXContext {
   const shell = this.getShell();
   const invocation = buildCliInvocation(cliPath, shell, subcommand, cliArgs);
 
-  return execShellStreaming(invocation.command, root, invocation.shellKind, onLine, envOverrides);
+  return execShellStreaming(invocation.command, root, invocation.shellKind, onLine, {
+   ...envOverrides,
+   [AGENTX_WORKSPACE_ROOT_ENV]: root,
+  });
  }
 
  async getPendingClarification(): Promise<PendingClarificationState | undefined> {

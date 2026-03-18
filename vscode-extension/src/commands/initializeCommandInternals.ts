@@ -3,15 +3,10 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { AgentXContext } from '../agentxContext';
 import {
-  ARCHIVE_URL,
-  copyDirRecursive,
-  downloadFile,
-  ESSENTIAL_DIRS,
-  ESSENTIAL_FILES,
-  extractZip,
   mergeGitignore,
   promptWorkspaceRoot,
   readJsonWithComments,
+  RUNTIME_DIRS,
 } from './initializeInternals';
 import { syncDetectedAdoAdapter, syncDetectedGitHubAdapter } from './adaptersCommandInternals';
 import { checkAllDependencies } from '../utils/dependencyChecker';
@@ -55,74 +50,9 @@ export async function runInitializeLocalRuntimeCommand(
    cancellable: false,
   },
   async (progress) => {
-   const tmpDir = path.join(root, '.agentx-install-tmp');
-   const rawDir = path.join(root, '.agentx-install-raw');
-   const zipFile = path.join(root, '.agentx-install.zip');
-
    try {
-    progress.report({ message: 'Downloading AgentX...' });
-
-    for (const currentPath of [tmpDir, rawDir]) {
-     if (fs.existsSync(currentPath)) {
-      fs.rmSync(currentPath, { recursive: true, force: true });
-     }
-    }
-    if (fs.existsSync(zipFile)) {
-     fs.unlinkSync(zipFile);
-    }
-
-    await downloadFile(ARCHIVE_URL, zipFile);
-
-    progress.report({ message: 'Extracting essential files...', increment: 20 });
-    await extractZip(zipFile, rawDir);
-
-    const entries = fs.readdirSync(rawDir, { withFileTypes: true });
-    const archiveRoot = entries.find((entry) => entry.isDirectory());
-    if (!archiveRoot) {
-      throw new Error('Archive extraction failed - no root directory found.');
-    }
-    const extractedRoot = path.join(rawDir, archiveRoot.name);
-
-    fs.mkdirSync(tmpDir, { recursive: true });
-    for (const dir of ESSENTIAL_DIRS) {
-     const src = path.join(extractedRoot, dir);
-     if (fs.existsSync(src)) {
-      copyDirRecursive(src, path.join(tmpDir, dir));
-     }
-    }
-    for (const file of ESSENTIAL_FILES) {
-     const src = path.join(extractedRoot, file);
-     if (fs.existsSync(src)) {
-      const destFile = path.join(tmpDir, file);
-      fs.mkdirSync(path.dirname(destFile), { recursive: true });
-      fs.copyFileSync(src, destFile);
-     }
-    }
-
-    try {
-     fs.rmSync(rawDir, { recursive: true, force: true });
-    } catch {
-     // finally will retry
-    }
-    try {
-     fs.unlinkSync(zipFile);
-    } catch {
-     // finally will retry
-    }
-
-    progress.report({ message: 'Copying files...', increment: 30 });
-    copyDirRecursive(tmpDir, root, isUpgrade);
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-
-    progress.report({ message: 'Configuring runtime...', increment: 20 });
-    const runtimeDirs = [
-     '.agentx/state', '.agentx/digests',
-     'docs/artifacts/prd', 'docs/artifacts/adr', 'docs/artifacts/specs',
-     'docs/ux', 'docs/artifacts/reviews', 'docs/execution/plans', 'docs/execution/progress',
-     'docs/architecture',
-     'memories', 'memories/session',
-    ];
-    for (const dir of runtimeDirs) {
+    progress.report({ message: 'Creating workspace state...', increment: 40 });
+    for (const dir of RUNTIME_DIRS) {
      fs.mkdirSync(path.join(root, dir), { recursive: true });
     }
 
@@ -170,33 +100,8 @@ export async function runInitializeLocalRuntimeCommand(
      updatedAt: new Date().toISOString(),
     }, null, 2));
 
-    progress.report({ message: 'Setting up git...', increment: 10 });
+    progress.report({ message: 'Finalizing runtime...', increment: 30 });
     mergeGitignore(root);
-
-    try {
-     const { execShell: exec } = await import('../utils/shell');
-     const shell = process.platform === 'win32' ? 'pwsh' as const : 'bash' as const;
-     if (!fs.existsSync(path.join(root, '.git'))) {
-      await exec('git init --quiet', root, shell);
-     }
-     const hooksDir = path.join(root, '.git', 'hooks');
-     for (const hook of ['pre-commit', 'commit-msg']) {
-      const hookSrc = path.join(root, '.github', 'hooks', hook);
-      const hookDest = path.join(hooksDir, hook);
-      if (fs.existsSync(hookSrc)) {
-       fs.copyFileSync(hookSrc, hookDest);
-       if (process.platform !== 'win32') {
-        try { fs.chmodSync(hookDest, 0o755); } catch { /* best-effort */ }
-       }
-      }
-     }
-     const preCommitPs1 = path.join(root, '.github', 'hooks', 'pre-commit.ps1');
-     if (fs.existsSync(preCommitPs1)) {
-      fs.copyFileSync(preCommitPs1, path.join(hooksDir, 'pre-commit.ps1'));
-     }
-    } catch {
-     // Git not available - skip silently
-    }
 
     await syncDetectedGitHubAdapter(agentx);
     await syncDetectedAdoAdapter(agentx);
@@ -231,23 +136,6 @@ export async function runInitializeLocalRuntimeCommand(
    } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     vscode.window.showErrorMessage(`AgentX local runtime initialization failed: ${message}`);
-   } finally {
-    for (const currentPath of [tmpDir, rawDir]) {
-     try {
-      if (fs.existsSync(currentPath)) {
-       fs.rmSync(currentPath, { recursive: true, force: true });
-      }
-     } catch {
-      // ignore cleanup failures
-     }
-    }
-    try {
-     if (fs.existsSync(zipFile)) {
-      fs.unlinkSync(zipFile);
-     }
-    } catch {
-      // ignore cleanup failures
-    }
    }
   },
  );

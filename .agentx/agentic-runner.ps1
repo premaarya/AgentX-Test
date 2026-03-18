@@ -580,9 +580,33 @@ function Invoke-LlmChat(
 # Agent definition loader
 # ---------------------------------------------------------------------------
 
+function Get-AgentDefDirectories([string]$root) {
+    $installRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+    return @(
+        (Join-Path $root '.github' 'agents'),
+        (Join-Path $root '.agentx' 'runtime' 'agents'),
+        (Join-Path $installRoot '.github' 'agents')
+    )
+}
+
+function Resolve-AgentDefPath([string]$agentName, [string]$root) {
+    $fileName = if ($agentName -like '*.agent.md') { $agentName } else { "$agentName.agent.md" }
+    foreach ($agentsDir in (Get-AgentDefDirectories -root $root)) {
+        foreach ($candidate in @(
+            (Join-Path $agentsDir $fileName),
+            (Join-Path $agentsDir 'internal' $fileName)
+        )) {
+            if (Test-Path $candidate) {
+                return $candidate
+            }
+        }
+    }
+
+    return $null
+}
+
 function Read-AgentDef([string]$agentName, [string]$root) {
-    $agentsDir = Join-Path $root '.github' 'agents'
-    $file = Join-Path $agentsDir "$agentName.agent.md"
+    $file = Resolve-AgentDefPath -agentName $agentName -root $root
     if (-not (Test-Path $file)) { return $null }
 
     $content = Get-Content $file -Raw -Encoding utf8

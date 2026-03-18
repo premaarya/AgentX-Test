@@ -11,6 +11,8 @@ constraints:
   - "MUST NOT modify business logic without explicit approval"
   - "MUST create all files locally using editFiles -- MUST NOT use mcp_github_create_or_update_file or mcp_github_push_files to push files directly to GitHub"
   - "MUST revert auto-fixes if tests fail after applying them"
+  - "MUST iterate until ALL done criteria pass, minimum iterations = 3"
+  - "MUST verify agentic loop completion before declaring implementation complete"
 boundaries:
   can_modify:
     - "src/**"

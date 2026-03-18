@@ -1,17 +1,18 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs';
+import * as path from 'path';
 import { AgentXContext } from '../agentxContext';
 import {
  createTemplateTreeItem,
  parseTemplate,
- resolveTemplatesDir,
+ resolveTemplateFiles,
  TemplateDef,
  TemplateTreeItem,
 } from './templateTreeProviderInternals';
 
 /**
  * Tree data provider for the Templates sidebar view.
- * Shows available markdown templates from `.github/templates/`
+ * Shows available markdown templates from workspace overrides, hidden runtime defaults,
+ * or extension-bundled defaults.
  * with their input variables as expandable children.
  */
 export class TemplateTreeProvider implements vscode.TreeDataProvider<TemplateTreeItem> {
@@ -37,25 +38,19 @@ export class TemplateTreeProvider implements vscode.TreeDataProvider<TemplateTre
     return [];
    }
 
-  const templatesDir = resolveTemplatesDir(this.agentx);
-
-  if (!templatesDir) {
+   const templateFiles = resolveTemplateFiles(this.agentx);
+   if (templateFiles.length === 0) {
    return [TemplateTreeItem.info('No templates found')];
   }
 
-  const files = fs.readdirSync(templatesDir).filter((fileName) => fileName.endsWith('.md'));
-  if (files.length === 0) {
-   return [TemplateTreeItem.info('No templates found')];
-  }
-
-  return files.map(f => this.createTemplateItem(templatesDir, f));
+   return templateFiles.map((filePath) => this.createTemplateItem(filePath, path.basename(filePath)));
  }
 
  /**
   * Parse a template file and build a tree item with input variable children.
   */
- private createTemplateItem(dir: string, fileName: string): TemplateTreeItem {
-    return createTemplateTreeItem(dir, fileName);
+ private createTemplateItem(filePath: string, fileName: string): TemplateTreeItem {
+    return createTemplateTreeItem(filePath, fileName);
  }
 
  /**

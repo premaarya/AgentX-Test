@@ -308,6 +308,7 @@ describe('AgentXContext', () => {
 
       const ctx = new AgentXContext(fakeExtensionContext());
       const cli = ctx.getCliCommand();
+      assert.ok(cli.includes(path.join('.github', 'agentx', '.agentx')));
       if (process.platform === 'win32') {
         assert.ok(cli.endsWith('agentx.ps1'), 'should use PS1 on Windows');
       } else {
@@ -324,12 +325,14 @@ describe('AgentXContext', () => {
 
       const ctx = new AgentXContext(fakeExtensionContext());
       assert.ok(ctx.getCliCommand().endsWith('agentx.sh'));
+      assert.ok(ctx.getCliCommand().includes(path.join('.github', 'agentx', '.agentx')));
     });
 
-    it('should return empty string when no workspace root', () => {
+    it('should still resolve bundled runtime path when no workspace root', () => {
       __setWorkspaceFolders(undefined);
       const ctx = new AgentXContext(fakeExtensionContext());
-      assert.equal(ctx.getCliCommand(), '');
+      const cli = ctx.getCliCommand();
+      assert.ok(cli.includes(path.join('.github', 'agentx', '.agentx')));
     });
   });
 

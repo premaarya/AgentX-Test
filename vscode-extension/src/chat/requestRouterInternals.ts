@@ -48,9 +48,9 @@ function hasWorkspaceCliRuntime(agentx: AgentXContext): boolean {
 
 function renderMissingRuntimeMessage(): string {
   return [
-    '**AgentX CLI runtime is not available in this workspace.**',
+    '**AgentX workspace initialization is not available in this workspace.**',
     '',
-    'This workspace has an open folder, but it does not contain the local `.agentx` runtime needed for `run`, loop execution, or clarification resume.',
+    'This workspace has an open folder, but it has not been initialized with the `.agentx` state and artifact folders needed for `run`, loop execution, or clarification resume.',
     '',
     'To enable formal AgentX execution in this repo, run **AgentX: Initialize Local Runtime** first.',
   ].join('\n');

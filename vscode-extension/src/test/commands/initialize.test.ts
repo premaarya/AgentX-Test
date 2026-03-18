@@ -1,12 +1,9 @@
 import { strict as assert } from 'assert';
-import * as os from 'os';
-import * as path from 'path';
-import * as fs from 'fs';
 import * as sinon from 'sinon';
 import * as vscode from 'vscode';
 import { registerInitializeLocalRuntimeCommand } from '../../commands/initialize';
 import { runInitializeLocalRuntimeCommand } from '../../commands/initializeCommandInternals';
-import * as setupWizard from '../../commands/setupWizard';
+import { ESSENTIAL_DIRS, ESSENTIAL_FILES, RUNTIME_ASSET_DIRS, RUNTIME_DIRS } from '../../commands/initializeInternals';
 import { AgentXContext } from '../../agentxContext';
 
 // ---------------------------------------------------------------------------
@@ -119,37 +116,22 @@ describe('runInitializeLocalRuntimeCommand', () => {
     assert.ok(String(errorStub.firstCall.args[0]).includes('Open a workspace folder first'));
   });
 
-  it('should warn and stop when the silent precheck fails', async () => {
-    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'agentx-init-test-'));
-    (vscode.workspace as any).workspaceFolders = [
-      {
-        name: 'test-workspace',
-        uri: vscode.Uri.file(tempRoot),
-      },
-    ];
+  it('should keep Initialize scoped to minimal runtime assets', () => {
+    assert.deepEqual(ESSENTIAL_DIRS, []);
+    assert.deepEqual(ESSENTIAL_FILES, []);
+    assert.deepEqual(RUNTIME_ASSET_DIRS, []);
 
-    const precheckStub = sandbox.stub(setupWizard, 'runSilentInstall').resolves({
-      passed: false,
-      report: {
-        results: [],
-        healthy: false,
-        criticalCount: 1,
-        warningCount: 0,
-        timestamp: new Date().toISOString(),
-      },
-    });
-    const warningStub = sandbox.stub(vscode.window, 'showWarningMessage');
-    const quickPickStub = sandbox.stub(vscode.window, 'showQuickPick');
+    assert.ok(RUNTIME_DIRS.includes('.agentx/state'));
+    assert.ok(RUNTIME_DIRS.includes('.agentx/sessions'));
+    assert.ok(RUNTIME_DIRS.includes('docs/execution/plans'));
+    assert.ok(RUNTIME_DIRS.includes('docs/execution/progress'));
+    assert.ok(RUNTIME_DIRS.includes('docs/artifacts/reviews'));
+    assert.ok(RUNTIME_DIRS.includes('docs/artifacts/reviews/findings'));
+    assert.ok(RUNTIME_DIRS.includes('docs/artifacts/learnings'));
+    assert.ok(RUNTIME_DIRS.includes('memories/session'));
+    assert.ok(!RUNTIME_DIRS.includes('docs/guides'));
 
-    try {
-      await runInitializeLocalRuntimeCommand(fakeContext, fakeAgentx as unknown as AgentXContext);
-    } finally {
-      fs.rmSync(tempRoot, { recursive: true, force: true });
-    }
-
-    sinon.assert.calledOnce(precheckStub);
-    sinon.assert.calledOnce(warningStub);
-    sinon.assert.notCalled(quickPickStub);
-    assert.ok(String(warningStub.firstCall.args[0]).includes('Some required dependencies could not be installed'));
+    assert.ok(!RUNTIME_DIRS.includes('docs/architecture'));
+    assert.ok(!RUNTIME_DIRS.includes('.agentx/runtime'));
   });
 });

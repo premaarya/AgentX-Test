@@ -10,6 +10,8 @@ constraints:
   - "MUST track cost and latency alongside quality metrics"
   - "MUST NOT fabricate monitoring data or drift signals"
   - "MUST NOT disable alerting without documenting the reason"
+  - "MUST iterate until ALL done criteria pass, minimum iterations = 3"
+  - "MUST verify agentic loop completion before declaring implementation complete"
 boundaries:
   can_modify:
     - ".copilot-tracking/ops-monitor/** (monitoring configuration and reports)"
@@ -178,5 +180,36 @@ Baseline lifecycle:
 | Ignoring provider model updates | Silent behavior changes go undetected |
 | Single-signal alerting | One metric is noisy; correlate multiple signals |
 | No fallback activation monitoring | Provider outage goes undetected |
+
+## Iterative Quality Loop (MANDATORY)
+
+After completing initial work, iterate until ALL done criteria pass.
+Copilot runs this loop natively within its agentic session.
+
+### Loop Steps (repeat until all criteria met)
+
+1. **Run verification** -- execute the relevant checks for this role (see Done Criteria)
+2. **Evaluate results** -- if any check fails, identify root cause
+3. **Fix** -- address the failure
+4. **Re-run verification** -- confirm the fix works
+5. **Self-review** -- once all checks pass, spawn a same-role reviewer sub-agent:
+   - Reviewer evaluates with structured findings: HIGH, MEDIUM, LOW
+   - APPROVED: true when no HIGH or MEDIUM findings remain
+   - APPROVED: false when any HIGH or MEDIUM findings exist
+6. **Address findings** -- fix all HIGH and MEDIUM findings, then re-run from Step 1
+7. **Repeat** until APPROVED and all Done Criteria pass
+
+### Done Criteria
+
+OpenTelemetry tracing instrumented before agent creation; baselines saved from last known-good deployment; drift thresholds defined with statistical backing (not arbitrary values); P0-P3 alert tiers configured with response procedures; cost and latency tracking active alongside quality metrics; monitoring artifacts documented in `.copilot-tracking/ops-monitor/`.
+
+### Hard Gate (CLI)
+
+Before handing off, mark the loop complete:
+
+`.agentx/agentx.ps1 loop complete <issue>`
+
+The CLI blocks handoff with exit 1 if the loop state is not `complete`.
+
 
 

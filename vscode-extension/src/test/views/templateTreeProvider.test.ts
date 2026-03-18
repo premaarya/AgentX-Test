@@ -25,6 +25,16 @@ function createTemplatesDir(templates: Record<string, string>): string {
  return root;
 }
 
+function createRuntimeTemplatesDir(templates: Record<string, string>): string {
+ const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agentx-runtime-tmpl-'));
+ const dir = path.join(root, '.agentx', 'runtime', 'templates');
+ fs.mkdirSync(dir, { recursive: true });
+ for (const [name, content] of Object.entries(templates)) {
+  fs.writeFileSync(path.join(dir, name), content, 'utf-8');
+ }
+ return root;
+}
+
 describe('TemplateTreeProvider', () => {
  it('should return empty when no workspace root', async () => {
   const provider = new TemplateTreeProvider(createStubContext(undefined));
@@ -38,6 +48,31 @@ describe('TemplateTreeProvider', () => {
   const items = await provider.getChildren();
   assert.equal(items.length, 1);
   assert.ok((items[0].label as string).includes('No templates'));
+ });
+
+ it('should list templates from hidden runtime defaults when no workspace override exists', async () => {
+  const root = createRuntimeTemplatesDir({
+   'PRD-TEMPLATE.md': '---\ninputs:\n a:\n  description: "runtime"\n  required: true\n---\n# PRD',
+  });
+  const provider = new TemplateTreeProvider(createStubContext(root));
+  const items = await provider.getChildren();
+  assert.equal(items.length, 1);
+  assert.equal(items[0].label, 'PRD');
+  assert.ok((items[0].command!.arguments![0] as any).fsPath.includes(path.join('.agentx', 'runtime', 'templates')));
+ });
+
+ it('should prefer workspace template overrides over hidden runtime defaults', async () => {
+  const root = createTemplatesDir({
+   'PRD-TEMPLATE.md': '---\ninputs:\n a:\n  description: "workspace"\n  required: true\n---\n# PRD',
+  });
+  const runtimeDir = path.join(root, '.agentx', 'runtime', 'templates');
+  fs.mkdirSync(runtimeDir, { recursive: true });
+  fs.writeFileSync(path.join(runtimeDir, 'PRD-TEMPLATE.md'), '---\ninputs:\n a:\n  description: "runtime"\n  required: false\n---\n# PRD', 'utf-8');
+
+  const provider = new TemplateTreeProvider(createStubContext(root));
+  const items = await provider.getChildren();
+  assert.equal(items.length, 1);
+  assert.ok((items[0].command!.arguments![0] as any).fsPath.includes(path.join('.github', 'templates')));
  });
 
  it('should show info when templates dir is empty', async () => {

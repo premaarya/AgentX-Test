@@ -30,6 +30,7 @@ const compatibilityDocs = ['AGENTS.md', 'Skills.md', 'CONTRIBUTING.md', 'LICENSE
 const rootRuntimeFiles = [
     { src: path.join(repoRoot, '.agentx', 'agentx.ps1'), dest: path.join('.agentx', 'agentx.ps1') },
     { src: path.join(repoRoot, '.agentx', 'agentx-cli.ps1'), dest: path.join('.agentx', 'agentx-cli.ps1') },
+    { src: path.join(repoRoot, '.agentx', 'agentic-runner.ps1'), dest: path.join('.agentx', 'agentic-runner.ps1') },
     { src: path.join(repoRoot, '.agentx', 'agentx.sh'), dest: path.join('.agentx', 'agentx.sh') },
     { src: path.join(repoRoot, '.agentx', 'local-issue-manager.ps1'), dest: path.join('.agentx', 'local-issue-manager.ps1') },
     { src: path.join(repoRoot, '.agentx', 'local-issue-manager.sh'), dest: path.join('.agentx', 'local-issue-manager.sh') },

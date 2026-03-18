@@ -235,4 +235,35 @@ If GitHub API calls fail, permissions are insufficient, or issue context is uncl
 > **Local Mode**: In local mode, use .agentx/local-issue-manager.ps1 instead of GitHub MCP tools.
 > **Shared Protocols**: Follow [WORKFLOW.md](../../../docs/WORKFLOW.md#handoff-flow) for handoff workflow and agent communication.
 
+## Iterative Quality Loop (MANDATORY)
+
+After completing initial work, iterate until ALL done criteria pass.
+Copilot runs this loop natively within its agentic session.
+
+### Loop Steps (repeat until all criteria met)
+
+1. **Run verification** -- execute the relevant checks for this role (see Done Criteria)
+2. **Evaluate results** -- if any check fails, identify root cause
+3. **Fix** -- address the failure
+4. **Re-run verification** -- confirm the fix works
+5. **Self-review** -- once all checks pass, spawn a same-role reviewer sub-agent:
+   - Reviewer evaluates with structured findings: HIGH, MEDIUM, LOW
+   - APPROVED: true when no HIGH or MEDIUM findings remain
+   - APPROVED: false when any HIGH or MEDIUM findings exist
+6. **Address findings** -- fix all HIGH and MEDIUM findings, then re-run from Step 1
+7. **Repeat** until APPROVED and all Done Criteria pass
+
+### Done Criteria
+
+All requested GitHub operations completed (issues created, updated, closed, or labeled); duplicate check completed before creating any new issue; workflow state persisted to `.copilot-tracking/github-issues/`; summary provided with action counts; blocked or ambiguous items flagged for user attention.
+
+### Hard Gate (CLI)
+
+Before handing off, mark the loop complete:
+
+`.agentx/agentx.ps1 loop complete <issue>`
+
+The CLI blocks handoff with exit 1 if the loop state is not `complete`.
+
+
 
