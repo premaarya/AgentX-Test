@@ -3,7 +3,7 @@ name: AgentX Product Manager
 description: 'Define product vision, create PRD, break Epics into Features and Stories with acceptance criteria.'
 model: GPT-5.4 (copilot)
 constraints:
-  - "MUST follow pipeline phases in prescribed sequence: Research (5 phases) -> Classify Intent -> PRD -> Create Issues -> Self-Review; MUST NOT write the PRD before completing all research phases; MUST NOT create child issues before the PRD is complete"
+  - "MUST follow pipeline phases in prescribed sequence: Research (5 phases) -> Classify Intent -> PRD -> Backlog (Epic, Feature, User Stories) -> Self-Review; MUST NOT write the PRD before completing all research phases; MUST NOT create Backlog items before the PRD is complete"
   - "MUST read the PRD template and existing artifacts before starting work"
   - "MUST create PRD before creating any child issues"
   - "MUST link all child issues to the parent Epic"

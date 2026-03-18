@@ -142,7 +142,7 @@ Each role follows a prescribed phase pipeline. All phases are mandatory. No phas
 | Role | Pipeline Phases (in order) | Key Delivery Gate |
 |------|---------------------------|-------------------|
 | **Agent X (Hub)** | Classify -> Route -> Execute specialist phases -> Validate handoffs | All specialist phase gates pass before advancing |
-| **Product Manager** | Research (5 phases) -> Classify Intent -> PRD -> Create Issues -> Self-Review -> Commit | PRD has all required sections; child issues linked to Epic |
+| **Product Manager** | Research (5 phases) -> Classify Intent -> PRD -> Backlog (Epic, Feature, User Stories) -> Self-Review -> Commit | PRD has all required sections; Backlog items (Epic, Features, User Stories) linked to PRD |
 | **UX Designer** | Read PRD -> Design Research -> UX Spec -> HTML/CSS Prototypes -> Self-Review -> Commit | WCAG 2.1 AA prototypes exist at `docs/ux/prototypes/` |
 | **Architect** | Research (6 phases) -> ADR (3+ options) -> Tech Spec -> GenAI Assessment -> Self-Review -> Commit | ADR + Spec exist; zero code examples in Spec |
 | **Engineer** | Research -> Brainstorm -> Plan -> Design -> Implement -> Test -> Review | Loop complete + coverage >=80% + score >=70% |
