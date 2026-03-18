@@ -3336,11 +3336,13 @@ function Invoke-AgentHookCmd {
         Write-Host "$($C.g)  [PASS] $agent -> $status$issueRef$($C.n)"
     } elseif ($phase -eq 'finish') {
         # -----------------------------------------------------------------
-        # QUALITY GATE (engineer only): block finish unless quality loop
-        # is status=complete.  active=true AND cancelled both block.
-        # Other agent roles (reviewer, architect, etc.) are not affected.
+        # QUALITY GATE: block finish unless quality loop is status=complete.
+        # active=true AND cancelled both block.
+        # Applies to: engineer, reviewer, auto-fix-reviewer, and all other
+        # roles that run the iterative quality loop.
         # -----------------------------------------------------------------
-        if ($agent -eq 'engineer') {
+        $loopGatedRoles = @('engineer', 'reviewer', 'auto-fix-reviewer', 'architect', 'data-scientist', 'tester', 'devops-engineer', 'product-manager', 'ux-designer', 'consulting-research', 'powerbi-analyst', 'agile-coach')
+        if ($agent -in $loopGatedRoles) {
             $loopState = Read-JsonFile $Script:LOOP_STATE_FILE
             if ($loopState -and $loopState.active -eq $true) {
                 Write-Host "$($C.r)  [FAIL] QUALITY LOOP STILL ACTIVE -- cannot finish yet.$($C.n)"

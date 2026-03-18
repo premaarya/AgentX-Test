@@ -216,6 +216,66 @@ if [ -n "$APPROVED_REVIEWS" ]; then
   done
 fi
 
+# ---------------------------------------------------------------
+# Check 12: Deliverable structure validation (pipeline phase compliance)
+# Validates key artifacts have required sections proving phases were completed.
+# PRD: must have Problem Statement / Goals / Requirements sections.
+# ADR: must evaluate at least 3 options.
+# UX spec: must have a corresponding prototype file.
+# ---------------------------------------------------------------
+
+# PRD structure check
+PRD_FILES=$(git diff --cached --name-only | grep '^docs/artifacts/prd/PRD-.*\.md$')
+if [ -n "$PRD_FILES" ]; then
+  for PRD in $PRD_FILES; do
+    if [ -f "$PRD" ]; then
+      if ! grep -qiE '##[[:space:]]*(Problem Statement|Goals|Requirements|Acceptance Criteria|User Stories)' "$PRD" 2>/dev/null; then
+        echo -e "${YELLOW}[WARN] PRD missing required sections: $PRD${NC}"
+        echo "  PRD MUST include: Problem Statement, Goals, Requirements, or Acceptance Criteria."
+        echo "  Complete the Research phase before writing the PRD."
+      else
+        echo -e "${GREEN}[PASS] PRD structure valid: $PRD${NC}"
+      fi
+    fi
+  done
+fi
+
+# ADR structure check -- must evaluate at least 3 options
+ADR_FILES=$(git diff --cached --name-only | grep '^docs/artifacts/adr/ADR-.*\.md$')
+if [ -n "$ADR_FILES" ]; then
+  for ADR in $ADR_FILES; do
+    if [ -f "$ADR" ]; then
+      OPTION_COUNT=$(grep -ciE '###[[:space:]]*Option[[:space:]]+[0-9]|##[[:space:]]*Option[[:space:]]*[0-9]' "$ADR" 2>/dev/null)
+      if [ -z "$OPTION_COUNT" ] || [ "$OPTION_COUNT" -lt 3 ] 2>/dev/null; then
+        echo -e "${YELLOW}[WARN] ADR evaluates fewer than 3 options: $ADR${NC}"
+        echo "  Architect MUST evaluate at least 3 options. Complete the research phase first."
+      else
+        echo -e "${GREEN}[PASS] ADR evaluates $OPTION_COUNT options: $ADR${NC}"
+      fi
+    fi
+  done
+fi
+
+# UX spec check -- must have a corresponding prototype file
+UX_SPEC_FILES=$(git diff --cached --name-only | grep '^docs/ux/UX-.*\.md$')
+if [ -n "$UX_SPEC_FILES" ]; then
+  for UX_SPEC in $UX_SPEC_FILES; do
+    if [ -f "$UX_SPEC" ]; then
+      ISSUE_NUM=$(echo "$UX_SPEC" | grep -oE '[0-9]+' | head -1)
+      if [ -n "$ISSUE_NUM" ]; then
+        PROTO_EXISTS=$(find docs/ux/prototypes -name "*${ISSUE_NUM}*" 2>/dev/null | head -1)
+        if [ -z "$PROTO_EXISTS" ]; then
+          echo -e "${YELLOW}[WARN] UX spec staged without a matching prototype: $UX_SPEC${NC}"
+          echo "  UX Designer MUST create HTML/CSS prototypes at docs/ux/prototypes/ before handoff."
+          echo "  Complete the HTML/CSS Prototypes phase before committing the UX spec."
+        else
+          echo -e "${GREEN}[PASS] UX prototype exists for spec: $PROTO_EXISTS${NC}"
+        fi
+      fi
+    fi
+  done
+fi
+
 if [ $FAILED -eq 1 ]; then
  echo -e "${RED}[FAIL] Pre-commit checks FAILED${NC}"
  exit 1

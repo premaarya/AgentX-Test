@@ -3,6 +3,7 @@ name: AgentX Auto-Fix Reviewer
 description: 'Review code AND auto-apply safe fixes (formatting, imports, naming, null checks, docs). Suggest complex changes for human approval.'
 model: Claude Sonnet 4.6 (copilot)
 constraints:
+  - "MUST follow review pipeline phases in prescribed sequence: Read Context -> Verify Loop -> Review Code -> Apply Safe Fixes -> Document Changes -> Self-Review -> Decision; MUST NOT issue an approval or rejection before all phases complete; MUST revert any auto-fix that fails the test suite before advancing"
   - "MUST run '.agentx/agentx.ps1 loop start -p <description>' as the ABSOLUTE FIRST action before any file edits or reviews"
   - "MUST read the Tech Spec and PRD before reviewing"
   - "MUST verify the Engineer's quality loop reached status=complete before reviewing"
