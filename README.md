@@ -154,7 +154,8 @@ What initialization does for the current workspace:
 
 - creates the local AgentX runtime folders and state files
 - prepares repo-local execution artifacts such as plans, progress, reviews, and learnings
-- makes the bundled AgentX runtime available to the workspace without requiring a full manual repo install
+- writes stable `.agentx/*` workspace entrypoints that delegate into the bundled runtime
+- keeps the executable runtime bundled with AgentX while workspace state remains local to the repo
 
 Repeat this step for every new workspace where you want AgentX to run.
 
@@ -239,7 +240,7 @@ Build a task-tracker app for small teams. Start by creating the PRD, then produc
 - `.github/agents/` - Individual agent definitions
 - `.github/skills/` - Reusable implementation knowledge
 - `vscode-extension/` - VS Code extension source
-- `.agentx/` - CLI runtime and local workflow utilities
+- `.agentx/` - workspace launchers and local workflow state
 
 ## Read More
 

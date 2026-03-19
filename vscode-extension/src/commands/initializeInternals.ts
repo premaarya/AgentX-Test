@@ -17,6 +17,13 @@ export const RUNTIME_ASSET_DIRS: Array<{ source: string; destination: string }> 
   },
 ];
 
+const WORKSPACE_WRAPPER_FILES = [
+  { relativePath: path.join('.agentx', 'agentx.ps1'), entryFile: 'agentx.ps1', shell: 'pwsh' as const },
+  { relativePath: path.join('.agentx', 'local-issue-manager.ps1'), entryFile: 'local-issue-manager.ps1', shell: 'pwsh' as const },
+  { relativePath: path.join('.agentx', 'agentx.sh'), entryFile: 'agentx.sh', shell: 'bash' as const },
+  { relativePath: path.join('.agentx', 'local-issue-manager.sh'), entryFile: 'local-issue-manager.sh', shell: 'bash' as const },
+];
+
 export const ESSENTIAL_FILES: string[] = [];
 
 export const RUNTIME_DIRS = [
@@ -135,6 +142,135 @@ export function copyBundledRuntimeAssets(extensionRoot: string, workspaceRoot: s
       path.join(workspaceRoot, asset.destination),
       false,
     );
+  }
+}
+
+function toPosixPath(filePath: string): string {
+  return filePath.replace(/\\/g, '/');
+}
+
+function quotePowerShellLiteral(value: string): string {
+  return value.replace(/'/g, "''");
+}
+
+function quoteShellLiteral(value: string): string {
+  return value.replace(/'/g, `'"'"'`);
+}
+
+function renderPowerShellWrapper(entryFile: string, extensionRoot: string): string {
+  const runtimeRelativePath = quotePowerShellLiteral(path.join('.github', 'agentx', '.agentx', entryFile));
+  const preferredExtensionRoot = quotePowerShellLiteral(extensionRoot);
+
+  return [
+    '#!/usr/bin/env pwsh',
+    "$ErrorActionPreference = 'Stop'",
+    "$workspaceRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path",
+    '',
+    'function Resolve-AgentXExtensionRoot {',
+    '  $candidatePaths = @(',
+    '    $env:AGENTX_EXTENSION_ROOT',
+    `    '${preferredExtensionRoot}'`,
+    '  ) | Where-Object { $_ -and (Test-Path $_) }',
+    '',
+    '  foreach ($candidate in $candidatePaths) {',
+    '    return (Resolve-Path $candidate).Path',
+    '  }',
+    '',
+    '  $searchRoots = @(',
+    "    (Join-Path $HOME '.vscode\\extensions'),",
+    "    (Join-Path $HOME '.vscode-insiders\\extensions')",
+    '  )',
+    '',
+    '  foreach ($searchRoot in $searchRoots) {',
+    '    if (-not (Test-Path $searchRoot)) { continue }',
+    '    $matches = @(',
+    "      Get-ChildItem -Path $searchRoot -Directory -Filter 'jnpiyush.agentx-*' -ErrorAction SilentlyContinue",
+    '      | Sort-Object Name -Descending',
+    '    )',
+    '',
+    '    foreach ($match in $matches) {',
+    `      $runtimeEntry = Join-Path $match.FullName '${runtimeRelativePath}'`,
+    '      if (Test-Path $runtimeEntry) {',
+    '        return $match.FullName',
+    '      }',
+    '    }',
+    '  }',
+    '',
+    "  throw 'AgentX extension runtime not found. Reinstall the AgentX extension or set AGENTX_EXTENSION_ROOT.'",
+    '}',
+    '',
+    '$extensionRoot = Resolve-AgentXExtensionRoot',
+    '$env:AGENTX_WORKSPACE_ROOT = $workspaceRoot',
+    `& (Join-Path $extensionRoot '${runtimeRelativePath}') @args`,
+    '$succeeded = $?',
+    '$exitCode = if (Test-Path variable:LASTEXITCODE) { $LASTEXITCODE } else { 0 }',
+    'if ($succeeded) {',
+    '  $exitCode = 0',
+    '} elseif ($exitCode -eq 0) {',
+    '  $exitCode = 1',
+    '}',
+    'exit $exitCode',
+    '',
+  ].join('\n');
+}
+
+function renderBashWrapper(entryFile: string, extensionRoot: string): string {
+  const runtimeRelativePath = quoteShellLiteral(toPosixPath(path.join('.github', 'agentx', '.agentx', entryFile)));
+  const preferredExtensionRoot = quoteShellLiteral(toPosixPath(extensionRoot));
+
+  return [
+    '#!/usr/bin/env bash',
+    'set -euo pipefail',
+    '',
+    'workspace_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"',
+    `runtime_relative='${runtimeRelativePath}'`,
+    '',
+    'resolve_agentx_extension_root() {',
+    '  local candidate=""',
+    '',
+    '  if [[ -n "${AGENTX_EXTENSION_ROOT:-}" && -f "${AGENTX_EXTENSION_ROOT}/${runtime_relative}" ]]; then',
+    "    printf '%s\\n' \"$AGENTX_EXTENSION_ROOT\"",
+    '    return 0',
+    '  fi',
+    '',
+    `  candidate='${preferredExtensionRoot}'`,
+    '  if [[ -f "${candidate}/${runtime_relative}" ]]; then',
+    "    printf '%s\\n' \"$candidate\"",
+    '    return 0',
+    '  fi',
+    '',
+    '  local search_root=""',
+    '  local match=""',
+    '  for search_root in "$HOME/.vscode/extensions" "$HOME/.vscode-insiders/extensions"; do',
+    '    [[ -d "$search_root" ]] || continue',
+    '    while IFS= read -r match; do',
+    '      if [[ -f "${match}/${runtime_relative}" ]]; then',
+    "        printf '%s\\n' \"$match\"",
+    '        return 0',
+    '      fi',
+    "    done < <(find \"$search_root\" -maxdepth 1 -mindepth 1 -type d -name 'jnpiyush.agentx-*' | sort -r)",
+    '  done',
+    '',
+    "  echo 'AgentX extension runtime not found. Reinstall the AgentX extension or set AGENTX_EXTENSION_ROOT.' >&2",
+    '  return 1',
+    '}',
+    '',
+    'extension_root="$(resolve_agentx_extension_root)"',
+    'export AGENTX_WORKSPACE_ROOT="$workspace_root"',
+    'exec "${extension_root}/${runtime_relative}" "$@"',
+    '',
+  ].join('\n');
+}
+
+export function writeWorkspaceRuntimeWrappers(extensionRoot: string, workspaceRoot: string): void {
+  for (const wrapper of WORKSPACE_WRAPPER_FILES) {
+    const targetPath = path.join(workspaceRoot, wrapper.relativePath);
+    const content = wrapper.shell === 'pwsh'
+      ? renderPowerShellWrapper(wrapper.entryFile, extensionRoot)
+      : renderBashWrapper(wrapper.entryFile, extensionRoot);
+
+    fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+    fs.writeFileSync(targetPath, content, 'utf-8');
   }
 }
 

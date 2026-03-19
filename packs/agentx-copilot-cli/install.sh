@@ -21,6 +21,31 @@ SOURCE=""
 INCLUDE_CLI=false
 FORCE=false
 DRY_RUN=false
+RUNTIME_BUNDLE_ROOT=".github/agentx/.agentx"
+RUNTIME_BUNDLE_FILES=(
+  "agentx.ps1"
+  "agentx.sh"
+  "agentx-cli.ps1"
+  "agentic-runner.ps1"
+  "local-issue-manager.ps1"
+  "local-issue-manager.sh"
+)
+RUNTIME_STATE_DIRS=(
+  ".agentx/state"
+  ".agentx/digests"
+  ".agentx/sessions"
+  "docs/artifacts/prd"
+  "docs/artifacts/adr"
+  "docs/artifacts/specs"
+  "docs/artifacts/reviews"
+  "docs/artifacts/reviews/findings"
+  "docs/artifacts/learnings"
+  "docs/ux"
+  "docs/execution/plans"
+  "docs/execution/progress"
+  "memories"
+  "memories/session"
+)
 
 # -- Colors ----------------------------------------------------------------
 
@@ -146,6 +171,180 @@ copy_file() {
   TOTAL_COPIED=$((TOTAL_COPIED + 1))
 }
 
+write_file_if_needed() {
+  local dest="$1"
+  local content="$2"
+
+  if [ -f "$dest" ] && [ "$FORCE" = false ]; then
+    TOTAL_SKIPPED=$((TOTAL_SKIPPED + 1))
+    return
+  fi
+
+  if [ "$DRY_RUN" = true ]; then
+    echo "  Would write: ${dest#$TARGET/}"
+    TOTAL_COPIED=$((TOTAL_COPIED + 1))
+    return
+  fi
+
+  mkdir -p "$(dirname "$dest")"
+  printf '%s' "$content" > "$dest"
+  TOTAL_COPIED=$((TOTAL_COPIED + 1))
+}
+
+install_cli_runtime_bundle() {
+  local copied_before=$TOTAL_COPIED
+  local skipped_before=$TOTAL_SKIPPED
+
+  for file_name in "${RUNTIME_BUNDLE_FILES[@]}"; do
+    copy_file ".agentx/$file_name" "$RUNTIME_BUNDLE_ROOT/$file_name"
+  done
+
+  ok "CLI runtime: $((TOTAL_COPIED - copied_before)) copied, $((TOTAL_SKIPPED - skipped_before)) skipped"
+}
+
+install_starter_memories() {
+  copy_tree "$SOURCE/.agentx/templates/memories" "$TARGET/memories" "Starter memories"
+}
+
+initialize_workspace_cli_state() {
+  local now
+  now="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+  for dir in "${RUNTIME_STATE_DIRS[@]}"; do
+    if [ "$DRY_RUN" = false ]; then
+      mkdir -p "$TARGET/$dir"
+    fi
+  done
+
+  local status_path="$TARGET/.agentx/state/agent-status.json"
+  if [ ! -f "$status_path" ]; then
+    if [ "$DRY_RUN" = true ]; then
+      echo "  Would write: .agentx/state/agent-status.json"
+    else
+      cat > "$status_path" <<'EOF'
+{
+  "product-manager": { "status": "idle", "issue": null, "lastActivity": null },
+  "ux-designer": { "status": "idle", "issue": null, "lastActivity": null },
+  "architect": { "status": "idle", "issue": null, "lastActivity": null },
+  "engineer": { "status": "idle", "issue": null, "lastActivity": null },
+  "reviewer": { "status": "idle", "issue": null, "lastActivity": null },
+  "devops-engineer": { "status": "idle", "issue": null, "lastActivity": null },
+  "auto-fix-reviewer": { "status": "idle", "issue": null, "lastActivity": null },
+  "data-scientist": { "status": "idle", "issue": null, "lastActivity": null },
+  "tester": { "status": "idle", "issue": null, "lastActivity": null },
+  "consulting-research": { "status": "idle", "issue": null, "lastActivity": null },
+  "powerbi-analyst": { "status": "idle", "issue": null, "lastActivity": null }
+}
+EOF
+    fi
+  fi
+
+  local created="$now"
+  local next_issue_number=1
+  if [ -f "$TARGET/.agentx/config.json" ]; then
+    local existing_created
+    local existing_next_issue
+    existing_created="$(sed -n 's/.*"created"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$TARGET/.agentx/config.json" | head -n 1)"
+    existing_next_issue="$(sed -n 's/.*"nextIssueNumber"[[:space:]]*:[[:space:]]*\([0-9][0-9]*\).*/\1/p' "$TARGET/.agentx/config.json" | head -n 1)"
+    if [ -n "$existing_created" ]; then
+      created="$existing_created"
+    fi
+    if [ -n "$existing_next_issue" ]; then
+      next_issue_number="$existing_next_issue"
+    fi
+    if [ -z "$created" ]; then
+      created="$now"
+    fi
+  fi
+
+  local installed_at="$now"
+  if [ -f "$TARGET/.agentx/version.json" ]; then
+    local existing_installed_at
+    existing_installed_at="$(sed -n 's/.*"installedAt"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$TARGET/.agentx/version.json" | head -n 1)"
+    if [ -n "$existing_installed_at" ]; then
+      installed_at="$existing_installed_at"
+    fi
+  fi
+
+  if [ "$DRY_RUN" = false ]; then
+    cat > "$TARGET/.agentx/config.json" <<EOF
+{
+  "provider": "local",
+  "integration": "local",
+  "mode": "local",
+  "enforceIssues": false,
+  "nextIssueNumber": $next_issue_number,
+  "created": "$created",
+  "updatedAt": "$now"
+}
+EOF
+
+    cat > "$TARGET/.agentx/version.json" <<EOF
+{
+  "version": "$VERSION",
+  "provider": "local",
+  "mode": "local",
+  "integration": "local",
+  "installedAt": "$installed_at",
+  "updatedAt": "$now"
+}
+EOF
+  fi
+}
+
+install_workspace_cli_wrappers() {
+  local agentx_ps1='#!/usr/bin/env pwsh
+$ErrorActionPreference = '\''Stop'\''
+$workspaceRoot = (Resolve-Path (Join-Path $PSScriptRoot '\''..'\'')).Path
+$env:AGENTX_WORKSPACE_ROOT = $workspaceRoot
+& (Join-Path $workspaceRoot '\''.github\\agentx\\.agentx\\agentx.ps1'\'') @args
+$succeeded = $?
+$exitCode = if (Test-Path variable:LASTEXITCODE) { $LASTEXITCODE } else { 0 }
+if ($succeeded) {
+ $exitCode = 0
+} elseif ($exitCode -eq 0) {
+ $exitCode = 1
+}
+exit $exitCode
+'
+  local issue_ps1='#!/usr/bin/env pwsh
+$ErrorActionPreference = '\''Stop'\''
+$workspaceRoot = (Resolve-Path (Join-Path $PSScriptRoot '\''..'\'')).Path
+$env:AGENTX_WORKSPACE_ROOT = $workspaceRoot
+& (Join-Path $workspaceRoot '\''.github\\agentx\\.agentx\\local-issue-manager.ps1'\'') @args
+$succeeded = $?
+$exitCode = if (Test-Path variable:LASTEXITCODE) { $LASTEXITCODE } else { 0 }
+if ($succeeded) {
+ $exitCode = 0
+} elseif ($exitCode -eq 0) {
+ $exitCode = 1
+}
+exit $exitCode
+'
+  local agentx_sh='#!/usr/bin/env bash
+set -euo pipefail
+
+workspace_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+export AGENTX_WORKSPACE_ROOT="$workspace_root"
+exec "$workspace_root/.github/agentx/.agentx/agentx.sh" "$@"
+'
+  local issue_sh='#!/usr/bin/env bash
+set -euo pipefail
+
+workspace_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+export AGENTX_WORKSPACE_ROOT="$workspace_root"
+exec "$workspace_root/.github/agentx/.agentx/local-issue-manager.sh" "$@"
+'
+
+  local copied_before=$TOTAL_COPIED
+  local skipped_before=$TOTAL_SKIPPED
+  write_file_if_needed "$TARGET/.agentx/agentx.ps1" "$agentx_ps1"
+  write_file_if_needed "$TARGET/.agentx/local-issue-manager.ps1" "$issue_ps1"
+  write_file_if_needed "$TARGET/.agentx/agentx.sh" "$agentx_sh"
+  write_file_if_needed "$TARGET/.agentx/local-issue-manager.sh" "$issue_sh"
+  ok "CLI wrappers: $((TOTAL_COPIED - copied_before)) copied, $((TOTAL_SKIPPED - skipped_before)) skipped"
+}
+
 # -- Banner ----------------------------------------------------------------
 
 echo ""
@@ -188,12 +387,15 @@ copy_file ".github/agent-delegation.md" ".github/agent-delegation.md"
 ok "Docs: copied reference files"
 
 if [ "$INCLUDE_CLI" = true ]; then
-  info "Installing CLI utilities..."
-  copy_file ".agentx/agentx.ps1" ".agentx/agentx.ps1"
-  copy_file ".agentx/agentx.sh" ".agentx/agentx.sh"
-  copy_file ".agentx/local-issue-manager.ps1" ".agentx/local-issue-manager.ps1"
-  copy_file ".agentx/local-issue-manager.sh" ".agentx/local-issue-manager.sh"
-  ok "CLI: copied CLI utilities"
+  info "Installing CLI runtime bundle..."
+  install_cli_runtime_bundle
+
+  info "Seeding CLI workspace state..."
+  initialize_workspace_cli_state
+  install_starter_memories
+
+  info "Writing workspace CLI wrappers..."
+  install_workspace_cli_wrappers
 fi
 
 # -- Version stamp ---------------------------------------------------------
@@ -227,7 +429,7 @@ echo " Skills        : 64 across 10 categories"
 echo " Instructions  : 7 (auto-applied by file pattern)"
 echo " Prompts       : 12 reusable templates"
 if [ "$INCLUDE_CLI" = true ]; then
-  echo " CLI utilities : 4 scripts (.agentx/)"
+  echo " CLI utilities : 4 wrappers (.agentx/) + bundled runtime (.github/agentx/.agentx)"
 fi
 echo ""
 echo -e "${YELLOW} Limitations (Copilot CLI vs VS Code):${NC}"

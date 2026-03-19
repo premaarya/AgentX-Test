@@ -15,3 +15,4 @@
 - 2026-03-19: Loop-state tests that hardcode old timestamps will start failing once stale-loop logic is added; use relative recent timestamps in fixtures unless the test is intentionally exercising staleness.
 - 2026-03-19: Tests passing does not prove a large block replacement is structurally correct; verify both the removal of old identifiers and the presence of the new declaration.
 - 2026-03-19: On Windows, `bash -n install.sh` can fail on a CRLF-encoded script even when the shell logic is valid; normalize carriage returns in-memory when doing a syntax-only validation pass from PowerShell.
+- 2026-03-19: When generating PowerShell wrappers from installer code, escaped dollars inside single-quoted template lines survive into the output as literal backticks; run the generated wrapper at least once, not just the installer, to catch this class of failure.

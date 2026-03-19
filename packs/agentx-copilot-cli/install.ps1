@@ -73,6 +73,45 @@ function Write-Skip { param([string]$msg) Write-Host "[SKIP] $msg" -ForegroundCo
 function Write-Info { param([string]$msg) Write-Host "[INFO] $msg" -ForegroundColor Cyan }
 function Write-Err { param([string]$msg) Write-Host "[FAIL] $msg" -ForegroundColor Red }
 
+$RuntimeBundleRoot = Join-Path '.github' 'agentx' '.agentx'
+$RuntimeBundleFiles = @(
+ 'agentx.ps1',
+ 'agentx.sh',
+ 'agentx-cli.ps1',
+ 'agentic-runner.ps1',
+ 'local-issue-manager.ps1',
+ 'local-issue-manager.sh'
+)
+$RuntimeStateDirs = @(
+ '.agentx/state',
+ '.agentx/digests',
+ '.agentx/sessions',
+ 'docs/artifacts/prd',
+ 'docs/artifacts/adr',
+ 'docs/artifacts/specs',
+ 'docs/artifacts/reviews',
+ 'docs/artifacts/reviews/findings',
+ 'docs/artifacts/learnings',
+ 'docs/ux',
+ 'docs/execution/plans',
+ 'docs/execution/progress',
+ 'memories',
+ 'memories/session'
+)
+$StarterAgentStatus = @{
+ 'product-manager' = @{ status = 'idle'; issue = $null; lastActivity = $null }
+ 'ux-designer' = @{ status = 'idle'; issue = $null; lastActivity = $null }
+ 'architect' = @{ status = 'idle'; issue = $null; lastActivity = $null }
+ 'engineer' = @{ status = 'idle'; issue = $null; lastActivity = $null }
+ 'reviewer' = @{ status = 'idle'; issue = $null; lastActivity = $null }
+ 'devops-engineer' = @{ status = 'idle'; issue = $null; lastActivity = $null }
+ 'auto-fix-reviewer' = @{ status = 'idle'; issue = $null; lastActivity = $null }
+ 'data-scientist' = @{ status = 'idle'; issue = $null; lastActivity = $null }
+ 'tester' = @{ status = 'idle'; issue = $null; lastActivity = $null }
+ 'consulting-research' = @{ status = 'idle'; issue = $null; lastActivity = $null }
+ 'powerbi-analyst' = @{ status = 'idle'; issue = $null; lastActivity = $null }
+}
+
 function Copy-Tree {
  param(
   [string]$SrcDir,
@@ -104,6 +143,199 @@ function Copy-Tree {
    }
   }
  }
+ return @{ Copied = $copied; Skipped = $skipped }
+}
+
+function Read-JsonFile {
+ param([string]$Path)
+ if (-not (Test-Path $Path)) {
+  return $null
+ }
+
+ try {
+  return Get-Content $Path -Raw -Encoding utf8 | ConvertFrom-Json
+ } catch {
+  return $null
+ }
+}
+
+function Copy-FileIfNeeded {
+ param(
+  [string]$SrcPath,
+  [string]$DestPath,
+  [switch]$Overwrite
+ )
+
+ if (-not (Test-Path $SrcPath)) {
+  Write-Err "Source not found: $SrcPath"
+  return @{ Copied = 0; Skipped = 0 }
+ }
+
+ $destDir = Split-Path $DestPath -Parent
+ if (-not (Test-Path $destDir)) {
+  if ($PSCmdlet.ShouldProcess($destDir, 'Create directory')) {
+   New-Item -ItemType Directory -Path $destDir -Force | Out-Null
+  }
+ }
+
+ if ((Test-Path $DestPath) -and -not $Overwrite) {
+  return @{ Copied = 0; Skipped = 1 }
+ }
+
+ if ($PSCmdlet.ShouldProcess($DestPath, 'Copy file')) {
+  Copy-Item -Path $SrcPath -Destination $DestPath -Force
+ }
+
+ return @{ Copied = 1; Skipped = 0 }
+}
+
+function Write-FileIfNeeded {
+ param(
+  [string]$Path,
+  [string]$Content,
+  [switch]$Overwrite
+ )
+
+ $parentDir = Split-Path $Path -Parent
+ if (-not (Test-Path $parentDir)) {
+  if ($PSCmdlet.ShouldProcess($parentDir, 'Create directory')) {
+   New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
+  }
+ }
+
+ if ((Test-Path $Path) -and -not $Overwrite) {
+  return @{ Copied = 0; Skipped = 1 }
+ }
+
+ if ($PSCmdlet.ShouldProcess($Path, 'Write file')) {
+  Set-Content -Path $Path -Value $Content -Encoding utf8
+ }
+
+ return @{ Copied = 1; Skipped = 0 }
+}
+
+function Get-PowerShellWrapperContent {
+ param([string]$EntryFile)
+
+ $runtimeRelative = ".github\\agentx\\.agentx\\$EntryFile"
+ return @(
+  '#!/usr/bin/env pwsh',
+  "`$ErrorActionPreference = 'Stop'",
+  "`$workspaceRoot = (Resolve-Path (Join-Path `$PSScriptRoot '..')).Path",
+  "`$env:AGENTX_WORKSPACE_ROOT = `$workspaceRoot",
+  "& (Join-Path `$workspaceRoot '$runtimeRelative') @args",
+  "`$succeeded = `$?",
+  "`$exitCode = if (Test-Path variable:LASTEXITCODE) { `$LASTEXITCODE } else { 0 }",
+  'if ($succeeded) {',
+  ' $exitCode = 0',
+  '} elseif ($exitCode -eq 0) {',
+  ' $exitCode = 1',
+  '}',
+  'exit $exitCode',
+  ''
+ ) -join "`n"
+}
+
+function Get-BashWrapperContent {
+ param([string]$EntryFile)
+
+ return @(
+  '#!/usr/bin/env bash',
+  'set -euo pipefail',
+  '',
+  'workspace_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"',
+  'export AGENTX_WORKSPACE_ROOT="$workspace_root"',
+  ('exec "$workspace_root/.github/agentx/.agentx/' + $EntryFile + '" "$@"'),
+  ''
+ ) -join "`n"
+}
+
+function Install-CliRuntimeBundle {
+ param([string]$SourceRoot, [string]$TargetRoot)
+
+ $copied = 0
+ $skipped = 0
+ foreach ($fileName in $RuntimeBundleFiles) {
+  $result = Copy-FileIfNeeded -SrcPath (Join-Path $SourceRoot '.agentx' $fileName) -DestPath (Join-Path $TargetRoot $RuntimeBundleRoot $fileName) -Overwrite:$Force
+  $copied += $result.Copied
+  $skipped += $result.Skipped
+ }
+
+ return @{ Copied = $copied; Skipped = $skipped }
+}
+
+function Install-StarterMemories {
+ param([string]$SourceRoot, [string]$TargetRoot)
+
+ return Copy-Tree -SrcDir (Join-Path $SourceRoot '.agentx' 'templates' 'memories') -DestDir (Join-Path $TargetRoot 'memories')
+}
+
+function Initialize-WorkspaceCliState {
+ param([string]$TargetRoot)
+
+ foreach ($dir in $RuntimeStateDirs) {
+  $fullPath = Join-Path $TargetRoot $dir
+  if (-not (Test-Path $fullPath)) {
+   if ($PSCmdlet.ShouldProcess($fullPath, 'Create directory')) {
+    New-Item -ItemType Directory -Path $fullPath -Force | Out-Null
+   }
+  }
+ }
+
+ $existingConfig = Read-JsonFile (Join-Path $TargetRoot '.agentx' 'config.json')
+ $existingVersion = Read-JsonFile (Join-Path $TargetRoot '.agentx' 'version.json')
+ $statusPath = Join-Path $TargetRoot '.agentx' 'state' 'agent-status.json'
+
+ if (-not (Test-Path $statusPath)) {
+  if ($PSCmdlet.ShouldProcess($statusPath, 'Write agent status')) {
+   $StarterAgentStatus | ConvertTo-Json -Depth 4 | Set-Content -Path $statusPath -Encoding utf8
+  }
+ }
+
+ $config = [ordered]@{
+  provider = 'local'
+  integration = 'local'
+  mode = 'local'
+  enforceIssues = $false
+  nextIssueNumber = if ($existingConfig -and $existingConfig.nextIssueNumber) { [int]$existingConfig.nextIssueNumber } else { 1 }
+  created = if ($existingConfig -and $existingConfig.created) { $existingConfig.created } else { (Get-Date).ToUniversalTime().ToString('o') }
+  updatedAt = (Get-Date).ToUniversalTime().ToString('o')
+ }
+ if ($PSCmdlet.ShouldProcess((Join-Path $TargetRoot '.agentx' 'config.json'), 'Write config')) {
+  $config | ConvertTo-Json -Depth 4 | Set-Content -Path (Join-Path $TargetRoot '.agentx' 'config.json') -Encoding utf8
+ }
+
+ $version = [ordered]@{
+  version = '8.4.6'
+  provider = 'local'
+  mode = 'local'
+  integration = 'local'
+  installedAt = if ($existingVersion -and $existingVersion.installedAt) { $existingVersion.installedAt } else { (Get-Date).ToUniversalTime().ToString('o') }
+  updatedAt = (Get-Date).ToUniversalTime().ToString('o')
+ }
+ if ($PSCmdlet.ShouldProcess((Join-Path $TargetRoot '.agentx' 'version.json'), 'Write version')) {
+  $version | ConvertTo-Json -Depth 4 | Set-Content -Path (Join-Path $TargetRoot '.agentx' 'version.json') -Encoding utf8
+ }
+}
+
+function Install-WorkspaceCliWrappers {
+ param([string]$TargetRoot)
+
+ $copied = 0
+ $skipped = 0
+ $wrappers = @(
+  @{ Path = Join-Path $TargetRoot '.agentx' 'agentx.ps1'; Content = Get-PowerShellWrapperContent -EntryFile 'agentx.ps1' },
+  @{ Path = Join-Path $TargetRoot '.agentx' 'local-issue-manager.ps1'; Content = Get-PowerShellWrapperContent -EntryFile 'local-issue-manager.ps1' },
+  @{ Path = Join-Path $TargetRoot '.agentx' 'agentx.sh'; Content = Get-BashWrapperContent -EntryFile 'agentx.sh' },
+  @{ Path = Join-Path $TargetRoot '.agentx' 'local-issue-manager.sh'; Content = Get-BashWrapperContent -EntryFile 'local-issue-manager.sh' }
+ )
+
+ foreach ($wrapper in $wrappers) {
+  $result = Write-FileIfNeeded -Path $wrapper.Path -Content $wrapper.Content -Overwrite:$Force
+  $copied += $result.Copied
+  $skipped += $result.Skipped
+ }
+
  return @{ Copied = $copied; Skipped = $skipped }
 }
 
@@ -229,36 +461,21 @@ Write-OK "Docs: $docsCopied copied, $docsSkipped skipped"
 
 # CLI utilities (optional)
 if ($IncludeCli) {
- Write-Info "Installing CLI utilities..."
- $cliFiles = @(
-  @{ Src = ".agentx/agentx.ps1"; Dest = ".agentx/agentx.ps1" },
-  @{ Src = ".agentx/agentx.sh"; Dest = ".agentx/agentx.sh" },
-  @{ Src = ".agentx/local-issue-manager.ps1"; Dest = ".agentx/local-issue-manager.ps1" },
-  @{ Src = ".agentx/local-issue-manager.sh"; Dest = ".agentx/local-issue-manager.sh" }
- )
- $cliCopied = 0
- $cliSkipped = 0
- foreach ($cli in $cliFiles) {
-  $srcPath = Join-Path $Source $cli.Src
-  $destPath = Join-Path $Target $cli.Dest
-  if (-not (Test-Path $srcPath)) { continue }
-  $destDir = Split-Path $destPath -Parent
-  if (-not (Test-Path $destDir)) {
-   if ($PSCmdlet.ShouldProcess($destDir, "Create directory")) {
-    New-Item -ItemType Directory -Path $destDir -Force | Out-Null
-   }
-  }
-  if ((Test-Path $destPath) -and -not $Force) {
-   $cliSkipped++
-  } else {
-   if ($PSCmdlet.ShouldProcess($destPath, "Copy file")) {
-    Copy-Item -Path $srcPath -Destination $destPath -Force
-    $cliCopied++
-   }
-  }
- }
- $totalCopied += $cliCopied; $totalSkipped += $cliSkipped
- Write-OK "CLI: $cliCopied copied, $cliSkipped skipped"
+ Write-Info "Installing CLI runtime bundle..."
+ $runtimeResult = Install-CliRuntimeBundle -SourceRoot $Source -TargetRoot $Target
+ $totalCopied += $runtimeResult.Copied; $totalSkipped += $runtimeResult.Skipped
+ Write-OK "CLI runtime: $($runtimeResult.Copied) copied, $($runtimeResult.Skipped) skipped"
+
+ Write-Info "Seeding CLI workspace state..."
+ Initialize-WorkspaceCliState -TargetRoot $Target
+ $memoryResult = Install-StarterMemories -SourceRoot $Source -TargetRoot $Target
+ $totalCopied += $memoryResult.Copied; $totalSkipped += $memoryResult.Skipped
+ Write-OK "Starter memories: $($memoryResult.Copied) copied, $($memoryResult.Skipped) skipped"
+
+ Write-Info "Writing workspace CLI wrappers..."
+ $wrapperResult = Install-WorkspaceCliWrappers -TargetRoot $Target
+ $totalCopied += $wrapperResult.Copied; $totalSkipped += $wrapperResult.Skipped
+ Write-OK "CLI wrappers: $($wrapperResult.Copied) copied, $($wrapperResult.Skipped) skipped"
 }
 
 # -- Write version stamp ----------------------------------------------------
@@ -294,7 +511,7 @@ Write-Host " Skills        : 64 across 10 categories" -ForegroundColor White
 Write-Host " Instructions  : 7 (auto-applied by file pattern)" -ForegroundColor White
 Write-Host " Prompts       : 12 reusable templates" -ForegroundColor White
 if ($IncludeCli) {
- Write-Host " CLI utilities : 4 scripts (.agentx/)" -ForegroundColor White
+ Write-Host " CLI utilities : 4 wrappers (.agentx/) + bundled runtime (.github/agentx/.agentx)" -ForegroundColor White
 }
 Write-Host ""
 Write-Host " Limitations (Copilot CLI vs VS Code):" -ForegroundColor Yellow

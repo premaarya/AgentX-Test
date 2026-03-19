@@ -8,6 +8,7 @@ import {
   promptWorkspaceRoot,
   readJsonWithComments,
   RUNTIME_DIRS,
+  writeWorkspaceRuntimeWrappers,
 } from './initializeInternals';
 import { syncDetectedAdoAdapter, syncDetectedGitHubAdapter } from './adaptersCommandInternals';
 import { checkAllDependencies } from '../utils/dependencyChecker';
@@ -56,7 +57,8 @@ export async function runInitializeLocalRuntimeCommand(
     for (const dir of RUNTIME_DIRS) {
      fs.mkdirSync(path.join(root, dir), { recursive: true });
     }
-      copyBundledRuntimeAssets(context.extensionUri.fsPath, root);
+    copyBundledRuntimeAssets(context.extensionUri.fsPath, root);
+    writeWorkspaceRuntimeWrappers(context.extensionUri.fsPath, root);
 
     const versionFile = path.join(root, '.agentx', 'version.json');
     const previousVersion = isUpgrade ? readJsonWithComments<ExistingVersionStamp>(versionFile) : undefined;

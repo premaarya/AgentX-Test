@@ -12,6 +12,7 @@ import {
   ESSENTIAL_FILES,
   RUNTIME_ASSET_DIRS,
   RUNTIME_DIRS,
+  writeWorkspaceRuntimeWrappers,
 } from '../../commands/initializeInternals';
 import { AgentXContext } from '../../agentxContext';
 
@@ -173,6 +174,76 @@ describe('runInitializeLocalRuntimeCommand', () => {
         fs.readFileSync(path.join(workspaceMemories, 'pitfalls.md'), 'utf8'),
         'existing pitfall\n',
       );
+    } finally {
+      fs.rmSync(extensionRoot, { recursive: true, force: true });
+      fs.rmSync(workspaceRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('should write local runtime wrappers that delegate to the installed extension runtime', () => {
+    const extensionRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'agentx-ext-'));
+    const workspaceRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'agentx-workspace-'));
+
+    try {
+      writeWorkspaceRuntimeWrappers(extensionRoot, workspaceRoot);
+
+      const powerShellLauncher = fs.readFileSync(path.join(workspaceRoot, '.agentx', 'agentx.ps1'), 'utf8');
+      const issuePowerShellLauncher = fs.readFileSync(path.join(workspaceRoot, '.agentx', 'local-issue-manager.ps1'), 'utf8');
+      const bashLauncher = fs.readFileSync(path.join(workspaceRoot, '.agentx', 'agentx.sh'), 'utf8');
+      const issueBashLauncher = fs.readFileSync(path.join(workspaceRoot, '.agentx', 'local-issue-manager.sh'), 'utf8');
+
+      assert.ok(powerShellLauncher.includes('$env:AGENTX_WORKSPACE_ROOT = $workspaceRoot'));
+      assert.ok(powerShellLauncher.includes(extensionRoot));
+      assert.ok(powerShellLauncher.includes(path.join('.github', 'agentx', '.agentx', 'agentx.ps1')));
+
+      assert.ok(issuePowerShellLauncher.includes(path.join('.github', 'agentx', '.agentx', 'local-issue-manager.ps1')));
+
+      assert.ok(bashLauncher.includes('export AGENTX_WORKSPACE_ROOT="$workspace_root"'));
+      assert.ok(bashLauncher.includes(extensionRoot.replace(/\\/g, '/')));
+      assert.ok(bashLauncher.includes('.github/agentx/.agentx/agentx.sh'));
+
+      assert.ok(issueBashLauncher.includes('.github/agentx/.agentx/local-issue-manager.sh'));
+    } finally {
+      fs.rmSync(extensionRoot, { recursive: true, force: true });
+      fs.rmSync(workspaceRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('should create runtime wrappers during local runtime initialization', async () => {
+    const workspaceRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'agentx-workspace-'));
+    const extensionRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'agentx-ext-'));
+    const executeCommandStub = sandbox.stub(vscode.commands, 'executeCommand').resolves(undefined);
+    const infoStub = sandbox.stub(vscode.window, 'showInformationMessage');
+    sandbox.stub(vscode.window, 'withProgress').callsFake(async (_options, task) => task({ report: () => undefined }, {} as never));
+
+    const commandAgentx = {
+      invalidateCache: sandbox.stub(),
+      githubConnected: false,
+      adoConnected: false,
+      workspaceRoot: undefined,
+      firstWorkspaceFolder: undefined,
+    } as unknown as AgentXContext;
+
+    (vscode.workspace as any).workspaceFolders = [
+      { name: 'workspace', uri: vscode.Uri.file(workspaceRoot), index: 0 },
+    ];
+
+    try {
+      await runInitializeLocalRuntimeCommand(
+        {
+          ...fakeContext,
+          extensionUri: vscode.Uri.file(extensionRoot),
+          extension: { packageJSON: { version: '8.4.6' } },
+        } as vscode.ExtensionContext,
+        commandAgentx,
+      );
+
+      assert.ok(fs.existsSync(path.join(workspaceRoot, '.agentx', 'agentx.ps1')));
+      assert.ok(fs.existsSync(path.join(workspaceRoot, '.agentx', 'local-issue-manager.ps1')));
+      assert.ok(fs.existsSync(path.join(workspaceRoot, '.agentx', 'agentx.sh')));
+      assert.ok(fs.existsSync(path.join(workspaceRoot, '.agentx', 'local-issue-manager.sh')));
+      sinon.assert.calledWith(infoStub, 'AgentX: Local runtime initialized.');
+      assert.ok(executeCommandStub.calledWith('agentx.refresh'));
     } finally {
       fs.rmSync(extensionRoot, { recursive: true, force: true });
       fs.rmSync(workspaceRoot, { recursive: true, force: true });

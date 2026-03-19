@@ -37,3 +37,5 @@
 - 2026-03-17: In `.agentx/config.json`, treat `adapters.github` and `adapters.ado` as additive metadata for local-first workspaces; do not auto-switch `provider` just because a repo remote or adapter exists.
 - 2026-03-19: Treat `loop complete` as a pre-handoff hard gate, not a user-prompted post-condition.
 - 2026-03-19: After replacing a large code block, search for removed identifiers and the new declaration before trusting tests alone.
+- 2026-03-19: For zero-copy workspace bootstrap, keep mutable state in the workspace but generate thin `.agentx` launchers that resolve the latest installed `jnpiyush.agentx-*` extension runtime and export `AGENTX_WORKSPACE_ROOT` before delegation.
+- 2026-03-19: For standalone CLI packs, keep the same visible `.agentx/*` launcher contract but point those wrappers at a hidden bundled runtime path such as `.github/agentx/.agentx` so the executable bits can be updated without changing workspace command paths.

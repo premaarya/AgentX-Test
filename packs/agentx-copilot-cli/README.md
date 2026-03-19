@@ -11,7 +11,7 @@
 | Instructions | 7 | Auto-applied coding guidelines by file pattern |
 | Prompts | 12 | Reusable prompt templates |
 | Templates | 8 | PRD, ADR, Spec, UX, Review, Security, Progress, Exec Plan |
-| CLI Utilities | 4 | Optional `.agentx/` scripts (agentx.ps1, agentx.sh, etc.) |
+| CLI Utilities | 4 | Optional `.agentx/` wrappers backed by a bundled hidden runtime |
 
 ## Installation
 
@@ -27,7 +27,7 @@ pwsh AgentX/packs/agentx-copilot-cli/install.ps1
 # Install into a specific workspace
 pwsh AgentX/packs/agentx-copilot-cli/install.ps1 -Target /path/to/my-project
 
-# Include CLI utilities (.agentx/ scripts)
+# Include CLI utilities (workspace wrappers + bundled runtime)
 pwsh AgentX/packs/agentx-copilot-cli/install.ps1 -IncludeCli
 
 # Preview without copying
@@ -49,7 +49,7 @@ bash AgentX/packs/agentx-copilot-cli/install.sh
 # Install into a specific workspace
 bash AgentX/packs/agentx-copilot-cli/install.sh -t /path/to/my-project
 
-# Include CLI utilities
+# Include CLI utilities (workspace wrappers + bundled runtime)
 bash AgentX/packs/agentx-copilot-cli/install.sh -c
 
 # Preview without copying
@@ -89,16 +89,32 @@ your-project/
     templates/                 # 8 document templates
     schemas/                   # Validation schemas
     .agentx-cli-plugin.json   # Version stamp
+    agentx/
+      .agentx/                 # Hidden bundled CLI runtime (only if --include-cli / -c)
+        agentx.ps1
+        agentx.sh
+        agentx-cli.ps1
+        agentic-runner.ps1
+        local-issue-manager.ps1
+        local-issue-manager.sh
   AGENTS.md                    # Agent routing map
   Skills.md                    # Skills index
   docs/
     WORKFLOW.md                # Workflow reference
   .agentx/                     # Only if --include-cli / -c
-    agentx.ps1
-    agentx.sh
-    local-issue-manager.ps1
-    local-issue-manager.sh
+    agentx.ps1                 # Workspace wrapper -> bundled runtime
+    agentx.sh                  # Workspace wrapper -> bundled runtime
+    local-issue-manager.ps1    # Workspace wrapper -> bundled runtime
+    local-issue-manager.sh     # Workspace wrapper -> bundled runtime
+    config.json                # Local CLI state
+    version.json               # Local CLI version stamp
+    state/
+    digests/
+    sessions/
+  memories/                    # Starter memory files (only if --include-cli / -c)
 ```
+
+When you install with `--include-cli` or `-c`, the plugin seeds a complete local runtime shape: workspace state lives under `.agentx/`, while the executable implementation is bundled under `.github/agentx/.agentx/`. The visible `.agentx/*` scripts are stable launchers that set `AGENTX_WORKSPACE_ROOT` and delegate into that bundled runtime.
 
 ## Usage with Copilot CLI
 
@@ -122,7 +138,7 @@ gh copilot suggest "review this PR using the code-review prompt template"
 | Quality loop | Layer 1 (sidebar) + Layer 2 (body) + Layer 3 (CLI) | Layer 2 (body) + Layer 3 (CLI) |
 | Skills & Instructions | Auto-loaded by file pattern | Auto-loaded by file pattern |
 | Prompt templates | Available in chat | Available as copilot context |
-| CLI utilities | Built-in commands | Optional (--include-cli) |
+| CLI utilities | Built-in commands | Optional wrappers + bundled runtime (--include-cli) |
 | Memory system | Git-backed observation store | Not available |
 
 ### Known Limitations (GAP-19)
@@ -150,8 +166,10 @@ Remove the installed directories from your workspace:
 ```bash
 rm -rf .github/agents .github/skills .github/instructions .github/prompts
 rm -rf .github/templates .github/schemas .github/.agentx-cli-plugin.json
+rm -rf .github/agentx
 rm -f AGENTS.md Skills.md docs/WORKFLOW.md
 rm -rf .agentx  # if CLI utilities were installed
+rm -rf memories  # if starter memories were installed with CLI utilities
 ```
 
 ## Version

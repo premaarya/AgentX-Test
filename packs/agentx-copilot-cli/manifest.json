@@ -16,7 +16,7 @@
   "prerequisites": {
     "copilotCli": ">=1.0.0",
     "powershell": ">=7.0",
-    "note": "This plugin does NOT require the AgentX VS Code extension. It is a standalone CLI distribution."
+    "note": "This plugin does NOT require the AgentX VS Code extension. It is a standalone CLI distribution that can seed a bundled local CLI runtime into the target workspace."
   },
   "artifacts": {
     "agents": [
@@ -139,6 +139,14 @@
       ".agentx/local-issue-manager.ps1",
       ".agentx/local-issue-manager.sh"
     ],
+    "runtime": [
+      ".github/agentx/.agentx/agentx.ps1",
+      ".github/agentx/.agentx/agentx.sh",
+      ".github/agentx/.agentx/agentx-cli.ps1",
+      ".github/agentx/.agentx/agentic-runner.ps1",
+      ".github/agentx/.agentx/local-issue-manager.ps1",
+      ".github/agentx/.agentx/local-issue-manager.sh"
+    ],
     "supporting": [
       ".github/agent-delegation.md",
       ".github/schemas/agent-frontmatter.schema.json",
@@ -152,7 +160,7 @@
     "skillLibrary": "64 production code skills across 10 categories",
     "instructionFiles": "7 auto-applied instruction files for language-specific patterns",
     "promptTemplates": "12 reusable prompt templates for common workflows",
-    "cliUtilities": "PowerShell/Bash scripts for issue tracking, loop management, and workflow",
+    "cliUtilities": "Workspace wrapper scripts plus a bundled hidden runtime for issue tracking, loop management, and workflow",
     "iterativeLoop": "Quality loop enforcement via CLI hard gate (Layer 3)"
   },
   "limitations": {
@@ -164,7 +172,7 @@
   "install": {
     "powershell": "pwsh packs/agentx-copilot-cli/install.ps1",
     "bash": "bash packs/agentx-copilot-cli/install.sh",
-    "note": "Installer copies agents, skills, instructions, and prompts into the target workspace .github/ directory."
+    "note": "Installer copies agents, skills, instructions, prompts, and optional wrapper-backed CLI runtime assets into the target workspace."
   },
   "dependencies": []
 }
