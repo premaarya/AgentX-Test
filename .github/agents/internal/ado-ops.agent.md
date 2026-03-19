@@ -27,6 +27,16 @@ boundaries:
     - "docs/artifacts/reviews/** (review documents)"
     - ".github/workflows/** (CI/CD pipelines)"
 tools:
+  - codebase
+  - editFiles
+  - search
+  - changes
+  - runCommands
+  - problems
+  - usages
+  - fetch
+  - think
+  - github/*
   - ado/search_workitem
   - ado/wit_get_work_item
   - ado/wit_get_work_items_batch_by_ids
@@ -46,7 +56,6 @@ tools:
   - ado/wit_add_work_item_comment
   - ado/wit_list_work_item_revisions
   - ado/core_get_identity_ids
-  - search
   - read
   - edit/createFile
   - edit/createDirectory

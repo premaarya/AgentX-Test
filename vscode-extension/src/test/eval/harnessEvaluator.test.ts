@@ -12,6 +12,10 @@ function createWorkspaceRoot(): string {
   return root;
 }
 
+function createRecentTimestamp(): string {
+  return new Date().toISOString();
+}
+
 function createAgentxStub(root: string) {
   return {
     workspaceRoot: root,
@@ -33,6 +37,7 @@ function createAgentxStub(root: string) {
 describe('harness evaluator', () => {
   it('should score fully observed, complete quality artifacts', () => {
     const root = createWorkspaceRoot();
+    const recentTimestamp = createRecentTimestamp();
     fs.writeFileSync(path.join(root, 'docs', 'execution', 'plans', 'EXEC-PLAN-1.md'), '# Plan', 'utf-8');
     fs.writeFileSync(path.join(root, 'docs', 'execution', 'progress', 'EXEC-PLAN-1.md'), '# Progress', 'utf-8');
     fs.writeFileSync(path.join(root, '.agentx', 'state', 'loop-state.json'), JSON.stringify({
@@ -42,8 +47,8 @@ describe('harness evaluator', () => {
       iteration: 3,
       maxIterations: 10,
       completionCriteria: 'TASK_COMPLETE',
-      startedAt: '2026-03-09T10:00:00Z',
-      lastIterationAt: '2026-03-09T10:05:00Z',
+      startedAt: recentTimestamp,
+      lastIterationAt: recentTimestamp,
       history: [],
     }), 'utf-8');
     fs.writeFileSync(path.join(root, '.agentx', 'state', 'harness-state.json'), JSON.stringify({
@@ -53,8 +58,8 @@ describe('harness evaluator', () => {
         title: 'Implement evaluator',
         taskType: 'story',
         status: 'complete',
-        startedAt: '2026-03-09T10:00:00Z',
-        updatedAt: '2026-03-09T10:05:00Z',
+        startedAt: recentTimestamp,
+        updatedAt: recentTimestamp,
       }],
       turns: [],
       items: [],
@@ -63,7 +68,7 @@ describe('harness evaluator', () => {
         threadId: 'thread-1',
         evidenceType: 'completion',
         summary: 'Completed evaluator',
-        createdAt: '2026-03-09T10:05:00Z',
+        createdAt: recentTimestamp,
       }],
     }), 'utf-8');
 

@@ -167,7 +167,7 @@ AgentX exposes the compound-engineering loop directly in VS Code instead of leav
 - Quality sidebar: `Compound loop`, `Create learning capture`, `Agent-native review`, `Review findings`
 - Command palette equivalents exist for each of the same surfaces under the `AgentX:` prefix
 
-## New In 8.4.5
+## New In 8.4.6
 
 - Explicit `brainstorm`, `compound`, and `create learning capture` surfaces in chat, sidebars, and commands
 - Ranked curated learnings for planning and review entry points

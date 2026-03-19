@@ -481,6 +481,30 @@
     ],
     "chatPromptFiles": [
       {
+        "path": "./.github/agentx/prompts/ado-add-work-item.prompt.md"
+      },
+      {
+        "path": "./.github/agentx/prompts/ado-create-pull-request.prompt.md"
+      },
+      {
+        "path": "./.github/agentx/prompts/ado-discover-work-items.prompt.md"
+      },
+      {
+        "path": "./.github/agentx/prompts/ado-get-build-info.prompt.md"
+      },
+      {
+        "path": "./.github/agentx/prompts/ado-process-my-work-items-for-task-planning.prompt.md"
+      },
+      {
+        "path": "./.github/agentx/prompts/ado-sprint-plan.prompt.md"
+      },
+      {
+        "path": "./.github/agentx/prompts/ado-triage-work-items.prompt.md"
+      },
+      {
+        "path": "./.github/agentx/prompts/ado-update-wit-items.prompt.md"
+      },
+      {
         "path": "./.github/agentx/prompts/ai-agent.prompt.md"
       },
       {

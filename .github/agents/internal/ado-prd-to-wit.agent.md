@@ -19,6 +19,16 @@ boundaries:
     - "docs/artifacts/prd/** (PRD documents)"
     - "Azure DevOps Work Items (read-only in this agent)"
 tools:
+  - codebase
+  - editFiles
+  - search
+  - changes
+  - runCommands
+  - problems
+  - usages
+  - fetch
+  - think
+  - github/*
   - ado/search_workitem
   - ado/wit_get_work_item
   - ado/wit_get_work_items_for_iteration
@@ -26,7 +36,6 @@ tools:
   - ado/wit_list_backlogs
   - ado/wit_list_work_item_comments
   - ado/work_list_team_iterations
-  - search
   - read
   - edit/createDirectory
   - edit/createFile
