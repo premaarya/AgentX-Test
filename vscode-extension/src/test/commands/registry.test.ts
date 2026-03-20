@@ -30,6 +30,9 @@ describe('registerAgentXCommands', () => {
     assert.ok(registerCommand.calledWith('agentx.generateDigest'));
     assert.ok(registerCommand.calledWith('agentx.loop'));
     assert.ok(registerCommand.calledWith('agentx.showAgentNativeReview'));
+    assert.ok(registerCommand.calledWith('agentx.showAIEvaluationStatus'));
+    assert.ok(registerCommand.calledWith('agentx.scaffoldAIEvaluationContract'));
+    assert.ok(registerCommand.calledWith('agentx.runAIEvaluation'));
     assert.ok(registerCommand.calledWith('agentx.showTaskBundles'));
     assert.ok(registerCommand.calledWith('agentx.showIssue'));
     assert.ok(registerCommand.calledWith('agentx.showPendingClarification'));

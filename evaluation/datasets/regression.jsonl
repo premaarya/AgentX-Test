@@ -1,0 +1,5 @@
+{"id":"bug-1","input":"Fix login timeout errors in the local issue manager when the network is slow.","expected":"type:bug","tags":["happy","bug"]}
+{"id":"docs-1","input":"Document how the local runtime wrapper and starter memories are initialized.","expected":"type:docs","tags":["happy","docs"]}
+{"id":"story-1","input":"Add a command that shows AI evaluation status in the VS Code extension.","expected":"type:story","tags":["happy","story"]}
+{"id":"spike-1","input":"Investigate whether AI evaluation reports should surface in the Quality sidebar before implementation.","expected":"type:spike","tags":["edge","research"]}
+{"id":"devops-1","input":"Create a GitHub Actions workflow that validates markdown links and token budgets on pull requests.","expected":"type:devops","tags":["edge","devops"]}

@@ -1,5 +1,5 @@
 ---
-description: 'Compressed skill index for AI agents. 67 skills across 10 categories. Load max 3-4 per task.'
+description: 'Compressed skill index for AI agents. 69 skills across 10 categories. Load max 3-4 per task.'
 ---
 
 # Production Code Skills Index
@@ -12,7 +12,7 @@ description: 'Compressed skill index for AI agents. 67 skills across 10 categori
 
 **Loading order**: Router -> instruction (auto) -> this index -> pick skills -> `read_file` them.
 
-**Anti-pattern**: Never load all 67 skills. Use Quick Reference below.
+**Anti-pattern**: Never load all 69 skills. Use Quick Reference below.
 
 ---
 
@@ -53,11 +53,13 @@ description: 'Compressed skill index for AI agents. 67 skills across 10 categori
 | **Financial Services Advisory** | [Financial Services](.github/skills/domain/financial-services/SKILL.md), [Documentation](.github/skills/development/documentation/SKILL.md) |
 | **Audit & Assurance Advisory** | [Audit & Assurance](.github/skills/domain/audit-assurance/SKILL.md), [Documentation](.github/skills/development/documentation/SKILL.md) |
 | **Tax Advisory** | [Tax](.github/skills/domain/tax/SKILL.md), [Documentation](.github/skills/development/documentation/SKILL.md) |
+| **CLM Advisory** | [CLM](.github/skills/domain/clm/SKILL.md), [Legal](.github/skills/domain/legal/SKILL.md), [Documentation](.github/skills/development/documentation/SKILL.md) |
+| **Corporate Governance Advisory** | [Corporate Governance](.github/skills/domain/corporate-governance/SKILL.md), [Legal](.github/skills/domain/legal/SKILL.md), [Documentation](.github/skills/development/documentation/SKILL.md) |
 | **Legal Advisory** | [Legal](.github/skills/domain/legal/SKILL.md), [Documentation](.github/skills/development/documentation/SKILL.md) |
 
 ---
 
-## Skills Directory (67 skills -- pipe-delimited)
+## Skills Directory (69 skills -- pipe-delimited)
 
 > Format: `category|skill|path|keywords`
 > Read the SKILL.md at the path when the task matches keywords.
@@ -129,6 +131,8 @@ domain|oil-and-gas|.github/skills/domain/oil-and-gas/SKILL.md|upstream,midstream
 domain|financial-services|.github/skills/domain/financial-services/SKILL.md|banking,insurance,capital-markets,wealth,NIM,CET1,Basel,fintech,payments
 domain|audit-assurance|.github/skills/domain/audit-assurance/SKILL.md|audit,assurance,PCAOB,SOX,COSO,internal-audit,SOC,ICFR,ESG-assurance
 domain|tax|.github/skills/domain/tax/SKILL.md|corporate-tax,transfer-pricing,BEPS,Pillar-Two,VAT,SALT,ETR,provision,ASC-740
+domain|clm|.github/skills/domain/clm/SKILL.md|contracts,CLM,contract-lifecycle,negotiation,obligations,renewals,playbooks
+domain|corporate-governance|.github/skills/domain/corporate-governance/SKILL.md|entity-management,board-governance,resolutions,delegated-authority,statutory-filings,corporate-secretary
 domain|legal|.github/skills/domain/legal/SKILL.md|litigation,corporate-law,IP,employment,CLM,e-discovery,GDPR,compliance,contracts
 ```
 
@@ -224,5 +228,5 @@ Legal Research Brief|legal->documentation
 
 ---
 
-**See Also**: [AGENTS.md](AGENTS.md) | [agentskills.io](https://agentskills.io/specification) | 67 skills (arch:5, dev:11, lang:8, ops:5, infra:4, data:6, ai:13, design:4, test:6, domain:5)
+**See Also**: [AGENTS.md](AGENTS.md) | [agentskills.io](https://agentskills.io/specification) | 69 skills (arch:5, dev:11, lang:8, ops:5, infra:4, data:6, ai:13, design:4, test:6, domain:7)
 

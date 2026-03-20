@@ -198,6 +198,24 @@
         "icon": "$(symbol-interface)"
       },
       {
+        "command": "agentx.showAIEvaluationStatus",
+        "title": "Show AI Evaluation Status",
+        "category": "AgentX",
+        "icon": "$(graph-line)"
+      },
+      {
+        "command": "agentx.scaffoldAIEvaluationContract",
+        "title": "Scaffold AI Evaluation Contract",
+        "category": "AgentX",
+        "icon": "$(new-file)"
+      },
+      {
+        "command": "agentx.runAIEvaluation",
+        "title": "Run AI Evaluation",
+        "category": "AgentX",
+        "icon": "$(run)"
+      },
+      {
         "command": "agentx.showReviewFindings",
         "title": "Show Review Findings",
         "category": "AgentX",
@@ -834,5 +852,8 @@
   },
   "nyc": {
     "report-dir": "coverage"
+  },
+  "dependencies": {
+    "yaml": "^2.8.2"
   }
 }

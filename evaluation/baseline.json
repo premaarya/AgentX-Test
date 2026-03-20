@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "acceptedRunId": "issue-classifier-baseline",
+  "updatedAt": "2026-03-20T00:00:00.000Z",
+  "runner": "custom",
+  "model": "agentx-issue-classifier-baseline",
+  "aggregateScores": {
+    "correctness": 1,
+    "task-completion": 1
+  },
+  "thresholdSnapshot": {
+    "correctness": {
+      "blocking": 0.8,
+      "warning": 0.9
+    },
+    "task-completion": {
+      "blocking": 0.8,
+      "warning": 0.9
+    }
+  }
+}

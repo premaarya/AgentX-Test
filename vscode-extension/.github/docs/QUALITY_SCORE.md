@@ -58,7 +58,7 @@
 | AI Systems | 13 | A | Agent dev, prompt eng, RAG, drift, evaluation, MCP, Azure Foundry |
 | Design | 4 | A | design-system reasoning, UX/UI design, prototype craft, frontend/UI |
 | Testing | 6 | A | E2E, integration, performance, security, production readiness |
-| Domain | 5 | B | Oil & gas, financial services, audit, tax, legal -- could add more verticals |
+| Domain | 7 | B | Oil & gas, financial services, audit, tax, legal, CLM, and corporate governance coverage is now present; more verticals could still be added |
 
 ### Instructions (.github/instructions/)
 

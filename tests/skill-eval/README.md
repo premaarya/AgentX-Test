@@ -6,7 +6,7 @@ Deterministic evaluation harness for AgentX skills, inspired by
 ## Quick Start
 
 ```powershell
-# Evaluate all 67 skills
+# Evaluate all 69 skills
 .\tests\skill-eval\eval-harness.ps1
 
 # Evaluate a single skill with verbose output

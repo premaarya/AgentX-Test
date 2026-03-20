@@ -9,6 +9,7 @@ import { registerDepsCommand } from './deps';
 import { registerDigestCommand } from './digest';
 import { registerLoopCommand } from './loopCommand';
 import { registerAgentNativeReviewCommand } from './agent-native-review';
+import { registerAIEvaluationCommands } from './ai-evaluation';
 import { registerLearningsCommands } from './learnings';
 import { registerParallelDeliveryCommands } from './parallel-delivery';
 import { registerReviewFindingCommands } from './review-findings';
@@ -29,6 +30,7 @@ export function registerAgentXCommands(
  registerDigestCommand(context, agentx);
  registerLoopCommand(context, agentx);
  registerAgentNativeReviewCommand(context, agentx);
+ registerAIEvaluationCommands(context, agentx);
  registerLearningsCommands(context, agentx);
  registerParallelDeliveryCommands(context, agentx);
  registerReviewFindingCommands(context, agentx);

@@ -1,0 +1,49 @@
+version: 1
+intent:
+  workflow: prompt
+  description: Lightweight repo-local evaluation contract for an AgentX issue classification prompt.
+runner:
+  preferred: custom
+  alternates: []
+  mode: local
+modelMatrix:
+  primary:
+    name: agentx-issue-classifier-baseline
+    provider: agentx-local
+  fallback: []
+  comparisons: []
+datasets:
+  - name: regression
+    path: evaluation/datasets/regression.jsonl
+    purpose: benchmark
+    coverageType: regression
+    rowCount: 5
+    dataFormat: jsonl
+metrics:
+  - correctness
+  - task-completion
+thresholds:
+  - metric: correctness
+    blocking: 0.8
+    warning: 0.9
+  - metric: task-completion
+    blocking: 0.8
+    warning: 0.9
+rubrics:
+  - metric: correctness
+    path: evaluation/rubrics/correctness.md
+    judgeType: llm-as-judge
+    scoringScale: 0-1
+    calibrationRule: human-check-5
+  - metric: task-completion
+    path: evaluation/rubrics/task-completion.md
+    judgeType: llm-as-judge
+    scoringScale: 0-1
+    calibrationRule: human-check-5
+execution:
+  command: './scripts/run-ai-eval-sample.ps1 -DatasetPath "evaluation/datasets/regression.jsonl" -PromptPath "prompts/assistant-v1.md"'
+  shell: pwsh
+reporting:
+  outputDirectory: .copilot-tracking/eval-reports
+  formatVersion: 1
+  retainRawOutputs: false

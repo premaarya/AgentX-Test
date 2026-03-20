@@ -9,7 +9,8 @@ This directory has a canonical split between reference guidance, durable workflo
   - GUIDE.md
   - GOLDEN_PRINCIPLES.md
   - QUALITY_SCORE.md
-  - 	ech-debt-tracker.md
+  - tech-debt-tracker.md
+- Implementation and operator guidance can live under `docs/guides/` when they are durable but do not fit the top-level reference set.
 - Durable workflow artifacts remain in their established families:
   - docs/artifacts/prd/
   - docs/artifacts/adr/
@@ -23,3 +24,8 @@ This directory has a canonical split between reference guidance, durable workflo
 ## Why This Split Exists
 
 The docs/execution/ tree isolates living implementation state during issue execution, while docs/artifacts/ collects durable PRDs, ADRs, specs, reviews, and learnings under one canonical root. 
+
+## Current Guide Examples
+
+- `docs/guides/AI-EVALUATION-LIGHTWEIGHT.md` for lightweight AI prompt/evaluation practices
+- `docs/guides/KNOWLEDGE-REVIEW-WORKFLOWS.md` for compound review and learning capture guidance
