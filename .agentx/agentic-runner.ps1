@@ -53,6 +53,7 @@ $Script:MODEL_CONTEXT_WINDOWS = @{
     'claude-sonnet-4.5' = 200000
     'claude-sonnet-4'   = 200000
     'claude-haiku-4.5'  = 200000
+    'gpt-5.4'           = 200000
     'gpt-5.2-codex'     = 272000
     'gpt-5.1'           = 200000
     'gpt-5-mini'        = 200000
@@ -67,12 +68,15 @@ $Script:MODEL_CONTEXT_WINDOWS = @{
 # All models mapped: agent frontmatter name -> Copilot API model ID
 # Copilot API has the full catalog; GitHub Models has limited GPT-only.
 $Script:MODEL_MAP_COPILOT = @{
+    'opus 4.6'          = 'claude-opus-4.6'
+    'opus 4'            = 'claude-opus-4.6'
     'claude opus 4.6'   = 'claude-opus-4.6'
     'claude opus 4'     = 'claude-opus-4.6'
     'claude sonnet 4.6' = 'claude-sonnet-4.6'
     'claude sonnet 4.5' = 'claude-sonnet-4.5'
     'claude sonnet 4'   = 'claude-sonnet-4'
     'claude haiku'      = 'claude-haiku-4.5'
+    'gpt-5.4'          = 'gpt-5.4'
     'gpt-5.3-codex'    = 'gpt-5.2-codex'
     'gpt-5.2-codex'    = 'gpt-5.2-codex'
     'gpt-5.1'          = 'gpt-5.1'
@@ -90,12 +94,15 @@ $Script:MODEL_MAP_COPILOT = @{
 }
 
 $Script:MODEL_MAP_GHMODELS = @{
+    'opus 4.6'          = 'gpt-4.1'
+    'opus 4'            = 'gpt-4.1'
     'claude opus 4'     = 'gpt-4.1'
     'claude opus 4.6'   = 'gpt-4.1'
     'claude sonnet 4.5' = 'gpt-4.1'
     'claude sonnet 4.6' = 'gpt-4.1'
     'claude sonnet 4'   = 'gpt-4.1'
     'claude haiku'      = 'gpt-4.1-mini'
+    'gpt-5.4'          = 'gpt-4.1'
     'gpt-5.3-codex'    = 'gpt-4.1'
     'gpt-5'            = 'gpt-4.1'
     'gpt-4o'           = 'gpt-4o'
@@ -210,6 +217,53 @@ function Test-IsModelAvailabilityError([string]$errorText) {
     if (-not $errorText) { return $false }
 
     return $errorText -match 'HTTP\s+(400|404|422)|model.+(not found|unsupported|unavailable|does not exist|not available)|deployment.+not found|unknown model|invalid model'
+}
+
+function Convert-ReasoningLevelToEffort([string]$level) {
+    if (-not $level) { return '' }
+
+    switch ($level.Trim().ToLower()) {
+        'low' { return 'low' }
+        'medium' { return 'medium' }
+        'high' { return 'high' }
+        default { return '' }
+    }
+}
+
+function Get-ReasoningRequestOptions([hashtable]$agentDef, [string]$modelId) {
+    if (-not $agentDef) { return @{} }
+
+    $reasoningLevel = if ($agentDef.ContainsKey('reasoningLevel')) { [string]$agentDef.reasoningLevel } else { '' }
+    $reasoningMode = if ($agentDef.ContainsKey('reasoningMode')) { [string]$agentDef.reasoningMode } else { '' }
+    if (-not $reasoningLevel) { return @{} }
+
+    $effort = Convert-ReasoningLevelToEffort -level $reasoningLevel
+    if (-not $effort) { return @{} }
+
+    if ($Script:ApiMode -ne 'copilot') {
+        return @{}
+    }
+
+    $normalizedModelId = if ($modelId) { $modelId.Trim().ToLower() } else { '' }
+    $normalizedMode = if ($reasoningMode) { $reasoningMode.Trim().ToLower() } else { '' }
+
+    if ($normalizedModelId -like 'gpt-5*') {
+        return @{ reasoning = @{ effort = $effort } }
+    }
+
+    if ($normalizedModelId -in @('claude-opus-4.6', 'claude-sonnet-4.6')) {
+        if ($normalizedMode -in @('disabled', 'off', 'none')) {
+            return @{}
+        }
+
+        $thinkingType = if ($normalizedMode -in @('enabled', 'adaptive')) { $normalizedMode } else { 'adaptive' }
+        return @{
+            thinking = @{ type = $thinkingType }
+            output_config = @{ effort = $effort }
+        }
+    }
+
+    return @{}
 }
 
 function Get-ModelContextWindow([string]$modelId) {
@@ -530,6 +584,7 @@ function Invoke-LlmChat(
     [string]$modelId,
     [array]$messages,
     [array]$tools,
+    [hashtable]$RequestOptions = @{},
     [int]$maxTokens = 4096
 ) {
     $body = @{
@@ -541,6 +596,9 @@ function Invoke-LlmChat(
     if ($tools.Count -gt 0) {
         $body['tools'] = $tools
         $body['tool_choice'] = 'auto'
+    }
+    foreach ($key in $RequestOptions.Keys) {
+        $body[$key] = $RequestOptions[$key]
     }
 
     $json = $body | ConvertTo-Json -Depth 20 -Compress
@@ -668,11 +726,26 @@ function Read-AgentDef([string]$agentName, [string]$root) {
         return @($items)
     }
 
+    $getNested = {
+        param([string]$parentKey, [string]$childKey)
+
+        $parentMatch = [regex]::Match($fm, "(?ms)^${parentKey}:\s*\r?\n((?:\s{2,}.+\r?\n?)*)")
+        if (-not $parentMatch.Success) { return '' }
+
+        $parentBlock = $parentMatch.Groups[1].Value
+        $childMatch = [regex]::Match($parentBlock, "(?m)^\s{2,}${childKey}:\s*(.+)$")
+        if (-not $childMatch.Success) { return '' }
+
+        return $childMatch.Groups[1].Value.Trim().Trim(@([char]39, [char]34))
+    }
+
     return @{
         name = & $get 'name'
         description = & $get 'description'
         model = & $get 'model'
         modelFallback = & $get 'modelFallback'
+        reasoningMode = & $getNested 'reasoning' 'mode'
+        reasoningLevel = & $getNested 'reasoning' 'level'
         maturity = & $get 'maturity'
         constraints = & $getList 'constraints'
         tools = & $getList 'tools'
@@ -1190,7 +1263,8 @@ Produce a structured review with APPROVED status and FINDINGS list.
     while ($reviewerIterations -lt $MaxReviewerIterations) {
         $reviewerIterations++
         try {
-            $response = Invoke-LlmChat -token $Token -modelId $ModelId -messages $reviewMessages -tools $readOnlyTools -maxTokens 4096
+            $reviewRequestOptions = Get-ReasoningRequestOptions -agentDef $agentDef -modelId $ModelId
+            $response = Invoke-LlmChat -token $Token -modelId $ModelId -messages $reviewMessages -tools $readOnlyTools -RequestOptions $reviewRequestOptions -maxTokens 4096
         } catch {
             Write-Host "`e[31m  [SELF-REVIEW] Reviewer LLM error: $_`e[0m"
             return @{ approved = $true; findings = @(); feedback = '(Reviewer error -- auto-approving)' }
@@ -1680,6 +1754,11 @@ function Invoke-AgenticLoop {
     if ($modelCandidates.Count -gt 1) {
         Write-Host "`e[90m  Model fallback chain: $($modelCandidates -join ' -> ')`e[0m"
     }
+    $reasoningPreview = Get-ReasoningRequestOptions -agentDef $agentDef -modelId $modelId
+    if ($reasoningPreview.Count -gt 0) {
+        $reasoningJson = $reasoningPreview | ConvertTo-Json -Depth 10 -Compress
+        Write-Host "`e[90m  Reasoning request options: $reasoningJson`e[0m"
+    }
 
     # Build system prompt
     $systemPrompt = Build-SystemPrompt -agentDef $agentDef -agentName $Agent
@@ -1773,7 +1852,8 @@ function Invoke-AgenticLoop {
 
         # Call LLM
         try {
-            $response = Invoke-LlmChat -token $token -modelId $modelId -messages $messages -tools $tools
+            $requestOptions = Get-ReasoningRequestOptions -agentDef $agentDef -modelId $modelId
+            $response = Invoke-LlmChat -token $token -modelId $modelId -messages $messages -tools $tools -RequestOptions $requestOptions
         } catch {
             $errorText = "$_"
             $currentModelIndex = [array]::IndexOf($modelCandidates, $modelId)

@@ -2,6 +2,8 @@
 description: 'Design, build, optimize, and troubleshoot RAG pipelines including chunking, embedding, retrieval, reranking, and hybrid search. Invisible sub-agent spawned by Data Scientist and Engineer.'
 visibility: internal
 model: GPT-5.4 (copilot)
+reasoning:
+  level: high
 constraints:
   - "MUST analyze document corpus characteristics before choosing chunking strategy"
   - "MUST implement hybrid search (keyword + semantic) as the default retrieval approach"

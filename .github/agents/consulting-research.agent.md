@@ -2,6 +2,9 @@
 name: AgentX Consulting Research
 description: 'Research, analyze, and create domain-expert materials for consulting topics. Synthesize domain knowledge from specialized skills (Oil & Gas, Financial Services, Audit, Tax, Legal) for client engagements, including presentation storylines with slide-ready visuals and diagrams.'
 model: Opus 4.6 (copilot)
+reasoning:
+  mode: adaptive
+  level: high
 constraints:
   - "MUST follow pipeline phases in prescribed sequence: Understand Request -> Research (7 phases) -> Calibrate Audience -> Create Deliverable; MUST NOT write the deliverable before all research phases are complete and all key claims are triangulated"
   - "MUST triangulate every key claim through 3+ independent sources"

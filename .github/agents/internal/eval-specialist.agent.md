@@ -2,6 +2,8 @@
 description: 'Design and execute AI evaluation pipelines including LLM-as-judge, benchmarks, quality gates, and model comparison. Invisible sub-agent spawned by Data Scientist and Reviewer.'
 visibility: internal
 model: GPT-5.4 (copilot)
+reasoning:
+  level: high
 constraints:
   - "MUST define evaluation dimensions before running any tests"
   - "MUST use structured scoring rubrics (1-5 scale with criteria per level)"

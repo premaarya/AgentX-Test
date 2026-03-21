@@ -2,6 +2,8 @@
 description: 'PRD to Work Item Planner -- analyzes Product Requirements Documents and plans Azure DevOps work item hierarchies. Output feeds the ADO Backlog Manager execution workflow.'
 visibility: internal
 model: GPT-5.4 (copilot)
+reasoning:
+  level: low
 constraints:
   - "MUST analyze PRD artifacts before planning work items"
   - "MUST check for existing related work items before proposing new ones"

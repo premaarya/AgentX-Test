@@ -2,6 +2,8 @@
 description: 'Design, evaluate, test, and iterate prompts across the full prompt lifecycle. Invisible sub-agent spawned by Data Scientist and Engineer.'
 visibility: internal
 model: GPT-5.4 (copilot)
+reasoning:
+  level: high
 constraints:
   - "MUST read existing prompts in prompts/ before creating new ones"
   - "MUST test prompts across at least 2 models (primary + fallback)"

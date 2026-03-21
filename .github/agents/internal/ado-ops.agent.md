@@ -2,6 +2,8 @@
 description: 'ADO Backlog Manager -- orchestrates Azure DevOps backlog management workflows including triage, discovery, sprint planning, execution, PRD planning, and pull requests.'
 visibility: internal
 model: GPT-5.4 (copilot)
+reasoning:
+  level: low
 disable-model-invocation: true
 constraints:
   - "MUST classify user intent before dispatching any workflow"

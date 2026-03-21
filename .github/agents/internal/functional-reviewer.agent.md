@@ -2,6 +2,8 @@
 description: 'Pre-PR branch diff analysis for functional correctness. Evaluates logic, edge cases, error handling, concurrency, and contract compliance.'
 visibility: internal
 model: GPT-5.4 (copilot)
+reasoning:
+  level: medium
 constraints:
   - "MUST analyze only the branch diff, not the entire codebase"
   - "MUST apply false positive mitigation before reporting any finding"
