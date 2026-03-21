@@ -2,7 +2,9 @@ import * as vscode from 'vscode';
 import { AgentXContext } from '../agentxContext';
 import { SidebarTreeItem } from './sidebarTreeItem';
 import {
+ buildActionChildren,
  buildIssueChildren,
+ buildOverviewChildren,
  getLocalIssues,
 } from './workTreeProviderInternals';
 
@@ -30,13 +32,14 @@ export class WorkTreeProvider implements vscode.TreeDataProvider<SidebarTreeItem
    return [SidebarTreeItem.info('Open a workspace folder to see current work.')];
   }
 
+  const pending = await this.agentx.getPendingClarification();
   const localIssues = getLocalIssues(root);
   const openIssues = localIssues.filter((issue) => (issue.state ?? 'open') !== 'closed');
 
-  const issueChildren = buildIssueChildren(openIssues);
-
   return [
-   SidebarTreeItem.section('Open issues', 'issues', issueChildren, String(openIssues.length)),
+   SidebarTreeItem.section('Overview', 'home', buildOverviewChildren(root, pending, openIssues.length)),
+   SidebarTreeItem.section('Open issues', 'issues', buildIssueChildren(openIssues), String(openIssues.length)),
+   SidebarTreeItem.section('Actions', 'play', buildActionChildren()),
   ];
  }
 }

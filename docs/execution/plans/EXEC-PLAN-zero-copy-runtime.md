@@ -115,4 +115,4 @@ The zero-copy architecture is now implemented for new extension-based initializa
 
 ---
 
-**Template**: [EXEC-PLAN-TEMPLATE.md](../../.github/templates/EXEC-PLAN-TEMPLATE.md)
+**Template**: [EXEC-PLAN-TEMPLATE.md](../../../.github/templates/EXEC-PLAN-TEMPLATE.md)

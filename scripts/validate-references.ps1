@@ -55,7 +55,7 @@ function Test-IsInsideFencedCode {
 }
 
 $mdFiles = Get-ChildItem -Path $ScanDir -Filter '*.md' -Recurse -File -ErrorAction SilentlyContinue |
-    Where-Object { $_.FullName -notmatch 'node_modules|\.git[/\\]|vendor' }
+    Where-Object { $_.FullName -notmatch 'node_modules|\.git[/\\]|vendor|[/\\]archive[/\\]' }
 
 foreach ($file in $mdFiles) {
     $content = Get-Content $file.FullName -Raw -Encoding utf8

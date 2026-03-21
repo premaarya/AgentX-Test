@@ -127,54 +127,19 @@ The quality loop is the execution backbone. MUST be used for every implementatio
 
 ### 1.1 Load Phase Skills
 
-```
-.github/skills/development/iterative-loop/SKILL.md
-.github/skills/architecture/core-principles/SKILL.md
-.github/skills/development/testing/SKILL.md
-Language instruction: auto-loaded by VS Code for *.py / *.cs / *.ts / *.tsx
-```
-
-If the issue has `needs:ai` label, also load:
-
-```
-.github/skills/ai-systems/ai-agent-development/SKILL.md
-.github/skills/ai-systems/prompt-engineering/SKILL.md
-```
+Load `iterative-loop`, `core-principles`, and `testing` skills (see Quick Phase Reference table above). The language instruction is auto-loaded by VS Code. When the issue has `needs:ai`, also load `ai-agent-development` and `prompt-engineering`.
 
 ### 1.2 Read the Full Artifact Chain
 
 Read ALL available artifacts for this issue. Do NOT skip any artifact that exists.
 
-**a) PRD** (`docs/artifacts/prd/PRD-{epic_id}.md`)
-- Extract: problem statement, target users, acceptance criteria for your User Stories
-- Note: measure implementation success against the ACs precisely
-
-**b) ADR** (`docs/artifacts/adr/ADR-{epic_id}.md`)
-- Extract: the CHOSEN option and its rationale
-- Extract: options REJECTED (do NOT accidentally implement a rejected path)
-- Extract: consequences and implementation notes Architect expects you to follow
-
-**c) Tech Spec** (`docs/artifacts/specs/SPEC-{issue}.md`)
-- Extract: API contracts (endpoints, request/response schemas, status codes)
-- Extract: data model (fields, types, nullable, validation rules, migrations needed)
-- Extract: service layer design (module boundaries, dependency injection, interfaces)
-- Extract: security requirements (auth, input validation, SQL parameterization, secrets)
-- Extract: performance targets (latency SLA, throughput targets, caching strategy)
-- Extract: prescribed testing strategy (specific test scenarios and types)
-- Extract: AI/ML specification section (if GenAI feature)
-
-**d) UX Spec** (`docs/ux/UX-{issue}.md` -- if exists)
-- Extract: user flow state machines (trigger action -> what happens)
-- Extract: component hierarchy and data binding expectations
-- Extract: accessibility requirements (WCAG 2.1 AA constraints)
-- Extract: responsive breakpoints and layout expectations
-- Extract: empty states, error states, and loading states
-
-**e) Data Science artifacts** (`docs/data-science/` or Spec AI/ML section -- if exists)
-- Extract: ML pipeline integration points (where code calls the model)
-- Extract: input/output contracts for model calls
-- Extract: evaluation requirements (what eval code you must write)
-- Extract: drift monitoring hooks (what telemetry you must emit)
+| Artifact | Path | Key items to extract |
+|----------|------|----------------------|
+| PRD | `docs/artifacts/prd/PRD-{epic_id}.md` | Problem statement, target users, acceptance criteria (measure success against ACs precisely) |
+| ADR | `docs/artifacts/adr/ADR-{epic_id}.md` | Chosen option + rationale; rejected options (do NOT implement a rejected path); consequences |
+| Tech Spec | `docs/artifacts/specs/SPEC-{issue}.md` | API contracts, data model, service layer design, security requirements, performance targets, testing strategy, AI/ML spec section |
+| UX Spec | `docs/ux/UX-{issue}.md` (if exists) | User flow state machines, component hierarchy, WCAG 2.1 AA constraints, breakpoints, empty/error/loading states |
+| Data Science | `docs/data-science/` or Spec AI/ML section (if exists) | ML integration points, input/output contracts, eval requirements, drift monitoring hooks |
 
 ### 1.3 Scan the Existing Codebase
 
@@ -231,13 +196,6 @@ Preference order for selection:
 3. No approach fits the spec well -> raise a clarification with Architect BEFORE coding
 
 Document your choice in 2-3 sentences: which approach, why it fits the ADR + Spec, what alternatives were considered.
-
-### 2.3 Technology Research (Targeted)
-
-For technologies or libraries you are about to use:
-- Check for CVEs or breaking changes in the current installed version
-- Verify the library version in the spec matches what is in `package.json` / `*.csproj` / `pyproject.toml`
-- For AI features: confirm the current recommended model version in `ai-agent-development/SKILL.md`
 
 **Phase 2 Gate**: One implementation approach chosen with written justification referencing ADR and Spec.
 
@@ -348,23 +306,7 @@ Implement in this order (bottom-up per spec, inner-to-outer per architecture):
 
 ### 5.3 GenAI Implementation Rules (applies when `needs:ai` label present)
 
-Load `.github/skills/ai-systems/ai-agent-development/SKILL.md` before this section.
-
-| Concern | Rule |
-|---------|------|
-| Prompts | Store in `prompts/{role-name}.md`; NEVER embed multi-line prompts as inline strings |
-| Model versions | Pin with date suffix (e.g., `gpt-5.1-2026-01-15`); load from env vars only |
-| Structured outputs | Define Pydantic/JSON Schema response types; validate every LLM response against schema |
-| Tracing | Initialize OpenTelemetry BEFORE creating any agent/client; log tokens, latency, model name |
-| Retry | Exponential backoff for all LLM calls; handle HTTP 429 explicitly |
-| Timeouts | Explicit timeouts on ALL model invocations; max_turns on agent loops |
-| Fallback | Primary + fallback model from different provider; tested in integration tests |
-| Guardrails | Validate + sanitize ALL user inputs before sending to LLM; output content filtering |
-| Unit tests | Mock ALL LLM calls in unit tests; NEVER call live APIs in CI |
-| Evaluation | Evaluation dataset + quality gate thresholds; baselines saved to `evaluation/baseline.json` |
-| Cost tracking | Log token usage per request; implement token budget limits |
-| Complex prompts | Delegate to AgentX Prompt Engineer sub-agent |
-| RAG pipeline | Delegate to AgentX RAG Specialist sub-agent |
+Load `.github/skills/ai-systems/ai-agent-development/SKILL.md` and follow all GenAI implementation rules from that skill: prompts stored as files in `prompts/`, model versions pinned with date suffix and loaded from env vars, OpenTelemetry initialized before any agent/client, exponential backoff on all LLM calls, structured outputs validated against schema, guardrails on all LLM inputs/outputs, LLM calls mocked in unit tests, evaluation baseline saved to `evaluation/baseline.json`, token usage logged. Delegate complex prompt work to AgentX Prompt Engineer and RAG work to AgentX RAG Specialist.
 
 ### 5.4 Start Quality Loop
 
@@ -385,17 +327,7 @@ git add -A && git commit -m "feat: implement <description> (#<issue>)"
 
 ### 6.1 Load Testing Skill
 
-```
-.github/skills/development/testing/SKILL.md
-```
-
-If `needs:ai` label:
-
-```
-.github/skills/ai-systems/ai-evaluation/SKILL.md
-```
-
-Follow the test pyramid decision tree from these skills.
+Load `testing` skill and, when `needs:ai`, also load `ai-evaluation` skill. Follow the test pyramid decision tree from these skills.
 
 ### 6.2 Test Pyramid
 
@@ -429,10 +361,7 @@ All planned tests must exist and pass.
 
 ### 6.5 GenAI Test Rules (when `needs:ai` present)
 
-- Unit tests: mock ALL LLM calls (never call live APIs in CI)
-- Integration tests: use replay / recorded responses
-- Evaluation tests: format compliance + tool-calling accuracy
-- Baseline: save scores to `evaluation/baseline.json`
+Follow `ai-evaluation/SKILL.md`: mock all LLM calls in unit tests, use replay/recorded responses in integration tests, verify format compliance and tool-calling accuracy, save evaluation scores to `evaluation/baseline.json`.
 
 **Phase 6 Gate**: Coverage >= 80% + all planned tests exist + all ACs covered.
 
@@ -444,10 +373,7 @@ All planned tests must exist and pass.
 
 ### 7.1 Load Review Skills
 
-```
-.github/skills/development/code-review/SKILL.md
-.github/skills/architecture/security/SKILL.md
-```
+Load `code-review` and `security` skills.
 
 ### 7.2 Self-Review Checklist
 
@@ -474,14 +400,7 @@ All planned tests must exist and pass.
 - [ ] README updated if new setup or configuration is required
 - [ ] Prompts directory up to date (AI features)
 
-**GenAI-Specific** (when `needs:ai` present):
-- [ ] LLM model versions pinned with date suffix, loaded from env vars
-- [ ] All prompts stored as separate files in `prompts/` (not inline strings)
-- [ ] OpenTelemetry tracing initialized before agent/client creation
-- [ ] Exponential backoff on all LLM API calls + explicit timeouts
-- [ ] Structured output schemas defined and validated
-- [ ] LLM calls mocked in unit tests (no live API calls in CI)
-- [ ] Evaluation baseline saved with quality gate thresholds
+**GenAI-Specific** (when `needs:ai` present): models pinned + env-var loaded, prompts as files, OpenTelemetry before client, backoff+timeouts, structured outputs validated, LLM calls mocked in tests, evaluation baseline saved.
 - [ ] Guardrails implemented (input sanitization, output filtering, token limits)
 
 ### 7.3 Run Output Scorer

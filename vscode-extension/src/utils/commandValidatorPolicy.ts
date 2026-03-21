@@ -56,6 +56,9 @@ export const BLOCKED_PATTERNS: readonly RegExp[] = [
   /\bDROP\s+TABLE\b/i,
   /\bgit\s+push\s+.*--force\b/i,
   /\bgit\s+push\s+.*-f\b/i,
+  /\bpowershell\b.*-[Ee]ncodedCommand\b/i,
+  /\bpwsh\b.*-[Ee]ncodedCommand\b/i,
+  /\bcertutil\b.*-decode\b/i,
 ] as const;
 
 export interface ReversibilityEntry {

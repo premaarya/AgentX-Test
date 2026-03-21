@@ -38,7 +38,7 @@ describe('sidebar providers', () => {
     __clearExtensions();
   });
 
-  it('WorkTreeProvider should show only open issues', async () => {
+  it('WorkTreeProvider should show Overview, Open issues, and Actions sections', async () => {
     const root = createWorkspaceRoot();
     fs.writeFileSync(
       path.join(root, '.agentx', 'state', 'agent-status.json'),
@@ -101,10 +101,13 @@ describe('sidebar providers', () => {
     });
     const items = await provider.getChildren();
 
-    assert.equal(items.length, 1);
-    assert.equal(items[0].label, 'Open issues');
+    assert.equal(items.length, 3);
+    assert.equal(items[0].label, 'Overview');
+    assert.equal(items[1].label, 'Open issues');
+    assert.equal(items[2].label, 'Actions');
 
-    const issueSection = items[0];
+    // Open issues section contains the one open issue
+    const issueSection = items[1];
     const issueChildren = await provider.getChildren(issueSection);
     assert.equal(issueChildren.length, 1);
     assert.ok(String(issueChildren[0].label).includes('#7 Add sidebar'));

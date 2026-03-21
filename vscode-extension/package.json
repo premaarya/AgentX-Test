@@ -126,6 +126,36 @@
         "icon": "$(sync)"
       },
       {
+        "command": "agentx.loopStart",
+        "title": "Loop: Start",
+        "category": "AgentX",
+        "icon": "$(play)"
+      },
+      {
+        "command": "agentx.loopStatus",
+        "title": "Loop: Status",
+        "category": "AgentX",
+        "icon": "$(history)"
+      },
+      {
+        "command": "agentx.loopIterate",
+        "title": "Loop: Iterate",
+        "category": "AgentX",
+        "icon": "$(debug-step-over)"
+      },
+      {
+        "command": "agentx.loopComplete",
+        "title": "Loop: Complete",
+        "category": "AgentX",
+        "icon": "$(pass)"
+      },
+      {
+        "command": "agentx.loopCancel",
+        "title": "Loop: Cancel",
+        "category": "AgentX",
+        "icon": "$(stop)"
+      },
+      {
         "command": "agentx.showPlanningLearnings",
         "title": "Show Planning Learnings",
         "category": "AgentX",
@@ -414,6 +444,39 @@
         },
         {
           "command": "agentx.reconcileBoundedParallelRun"
+        },
+        {
+          "command": "agentx.loop"
+        },
+        {
+          "command": "agentx.loopStart"
+        },
+        {
+          "command": "agentx.loopStatus"
+        },
+        {
+          "command": "agentx.loopIterate"
+        },
+        {
+          "command": "agentx.loopComplete"
+        },
+        {
+          "command": "agentx.loopCancel"
+        },
+        {
+          "command": "agentx.checkEnvironment"
+        },
+        {
+          "command": "agentx.showPendingClarification"
+        },
+        {
+          "command": "agentx.showAIEvaluationStatus"
+        },
+        {
+          "command": "agentx.scaffoldAIEvaluationContract"
+        },
+        {
+          "command": "agentx.runAIEvaluation"
         }
       ]
     },

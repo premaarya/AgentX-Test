@@ -113,25 +113,31 @@ jobs:
         run: |
           echo "Checking token budgets..."
           VIOLATIONS=0
-          while IFS= read -r f; do
-            CHARS=$(wc -c < "$f")
-            TOKENS=$((CHARS / 4))
-            LIMIT=5000
-            if [ "$TOKENS" -gt "$LIMIT" ]; then
-              echo "[FAIL] $f: $TOKENS tokens (limit: $LIMIT)"
-              VIOLATIONS=$((VIOLATIONS + 1))
-            fi
-          done < <(find .github/skills -name 'SKILL.md' 2>/dev/null || true)
 
-          while IFS= read -r f; do
+          check_tokens() {
+            local f="$1" limit="$2"
             CHARS=$(wc -c < "$f")
             TOKENS=$((CHARS / 4))
-            LIMIT=3000
-            if [ "$TOKENS" -gt "$LIMIT" ]; then
-              echo "[FAIL] $f: $TOKENS tokens (limit: $LIMIT)"
+            if [ "$TOKENS" -gt "$limit" ]; then
+              echo "[FAIL] $f: $TOKENS tokens (limit: $limit)"
               VIOLATIONS=$((VIOLATIONS + 1))
             fi
-          done < <(find .github/instructions -name '*.instructions.md' 2>/dev/null || true)
+          }
+
+          while IFS= read -r f; do check_tokens "$f" 5000; done \
+            < <(find .github/skills -name 'SKILL.md' 2>/dev/null || true)
+
+          while IFS= read -r f; do check_tokens "$f" 3000; done \
+            < <(find .github/instructions -name '*.instructions.md' 2>/dev/null || true)
+
+          while IFS= read -r f; do check_tokens "$f" 5000; done \
+            < <(find .github/agents -maxdepth 1 -name '*.agent.md' 2>/dev/null || true)
+
+          while IFS= read -r f; do check_tokens "$f" 3000; done \
+            < <(find .github/agents/internal -name '*.agent.md' 2>/dev/null || true)
+
+          while IFS= read -r f; do check_tokens "$f" 8000; done \
+            < <(find docs -maxdepth 1 -name '*.md' 2>/dev/null || true)
 
           if [ "$VIOLATIONS" -gt 0 ]; then
             echo "[FAIL] $VIOLATIONS file(s) exceed token budget"
