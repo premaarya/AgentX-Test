@@ -34,8 +34,8 @@ function makeCompleteState(overrides?: Partial<LoopState>): Record<string, unkno
     active: false,
     status: 'complete',
     prompt: 'Implement feature X',
-    iteration: 3,
-    minIterations: 3,
+    iteration: 5,
+    minIterations: 5,
     maxIterations: 10,
     completionCriteria: 'ALL_TESTS_PASSING',
     issueNumber: 42,
@@ -44,7 +44,9 @@ function makeCompleteState(overrides?: Partial<LoopState>): Record<string, unkno
     history: [
       { iteration: 1, timestamp: isoMinutesAgo(60), summary: 'Initial impl', status: 'iterated' },
       { iteration: 2, timestamp: isoMinutesAgo(30), summary: 'Fix tests', status: 'iterated' },
-      { iteration: 3, timestamp: isoMinutesAgo(5), summary: 'All green', status: 'complete' },
+      { iteration: 3, timestamp: isoMinutesAgo(15), summary: 'Refine edge cases', status: 'iterated' },
+      { iteration: 4, timestamp: isoMinutesAgo(10), summary: 'Tighten validation', status: 'iterated' },
+      { iteration: 5, timestamp: isoMinutesAgo(5), summary: 'All green', status: 'complete' },
     ],
     ...overrides,
   };
@@ -56,7 +58,7 @@ function makeActiveState(overrides?: Partial<LoopState>): Record<string, unknown
     status: 'active',
     prompt: 'Implement feature X',
     iteration: 2,
-    minIterations: 3,
+    minIterations: 5,
     maxIterations: 10,
     completionCriteria: 'ALL_TESTS_PASSING',
     issueNumber: 42,
@@ -118,12 +120,12 @@ describe('readLoopState', () => {
     assert.notEqual(result, null);
     assert.equal(result!.active, false);
     assert.equal(result!.status, 'complete');
-    assert.equal(result!.iteration, 3);
-    assert.equal(result!.minIterations, 3);
+     assert.equal(result!.iteration, 5);
+     assert.equal(result!.minIterations, 5);
     assert.equal(result!.maxIterations, 10);
     assert.equal(result!.completionCriteria, 'ALL_TESTS_PASSING');
     assert.equal(result!.issueNumber, 42);
-    assert.equal(result!.history.length, 3);
+     assert.equal(result!.history.length, 5);
   });
 
   it('reads an active loop state', () => {
@@ -314,7 +316,7 @@ describe('getLoopStatusDisplay', () => {
     assert.ok(display.includes('active'));
     assert.ok(display.includes('2/10'));
     assert.ok(display.includes('not ready to complete'));
-    assert.ok(display.includes('2/3'));
+    assert.ok(display.includes('2/5'));
     assert.ok(display.includes('ALL_TESTS_PASSING'));
   });
 
@@ -322,8 +324,8 @@ describe('getLoopStatusDisplay', () => {
     writeLoopState(wsRoot, makeCompleteState());
     const display = getLoopStatusDisplay(wsRoot);
     assert.ok(display.includes('complete'));
-    assert.ok(display.includes('3 iterations'));
-    assert.ok(display.includes('min 3'));
+    assert.ok(display.includes('5 iterations'));
+    assert.ok(display.includes('min 5'));
   });
 
   it('shows stale completed status clearly', () => {
@@ -349,7 +351,7 @@ describe('getLoopStatusDisplay', () => {
     });
 
     const display = getLoopStatusDisplay(wsRoot);
-    assert.ok(display.includes('1/3'));
+    assert.ok(display.includes('1/5'));
   });
 
   it('shows when minimum iterations are met for an active loop', () => {

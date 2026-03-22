@@ -9,6 +9,7 @@ $ErrorActionPreference = "Continue"
 $ProgressPreference = "SilentlyContinue" # Suppress progress bars from Remove-Item/Copy-Item
 $SCRIPT_PATH = "C:\Piyush - Personal\GenAI\AgentX\install.ps1"
 $TEST_BASE = "$env:TEMP\agentx-test-suite-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+$EXPECTED_VERSION = (Get-Content (Join-Path (Split-Path $SCRIPT_PATH -Parent) 'version.json') -Raw | ConvertFrom-Json).version
 
 # Tracking
 $global:TestResults = @()
@@ -105,7 +106,7 @@ try {
  # JSON content
  $r += Assert-JsonField ".agentx/config.json" "mode" "local" "config.mode=local"
  $r += Assert-JsonField ".agentx/config.json" "nextIssueNumber" "1" "config.nextIssueNumber=1"
-$r += Assert-JsonField ".agentx/version.json" "version" "8.4.0" "version=8.4.0"
+$r += Assert-JsonField ".agentx/version.json" "version" $EXPECTED_VERSION "version=$EXPECTED_VERSION"
  $r += Assert-JsonField ".agentx/version.json" "mode" "local" "version.mode=local"
  # Agent status check
  try {
@@ -141,7 +142,7 @@ try {
  foreach ($f in $RUNTIME_FILES) { $r += Assert-PathExists $f "runtime: $f" }
  foreach ($g in $GIT_ARTIFACTS) { $r += Assert-PathExists $g "git: $g" }
  $r += Assert-JsonField ".agentx/config.json" "mode" "local" "config.mode=local"
-$r += Assert-JsonField ".agentx/version.json" "version" "8.4.0" "version=8.4.0"
+$r += Assert-JsonField ".agentx/version.json" "version" $EXPECTED_VERSION "version=$EXPECTED_VERSION"
  foreach ($t in $TEMP_FILES) { $r += Assert-PathNotExists $t "no-temp: $t" }
 
  Write-TestReport "Local mode via direct file" $r
@@ -240,7 +241,7 @@ try {
 
  $r = @()
  $r += Assert-JsonField ".agentx/config.json" "mode" "local" "force: config.mode restored to local"
-$r += Assert-JsonField ".agentx/version.json" "version" "8.4.0" "force: version restored"
+$r += Assert-JsonField ".agentx/version.json" "version" $EXPECTED_VERSION "force: version restored"
  foreach ($t in $TEMP_FILES) { $r += Assert-PathNotExists $t "no-temp: $t" }
 
  Write-TestReport "Force reinstall" $r
