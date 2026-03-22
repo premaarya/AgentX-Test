@@ -74,6 +74,7 @@ function Write-Info { param([string]$msg) Write-Host "[INFO] $msg" -ForegroundCo
 function Write-Err { param([string]$msg) Write-Host "[FAIL] $msg" -ForegroundColor Red }
 
 $RuntimeBundleRoot = Join-Path '.github' 'agentx' '.agentx'
+$PackManifestPath = Join-Path $PSScriptRoot 'manifest.json'
 $RuntimeBundleFiles = @(
  'agentx.ps1',
  'agentx.sh',
@@ -156,6 +157,67 @@ function Read-JsonFile {
   return Get-Content $Path -Raw -Encoding utf8 | ConvertFrom-Json
  } catch {
   return $null
+ }
+}
+
+function Get-ManifestArray {
+ param(
+  [object]$Object,
+  [string]$PropertyName
+ )
+
+ if ($null -eq $Object) {
+  return @()
+ }
+
+ $property = $Object.PSObject.Properties[$PropertyName]
+ if (-not $property -or $null -eq $property.Value) {
+  return @()
+ }
+
+ return @($property.Value | ForEach-Object { [string]$_ })
+}
+
+function Get-PackInstallPlan {
+ param([string]$ManifestPath)
+
+ $manifest = Read-JsonFile $ManifestPath
+ if ($null -eq $manifest) {
+  throw "Pack manifest not found or invalid: $ManifestPath"
+ }
+
+ $artifactGroups = @(
+  @{ Key = 'agents'; Label = 'Agents' },
+  @{ Key = 'skills'; Label = 'Skills' },
+  @{ Key = 'instructions'; Label = 'Instructions' },
+  @{ Key = 'prompts'; Label = 'Prompts' },
+  @{ Key = 'templates'; Label = 'Templates' },
+  @{ Key = 'schemas'; Label = 'Schemas' }
+ )
+
+ $entries = @()
+ foreach ($group in $artifactGroups) {
+  $paths = Get-ManifestArray -Object $manifest.artifacts -PropertyName $group.Key
+  if (@($paths).Count -gt 0) {
+   $entries += [pscustomobject]@{
+    Label = $group.Label
+    Type = 'tree'
+    RelativePath = (('.github/' + $group.Key) -replace '\\', '/')
+   }
+  }
+ }
+
+ foreach ($filePath in (Get-ManifestArray -Object $manifest.artifacts -PropertyName 'supporting')) {
+  $entries += [pscustomobject]@{
+    Label = 'Docs'
+    Type = 'file'
+    RelativePath = ($filePath -replace '\\', '/')
+  }
+ }
+
+ return [pscustomobject]@{
+  Manifest = $manifest
+  Entries = @($entries)
  }
 }
 
@@ -367,10 +429,7 @@ if (-not (Test-Path (Join-Path $Source ".github" "agents"))) {
  exit 1
 }
 
-$Target = (Resolve-Path $Target -ErrorAction SilentlyContinue)?.Path
-if (-not $Target) {
- $Target = (Get-Location).Path
-}
+$Target = [System.IO.Path]::GetFullPath($Target)
 
 # -- Banner -----------------------------------------------------------------
 
@@ -391,73 +450,32 @@ Write-Host ""
 $totalCopied = 0
 $totalSkipped = 0
 
-# Agents
-Write-Info "Installing agents..."
-$r = Copy-Tree -SrcDir (Join-Path $Source ".github" "agents") -DestDir (Join-Path $Target ".github" "agents") -Overwrite:$Force
-$totalCopied += $r.Copied; $totalSkipped += $r.Skipped
-Write-OK "Agents: $($r.Copied) copied, $($r.Skipped) skipped"
+$installPlan = Get-PackInstallPlan -ManifestPath $PackManifestPath
+Write-Info "Loaded install plan from manifest.json ($(@($installPlan.Entries).Count) entries)"
 
-# Skills
-Write-Info "Installing skills..."
-$r = Copy-Tree -SrcDir (Join-Path $Source ".github" "skills") -DestDir (Join-Path $Target ".github" "skills") -Overwrite:$Force
-$totalCopied += $r.Copied; $totalSkipped += $r.Skipped
-Write-OK "Skills: $($r.Copied) copied, $($r.Skipped) skipped"
+foreach ($group in @($installPlan.Entries | Group-Object Label)) {
+ Write-Info "Installing $($group.Name.ToLower())..."
+ $groupCopied = 0
+ $groupSkipped = 0
 
-# Instructions
-Write-Info "Installing instructions..."
-$r = Copy-Tree -SrcDir (Join-Path $Source ".github" "instructions") -DestDir (Join-Path $Target ".github" "instructions") -Overwrite:$Force
-$totalCopied += $r.Copied; $totalSkipped += $r.Skipped
-Write-OK "Instructions: $($r.Copied) copied, $($r.Skipped) skipped"
+ foreach ($entry in $group.Group) {
+  $srcPath = Join-Path $Source $entry.RelativePath
+  $destPath = Join-Path $Target $entry.RelativePath
 
-# Prompts
-Write-Info "Installing prompts..."
-$r = Copy-Tree -SrcDir (Join-Path $Source ".github" "prompts") -DestDir (Join-Path $Target ".github" "prompts") -Overwrite:$Force
-$totalCopied += $r.Copied; $totalSkipped += $r.Skipped
-Write-OK "Prompts: $($r.Copied) copied, $($r.Skipped) skipped"
-
-# Templates
-Write-Info "Installing templates..."
-$r = Copy-Tree -SrcDir (Join-Path $Source ".github" "templates") -DestDir (Join-Path $Target ".github" "templates") -Overwrite:$Force
-$totalCopied += $r.Copied; $totalSkipped += $r.Skipped
-Write-OK "Templates: $($r.Copied) copied, $($r.Skipped) skipped"
-
-# Schemas
-Write-Info "Installing schemas..."
-$r = Copy-Tree -SrcDir (Join-Path $Source ".github" "schemas") -DestDir (Join-Path $Target ".github" "schemas") -Overwrite:$Force
-$totalCopied += $r.Copied; $totalSkipped += $r.Skipped
-Write-OK "Schemas: $($r.Copied) copied, $($r.Skipped) skipped"
-
-# Supporting docs (AGENTS.md, Skills.md, docs/WORKFLOW.md)
-Write-Info "Installing reference docs..."
-$supportDocs = @(
- @{ Src = "AGENTS.md"; Dest = "AGENTS.md" },
- @{ Src = "Skills.md"; Dest = "Skills.md" },
- @{ Src = "docs/WORKFLOW.md"; Dest = "docs/WORKFLOW.md" },
- @{ Src = ".github/agent-delegation.md"; Dest = ".github/agent-delegation.md" }
-)
-$docsCopied = 0
-$docsSkipped = 0
-foreach ($doc in $supportDocs) {
- $srcPath = Join-Path $Source $doc.Src
- $destPath = Join-Path $Target $doc.Dest
- if (-not (Test-Path $srcPath)) { continue }
- $destDir = Split-Path $destPath -Parent
- if (-not (Test-Path $destDir)) {
-  if ($PSCmdlet.ShouldProcess($destDir, "Create directory")) {
-   New-Item -ItemType Directory -Path $destDir -Force | Out-Null
+  if ($entry.Type -eq 'tree') {
+   $result = Copy-Tree -SrcDir $srcPath -DestDir $destPath -Overwrite:$Force
+  } else {
+   $result = Copy-FileIfNeeded -SrcPath $srcPath -DestPath $destPath -Overwrite:$Force
   }
+
+  $groupCopied += $result.Copied
+  $groupSkipped += $result.Skipped
  }
- if ((Test-Path $destPath) -and -not $Force) {
-  $docsSkipped++
- } else {
-  if ($PSCmdlet.ShouldProcess($destPath, "Copy file")) {
-   Copy-Item -Path $srcPath -Destination $destPath -Force
-   $docsCopied++
-  }
- }
+
+ $totalCopied += $groupCopied
+ $totalSkipped += $groupSkipped
+ Write-OK "$($group.Name): $groupCopied copied, $groupSkipped skipped"
 }
-$totalCopied += $docsCopied; $totalSkipped += $docsSkipped
-Write-OK "Docs: $docsCopied copied, $docsSkipped skipped"
 
 # CLI utilities (optional)
 if ($IncludeCli) {
