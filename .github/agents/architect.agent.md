@@ -19,7 +19,7 @@ constraints:
   - "MUST conduct deep technology research before designing -- landscape scan, failure modes, benchmarks, security posture, long-term viability"
   - "MUST document research findings with sources in the ADR Context section"
   - "MUST run a lightweight requirement-fit validation with Product Manager before moving architecture work back to Ready; this checkpoint verifies PRD alignment, scope, and success metrics, not implementation details"
-  - "MUST iterate until ALL the self review done criteria pass, minimum iterations = 3"
+  - "MUST iterate until ALL the self review done criteria pass, minimum iterations = 5"
   - "MUST verify agentic loop completion before declaring implementation complete"
   - "MUST resolve Compound Capture before declaring work Done: classify as mandatory/optional/skip, then either create docs/artifacts/learnings/LEARNING-<issue>.md or record explicit skip rationale in the issue close comment"
 boundaries:

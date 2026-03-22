@@ -3062,7 +3062,7 @@ function Invoke-LoopStart {
     $prompt = Get-Flag @('-p', '--prompt')
     if (-not $prompt) { Write-Host 'Error: --prompt required'; exit 1 }
     $max = [int](Get-Flag @('-m', '--max') '20')
-    $min = [Math]::Min(3, $max)
+    $min = [Math]::Min(5, $max)
     $criteria = Get-Flag @('-c', '--criteria') 'TASK_COMPLETE'
     $issue = [int](Get-Flag @('-i', '--issue') '0')
     if (-not $issue) { $issue = $null }
@@ -3116,7 +3116,7 @@ function Invoke-LoopStatus {
         return
     }
     if (-not ($state.PSObject.Properties.Name -contains 'minIterations') -or -not $state.minIterations) {
-        $state | Add-Member -NotePropertyName minIterations -NotePropertyValue ([Math]::Min(3, [int]$state.maxIterations)) -Force
+        $state | Add-Member -NotePropertyName minIterations -NotePropertyValue ([Math]::Min(5, [int]$state.maxIterations)) -Force
     }
     if ($Script:JsonOutput) { $state | ConvertTo-Json -Depth 5; return }
 
@@ -3180,7 +3180,7 @@ function Invoke-LoopComplete {
     $state = Read-JsonFile $Script:LOOP_STATE_FILE
     if (-not $state -or -not $state.active) { Write-Host 'No active loop.'; return }
     if (-not ($state.PSObject.Properties.Name -contains 'minIterations') -or -not $state.minIterations) {
-        $state | Add-Member -NotePropertyName minIterations -NotePropertyValue ([Math]::Min(3, [int]$state.maxIterations)) -Force
+        $state | Add-Member -NotePropertyName minIterations -NotePropertyValue ([Math]::Min(5, [int]$state.maxIterations)) -Force
     }
     if ([int]$state.iteration -lt [int]$state.minIterations) {
         Write-Host "$($C.y)  Minimum review iterations not yet met: $($state.iteration)/$($state.minIterations). Use 'agentx loop iterate' before completing.$($C.n)"

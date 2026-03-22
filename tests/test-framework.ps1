@@ -141,11 +141,14 @@ if ($LASTEXITCODE -ne 0) {
 }
 Assert-True ($LASTEXITCODE -eq 0) "Bounded parallel CLI behavior tests pass"
 
-$agenticRunnerBehaviorResult = & pwsh -NoProfile -File (Join-Path $script:root "tests/agentic-runner-behavior.ps1") 2>&1
-if ($LASTEXITCODE -ne 0) {
- Write-Host $agenticRunnerBehaviorResult
+$agenticRunnerBehaviorTempFile = [System.IO.Path]::GetTempFileName()
+& pwsh -NoProfile -File (Join-Path $script:root "tests/agentic-runner-behavior.ps1") *> $agenticRunnerBehaviorTempFile
+$agenticRunnerBehaviorExitCode = $LASTEXITCODE
+if ($agenticRunnerBehaviorExitCode -ne 0) {
+    Get-Content $agenticRunnerBehaviorTempFile | Write-Host
 }
-Assert-True ($LASTEXITCODE -eq 0) "Agentic runner behavior tests pass"
+Remove-Item $agenticRunnerBehaviorTempFile -ErrorAction SilentlyContinue
+Assert-True ($agenticRunnerBehaviorExitCode -eq 0) "Agentic runner behavior tests pass"
 
 # --- 6. Skills --------------------------------------------------------------------------
 Write-Host ""

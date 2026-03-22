@@ -266,15 +266,15 @@ try {
         return @{ approved = $true; findings = @(); feedback = 'Looks good' }
     }
 
-    $result = Invoke-AgenticLoop -Agent 'engineer' -Prompt 'Implement the login fix' -MaxIterations 6 -WorkspaceRoot $runnerTestRoot
+    $result = Invoke-AgenticLoop -Agent 'engineer' -Prompt 'Implement the login fix' -MaxIterations 10 -WorkspaceRoot $runnerTestRoot
 
     Assert-Equal $result.exitReason 'text_response' 'Invoke-AgenticLoop still exits normally after minimum self-review passes are met'
-    Assert-Equal $script:selfReviewCalls 3 'Invoke-AgenticLoop requires three approved self-review passes before finishing'
-    Assert-Equal $result.iterations 3 'Invoke-AgenticLoop continues the main loop until the minimum self-review passes are complete'
-    Assert-True ($result.finalText -match '\[SELF-REVIEW SUMMARY\] Completed 3/3 required review iterations') 'Invoke-AgenticLoop appends a final self-review summary once the minimum passes are met'
-    Assert-True ($result.finalText -match '\[SELF-REVIEW SUMMARY\] Iteration 3: APPROVED') 'Invoke-AgenticLoop records the final approved review iteration in the summary'
+    Assert-Equal $script:selfReviewCalls 5 'Invoke-AgenticLoop requires five approved self-review passes before finishing'
+    Assert-Equal $result.iterations 5 'Invoke-AgenticLoop continues the main loop until the minimum self-review passes are complete'
+    Assert-True ($result.finalText -match '\[SELF-REVIEW SUMMARY\] Completed 5/5 required review iterations') 'Invoke-AgenticLoop appends a final self-review summary once the minimum passes are met'
+    Assert-True ($result.finalText -match '\[SELF-REVIEW SUMMARY\] Iteration 5: APPROVED') 'Invoke-AgenticLoop records the final approved review iteration in the summary'
     $minimumReminderSeen = @($script:runnerMessages | Where-Object {
-        $_ -match '^\[Self-Review MINIMUM NOT YET MET - Iteration 1/3\]' -and $_ -match 'every role must complete at least 3 self-review passes before finishing'
+        $_ -match '^\[Self-Review MINIMUM NOT YET MET - Iteration 1/5\]' -and $_ -match 'every role must complete at least 5 self-review passes before finishing'
     }).Count -gt 0
     Assert-True $minimumReminderSeen 'Invoke-AgenticLoop injects a minimum-self-review reminder after the first approved pass'
 } finally {

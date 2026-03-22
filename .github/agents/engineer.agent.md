@@ -1,6 +1,6 @@
 ---
 name: AgentX Engineer
-description: 'Implement features, fix bugs, and write tests through Compound Engineering -- a structured pipeline of Research -> Brainstorm -> Plan -> Design -> Implement -> Test -> Review, with gate-checked phase transitions, full artifact chain consumption, and a minimum 3-iteration quality loop.'
+description: 'Implement features, fix bugs, and write tests through Compound Engineering -- a structured pipeline of Research -> Brainstorm -> Plan -> Design -> Implement -> Test -> Review, with gate-checked phase transitions, full artifact chain consumption, and a minimum 5-iteration quality loop.'
 model: GPT-5.4 (copilot)
 reasoning:
   level: medium
@@ -12,7 +12,7 @@ constraints:
   - "MUST perform a design-alignment checkpoint with Data Scientist before coding when `needs:ai` work changes model behavior, prompt flow, eval logic, RAG design, or ML input/output contracts"
   - "MUST load and read the skills prescribed for each phase before performing that phase's work"
   - "MUST start quality loop after first implementation commit: .agentx/agentx.ps1 loop start -p <prompt-text> -i <issue> (--prompt flag is REQUIRED; omitting it causes exit 1 -- see iterative-loop skill for full syntax)"
-  - "MUST complete a minimum of 3 quality loop iterations before declaring implementation done"
+  - "MUST complete a minimum of 5 quality loop iterations before declaring implementation done"
   - "MUST run the full test suite at the end of EVERY loop iteration"
   - "MUST verify quality loop reached 'complete' status before moving to In Review"
   - "MUST write a failing regression test BEFORE fixing any bug (reproduce first, then fix)"
@@ -113,7 +113,7 @@ The quality loop is the execution backbone. MUST be used for every implementatio
 | `.agentx/agentx.ps1 loop complete -s "All quality gates passed"` | When ALL quality gates pass |
 | `.agentx/agentx.ps1 loop status` | Check current loop state |
 
-**Minimum 3 iterations with a defined focus per iteration:**
+**Minimum 5 iterations with a defined focus per iteration:**
 
 | Iteration | Focus | Gate to Advance |
 |-----------|-------|----------------|
@@ -537,7 +537,7 @@ Use this protocol when an artifact leaves a requirement ambiguous. Read the arti
 
 After completing initial work, keep iterating until all done criteria pass. Reaching the minimum iteration count is only a gate; the loop is not done until `.agentx/agentx.ps1 loop complete -s "<summary>"` succeeds. Copilot runs this loop natively within its agentic session.
 
-### Loop Steps (repeat minimum 3 times)
+### Loop Steps (repeat minimum 5 times)
 
 1. **Run verification** -- execute the full test suite, linter, and type-checker
 2. **Evaluate results** -- if any check fails, identify the root cause before fixing
@@ -549,7 +549,7 @@ After completing initial work, keep iterating until all done criteria pass. Reac
    - APPROVED: false when any HIGH or MEDIUM findings remain
 6. **Address findings** -- fix all HIGH and MEDIUM findings, then re-run from Step 1
 7. **Spec compliance check** -- verify implementation against Spec, ADR, and PRD ACs
-8. **Repeat** until APPROVED, all Done Criteria pass, and minimum 3 iterations complete
+8. **Repeat** until APPROVED, all Done Criteria pass, and minimum 5 iterations complete
 
 ### Iteration Focus Table
 

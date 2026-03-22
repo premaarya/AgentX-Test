@@ -15,7 +15,7 @@ constraints:
   - "MUST NOT skip any required role constraints, templates, skills, entry gates, or exit gates for the phase it is acting as"
   - "MUST read relevant SKILL.md files and existing artifacts before each phase begins"
   - "MUST validate prerequisites before every major phase transition"
-  - "MUST iterate until ALL done criteria pass; minimum iterations = 3 is only the earliest point at which completion is allowed, and the loop is NOT done until '.agentx/agentx.ps1 loop complete -s <summary>' succeeds"
+  - "MUST iterate until ALL done criteria pass; minimum iterations = 5 is only the earliest point at which completion is allowed, and the loop is NOT done until '.agentx/agentx.ps1 loop complete -s <summary>' succeeds"
   - "MUST verify agentic loop completion before declaring implementation complete"
   - "MUST escalate from simple execution to the full internal workflow when complexity is detected mid-stream"
   - "MUST resolve Compound Capture before declaring work Done: classify as mandatory/optional/skip, then either create docs/artifacts/learnings/LEARNING-<issue>.md or record explicit skip rationale in the issue close comment"
@@ -151,7 +151,7 @@ Before routing, scan the issue for domain-specific intent and add labels:
 
 ALL workflows include iteration by default (`iterate = true` in TOML). Default limits:
 
-- Minimum review iterations for every role: 3
+- Minimum review iterations for every role: 5
 
 | Workflow | Max Iterations |
 |----------|---------------|

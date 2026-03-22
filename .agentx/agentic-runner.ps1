@@ -45,7 +45,7 @@ $Script:ApiMode = $null  # 'copilot' or 'models'
 
 # Self-review & clarification defaults (configurable per invocation)
 $Script:SELF_REVIEW_MAX_ITERATIONS = 15
-$Script:SELF_REVIEW_MIN_ITERATIONS = 3
+$Script:SELF_REVIEW_MIN_ITERATIONS = 5
 $Script:SELF_REVIEW_REVIEWER_MAX_ITERATIONS = 8
 $Script:CLARIFICATION_MAX_ITERATIONS = 6
 $Script:CLARIFICATION_RESPONDER_MAX_ITERATIONS = 5
