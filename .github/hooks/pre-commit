@@ -114,24 +114,64 @@ echo ""
 
 # ---------------------------------------------------------------
 # Check 8: Quality loop enforcement
-# Block commits when engineer has an active/incomplete loop.
-# Only blocks when loop-state.json exists and loop is NOT complete.
+# All source code commits require a completed, non-consumed loop.
+# - Active loop: block immediately (iteration in progress).
+# - No loop or non-complete: block when code files are staged.
+# - Consumed loop (committed without renewal): block for code changes.
+# - Emergency bypass: AGENTX_SKIP_LOOP_GATE=1 (hotfixes only).
 # ---------------------------------------------------------------
 LOOP_STATE=".agentx/state/loop-state.json"
+LOOP_ACTIVE=""
+LOOP_STATUS=""
+LOOP_CONSUMED=""
 if [ -f "$LOOP_STATE" ]; then
-  LOOP_ACTIVE=$(grep -o '"active":\s*true' "$LOOP_STATE" 2>/dev/null)
-  LOOP_STATUS=$(grep -o '"status":\s*"[^"]*"' "$LOOP_STATE" 2>/dev/null | head -1 | sed 's/"status":\s*"//' | sed 's/"//')
+  LOOP_ACTIVE=$(grep -o '"active":[[:space:]]*true' "$LOOP_STATE" 2>/dev/null || true)
+  LOOP_STATUS=$(grep -o '"status":[[:space:]]*"[^"]*"' "$LOOP_STATE" 2>/dev/null | head -1 | sed 's/"status":[[:space:]]*"//' | sed 's/"//')
+  LOOP_CONSUMED=$(grep -o '"loopConsumed":[[:space:]]*true' "$LOOP_STATE" 2>/dev/null || true)
+fi
 
-  if [ -n "$LOOP_ACTIVE" ]; then
-    echo -e "${RED}[FAIL] Quality loop still ACTIVE (iteration in progress)${NC}"
-    echo "  Complete the loop before committing: agentx loop complete -s <summary>"
-    echo "  Or cancel if needed: agentx loop cancel"
-    FAILED=1
-  elif [ "$LOOP_STATUS" = "cancelled" ]; then
-    echo -e "${YELLOW}[WARN] Quality loop was cancelled (does not satisfy quality gate)${NC}"
-    echo "  Start and complete a new loop for handoff eligibility."
-  elif [ "$LOOP_STATUS" = "complete" ]; then
-    echo -e "${GREEN}[PASS] Quality loop completed${NC}"
+# Block active loops first (regardless of file type)
+if [ -n "$LOOP_ACTIVE" ]; then
+  echo -e "${RED}[FAIL] Quality loop still ACTIVE (iteration in progress)${NC}"
+  echo "  Complete the loop before committing: agentx loop complete -s <summary>"
+  echo "  Or cancel if needed: agentx loop cancel"
+  FAILED=1
+elif [ "$LOOP_STATUS" = "cancelled" ]; then
+  echo -e "${YELLOW}[WARN] Quality loop was cancelled (does not satisfy quality gate)${NC}"
+  echo "  Start and complete a new loop for handoff eligibility."
+elif [ "$LOOP_STATUS" = "complete" ] && [ -z "$LOOP_CONSUMED" ]; then
+  echo -e "${GREEN}[PASS] Quality loop completed${NC}"
+elif [ "$LOOP_STATUS" = "complete" ] && [ -n "$LOOP_CONSUMED" ]; then
+  echo -e "${YELLOW}[WARN] Quality loop was consumed by a prior commit (requires renewal for code changes)${NC}"
+fi
+
+# Require a completed, non-consumed loop for any source code file commits.
+# This closes two enforcement gaps:
+#   1. Code changes committed with no loop started at all.
+#   2. Code changes committed using a stale "complete" loop from a prior task.
+# Active-loop failures are already reported above, so skip re-reporting.
+CODE_FILES_STAGED=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|js|mjs|cjs|ps1|psm1|psd1|py|pyx|cs|csx|go|rs|sh|bash|tf|tfvars|bicep|sql)$' | head -1)
+if [ -n "$CODE_FILES_STAGED" ] && [ -z "$LOOP_ACTIVE" ]; then
+  LOOP_GATE_FAIL=0
+  if [ "$LOOP_STATUS" != "complete" ]; then
+    LOOP_GATE_FAIL=1
+    LOOP_GATE_MSG="Code files staged but no completed quality loop found"
+  elif [ -n "$LOOP_CONSUMED" ]; then
+    LOOP_GATE_FAIL=1
+    LOOP_GATE_MSG="Quality loop was already consumed by a prior commit -- start a fresh loop"
+  fi
+  if [ $LOOP_GATE_FAIL -eq 1 ]; then
+    if [ -z "$AGENTX_SKIP_LOOP_GATE" ]; then
+      echo -e "${RED}[FAIL] $LOOP_GATE_MSG${NC}"
+      echo "  ALL code changes MUST be wrapped in a completed quality loop:"
+      echo "    agentx loop start -p \"<task description>\""
+      echo "    agentx loop iterate -s \"<progress summary>\""
+      echo "    agentx loop complete -s \"All gates passed\""
+      echo "  Emergency hotfix bypass: AGENTX_SKIP_LOOP_GATE=1 git commit"
+      FAILED=1
+    else
+      echo -e "${YELLOW}[WARN] Loop gate bypassed (AGENTX_SKIP_LOOP_GATE -- emergency use only)${NC}"
+    fi
   fi
 fi
 

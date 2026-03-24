@@ -410,7 +410,7 @@ if [ "$NO_SETUP" != "true" ]; then
  fi
 
  if [ -d ".git" ]; then
- for h in pre-commit commit-msg; do
+ for h in pre-commit post-commit commit-msg; do
  [ -f ".github/hooks/$h" ] && cp ".github/hooks/$h" ".git/hooks/$h" && chmod +x ".git/hooks/$h"
  done
  ok "Git hooks installed"

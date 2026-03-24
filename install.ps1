@@ -566,7 +566,7 @@ if (-not $NoSetup) {
 
  if (Test-Path ".git") {
  $hooksDir = ".git/hooks"
- foreach ($h in @("pre-commit","commit-msg")) {
+ foreach ($h in @("pre-commit","post-commit","commit-msg")) {
  $src = ".github/hooks/$h"
  if (Test-Path $src) { Copy-Item $src "$hooksDir/$h" -Force }
  }

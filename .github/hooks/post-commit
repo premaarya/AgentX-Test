@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Post-commit hook: Mark quality loop as consumed after a successful commit.
+# This prevents a stale "complete" loop state from being silently reused
+# across multiple unrelated commits without starting a fresh loop.
+# The next code commit will require a new "agentx loop start" call.
+
+LOOP_STATE=".agentx/state/loop-state.json"
+if [ -f "$LOOP_STATE" ]; then
+  LOOP_STATUS=$(grep -o '"status":[[:space:]]*"[^"]*"' "$LOOP_STATE" 2>/dev/null | head -1 | sed 's/"status":[[:space:]]*"//' | sed 's/"//')
+  if [ "$LOOP_STATUS" = "complete" ]; then
+    # Mark loop as consumed using node (available in VS Code / npm environments).
+    # Adds "loopConsumed": true to the state JSON (top-level only, not history).
+    if command -v node &>/dev/null; then
+      node -e "
+var fs = require('fs');
+var f = process.argv[1];
+try {
+  var s = JSON.parse(fs.readFileSync(f, 'utf8'));
+  if (s.status === 'complete') {
+    s.loopConsumed = true;
+    fs.writeFileSync(f, JSON.stringify(s, null, 2) + '\n');
+  }
+} catch (e) {}
+" "$LOOP_STATE" 2>/dev/null || true
+    fi
+  fi
+fi
