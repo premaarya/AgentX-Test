@@ -295,7 +295,7 @@ function Get-HarnessDisabledChecks($cfg, [string[]]$overrides = @()) {
     )
 }
 
-function Ensure-AgentXAdapters($cfg) {
+function Initialize-AgentXAdapters($cfg) {
     $adapters = Get-ConfigValue $cfg 'adapters'
     if ($adapters) { return $adapters }
 
@@ -315,7 +315,7 @@ function Get-AgentXAdapterValue($cfg, [string]$adapterName, [string]$name, $defa
 }
 
 function Set-AgentXAdapterValue($cfg, [string]$adapterName, [string]$name, $value) {
-    $adapters = Ensure-AgentXAdapters $cfg
+    $adapters = Initialize-AgentXAdapters $cfg
     $adapter = Get-ConfigValue $adapters $adapterName
     if (-not $adapter) {
         $adapter = @{}
@@ -420,7 +420,7 @@ function Test-GitHubCliAuthenticated {
 
 $Script:ProviderInferencePrompted = $false
 
-function Try-PersistInferredProvider([string]$provider, [string]$reason, [string]$repo = '') {
+function Save-InferredProvider([string]$provider, [string]$reason, [string]$repo = '') {
     if ($Script:ProviderInferencePrompted) { return }
     $Script:ProviderInferencePrompted = $true
 
@@ -453,7 +453,6 @@ function Get-AgentXProviderResolution {
     $provider = Get-ConfigValue $cfg 'provider'
     $integration = Get-ConfigValue $cfg 'integration'
     $mode = Get-ConfigValue $cfg 'mode'
-    $repo = [string](Get-ConfigValue $cfg 'repo' '')
 
     if ($provider) {
         $resolved = Resolve-AgentXProviderName "$provider"
@@ -503,6 +502,22 @@ function Get-AgentXProviderInfo {
 }
 
 function Get-LocalBacklogIssues {
+    $backend = Get-LocalIssueBackend
+    if ($backend -eq 'backlog') {
+        $paths = Get-BacklogLocalPaths
+        $records = @()
+        foreach ($pair in @(
+            @{ Path = $paths.tasksDir; State = 'open' },
+            @{ Path = $paths.completedDir; State = 'closed' }
+        )) {
+            if (-not (Test-Path $pair.Path)) { continue }
+            $records += @(Get-ChildItem $pair.Path -Filter '*.md' -File -ErrorAction SilentlyContinue |
+                ForEach-Object { Convert-BacklogTaskFileToAgentXIssue $_.FullName $pair.State } |
+                Where-Object { $_ })
+        }
+        return @($records | Sort-Object -Property number)
+    }
+
     if ((Get-PersistenceMode) -eq 'git') {
         $files = Get-GitFileList 'issues'
         return @($files | Where-Object { $_ -match '\.json$' } | ForEach-Object {
@@ -515,6 +530,674 @@ function Get-LocalBacklogIssues {
         ForEach-Object { Read-JsonFile $_.FullName } |
         Where-Object { $_ } |
         Sort-Object -Property number)
+}
+
+function Remove-SurroundingQuotes([string]$value) {
+    $trimmed = [string]$value
+    if ([string]::IsNullOrWhiteSpace($trimmed)) { return '' }
+    $trimmed = $trimmed.Trim()
+    if ($trimmed.Length -ge 2) {
+        if ($trimmed.StartsWith("'") -and $trimmed.EndsWith("'")) {
+            return $trimmed.Substring(1, $trimmed.Length - 2).Replace("''", "'")
+        }
+        if ($trimmed.StartsWith('"') -and $trimmed.EndsWith('"')) {
+            return $trimmed.Substring(1, $trimmed.Length - 2)
+        }
+    }
+    return $trimmed
+}
+
+function ConvertFrom-BacklogInlineArray([string]$value) {
+    $trimmed = [string]$value
+    if ([string]::IsNullOrWhiteSpace($trimmed)) { return @() }
+    $trimmed = $trimmed.Trim()
+    if ($trimmed -eq '[]') { return @() }
+    if (-not ($trimmed.StartsWith('[') -and $trimmed.EndsWith(']'))) { return @() }
+    $inner = $trimmed.Substring(1, $trimmed.Length - 2).Trim()
+    if (-not $inner) { return @() }
+    return @(($inner -split ',') | ForEach-Object { Remove-SurroundingQuotes $_ } | Where-Object { $_ })
+}
+
+function ConvertFrom-BacklogYamlFrontmatter([string]$yamlText) {
+    $metadata = @{}
+    $currentArrayKey = ''
+    foreach ($rawLine in ($yamlText -split '\r?\n')) {
+        if ($rawLine -match '^\s*$') { continue }
+        if ($rawLine.TrimStart().StartsWith('#')) { continue }
+
+        if ($rawLine -match '^\s{2,}-\s*(.*)$' -and $currentArrayKey) {
+            $itemValue = Remove-SurroundingQuotes $Matches[1]
+            if (-not $metadata.ContainsKey($currentArrayKey)) { $metadata[$currentArrayKey] = @() }
+            $metadata[$currentArrayKey] = @($metadata[$currentArrayKey]) + @($itemValue)
+            continue
+        }
+
+        $currentArrayKey = ''
+        if ($rawLine -match '^([A-Za-z0-9_]+)\s*:\s*(.*)$') {
+            $key = [string]$Matches[1]
+            $value = [string]$Matches[2]
+            if ([string]::IsNullOrWhiteSpace($value)) {
+                $metadata[$key] = @()
+                $currentArrayKey = $key
+                continue
+            }
+
+            if ($value.Trim().StartsWith('[') -and $value.Trim().EndsWith(']')) {
+                $metadata[$key] = @(ConvertFrom-BacklogInlineArray $value)
+                continue
+            }
+
+            $metadata[$key] = Remove-SurroundingQuotes $value
+        }
+    }
+    return $metadata
+}
+
+function Get-BacklogFrontmatterParts([string]$content) {
+    if ($content -match '(?ms)^---\s*\r?\n(?<yaml>.*?)\r?\n---\s*\r?\n?(?<body>.*)$') {
+        return [PSCustomObject]@{
+            metadata = ConvertFrom-BacklogYamlFrontmatter $Matches['yaml']
+            body = [string]$Matches['body']
+        }
+    }
+    return [PSCustomObject]@{
+        metadata = @{}
+        body = [string]$content
+    }
+}
+
+function Read-BacklogConfigMetadata([string]$configPath) {
+    if (-not (Test-Path $configPath)) { return @{} }
+    try {
+        $content = Get-Content $configPath -Raw -Encoding utf8
+    } catch {
+        return @{}
+    }
+    return ConvertFrom-BacklogYamlFrontmatter $content
+}
+
+function Get-BacklogLocalResolution {
+    $rootConfigPath = Join-Path $Script:ROOT 'backlog.config.yml'
+    $rootMetadata = Read-BacklogConfigMetadata $rootConfigPath
+    $configuredDir = ''
+    if ($rootMetadata.ContainsKey('backlog_directory')) { $configuredDir = [string]$rootMetadata['backlog_directory'] }
+    elseif ($rootMetadata.ContainsKey('backlogDirectory')) { $configuredDir = [string]$rootMetadata['backlogDirectory'] }
+
+    if (-not [string]::IsNullOrWhiteSpace($configuredDir)) {
+        $normalizedDir = $configuredDir.Trim().Trim('/').Trim('\\')
+        return [PSCustomObject]@{
+            backlogDir = $normalizedDir
+            backlogPath = Join-Path $Script:ROOT $normalizedDir
+            configPath = $rootConfigPath
+            configSource = 'root'
+            exists = (Test-Path (Join-Path $Script:ROOT $normalizedDir))
+        }
+    }
+
+    foreach ($dirName in @('backlog', '.backlog')) {
+        $dirPath = Join-Path $Script:ROOT $dirName
+        $configCandidates = @(
+            (Join-Path $dirPath 'config.yml'),
+            (Join-Path $dirPath 'config.yaml')
+        )
+            $configPath = $configCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+        if ($configPath) {
+            return [PSCustomObject]@{
+                backlogDir = $dirName
+                backlogPath = $dirPath
+                configPath = $configPath
+                configSource = 'folder'
+                exists = $true
+            }
+        }
+        if (Test-Path $dirPath) {
+            return [PSCustomObject]@{
+                backlogDir = $dirName
+                backlogPath = $dirPath
+                configPath = (Join-Path $dirPath 'config.yml')
+                configSource = 'folder'
+                exists = $true
+            }
+        }
+    }
+
+    return [PSCustomObject]@{
+        backlogDir = 'backlog'
+        backlogPath = (Join-Path $Script:ROOT 'backlog')
+        configPath = (Join-Path $Script:ROOT 'backlog' 'config.yml')
+        configSource = 'folder'
+        exists = $false
+    }
+}
+
+function Get-LocalIssueBackend {
+    if ((Get-PersistenceMode) -eq 'git') { return 'json' }
+    $cfg = Get-AgentXConfig
+    $configured = [string](Get-ConfigValue $cfg 'localBackend' '')
+    if (-not [string]::IsNullOrWhiteSpace($configured)) {
+        $normalized = $configured.Trim().ToLowerInvariant()
+        if ($normalized -eq 'backlog') { return 'backlog' }
+        return 'json'
+    }
+
+    $resolution = Get-BacklogLocalResolution
+    if ($resolution.exists) { return 'backlog' }
+    return 'json'
+}
+
+function Get-BacklogLocalPaths {
+    $resolution = Get-BacklogLocalResolution
+    return [PSCustomObject]@{
+        backlogDir = $resolution.backlogDir
+        backlogPath = $resolution.backlogPath
+        configPath = $resolution.configPath
+        tasksDir = (Join-Path $resolution.backlogPath 'tasks')
+        completedDir = (Join-Path $resolution.backlogPath 'completed')
+        configSource = $resolution.configSource
+    }
+}
+
+function Get-BacklogTaskPrefix {
+    $paths = Get-BacklogLocalPaths
+    $metadata = Read-BacklogConfigMetadata $paths.configPath
+    if ($metadata.ContainsKey('task_prefix') -and -not [string]::IsNullOrWhiteSpace([string]$metadata['task_prefix'])) {
+        return [string]$metadata['task_prefix']
+    }
+    if ($metadata.ContainsKey('taskPrefix') -and -not [string]::IsNullOrWhiteSpace([string]$metadata['taskPrefix'])) {
+        return [string]$metadata['taskPrefix']
+    }
+    return 'task'
+}
+
+function Format-BacklogTaskId([string]$taskPrefix, [int]$number) {
+    return "{0}-{1}" -f $taskPrefix.ToUpperInvariant(), $number
+}
+
+function Format-BacklogTaskDependencyId([string]$taskPrefix, [int]$number) {
+    return "{0}-{1}" -f $taskPrefix.ToLowerInvariant(), $number
+}
+
+function Get-BacklogTaskNumber([string]$taskId) {
+    if ([string]::IsNullOrWhiteSpace($taskId)) { return 0 }
+    $trimmed = $taskId.Trim()
+    if ($trimmed -match '^[A-Za-z]+-(\d+)$') { return [int]$Matches[1] }
+    return 0
+}
+
+function Convert-AgentXLabelsToBacklogPriority([string[]]$labels) {
+    foreach ($label in @($labels)) {
+        switch ([string]$label) {
+            'priority:p0' { return 'high' }
+            'priority:p1' { return 'high' }
+            'priority:p2' { return 'medium' }
+            'priority:p3' { return 'low' }
+        }
+    }
+    return 'medium'
+}
+
+function Convert-BacklogPriorityToAgentXLabel([string]$priority) {
+    switch (($priority ?? '').Trim().ToLowerInvariant()) {
+        'urgent' { return 'priority:p0' }
+        'critical' { return 'priority:p0' }
+        'high' { return 'priority:p1' }
+        'medium' { return 'priority:p2' }
+        'low' { return 'priority:p3' }
+        default { return '' }
+    }
+}
+
+function Get-AgentXMetadataFromMarkdown([string]$content) {
+    if ($content -match '(?ms)<!--\s*AGENTX:METADATA\s*(?<json>\{.*?\})\s*-->') {
+        try { return ($Matches['json'] | ConvertFrom-Json -Depth 10) } catch { return $null }
+    }
+    return $null
+}
+
+function Get-MarkdownSectionContent([string]$content, [string]$heading) {
+    $pattern = '(?ms)^##\s+' + [regex]::Escape($heading) + '\s*\r?\n(?<section>.*?)(?=^##\s|\z)'
+    $match = [regex]::Match($content, $pattern)
+    if (-not $match.Success) { return '' }
+    return $match.Groups['section'].Value.Trim()
+}
+
+function Remove-MarkdownSection([string]$content, [string]$heading) {
+    $pattern = '(?ms)^##\s+' + [regex]::Escape($heading) + '\s*\r?\n.*?(?=^##\s|\z)'
+    return ([regex]::Replace($content, $pattern, '')).Trim()
+}
+
+function Set-MarkdownSectionContent([string]$content, [string]$heading, [string]$sectionContent) {
+    $replacement = "## $heading`n`n$($sectionContent.Trim())"
+    $pattern = '(?ms)^##\s+' + [regex]::Escape($heading) + '\s*\r?\n.*?(?=^##\s|\z)'
+    if ([regex]::IsMatch($content, $pattern)) {
+        $updated = [regex]::Replace($content, $pattern, $replacement, 1)
+        return $updated.Trim() + "`n"
+    }
+    if ([string]::IsNullOrWhiteSpace($content)) {
+        return $replacement + "`n"
+    }
+    return ($content.Trim() + "`n`n" + $replacement + "`n")
+}
+
+function Format-YamlScalar([string]$value) {
+    $escaped = ([string]$value).Replace("'", "''")
+    return "'$escaped'"
+}
+
+function Format-BacklogTaskFileName([string]$taskPrefix, [int]$number, [string]$title) {
+    $safeTitle = [string]$title
+    foreach ($char in [System.IO.Path]::GetInvalidFileNameChars()) {
+        $safeTitle = $safeTitle.Replace([string]$char, '-')
+    }
+    foreach ($char in @('[', ']')) {
+        $safeTitle = $safeTitle.Replace($char, '-')
+    }
+    $safeTitle = ($safeTitle -replace '\s+', '-').Trim('-')
+    $safeTitle = ($safeTitle -replace '-{2,}', '-')
+    if (-not $safeTitle) { $safeTitle = "issue-$number" }
+    return "{0}-{1} - {2}.md" -f $taskPrefix.ToLowerInvariant(), $number, $safeTitle
+}
+
+function Initialize-BacklogLocalStructure {
+    $paths = Get-BacklogLocalPaths
+    foreach ($dir in @($paths.backlogPath, $paths.tasksDir, $paths.completedDir)) {
+        if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+    }
+
+    if (-not (Test-Path $paths.configPath)) {
+        $projectName = Split-Path $Script:ROOT -Leaf
+        $configContent = @(
+            "project_name: $(Format-YamlScalar $projectName)",
+            "default_status: 'Backlog'",
+            "statuses: ['Backlog', 'Ready', 'In Progress', 'In Review', 'Done']",
+            'labels: []',
+            'milestones: []',
+            'definition_of_done: []',
+            'date_format: yyyy-mm-dd hh:mm',
+            'auto_open_browser: true',
+            'default_port: 6420',
+            'remote_operations: true',
+            'auto_commit: false',
+            'zero_padded_ids: 0',
+            'bypass_git_hooks: false',
+            'check_active_branches: true',
+            'active_branch_days: 30',
+            "task_prefix: 'task'"
+        ) -join "`n"
+        $parentDir = Split-Path $paths.configPath -Parent
+        if (-not (Test-Path $parentDir)) { New-Item -ItemType Directory -Path $parentDir -Force | Out-Null }
+        Set-Content -LiteralPath $paths.configPath -Value $configContent -Encoding utf8
+    }
+}
+
+function Convert-BacklogTaskFileToAgentXIssue([string]$path, [string]$defaultState) {
+    if (-not (Test-Path $path)) { return $null }
+    try {
+        $content = Get-Content -LiteralPath $path -Raw -Encoding utf8
+    } catch {
+        return $null
+    }
+    $parts = Get-BacklogFrontmatterParts $content
+    $metadata = $parts.metadata
+    $taskId = if ($metadata.ContainsKey('id')) { [string]$metadata['id'] } else { '' }
+    $number = Get-BacklogTaskNumber $taskId
+    if ($number -le 0) { return $null }
+
+    $labels = @()
+    if ($metadata.ContainsKey('labels')) { $labels = @($metadata['labels']) }
+    $priorityValue = if ($metadata.ContainsKey('priority')) { [string]$metadata['priority'] } else { '' }
+    $priorityLabel = Convert-BacklogPriorityToAgentXLabel $priorityValue
+    if ($priorityLabel -and $priorityLabel -notin $labels) { $labels += $priorityLabel }
+
+    $dependencies = @()
+    if ($metadata.ContainsKey('dependencies')) {
+        $dependencies = @($metadata['dependencies'] | ForEach-Object { Get-BacklogTaskNumber ([string]$_) } | Where-Object { $_ -gt 0 })
+    }
+
+    $agentxMetadata = Get-AgentXMetadataFromMarkdown $parts.body
+    $comments = if ($agentxMetadata -and $agentxMetadata.PSObject.Properties['comments']) { @($agentxMetadata.comments) } else { @() }
+    $description = Get-MarkdownSectionContent $parts.body 'Description'
+    $status = if ($metadata.ContainsKey('status')) { [string]$metadata['status'] } else { '' }
+    $normalizedState = if ($defaultState -eq 'closed' -or $status -eq 'Done') { 'closed' } else { 'open' }
+
+    return [PSCustomObject]@{
+        number = $number
+        title = if ($metadata.ContainsKey('title')) { [string]$metadata['title'] } else { "Issue $number" }
+        body = $description
+        labels = @($labels)
+        status = $status
+        state = $normalizedState
+        created = if ($metadata.ContainsKey('created_date')) { [string]$metadata['created_date'] } else { '' }
+        updated = if ($metadata.ContainsKey('updated_date')) { [string]$metadata['updated_date'] } else { '' }
+        comments = @($comments)
+        dependencies = @($dependencies)
+        priority = $priorityValue
+        filePath = $path
+        taskId = $taskId
+    }
+}
+
+function Get-BacklogIssueRecord([int]$num) {
+    return Get-LocalBacklogIssues | Where-Object { [int]$_.number -eq $num } | Select-Object -First 1
+}
+
+function Build-BacklogTaskContent($issue, [string]$existingContent = '') {
+    $taskPrefix = Get-BacklogTaskPrefix
+    $taskId = Format-BacklogTaskId $taskPrefix ([int]$issue.number)
+    $labels = @($issue.labels | ForEach-Object { [string]$_ } | Where-Object { $_ })
+    $dependencies = @()
+    if ($issue.PSObject.Properties['dependencies']) {
+        $dependencies = @($issue.dependencies | ForEach-Object { [int]$_ } | Where-Object { $_ -gt 0 })
+    }
+    $priority = Convert-AgentXLabelsToBacklogPriority $labels
+
+    $frontmatterLines = @(
+        '---',
+        "id: $(Format-YamlScalar $taskId)",
+        "title: $(Format-YamlScalar ([string]$issue.title))",
+        "status: $(Format-YamlScalar ([string]$issue.status))",
+        'assignee: []',
+        "created_date: $(Format-YamlScalar ([string]$issue.created))",
+        "updated_date: $(Format-YamlScalar ([string]$issue.updated))"
+    )
+
+    if (@($labels).Count -gt 0) {
+        $frontmatterLines += 'labels:'
+        foreach ($label in $labels) {
+            $frontmatterLines += "  - $(Format-YamlScalar $label)"
+        }
+    } else {
+        $frontmatterLines += 'labels: []'
+    }
+
+    if (@($dependencies).Count -gt 0) {
+        $frontmatterLines += 'dependencies:'
+        foreach ($dependency in $dependencies) {
+            $frontmatterLines += "  - $(Format-YamlScalar (Format-BacklogTaskDependencyId $taskPrefix $dependency))"
+        }
+    } else {
+        $frontmatterLines += 'dependencies: []'
+    }
+
+    $frontmatterLines += "priority: $(Format-YamlScalar $priority)"
+    $frontmatterLines += '---'
+
+    $bodyContent = if ($existingContent) {
+        (Get-BacklogFrontmatterParts $existingContent).body
+    } else {
+        ''
+    }
+    $bodyContent = Set-MarkdownSectionContent $bodyContent 'Description' ([string]$issue.body)
+
+    $commentPayload = [PSCustomObject]@{ comments = @($issue.comments) }
+    if (@($issue.comments).Count -gt 0) {
+        $metadataJson = $commentPayload | ConvertTo-Json -Depth 10
+        $metadataSection = "<!-- AGENTX:METADATA`n$metadataJson`n-->"
+        $bodyContent = Set-MarkdownSectionContent $bodyContent 'AgentX Metadata' $metadataSection
+    } else {
+        $bodyContent = Remove-MarkdownSection $bodyContent 'AgentX Metadata'
+    }
+
+    return (($frontmatterLines -join "`n") + "`n`n" + $bodyContent.Trim() + "`n")
+}
+
+function New-LocalIssue([string]$title, [string]$body, [string[]]$labels) {
+    $num = Get-NextIssueNumber
+    $issue = [PSCustomObject]@{
+        number = $num
+        title = $title
+        body = $body
+        labels = @($labels)
+        status = 'Backlog'
+        state = 'open'
+        created = Get-Timestamp
+        updated = Get-Timestamp
+        comments = @()
+        dependencies = @()
+    }
+    Save-LocalIssue $issue
+    return $issue
+}
+
+function Get-LocalIssue([int]$num) {
+    if ((Get-LocalIssueBackend) -eq 'backlog') {
+        return Get-BacklogIssueRecord $num
+    }
+
+    if ((Get-PersistenceMode) -eq 'git') {
+        return Read-GitJson "issues/$num.json"
+    }
+    return Read-JsonFile (Join-Path $Script:ISSUES_DIR "$num.json")
+}
+
+function Save-LocalIssue($issue) {
+    if ((Get-LocalIssueBackend) -eq 'backlog') {
+        Initialize-BacklogLocalStructure
+        $paths = Get-BacklogLocalPaths
+        $taskPrefix = Get-BacklogTaskPrefix
+        $existing = Get-BacklogIssueRecord ([int]$issue.number)
+        $targetDir = if ($issue.state -eq 'closed' -or $issue.status -eq 'Done') { $paths.completedDir } else { $paths.tasksDir }
+        $targetPath = Join-Path $targetDir (Format-BacklogTaskFileName $taskPrefix ([int]$issue.number) ([string]$issue.title))
+        $existingPath = if ($existing -and $existing.PSObject.Properties['filePath']) { [string]$existing.filePath } else { '' }
+        $existingContent = if ($existingPath -and (Test-Path $existingPath)) { Get-Content -LiteralPath $existingPath -Raw -Encoding utf8 } else { '' }
+        $content = Build-BacklogTaskContent $issue $existingContent
+        Set-Content -LiteralPath $targetPath -Value $content -Encoding utf8
+        if ($existingPath -and $existingPath -ne $targetPath -and (Test-Path $existingPath)) {
+            Remove-Item -LiteralPath $existingPath -Force
+        }
+        return
+    }
+
+    if ((Get-PersistenceMode) -eq 'git') {
+        Write-GitJson "issues/$($issue.number).json" $issue "issue: update #$($issue.number) - $($issue.title)"
+        return
+    }
+    if (-not (Test-Path $Script:ISSUES_DIR)) { New-Item -ItemType Directory -Path $Script:ISSUES_DIR -Force | Out-Null }
+    Write-JsonFile (Join-Path $Script:ISSUES_DIR "$($issue.number).json") $issue
+}
+
+function Get-ProviderIssue([int]$num) {
+    $provider = Get-AgentXProvider
+    if ($provider -eq 'github') { return Get-GitHubIssue $num }
+    if ($provider -eq 'ado') { return Get-AdoIssue $num }
+    return Get-LocalIssue $num
+}
+
+function Get-ProviderIssues {
+    $provider = Get-AgentXProvider
+    if ($provider -eq 'github') {
+        try {
+            $json = & gh issue list --state all --json number,title,labels,body,state --limit 200 2>$null
+            if ($json) {
+                $raw = $json | ConvertFrom-Json
+                $statusByIssue = if (Test-GitHubProjectConfigured) { Get-GitHubProjectIssueStatusMap } else { @{} }
+                return @($raw | ForEach-Object {
+                    $status = ''
+                    $issueNumber = [int]$_.number
+                    if ($statusByIssue.ContainsKey($issueNumber)) {
+                        $status = [string]$statusByIssue[$issueNumber]
+                    }
+                    Convert-GitHubIssueToAgentXIssue $_ $status
+                })
+            }
+        } catch { }
+        return @()
+    }
+
+    if ($provider -eq 'ado') {
+        try {
+            Assert-AdoCliAvailable
+            $orgUrl = Get-AdoOrganizationUrl
+            $project = Get-AdoProjectName
+            if (-not [string]::IsNullOrWhiteSpace($orgUrl) -and -not [string]::IsNullOrWhiteSpace($project)) {
+                $wiql = "Select [System.Id] From WorkItems Where [System.TeamProject] = '$project' Order By [System.ChangedDate] Desc"
+                $json = & az boards query --wiql $wiql --organization $orgUrl --project $project --output json 2>$null
+                if ($json) {
+                    $queryResult = $json | ConvertFrom-Json
+                    $refs = @()
+                    if ($queryResult.workItems) { $refs = @($queryResult.workItems) }
+                    elseif ($queryResult.value) { $refs = @($queryResult.value) }
+                    else { $refs = @($queryResult) }
+
+                    $issues = @()
+                    foreach ($ref in ($refs | Select-Object -First 200)) {
+                        $workItemId = if ($ref.id) { [int]$ref.id } elseif ($ref.fields.'System.Id') { [int]$ref.fields.'System.Id' } else { 0 }
+                        if ($workItemId -le 0) { continue }
+                        $issue = Get-AdoIssue $workItemId
+                        if ($issue) { $issues += $issue }
+                    }
+                    if ($issues.Count -gt 0) { return $issues }
+                }
+            }
+        } catch { }
+        return @()
+    }
+
+    return @(Get-LocalBacklogIssues)
+}
+
+function Update-ProviderIssue([int]$num, [string]$title, [string]$body, [string]$status, [string]$labelStr) {
+    $provider = Get-AgentXProvider
+    $issue = Get-ProviderIssue $num
+    if (-not $issue) { throw "Issue #$num not found" }
+
+    if ($provider -eq 'github') {
+        $ghArgs = @('issue', 'edit', "$num")
+        $hasEdit = $false
+
+        if ($title) {
+            $ghArgs += @('--title', $title)
+            $hasEdit = $true
+        }
+        if ($body) {
+            $ghArgs += @('--body', $body)
+            $hasEdit = $true
+        }
+        if ($labelStr) {
+            $newLabels = ConvertTo-IssueLabels $labelStr
+            $existingLabels = @($issue.labels)
+            foreach ($label in $newLabels | Where-Object { $_ -notin $existingLabels }) {
+                $ghArgs += @('--add-label', $label)
+                $hasEdit = $true
+            }
+            foreach ($label in $existingLabels | Where-Object { $_ -notin $newLabels }) {
+                $ghArgs += @('--remove-label', $label)
+                $hasEdit = $true
+            }
+        }
+
+        if ($hasEdit) {
+            $null = Invoke-GitHubCli $ghArgs "Failed to update GitHub issue #$num." -AllowEmptyOutput
+        }
+        if ($status) {
+            if (-not (Set-GitHubProjectIssueStatus $num $status $false)) {
+                if (Test-GitHubProjectConfigured) {
+                    Write-Host "$($C.y)GitHub project status was not updated for issue #${num}. Ensure the issue is added to the configured project and the project has a matching Status option.$($C.n)"
+                } else {
+                    Write-Host "$($C.y)GitHub project status was not updated because no project number is configured. Set .agentx/config.json `project` to enable Project V2 status sync.$($C.n)"
+                }
+            }
+        }
+
+        return (Get-GitHubIssue $num)
+    }
+
+    if ($provider -eq 'ado') {
+        Assert-AdoCliAvailable
+        $orgUrl = Get-AdoOrganizationUrl
+        $project = Get-AdoProjectName
+        $adoArgs = @('boards', 'work-item', 'update', '--id', "$num", '--organization', $orgUrl, '--project', $project, '--output', 'json')
+        $hasEdit = $false
+
+        if ($title) {
+            $adoArgs += @('--title', $title)
+            $hasEdit = $true
+        }
+        if ($body) {
+            $adoArgs += @('--description', $body)
+            $hasEdit = $true
+        }
+        if ($status) {
+            $adoArgs += @('--state', (Convert-AgentXStatusToAdoState $status))
+            $hasEdit = $true
+        }
+        if ($labelStr) {
+            $labels = ConvertTo-IssueLabels $labelStr
+            $adoArgs += @('--fields', "System.Tags=$($labels -join '; ')")
+            $hasEdit = $true
+        }
+
+        if ($hasEdit) {
+            $null = & az @adoArgs 2>$null
+        }
+
+        return (Get-AdoIssue $num)
+    }
+
+    if ($title) { $issue.title = $title }
+    if ($status) { $issue.status = $status }
+    if ($body) { $issue.body = $body }
+    if ($labelStr) { $issue.labels = @(ConvertTo-IssueLabels $labelStr) }
+    $issue.updated = Get-Timestamp
+    Save-LocalIssue $issue
+    return $issue
+}
+
+function Close-ProviderIssue([int]$num) {
+    $provider = Get-AgentXProvider
+
+    if ($provider -eq 'github') {
+        $ghArgs = @('issue', 'close', "$num", '--reason', 'completed')
+        $null = Invoke-GitHubCli $ghArgs "Failed to close GitHub issue #$num." -AllowEmptyOutput
+        if (Test-GitHubProjectConfigured) {
+            if (-not (Set-GitHubProjectIssueStatus $num 'Done' $false)) {
+                Write-Host "$($C.y)GitHub issue #${num} was closed, but the configured project status could not be updated to Done.$($C.n)"
+            }
+        }
+        return (Get-GitHubIssue $num)
+    }
+
+    if ($provider -eq 'ado') {
+        Assert-AdoCliAvailable
+        $orgUrl = Get-AdoOrganizationUrl
+        $project = Get-AdoProjectName
+        $null = & az boards work-item update --id $num --state Closed --organization $orgUrl --project $project --output json 2>$null
+        return (Get-AdoIssue $num)
+    }
+
+    $issue = Get-LocalIssue $num
+    if (-not $issue) { throw "Issue #$num not found" }
+    $issue.state = 'closed'
+    $issue.status = 'Done'
+    $issue.updated = Get-Timestamp
+    Save-LocalIssue $issue
+    return $issue
+}
+
+function Add-ProviderIssueComment([int]$num, [string]$body) {
+    $provider = Get-AgentXProvider
+
+    if ($provider -eq 'github') {
+        $ghArgs = @('issue', 'comment', "$num", '--body', $body)
+        $null = Invoke-GitHubCli $ghArgs "Failed to add a comment to GitHub issue #$num." -AllowEmptyOutput
+        return (Get-GitHubIssue $num)
+    }
+
+    if ($provider -eq 'ado') {
+        Assert-AdoCliAvailable
+        $orgUrl = Get-AdoOrganizationUrl
+        $project = Get-AdoProjectName
+        $null = & az boards work-item update --id $num --discussion $body --organization $orgUrl --project $project --output json 2>$null
+        return (Get-AdoIssue $num)
+    }
+
+    $issue = Get-LocalIssue $num
+    if (-not $issue) { throw "Issue #$num not found" }
+    $comment = [PSCustomObject]@{ body = $body; created = Get-Timestamp }
+    $issue.comments = @($issue.comments) + @($comment)
+    $issue.updated = Get-Timestamp
+    Save-LocalIssue $issue
+    return $issue
 }
 
 function Get-BacklogSyncStatus($issue) {
@@ -653,7 +1336,7 @@ function Sync-LocalIssueToGitHub($localIssue, [int]$remoteIssueNumber) {
     return $true
 }
 
-function Create-GitHubIssueFromLocalIssue($localIssue, [string]$localIssueNumber) {
+function New-GitHubIssueFromLocalIssue($localIssue, [string]$localIssueNumber) {
     $createArgs = @('issue', 'create', '--title', $localIssue.title)
     $issueBody = if ([string]::IsNullOrWhiteSpace($localIssue.body)) { $localIssue.title } else { $localIssue.body }
     $createArgs += @('--body', $issueBody)
@@ -705,7 +1388,7 @@ function Sync-LocalBacklogToGitHubIfNeeded([string]$Repo, [string]$Reason, [swit
         if ($syncState.issueMap.ContainsKey($localIssueNumber)) {
             $remoteIssueNumber = [int]$syncState.issueMap[$localIssueNumber]
             if (-not (Sync-LocalIssueToGitHub $issue $remoteIssueNumber)) {
-                $remoteIssueNumber = Create-GitHubIssueFromLocalIssue $issue $localIssueNumber
+                $remoteIssueNumber = New-GitHubIssueFromLocalIssue $issue $localIssueNumber
                 $syncState.issueMap[$localIssueNumber] = $remoteIssueNumber
                 $migratedCount++
             } else {
@@ -713,7 +1396,7 @@ function Sync-LocalBacklogToGitHubIfNeeded([string]$Repo, [string]$Reason, [swit
                 continue
             }
         } else {
-            $remoteIssueNumber = Create-GitHubIssueFromLocalIssue $issue $localIssueNumber
+            $remoteIssueNumber = New-GitHubIssueFromLocalIssue $issue $localIssueNumber
             $syncState.issueMap[$localIssueNumber] = $remoteIssueNumber
             $migratedCount++
         }
@@ -1024,7 +1707,7 @@ function Get-TaskBundleFilePath([string]$bundleId) {
     return Join-Path (Get-TaskBundleDirectory) ("$bundleId.json")
 }
 
-function Normalize-TaskBundleState([string]$value, [string]$default = 'Ready') {
+function Format-TaskBundleState([string]$value, [string]$default = 'Ready') {
     if ([string]::IsNullOrWhiteSpace($value)) { return $default }
     switch ($value.Trim().ToLowerInvariant()) {
         'proposed' { return 'Proposed' }
@@ -1040,7 +1723,7 @@ function Normalize-TaskBundleState([string]$value, [string]$default = 'Ready') {
     }
 }
 
-function Normalize-TaskBundlePriority([string]$value, [string]$default = 'p1') {
+function Format-TaskBundlePriority([string]$value, [string]$default = 'p1') {
     if ([string]::IsNullOrWhiteSpace($value)) { return $default }
     $normalized = $value.Trim().ToLowerInvariant()
     if ($normalized -notin @('p0', 'p1', 'p2', 'p3')) {
@@ -1049,7 +1732,7 @@ function Normalize-TaskBundlePriority([string]$value, [string]$default = 'p1') {
     return $normalized
 }
 
-function Normalize-TaskBundlePromotionMode([string]$value, [string]$default = 'none') {
+function Format-TaskBundlePromotionMode([string]$value, [string]$default = 'none') {
     if ([string]::IsNullOrWhiteSpace($value)) { return $default }
     switch ($value.Trim().ToLowerInvariant()) {
         'none' { return 'none' }
@@ -1065,7 +1748,7 @@ function Normalize-TaskBundlePromotionMode([string]$value, [string]$default = 'n
     }
 }
 
-function Normalize-TaskBundleTargetType([string]$value, [string]$default = '') {
+function Format-TaskBundleTargetType([string]$value, [string]$default = '') {
     if ([string]::IsNullOrWhiteSpace($value)) { return $default }
     switch ($value.Trim().ToLowerInvariant()) {
         'story' { return 'story' }
@@ -1077,7 +1760,7 @@ function Normalize-TaskBundleTargetType([string]$value, [string]$default = '') {
     }
 }
 
-function Normalize-TaskBundleTitleKey([string]$value) {
+function Format-TaskBundleTitleKey([string]$value) {
     if ([string]::IsNullOrWhiteSpace($value)) { return '' }
     return (($value.ToLowerInvariant() -replace '[^a-z0-9]+', '-') -replace '^-+', '' -replace '-+$', '')
 }
@@ -1286,10 +1969,10 @@ function Get-TaskBundleFilterMatch($bundle, $context, [string]$stateFilter = '',
         if ($bundlePlan -ne [string]$context.planReference) { return $false }
     }
     if ($stateFilter) {
-        if ((Normalize-TaskBundleState $bundle.state) -ne (Normalize-TaskBundleState $stateFilter)) { return $false }
+        if ((Format-TaskBundleState $bundle.state) -ne (Format-TaskBundleState $stateFilter)) { return $false }
     }
     if ($priorityFilter) {
-        if ((Normalize-TaskBundlePriority $bundle.priority) -ne (Normalize-TaskBundlePriority $priorityFilter)) { return $false }
+        if ((Format-TaskBundlePriority $bundle.priority) -ne (Format-TaskBundlePriority $priorityFilter)) { return $false }
     }
     return $true
 }
@@ -1302,7 +1985,7 @@ function Get-TaskBundleDefaultEvidence($context) {
 }
 
 function Get-TaskBundlePromotionTargetFromMode([string]$promotionMode) {
-    switch (Normalize-TaskBundlePromotionMode $promotionMode) {
+    switch (Format-TaskBundlePromotionMode $promotionMode) {
         'story_candidate' { return 'story' }
         'feature_candidate' { return 'feature' }
         'review_finding_candidate' { return 'review-finding' }
@@ -1336,7 +2019,7 @@ function Get-TaskBundleIssueDraft($bundle, [string]$targetType) {
 
 function Get-TaskBundleDuplicateIssueMatch($bundle, [string]$targetType) {
     $targetLabel = "type:$targetType"
-    $titleKey = Normalize-TaskBundleTitleKey $bundle.title
+    $titleKey = Format-TaskBundleTitleKey $bundle.title
     $parentIssue = if ($bundle.parent_context.issue_number) { [int]$bundle.parent_context.issue_number } else { 0 }
     $parentPlan = if ($bundle.parent_context.plan_reference) { [string]$bundle.parent_context.plan_reference } else { '' }
 
@@ -1345,7 +2028,7 @@ function Get-TaskBundleDuplicateIssueMatch($bundle, [string]$targetType) {
         if ($issueState -ne 'open') { continue }
         if ($targetLabel -notin @($issue.labels)) { continue }
         $issueBody = if ($issue.body) { [string]$issue.body } else { '' }
-        $issueTitleKey = Normalize-TaskBundleTitleKey ([string]$issue.title)
+        $issueTitleKey = Format-TaskBundleTitleKey ([string]$issue.title)
         if ($issueTitleKey -ne $titleKey) { continue }
 
         $issueParentMatch = [regex]::Match($issueBody, 'Parent Issue:\s+#(?<issue>\d+)')
@@ -1441,8 +2124,8 @@ function Invoke-BundleCreate {
     $title = Get-DecodedFlag @('-t', '--title') @('--title-base64')
     $summary = Get-DecodedFlag @('-s', '--summary') @('--summary-base64')
     $owner = Get-Flag @('-o', '--owner') 'engineer'
-    $priority = Normalize-TaskBundlePriority (Get-Flag @('-p', '--priority') 'p1')
-    $promotionMode = Normalize-TaskBundlePromotionMode (Get-Flag @('--promotion-mode') 'none')
+    $priority = Format-TaskBundlePriority (Get-Flag @('-p', '--priority') 'p1')
+    $promotionMode = Format-TaskBundlePromotionMode (Get-Flag @('--promotion-mode') 'none')
     $explicitIssueNumber = [int](Get-Flag @('-i', '--issue') '0')
     $explicitPlan = Get-Flag @('--plan')
     $tags = ConvertTo-StringArray (Get-Flag @('--tags'))
@@ -1529,7 +2212,7 @@ function Invoke-BundleResolve {
     if (-not $bundle) { Write-Host "Error: Task bundle '$bundleId' was not found."; exit 1 }
 
     try {
-        $targetState = if ($stateValue) { Normalize-TaskBundleState $stateValue } elseif ($archiveReason) { 'Archived' } else { 'Done' }
+        $targetState = if ($stateValue) { Format-TaskBundleState $stateValue } elseif ($archiveReason) { 'Archived' } else { 'Done' }
         if ($targetState -eq 'Archived' -and [string]::IsNullOrWhiteSpace($archiveReason)) {
             throw 'Archived task bundles require --archive-reason.'
         }
@@ -1552,7 +2235,7 @@ function Invoke-BundleResolve {
 
 function Invoke-BundlePromote {
     $bundleId = Get-Flag @('--id', '-n')
-    $targetType = Normalize-TaskBundleTargetType (Get-Flag @('--target') (Get-TaskBundlePromotionTargetFromMode (Get-Flag @('--promotion-mode'))))
+    $targetType = Format-TaskBundleTargetType (Get-Flag @('--target') (Get-TaskBundlePromotionTargetFromMode (Get-Flag @('--promotion-mode'))))
     if ([string]::IsNullOrWhiteSpace($bundleId)) { Write-Host 'Error: --id is required'; exit 1 }
 
     $bundle = Get-TaskBundle $bundleId
@@ -1649,7 +2332,7 @@ function New-BoundedParallelId {
     return "parallel-$stamp-$suffix"
 }
 
-function Normalize-ParallelScopeIndependence([string]$value) {
+function Format-ParallelScopeIndependence([string]$value) {
     switch ($value.Trim().ToLowerInvariant()) {
         'independent' { return 'independent' }
         'loosely-coupled' { return 'loosely-coupled' }
@@ -1659,7 +2342,7 @@ function Normalize-ParallelScopeIndependence([string]$value) {
     }
 }
 
-function Normalize-ParallelRisk([string]$value, [string]$fieldName) {
+function Format-ParallelRisk([string]$value, [string]$fieldName) {
     $normalized = $value.Trim().ToLowerInvariant()
     if ($normalized -notin @('low', 'medium', 'high')) {
         throw "Unsupported $fieldName '$value'. Use low, medium, or high."
@@ -1667,7 +2350,7 @@ function Normalize-ParallelRisk([string]$value, [string]$fieldName) {
     return $normalized
 }
 
-function Normalize-ParallelReviewComplexity([string]$value) {
+function Format-ParallelReviewComplexity([string]$value) {
     switch ($value.Trim().ToLowerInvariant()) {
         'bounded' { return 'bounded' }
         'heightened' { return 'heightened' }
@@ -1676,7 +2359,7 @@ function Normalize-ParallelReviewComplexity([string]$value) {
     }
 }
 
-function Normalize-ParallelRecoveryComplexity([string]$value) {
+function Format-ParallelRecoveryComplexity([string]$value) {
     switch ($value.Trim().ToLowerInvariant()) {
         'recoverable' { return 'recoverable' }
         'contained' { return 'contained' }
@@ -1685,7 +2368,7 @@ function Normalize-ParallelRecoveryComplexity([string]$value) {
     }
 }
 
-function Normalize-TaskUnitIsolationMode([string]$value, [string]$default = 'logical') {
+function Format-TaskUnitIsolationMode([string]$value, [string]$default = 'logical') {
     if ([string]::IsNullOrWhiteSpace($value)) { return $default }
     switch ($value.Trim().ToLowerInvariant()) {
         'logical' { return 'logical' }
@@ -1699,7 +2382,7 @@ function Normalize-TaskUnitIsolationMode([string]$value, [string]$default = 'log
     }
 }
 
-function Normalize-TaskUnitStatus([string]$value, [string]$default = 'Ready') {
+function Format-TaskUnitStatus([string]$value, [string]$default = 'Ready') {
     if ([string]::IsNullOrWhiteSpace($value)) { return $default }
     switch ($value.Trim().ToLowerInvariant()) {
         'ready' { return 'Ready' }
@@ -1714,7 +2397,7 @@ function Normalize-TaskUnitStatus([string]$value, [string]$default = 'Ready') {
     }
 }
 
-function Normalize-TaskUnitMergeReadiness([string]$value, [string]$default = 'Not Ready') {
+function Format-TaskUnitMergeReadiness([string]$value, [string]$default = 'Not Ready') {
     if ([string]::IsNullOrWhiteSpace($value)) { return $default }
     switch ($value.Trim().ToLowerInvariant()) {
         'not ready' { return 'Not Ready' }
@@ -1725,7 +2408,7 @@ function Normalize-TaskUnitMergeReadiness([string]$value, [string]$default = 'No
     }
 }
 
-function Normalize-ReconciliationVerdict([string]$value, [string]$fieldName) {
+function Format-ReconciliationVerdict([string]$value, [string]$fieldName) {
     switch ($value.Trim().ToLowerInvariant()) {
         'pending' { return 'pending' }
         'pass' { return 'pass' }
@@ -1734,7 +2417,7 @@ function Normalize-ReconciliationVerdict([string]$value, [string]$fieldName) {
     }
 }
 
-function Normalize-OwnerApproval([string]$value) {
+function Format-OwnerApproval([string]$value) {
     switch ($value.Trim().ToLowerInvariant()) {
         'pending' { return 'pending' }
         'approved' { return 'approved' }
@@ -1834,9 +2517,9 @@ function ConvertTo-TaskUnits([string]$encodedUnits) {
             title = $title
             scope_boundary = $scopeBoundary
             owner = $owner
-            isolation_mode = Normalize-TaskUnitIsolationMode $isolationMode
-            status = Normalize-TaskUnitStatus $status
-            merge_readiness = Normalize-TaskUnitMergeReadiness $mergeReadiness
+            isolation_mode = Format-TaskUnitIsolationMode $isolationMode
+            status = Format-TaskUnitStatus $status
+            merge_readiness = Format-TaskUnitMergeReadiness $mergeReadiness
             recovery_guidance = $recoveryGuidance
             summary_signal = if ($summarySignal) { $summarySignal } else { $title }
         })
@@ -1902,11 +2585,11 @@ function Invoke-ParallelAssess {
     try {
         $context = Resolve-TaskBundleContext -issueNumber $issueNumber -planReference $planReference
         $assessment = [PSCustomObject]@{
-            scope_independence = Normalize-ParallelScopeIndependence (Get-Flag @('--scope-independence') 'coupled')
-            dependency_coupling = Normalize-ParallelRisk (Get-Flag @('--dependency-coupling') 'high') 'dependency coupling'
-            artifact_overlap = Normalize-ParallelRisk (Get-Flag @('--artifact-overlap') 'high') 'artifact overlap'
-            review_complexity = Normalize-ParallelReviewComplexity (Get-Flag @('--review-complexity') 'high')
-            recovery_complexity = Normalize-ParallelRecoveryComplexity (Get-Flag @('--recovery-complexity') 'high')
+            scope_independence = Format-ParallelScopeIndependence (Get-Flag @('--scope-independence') 'coupled')
+            dependency_coupling = Format-ParallelRisk (Get-Flag @('--dependency-coupling') 'high') 'dependency coupling'
+            artifact_overlap = Format-ParallelRisk (Get-Flag @('--artifact-overlap') 'high') 'artifact overlap'
+            review_complexity = Format-ParallelReviewComplexity (Get-Flag @('--review-complexity') 'high')
+            recovery_complexity = Format-ParallelRecoveryComplexity (Get-Flag @('--recovery-complexity') 'high')
         }
         $assessment | Add-Member -NotePropertyName 'decision' -NotePropertyValue (Get-BoundedParallelDecision $assessment) -Force
         $assessment | Add-Member -NotePropertyName 'required_review_level' -NotePropertyValue (Get-BoundedParallelReviewLevel $assessment) -Force
@@ -1986,7 +2669,7 @@ function Invoke-ParallelGet {
 
 function Invoke-ParallelReconcile {
     $parallelId = Get-Flag @('--id', '-n')
-    $followUpTarget = Normalize-TaskBundleTargetType (Get-Flag @('--follow-up-target') 'none')
+    $followUpTarget = Format-TaskBundleTargetType (Get-Flag @('--follow-up-target') 'none')
     $followUpTitle = Get-DecodedFlag @('--follow-up-title') @('--follow-up-title-base64')
     $followUpSummary = Get-DecodedFlag @('--follow-up-summary') @('--follow-up-summary-base64')
     if ([string]::IsNullOrWhiteSpace($parallelId)) { Write-Host 'Error: --id is required'; exit 1 }
@@ -1995,10 +2678,10 @@ function Invoke-ParallelReconcile {
     if (-not $run) { Write-Host "Error: Bounded parallel record '$parallelId' was not found."; exit 1 }
 
     try {
-        $run.reconciliation.overlap_review = Normalize-ReconciliationVerdict (Get-Flag @('--overlap-review') 'pending') 'overlap review'
-        $run.reconciliation.conflict_review = Normalize-ReconciliationVerdict (Get-Flag @('--conflict-review') 'pending') 'conflict review'
-        $run.reconciliation.acceptance_evidence = Normalize-ReconciliationVerdict (Get-Flag @('--acceptance-evidence') 'pending') 'acceptance evidence'
-        $run.reconciliation.owner_approval = Normalize-OwnerApproval (Get-Flag @('--owner-approval') 'pending')
+        $run.reconciliation.overlap_review = Format-ReconciliationVerdict (Get-Flag @('--overlap-review') 'pending') 'overlap review'
+        $run.reconciliation.conflict_review = Format-ReconciliationVerdict (Get-Flag @('--conflict-review') 'pending') 'conflict review'
+        $run.reconciliation.acceptance_evidence = Format-ReconciliationVerdict (Get-Flag @('--acceptance-evidence') 'pending') 'acceptance evidence'
+        $run.reconciliation.owner_approval = Format-OwnerApproval (Get-Flag @('--owner-approval') 'pending')
 
         $allUnitsReady = @($run.units).Count -gt 0 -and @($run.units | Where-Object { $_.merge_readiness -eq 'Ready For Reconciliation' }).Count -eq @($run.units).Count
         $passed = (
@@ -2098,20 +2781,7 @@ function New-AgentXIssue([string]$title, [string]$body, [string[]]$labels, [stri
         return $issue
     }
 
-    $num = Get-NextIssueNumber
-    $issue = [PSCustomObject]@{
-        number = $num
-        title = $title
-        body = $body
-        labels = @($normalizedLabels)
-        status = 'Backlog'
-        state = 'open'
-        created = Get-Timestamp
-        updated = Get-Timestamp
-        comments = @()
-    }
-    Save-Issue $issue
-    return $issue
+    return (New-LocalIssue $title $body $normalizedLabels)
 }
 
 function Invoke-IssueCmd {
@@ -2130,6 +2800,17 @@ function Invoke-IssueCmd {
 }
 
 function Get-NextIssueNumber {
+    if ((Get-LocalIssueBackend) -eq 'backlog') {
+        $existingNumbers = @(Get-LocalBacklogIssues | ForEach-Object { [int]$_.number } | Where-Object { $_ -gt 0 })
+        $cfg = Get-AgentXConfig
+        $configuredNext = [int](Get-ConfigValue $cfg 'nextIssueNumber' 1)
+        $candidate = if (@($existingNumbers).Count -gt 0) { ((($existingNumbers | Measure-Object -Maximum).Maximum) + 1) } else { 1 }
+        $num = [Math]::Max($candidate, $configuredNext)
+        Set-ConfigValue $cfg 'nextIssueNumber' ($num + 1)
+        Write-JsonFile $Script:CONFIG_FILE $cfg
+        return $num
+    }
+
     if ((Get-PersistenceMode) -eq 'git') {
         Initialize-GitDataBranch
         $counter = Read-GitJson 'state/counter.json'
@@ -2146,10 +2827,7 @@ function Get-NextIssueNumber {
 }
 
 function Get-Issue([int]$num) {
-    if ((Get-PersistenceMode) -eq 'git') {
-        return Read-GitJson "issues/$num.json"
-    }
-    return Read-JsonFile (Join-Path $Script:ISSUES_DIR "$num.json")
+    return Get-LocalIssue $num
 }
 
 function Convert-GitHubIssueStateToIssueState([string]$state) {
@@ -2238,8 +2916,8 @@ function Get-GitHubRepoSlug {
     $adapterRepo = [string](Get-AgentXAdapterValue $cfg 'github' 'repo' '')
     if (-not [string]::IsNullOrWhiteSpace($adapterRepo)) { return $adapterRepo }
 
-    $repo = [string](Get-ConfigValue $cfg 'repo' '')
-    if (-not [string]::IsNullOrWhiteSpace($repo)) { return $repo }
+    $rootRepo = [string](Get-ConfigValue $cfg 'repo' '')
+    if (-not [string]::IsNullOrWhiteSpace($rootRepo)) { return $rootRepo }
 
     try {
         $remoteUrl = (& git -C $Script:ROOT remote get-url origin 2>$null | Out-String).Trim()
@@ -2375,7 +3053,7 @@ function Get-GitHubProjectIssueStatusMap {
     return $map
 }
 
-function Ensure-GitHubIssueInProject([int]$issueNumber) {
+function Initialize-GitHubIssueInProject([int]$issueNumber) {
     $existing = Get-GitHubProjectIssueItem $issueNumber
     if ($existing) { return $existing }
 
@@ -2405,7 +3083,7 @@ function Set-GitHubProjectIssueStatus([int]$issueNumber, [string]$status, [bool]
     $targetOption = ($statusField.options | Where-Object { $_.name -ieq $targetStatusName } | Select-Object -First 1)
     if (-not $targetOption) { return $false }
 
-    $item = if ($addIfMissing) { Ensure-GitHubIssueInProject $issueNumber } else { Get-GitHubProjectIssueItem $issueNumber }
+    $item = if ($addIfMissing) { Initialize-GitHubIssueInProject $issueNumber } else { Get-GitHubProjectIssueItem $issueNumber }
     if (-not $item) { return $false }
 
     try {
@@ -2481,12 +3159,7 @@ function Convert-AgentXStatusToAdoState([string]$status) {
 }
 
 function Save-Issue($issue) {
-    if ((Get-PersistenceMode) -eq 'git') {
-        Write-GitJson "issues/$($issue.number).json" $issue "issue: update #$($issue.number) - $($issue.title)"
-        return
-    }
-    if (-not (Test-Path $Script:ISSUES_DIR)) { New-Item -ItemType Directory -Path $Script:ISSUES_DIR -Force | Out-Null }
-    Write-JsonFile (Join-Path $Script:ISSUES_DIR "$($issue.number).json") $issue
+    Save-LocalIssue $issue
 }
 
 function Invoke-IssueCreate {
@@ -2508,210 +3181,61 @@ function Invoke-IssueCreate {
 }
 
 function Invoke-IssueUpdate {
-    $provider = Get-AgentXProvider
     $num = [int](Get-Flag @('-n', '--number') '0')
     if (-not $num) { Write-Host 'Error: --number required'; exit 1 }
-    $issue = if ($provider -eq 'github') { Get-GitHubIssue $num } elseif ($provider -eq 'ado') { Get-AdoIssue $num } else { Get-Issue $num }
-    if (-not $issue) { Write-Host "Error: Issue #$num not found"; exit 1 }
 
     $title = Get-DecodedFlag @('-t', '--title') @('--title-base64')
     $body = Get-DecodedFlag @('-b', '--body') @('--body-base64')
     $status = Get-Flag @('-s', '--status')
     $labelStr = Get-Flag @('-l', '--labels')
 
-    if ($provider -eq 'github') {
-        $ghArgs = @('issue', 'edit', "$num")
-        $hasEdit = $false
-
-        if ($title) {
-            $ghArgs += @('--title', $title)
-            $hasEdit = $true
-        }
-        if ($body) {
-            $ghArgs += @('--body', $body)
-            $hasEdit = $true
-        }
-        if ($labelStr) {
-            $newLabels = ConvertTo-IssueLabels $labelStr
-            $existingLabels = @($issue.labels)
-            foreach ($label in $newLabels | Where-Object { $_ -notin $existingLabels }) {
-                $ghArgs += @('--add-label', $label)
-                $hasEdit = $true
-            }
-            foreach ($label in $existingLabels | Where-Object { $_ -notin $newLabels }) {
-                $ghArgs += @('--remove-label', $label)
-                $hasEdit = $true
-            }
-        }
-
-        if ($hasEdit) {
-            try {
-                $null = Invoke-GitHubCli $ghArgs "Failed to update GitHub issue #$num." -AllowEmptyOutput
-            } catch {
-                Write-Host "Error: $($_.Exception.Message)"
-                exit 1
-            }
-        }
-        if ($status) {
-            if (-not (Set-GitHubProjectIssueStatus $num $status $false)) {
-                if (Test-GitHubProjectConfigured) {
-                    Write-Host "$($C.y)GitHub project status was not updated for issue #${num}. Ensure the issue is added to the configured project and the project has a matching Status option.$($C.n)"
-                } else {
-                    Write-Host "$($C.y)GitHub project status was not updated because no project number is configured. Set .agentx/config.json `project` to enable Project V2 status sync.$($C.n)"
-                }
-            }
-        }
-
-        $updatedIssue = Get-GitHubIssue $num
+    try {
+        $updatedIssue = Update-ProviderIssue $num $title $body $status $labelStr
         Write-Host "$($C.g)Updated issue #${num}$($C.n)"
         if ($Script:JsonOutput) { $updatedIssue | ConvertTo-Json -Depth 5 }
-        return
+    } catch {
+        Write-Host "Error: $($_.Exception.Message)"
+        exit 1
     }
-
-    if ($provider -eq 'ado') {
-        Assert-AdoCliAvailable
-        $orgUrl = Get-AdoOrganizationUrl
-        $project = Get-AdoProjectName
-        $adoArgs = @('boards', 'work-item', 'update', '--id', "$num", '--organization', $orgUrl, '--project', $project, '--output', 'json')
-        $hasEdit = $false
-
-        if ($title) {
-            $adoArgs += @('--title', $title)
-            $hasEdit = $true
-        }
-        if ($body) {
-            $adoArgs += @('--description', $body)
-            $hasEdit = $true
-        }
-        if ($status) {
-            $adoArgs += @('--state', (Convert-AgentXStatusToAdoState $status))
-            $hasEdit = $true
-        }
-        if ($labelStr) {
-            $labels = ConvertTo-IssueLabels $labelStr
-            $adoArgs += @('--fields', "System.Tags=$($labels -join '; ')")
-            $hasEdit = $true
-        }
-
-        if ($hasEdit) {
-            $null = & az @adoArgs 2>$null
-        }
-
-        $updatedIssue = Get-AdoIssue $num
-        Write-Host "$($C.g)Updated issue #${num}$($C.n)"
-        if ($Script:JsonOutput) { $updatedIssue | ConvertTo-Json -Depth 5 }
-        return
-    }
-
-    if ($title) { $issue.title = $title }
-    if ($status) { $issue.status = $status }
-    if ($body) { $issue.body = $body }
-    if ($labelStr) { $issue.labels = @(ConvertTo-IssueLabels $labelStr) }
-    $issue.updated = Get-Timestamp
-    Save-Issue $issue
-    Write-Host "$($C.g)Updated issue #${num}$($C.n)"
-    if ($Script:JsonOutput) { $issue | ConvertTo-Json -Depth 5 }
 }
 
 function Invoke-IssueClose {
-    $provider = Get-AgentXProvider
     $num = [int](Get-Flag @('-n', '--number') '')
     if (-not $num -and $Script:SubArgs.Count -gt 0) { $num = [int]$Script:SubArgs[0] }
     if (-not $num) { Write-Host 'Error: issue number required'; exit 1 }
 
-    if ($provider -eq 'github') {
-        try {
-            $ghArgs = @('issue', 'close', "$num", '--reason', 'completed')
-            $null = Invoke-GitHubCli $ghArgs "Failed to close GitHub issue #$num." -AllowEmptyOutput
-        } catch {
-            Write-Host "Error: $($_.Exception.Message)"
-            exit 1
-        }
-        if (Test-GitHubProjectConfigured) {
-            if (-not (Set-GitHubProjectIssueStatus $num 'Done' $false)) {
-                Write-Host "$($C.y)GitHub issue #${num} was closed, but the configured project status could not be updated to Done.$($C.n)"
-            }
-        }
+    try {
+        $issue = Close-ProviderIssue $num
         Write-Host "$($C.g)Closed issue #${num}$($C.n)"
-        if ($Script:JsonOutput) {
-            $issue = Get-GitHubIssue $num
-            if ($issue) { $issue | ConvertTo-Json -Depth 5 }
-        }
-        return
+        if ($Script:JsonOutput -and $issue) { $issue | ConvertTo-Json -Depth 5 }
+    } catch {
+        Write-Host "Error: $($_.Exception.Message)"
+        exit 1
     }
-
-    if ($provider -eq 'ado') {
-        Assert-AdoCliAvailable
-        $orgUrl = Get-AdoOrganizationUrl
-        $project = Get-AdoProjectName
-        $null = & az boards work-item update --id $num --state Closed --organization $orgUrl --project $project --output json 2>$null
-        Write-Host "$($C.g)Closed issue #${num}$($C.n)"
-        if ($Script:JsonOutput) {
-            $issue = Get-AdoIssue $num
-            if ($issue) { $issue | ConvertTo-Json -Depth 5 }
-        }
-        return
-    }
-
-    $issue = Get-Issue $num
-    if (-not $issue) { Write-Host "Error: Issue #$num not found"; exit 1 }
-    $issue.state = 'closed'; $issue.status = 'Done'; $issue.updated = Get-Timestamp
-    Save-Issue $issue
-    Write-Host "$($C.g)Closed issue #${num}$($C.n)"
 }
 
 function Invoke-IssueGet {
-    $provider = Get-AgentXProvider
     $num = [int](Get-Flag @('-n', '--number') '')
     if (-not $num -and $Script:SubArgs.Count -gt 0) { $num = [int]$Script:SubArgs[0] }
     if (-not $num) { Write-Host 'Error: issue number required'; exit 1 }
-    $issue = if ($provider -eq 'github') { Get-GitHubIssue $num } elseif ($provider -eq 'ado') { Get-AdoIssue $num } else { Get-Issue $num }
+    $issue = Get-ProviderIssue $num
     if (-not $issue) { Write-Host "Error: Issue #$num not found"; exit 1 }
     $issue | ConvertTo-Json -Depth 5
 }
 
 function Invoke-IssueComment {
-    $provider = Get-AgentXProvider
     $num = [int](Get-Flag @('-n', '--number') '0')
     $body = Get-DecodedFlag @('-c', '--comment', '-b', '--body') @('--comment-base64', '--body-base64')
     if (-not $num -or -not $body) { Write-Host 'Error: --number and --comment required'; exit 1 }
 
-    if ($provider -eq 'github') {
-        try {
-            $ghArgs = @('issue', 'comment', "$num", '--body', $body)
-            $null = Invoke-GitHubCli $ghArgs "Failed to add a comment to GitHub issue #$num." -AllowEmptyOutput
-        } catch {
-            Write-Host "Error: $($_.Exception.Message)"
-            exit 1
-        }
+    try {
+        $issue = Add-ProviderIssueComment $num $body
         Write-Host "$($C.g)Added comment to issue #${num}$($C.n)"
-        if ($Script:JsonOutput) {
-            $issue = Get-GitHubIssue $num
-            if ($issue) { $issue | ConvertTo-Json -Depth 5 }
-        }
-        return
+        if ($Script:JsonOutput -and $issue) { $issue | ConvertTo-Json -Depth 5 }
+    } catch {
+        Write-Host "Error: $($_.Exception.Message)"
+        exit 1
     }
-
-    if ($provider -eq 'ado') {
-        Assert-AdoCliAvailable
-        $orgUrl = Get-AdoOrganizationUrl
-        $project = Get-AdoProjectName
-        $null = & az boards work-item update --id $num --discussion $body --organization $orgUrl --project $project --output json 2>$null
-        Write-Host "$($C.g)Added comment to issue #${num}$($C.n)"
-        if ($Script:JsonOutput) {
-            $issue = Get-AdoIssue $num
-            if ($issue) { $issue | ConvertTo-Json -Depth 5 }
-        }
-        return
-    }
-
-    $issue = Get-Issue $num
-    if (-not $issue) { Write-Host "Error: Issue #$num not found"; exit 1 }
-    $comment = [PSCustomObject]@{ body = $body; created = Get-Timestamp }
-    $issue.comments = @($issue.comments) + @($comment)
-    $issue.updated = Get-Timestamp
-    Save-Issue $issue
-    Write-Host "$($C.g)Added comment to issue #${num}$($C.n)"
 }
 
 function Invoke-IssueList {
@@ -2735,66 +3259,14 @@ function Invoke-IssueList {
 # ---------------------------------------------------------------------------
 
 function Get-AllIssues {
-    $provider = Get-AgentXProvider
-    if ($provider -eq 'github') {
-        try {
-            $json = & gh issue list --state all --json number,title,labels,body,state --limit 200 2>$null
-            if ($json) {
-                $raw = $json | ConvertFrom-Json
-                $statusByIssue = if (Test-GitHubProjectConfigured) { Get-GitHubProjectIssueStatusMap } else { @{} }
-                return @($raw | ForEach-Object {
-                    $status = ''
-                    $issueNumber = [int]$_.number
-                    if ($statusByIssue.ContainsKey($issueNumber)) {
-                        $status = [string]$statusByIssue[$issueNumber]
-                    }
-                    Convert-GitHubIssueToAgentXIssue $_ $status
-                })
-            }
-        } catch { <# fall through to local #> }
-    }
-    if ($provider -eq 'ado') {
-        try {
-            Assert-AdoCliAvailable
-            $orgUrl = Get-AdoOrganizationUrl
-            $project = Get-AdoProjectName
-            if (-not [string]::IsNullOrWhiteSpace($orgUrl) -and -not [string]::IsNullOrWhiteSpace($project)) {
-                $wiql = "Select [System.Id] From WorkItems Where [System.TeamProject] = '$project' Order By [System.ChangedDate] Desc"
-                $json = & az boards query --wiql $wiql --organization $orgUrl --project $project --output json 2>$null
-                if ($json) {
-                    $queryResult = $json | ConvertFrom-Json
-                    $refs = @()
-                    if ($queryResult.workItems) { $refs = @($queryResult.workItems) }
-                    elseif ($queryResult.value) { $refs = @($queryResult.value) }
-                    else { $refs = @($queryResult) }
-
-                    $issues = @()
-                    foreach ($ref in ($refs | Select-Object -First 200)) {
-                        $workItemId = if ($ref.id) { [int]$ref.id } elseif ($ref.fields.'System.Id') { [int]$ref.fields.'System.Id' } else { 0 }
-                        if ($workItemId -le 0) { continue }
-                        $issue = Get-AdoIssue $workItemId
-                        if ($issue) { $issues += $issue }
-                    }
-                    if ($issues.Count -gt 0) { return $issues }
-                }
-            }
-        } catch { <# fall through to local #> }
-    }
-    # Git-backed persistence
-    if ((Get-PersistenceMode) -eq 'git') {
-        $files = Get-GitFileList 'issues'
-        return @($files | Where-Object { $_ -match '\.json$' } | ForEach-Object {
-            Read-GitJson "issues/$_"
-        } | Where-Object { $_ })
-    }
-    # File-based persistence (default)
-    if (-not (Test-Path $Script:ISSUES_DIR)) { return @() }
-    return @(Get-ChildItem $Script:ISSUES_DIR -Filter '*.json' |
-        ForEach-Object { Read-JsonFile $_.FullName } | Where-Object { $_ })
+    return @(Get-ProviderIssues)
 }
 
 function Get-IssueDeps($issue) {
     $deps = @{ blocks = @(); blocked_by = @() }
+    if ($issue -and $issue.PSObject.Properties['dependencies']) {
+        $deps.blocked_by = @($issue.dependencies | ForEach-Object { [int]$_ } | Where-Object { $_ -gt 0 })
+    }
     if (-not $issue.body) { return $deps }
     $inDeps = $false
     foreach ($line in ($issue.body -split "`n")) {
@@ -2804,7 +3276,7 @@ function Get-IssueDeps($issue) {
         if ($line -match '^\s*-?\s*Blocks:\s*(.+)') {
             $deps.blocks = @([regex]::Matches($Matches[1], '#(\d+)') | ForEach-Object { [int]$_.Groups[1].Value })
         }
-        if ($line -match '^\s*-?\s*Blocked[- ]by:\s*(.+)') {
+        if (-not $issue.PSObject.Properties['dependencies'] -and $line -match '^\s*-?\s*Blocked[- ]by:\s*(.+)') {
             $deps.blocked_by = @([regex]::Matches($Matches[1], '#(\d+)') | ForEach-Object { [int]$_.Groups[1].Value })
         }
     }
@@ -2817,6 +3289,17 @@ function Get-IssuePriority($issue) {
         $label = if ($l -is [string]) { $l } elseif ($null -ne $l.name) { $l.name } else { '' }
         if ($label -match 'priority:p(\d)') { return [int]$Matches[1] }
     }
+
+    if ($issue -and $issue.PSObject.Properties['priority']) {
+        switch (([string]$issue.priority).Trim().ToLowerInvariant()) {
+            'urgent' { return 0 }
+            'critical' { return 0 }
+            'high' { return 1 }
+            'medium' { return 2 }
+            'low' { return 3 }
+        }
+    }
+
     return 9
 }
 
@@ -3769,8 +4252,8 @@ function Get-HarnessAuditChecks([string]$workspaceRoot, [string]$baseRef = '') {
     )
 }
 
-function Test-HarnessCheckRequired([string]$profile, [string]$checkId) {
-    switch ($profile) {
+function Test-HarnessCheckRequired([string]$checkProfile, [string]$checkId) {
+    switch ($checkProfile) {
         'strict' { return $true }
         'balanced' { return $checkId -in @('loop-complete', 'harness-thread-recorded', 'evidence-recorded', 'plan-compliance') }
         default { return $false }
@@ -3792,13 +4275,13 @@ function Invoke-AuditCmd {
             $disableOverrides += @(ConvertTo-StringArray $Script:SubArgs[$i + 1])
         }
     }
-    $profile = Get-HarnessEnforcementProfile -cfg $cfg -override $profileOverride
+    $enforcementProfile = Get-HarnessEnforcementProfile -cfg $cfg -override $profileOverride
     $disabledChecks = Get-HarnessDisabledChecks -cfg $cfg -overrides $disableOverrides
     $baseRef = Get-Flag @('--base-ref') ''
 
     $allChecks = @(Get-HarnessAuditChecks -workspaceRoot $Script:ROOT -baseRef $baseRef)
     $enabledChecks = @($allChecks | Where-Object { $_.id -notin $disabledChecks })
-    $requiredChecks = @($enabledChecks | Where-Object { Test-HarnessCheckRequired -profile $profile -checkId ([string]$_.id) })
+    $requiredChecks = @($enabledChecks | Where-Object { Test-HarnessCheckRequired -checkProfile $enforcementProfile -checkId ([string]$_.id) })
     $failedRequiredChecks = @($requiredChecks | Where-Object { -not $_.passed })
     $earned = ($enabledChecks | Measure-Object -Property score -Sum).Sum
     $max = ($enabledChecks | Measure-Object -Property maxScore -Sum).Sum
@@ -3809,7 +4292,7 @@ function Invoke-AuditCmd {
 
     $result = [PSCustomObject]@{
         target = 'harness'
-        profile = $profile
+        profile = $enforcementProfile
         allowed = $allowed
         disabledChecks = @($disabledChecks)
         requiredChecks = @($requiredChecks | ForEach-Object { $_.id })
@@ -3828,19 +4311,19 @@ function Invoke-AuditCmd {
         $result | ConvertTo-Json -Depth 12 | Write-Host
     } else {
         Write-Host "$($C.c)  AgentX Harness Audit$($C.n)"
-        Write-Host "$($C.d)  Profile: $profile$($C.n)"
+        Write-Host "$($C.d)  Profile: $enforcementProfile$($C.n)"
         Write-Host "$($C.d)  Disabled checks: $(if ($disabledChecks.Count -gt 0) { $disabledChecks -join ', ' } else { 'none' })$($C.n)"
         Write-Host "$($C.d)  Score: $scorePercent% ($passedChecks/$totalChecks checks)$($C.n)"
         Write-Host "$($C.d)  Gate: $(if ($allowed) { 'PASS' } else { 'FAIL' })$($C.n)"
         foreach ($check in $enabledChecks) {
             $mark = if ($check.passed) { '[PASS]' } else { '[FAIL]' }
-            $requiredMarker = if (Test-HarnessCheckRequired -profile $profile -checkId ([string]$check.id)) { 'required' } else { 'advisory' }
+            $requiredMarker = if (Test-HarnessCheckRequired -checkProfile $enforcementProfile -checkId ([string]$check.id)) { 'required' } else { 'advisory' }
             Write-Host "  $mark $($check.label) [$requiredMarker]"
             Write-Host "      $($check.summary)"
         }
     }
 
-    if (-not $allowed -and $profile -notin @('advisory', 'off')) {
+    if (-not $allowed -and $enforcementProfile -notin @('advisory', 'off')) {
         exit 1
     }
 }
@@ -4053,7 +4536,6 @@ function Invoke-LessonsCmd {
 }
 
 function Invoke-LessonsList {
-    $lessonsDir = Join-Path $Script:AGENTX_DIR 'lessons'
     $globalLessonsDir = Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::UserProfile)) '.agentx' 'lessons'
     
     $projectLessons = @()
@@ -4138,7 +4620,6 @@ function Invoke-LessonsQuery {
     $confidence = Get-Flag @('--confidence')
     $tag = Get-Flag @('-t', '--tag')
     $pattern = Get-Flag @('-p', '--pattern')
-    $limit = [int](Get-Flag @('-l', '--limit') '10')
     
     if (-not $category -and -not $confidence -and -not $tag -and -not $pattern) {
         Write-Host "`n$($C.c)  Query Lessons$($C.n)"
@@ -4195,7 +4676,6 @@ function Invoke-LessonsArchive {
 }
 
 function Invoke-LessonsStats {
-    $lessonsDir = Join-Path $Script:AGENTX_DIR 'lessons'
     $globalLessonsDir = Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::UserProfile)) '.agentx' 'lessons'
     
     $projectCount = 0
@@ -4245,7 +4725,6 @@ function Invoke-LessonsStats {
 
 function Invoke-LessonsClean {
     $dryRun = Test-Flag @('--dry-run', '-d')
-    $lessonsDir = Join-Path $Script:AGENTX_DIR 'lessons'
     
     if ($dryRun) {
         Write-Host "$($C.c)  Dry Run: Lesson Cleanup$($C.n)"

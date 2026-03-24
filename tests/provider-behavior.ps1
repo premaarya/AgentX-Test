@@ -295,6 +295,7 @@ Write-Host ' Provider Behavior Tests' -ForegroundColor Cyan
 Write-Host ' ================================================' -ForegroundColor DarkGray
 
 $localRoot = $null
+$localBacklogRoot = $null
 $githubRoot = $null
 $inferredRoot = $null
 $remoteDetectedRoot = $null
@@ -331,6 +332,47 @@ try {
     $localIssue = Get-Content $issueFile -Raw | ConvertFrom-Json -Depth 10
     Assert-True ($close.ExitCode -eq 0) 'Local issue close exits successfully'
     Assert-True ($localIssue.state -eq 'closed' -and $localIssue.status -eq 'Done') 'Local issue close updates state and status'
+
+    $localBacklogRoot = New-TestWorkspace 'local-backlog'
+    New-Item -ItemType Directory -Path (Join-Path $localBacklogRoot 'backlog\tasks') -Force | Out-Null
+    New-Item -ItemType Directory -Path (Join-Path $localBacklogRoot 'backlog\completed') -Force | Out-Null
+    Write-Utf8File (Join-Path $localBacklogRoot 'backlog\config.yml') @"
+project_name: 'AgentX Provider Test'
+default_status: 'Backlog'
+statuses: ['Backlog', 'Ready', 'In Progress', 'In Review', 'Done']
+task_prefix: 'task'
+"@
+    Write-Utf8File (Join-Path $localBacklogRoot '.agentx\config.json') (@{
+        provider = 'local'
+        mode = 'local'
+        created = '2026-03-08T00:00:00Z'
+        enforceIssues = $false
+        nextIssueNumber = 1
+    } | ConvertTo-Json -Depth 5)
+
+    $backlogCreate = Invoke-AgentX $localBacklogRoot @('issue', 'create', '--title', '[Story] Backlog Local', '--body', 'Backlog body', '--labels', 'type:story,priority:p1')
+    $backlogTaskFile = @(Get-ChildItem (Join-Path $localBacklogRoot 'backlog\tasks') -Filter '*.md' | Select-Object -First 1)[0]
+    $backlogTaskContent = Get-Content $backlogTaskFile.FullName -Raw
+    Assert-True ($backlogCreate.ExitCode -eq 0) 'Backlog-backed local issue create exits successfully'
+    Assert-True ($backlogTaskContent -match "id: 'TASK-1'" -and $backlogTaskContent -match "status: 'Backlog'") 'Backlog-backed local issue create writes markdown task metadata'
+
+    $backlogUpdate = Invoke-AgentX $localBacklogRoot @('issue', 'update', '-n', '1', '-s', 'Ready', '-b', 'Updated backlog body')
+    $backlogReady = Invoke-AgentX $localBacklogRoot @('ready', '--json')
+    $backlogReadyIssues = $backlogReady.Output | ConvertFrom-Json -Depth 10
+    Assert-True ($backlogUpdate.ExitCode -eq 0) 'Backlog-backed local issue update exits successfully'
+    Assert-True ($backlogReady.ExitCode -eq 0 -and @($backlogReadyIssues).Count -eq 1 -and [int]$backlogReadyIssues[0].number -eq 1) 'Backlog-backed local ready returns Ready tasks from markdown storage'
+
+    $backlogComment = Invoke-AgentX $localBacklogRoot @('issue', 'comment', '-n', '1', '-c', 'Backlog comment')
+    $backlogGet = Invoke-AgentX $localBacklogRoot @('issue', 'get', '-n', '1', '--json')
+    $backlogIssue = $backlogGet.Output | ConvertFrom-Json -Depth 10
+    Assert-True ($backlogComment.ExitCode -eq 0) 'Backlog-backed local issue comment exits successfully'
+    Assert-True (@($backlogIssue.comments).Count -eq 1 -and $backlogIssue.comments[0].body -eq 'Backlog comment') 'Backlog-backed local issue comment round-trips through markdown metadata'
+
+    $backlogClose = Invoke-AgentX $localBacklogRoot @('issue', 'close', '-n', '1')
+    $completedTaskFile = @(Get-ChildItem (Join-Path $localBacklogRoot 'backlog\completed') -Filter '*.md' | Select-Object -First 1)[0]
+    $completedTaskContent = Get-Content $completedTaskFile.FullName -Raw
+    Assert-True ($backlogClose.ExitCode -eq 0) 'Backlog-backed local issue close exits successfully'
+    Assert-True ($completedTaskContent -match "status: 'Done'" -and $completedTaskContent -match 'Backlog comment') 'Backlog-backed local issue close moves markdown task to completed storage and preserves metadata'
 
     $version = Invoke-AgentX $localRoot @('version')
     Assert-True ($version.ExitCode -eq 0) 'Version exits cleanly on success'
@@ -545,6 +587,7 @@ try {
 }
 finally {
     Remove-TestWorkspace $localRoot
+    Remove-TestWorkspace $localBacklogRoot
     Remove-TestWorkspace $githubRoot
     Remove-TestWorkspace $inferredRoot
     Remove-TestWorkspace $remoteDetectedRoot
