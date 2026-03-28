@@ -215,6 +215,24 @@ Apply to: technology choices, pattern selections, trade-off conclusions, risk as
 - [ ] **AI-first assessment documented**: GenAI/Agentic AI alternatives evaluated for the problem; decision to use or not use AI is justified with evidence
 - [ ] PM requirement-fit validation completed and any scope mismatch resolved or explicitly recorded
 - [ ] An engineer can implement without ambiguity
+- [ ] **No over-specification**: Spec defines WHAT and WHY, not HOW at the implementation level; no dictated variable names, loop structures, or internal algorithms that the Engineer should decide
+
+### Over-Specification Guardrails
+
+The Tech Spec MUST constrain the solution boundary without dictating implementation internals.
+
+| Spec SHOULD define | Spec MUST NOT dictate |
+|--------------------|-----------------------|
+| API contracts (endpoints, request/response schemas) | Internal variable names or class hierarchies |
+| Data model (tables, fields, types, constraints) | Specific loop structures or algorithms |
+| Security requirements (auth model, validation rules) | Framework-specific wiring or DI registration |
+| Performance targets (latency, throughput, memory) | Caching key formats or eviction strategies |
+| Integration contracts (input/output schemas) | Internal error codes or retry timing values |
+| Quality attributes (availability, durability) | Specific test file names or test structure |
+
+**Why this matters**: Over-specified specs create false failures in review when the Engineer
+makes a sound implementation choice that differs from the spec's unnecessary detail. Specs
+should be verifiable by checking contracts and outcomes, not by diffing source code line by line.
 
 ### 8. Commit & Handoff
 

@@ -225,6 +225,30 @@ Provider-aware guidance:
 - do not hardcode one model vendor or model family into the policy
 
 If the current session cannot reconstruct the active slice, blocker, and next action from durable artifacts, prefer reset over compaction.
+
+#### Stall Detection and Pivot-vs-Refine Policy
+
+When the self-review evaluator rejects work multiple times in a row, the harness detects
+a stall and injects pivot-vs-refine guidance before the next attempt.
+
+**Stall threshold**: 3 consecutive self-review failures without an approval.
+
+**Detection signals**:
+- same review categories failing across consecutive iterations
+- finding count not decreasing between iterations
+- new findings introduced by attempted fixes
+
+**Pivot-vs-refine decision**:
+- **Refine**: failures are narrowing, approach is sound, only edge cases remain
+- **Pivot**: same categories keep failing, fixes create new problems, or a structural flaw exists
+
+**Runtime behavior** (implemented in `Invoke-SelfReviewLoop` / main loop):
+- after 3 consecutive failures, stall guidance is injected into the agent's feedback
+- the agent must state a PIVOT or REFINE decision with rationale before making changes
+- stall events are recorded in the execution summary for post-session analysis
+
+**Harness pruning**: if models consistently self-correct before reaching the stall threshold,
+this component can be disabled via config. See [HARNESS-PRUNING-RUBRIC.md](guides/HARNESS-PRUNING-RUBRIC.md).
 | `Review -> Compound Capture` | Review outcome is explicit and any durable findings are captured | Review still in progress, unresolved findings, approval state unclear |
 | `Compound Capture -> Done` | Curated learning exists or the closeout rationale is explicitly recorded in durable artifacts | Missing learning capture and no durable skip rationale |
 

@@ -538,7 +538,20 @@ After completing initial work, keep iterating until all done criteria pass. Reac
 |------------|-------|----------------|
 | 1 | Make it Work: core functionality complete; tests passing | Tests green; feature functional |
 | 2 | Make it Right: refactored; edge cases added; lint clean | Coverage >= 80%; lint clean |
-| 3 | Make it Production-Ready: security clean; performance verified; docs done | Score >= 70%; self-review checklist done |
+| 3 | Make it Production-Ready: security clean; performance verified; docs done; live-surface check | Score >= 70%; self-review checklist done; live-surface verification complete |
+
+### Live-Surface Verification (Iteration 3)
+
+In iteration 3, verify the actual output surface -- not just that tests pass:
+
+- **CLI tools**: Run the command and confirm expected output format, exit codes, and error messages
+- **API endpoints**: Confirm response shapes match spec (status codes, headers, body schema)
+- **UI components**: Verify the component renders correctly with representative data
+- **Scripts**: Execute the script and confirm file outputs, stdout, and side effects match expectations
+- **Configuration files**: Verify the file parses correctly and is consumed by the target tool
+
+If live-surface verification is not feasible (e.g., requires external services), document what was
+verified manually and what remains untestable in the review output.
 
 ### Done Criteria
 

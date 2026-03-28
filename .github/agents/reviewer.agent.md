@@ -101,16 +101,21 @@ Order findings by severity: Critical > High > Medium > Low. Incorporate Critical
 
 Use `get_changed_files` and `read_file` to inspect all changes. Evaluate against this checklist:
 
-| Category | Check |
-|----------|-------|
-| **Spec Conformance** | Implementation matches Tech Spec requirements |
-| **Code Quality** | Clean, readable, follows codebase patterns and naming |
-| **Testing** | Coverage >= 80%, test pyramid balanced, edge cases covered |
-| **Security** | No secrets, parameterized SQL, input validation, no SSRF |
-| **Performance** | No N+1 queries, appropriate caching, no blocking I/O in hot paths |
-| **Error Handling** | Graceful failures, useful error messages, no swallowed exceptions |
-| **Documentation** | README updated, complex logic commented, API docs current |
-| **Intent Preservation** | Original PRD intent not distorted through implementation layers |
+| Category | Check | Hard Threshold |
+|----------|-------|----------------|
+| **Spec Conformance** | Implementation matches Tech Spec requirements | Any deviation = Critical |
+| **Code Quality** | Clean, readable, follows codebase patterns and naming | - |
+| **Testing** | Coverage >= 80%, test pyramid balanced, edge cases covered | Coverage < 80% = Major |
+| **Security** | No secrets, parameterized SQL, input validation, no SSRF | Any violation = Critical |
+| **Performance** | No N+1 queries, appropriate caching, no blocking I/O in hot paths | - |
+| **Error Handling** | Graceful failures, useful error messages, no swallowed exceptions | Bare catch = Major |
+| **Documentation** | README updated, complex logic commented, API docs current | - |
+| **Intent Preservation** | Original PRD intent not distorted through implementation layers | Distortion = Major |
+
+**Per-Category Verdict Rule**: Each category MUST receive an independent PASS or FAIL verdict.
+If ANY category is FAIL, the review decision MUST be Reject regardless of how many categories pass.
+Categories marked with a Hard Threshold automatically escalate to the stated severity -- the reviewer
+MUST NOT downgrade them.
 
 **GenAI-specific checks** (when `needs:ai` label present):
 

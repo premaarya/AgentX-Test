@@ -1860,31 +1860,73 @@ function Invoke-SelfReviewLoop {
 
     $reviewPrompt = @"
 You are reviewing work produced by the $AgentName agent. Examine their output
-and the current state of the workspace to determine if the work is complete
-and meets quality standards.
+and the current state of the workspace to determine if the work is TRULY complete
+and meets ALL quality standards.
 
 ## Work Output to Review
 $WorkOutput
 
 ## Review Instructions
-1. Use workspace tools (file_read, grep_search, list_dir) to verify the work
-2. Check for completeness, correctness, and adherence to standards
-3. Provide your review in this EXACT format:
+1. Use workspace tools (file_read, grep_search, list_dir) to INDEPENDENTLY verify every claim
+2. Do NOT trust the agent's self-assessment -- verify by reading the actual files
+3. Check each category below with a PASS/FAIL verdict and brief evidence
+
+## Per-Category Checklist (each must independently pass)
+
+| Category | PASS criteria |
+|----------|---------------|
+| Correctness | Implementation matches stated requirements; no logic errors |
+| Completeness | All acceptance criteria addressed; no partial implementations |
+| Testing | Tests exist, pass, and cover edge cases; coverage >= 80% where applicable |
+| Security | No hardcoded secrets; parameterized SQL; inputs validated at boundaries |
+| Error Handling | Specific exceptions caught; useful messages; no swallowed errors |
+| Documentation | Non-obvious behavior documented; README updated if needed |
+| Consistency | Naming, patterns, and conventions match existing codebase |
+| Regressions | No existing functionality broken by the changes |
+
+4. Provide your review in this EXACT format:
 
 ``````review
 APPROVED: true|false
+CATEGORY_VERDICTS:
+- Correctness: PASS|FAIL
+- Completeness: PASS|FAIL
+- Testing: PASS|FAIL
+- Security: PASS|FAIL
+- Error Handling: PASS|FAIL
+- Documentation: PASS|FAIL
+- Consistency: PASS|FAIL
+- Regressions: PASS|FAIL
 FINDINGS:
 - [HIGH] category: description of critical issue
 - [MEDIUM] category: description of moderate issue
 - [LOW] category: description of minor suggestion
 ``````
 
+## Hard Threshold Rule
+If ANY category verdict is FAIL, you MUST set APPROVED: false regardless of how
+many categories pass. A single FAIL in Correctness, Security, or Testing is
+automatically HIGH severity.
+
+## Calibration Examples
+
+### Example 1: Should FAIL (missing test coverage)
+Agent says "implemented the endpoint with full tests" but grep_search shows
+only 2 test cases for a function with 5 branches -> FAIL Testing, HIGH finding.
+
+### Example 2: Should FAIL (security gap)
+Agent implemented a query endpoint but file_read shows string concatenation
+in the SQL query instead of parameterized queries -> FAIL Security, HIGH finding.
+
+### Example 3: Should PASS
+file_read confirms all acceptance criteria have matching test cases, grep_search
+finds no hardcoded secrets, lint output is clean, and docs are updated ->
+all categories PASS, APPROVED: true.
+
 Impact Guidelines:
-- HIGH: Blocks completion (bugs, missing features, security issues, broken tests)
+- HIGH: Blocks completion (bugs, missing features, security issues, broken tests, any FAIL in Correctness/Security/Testing)
 - MEDIUM: Should fix (code quality, missing docs, edge cases, naming)
 - LOW: Nice to have (style, optimization, minor suggestions)
-
-If everything looks good, set APPROVED: true with any LOW findings.
 "@
 
     # Load the same agent's definition for the reviewer
@@ -1893,14 +1935,23 @@ If everything looks good, set APPROVED: true with any LOW findings.
         $agentDef = @{ name = $AgentName; description = ''; model = ''; body = '' }
     }
 
-    # Build reviewer system prompt
+    # Build reviewer system prompt -- skeptical by default
     $reviewerSystemPrompt = @"
-You are a REVIEWER sub-agent for the $($agentDef.name ?? $AgentName) role.
-Your job is to review the main agent's work output for quality and completeness.
-You have READ-ONLY access to the workspace. Use file_read, grep_search, list_dir
-to verify the work. Do NOT modify any files.
+You are a SKEPTICAL EVALUATOR sub-agent reviewing work by the $($agentDef.name ?? $AgentName) role.
 
-Produce a structured review with APPROVED status and FINDINGS list.
+Your default stance is that the work is NOT complete until you have independently
+verified it. You are adversarial -- your job is to find problems the implementer
+missed, not to confirm their self-assessment.
+
+Rules:
+- VERIFY, do not trust. Read actual files to confirm claims.
+- Each review category must independently PASS or FAIL.
+- A single FAIL in Correctness, Security, or Testing means APPROVED: false.
+- You have READ-ONLY access. Use file_read, grep_search, list_dir only.
+- Do NOT modify any files.
+- Be specific: cite file paths, line numbers, and concrete evidence.
+
+Produce a structured review with per-category verdicts, APPROVED status, and FINDINGS list.
 "@
 
     # Run a mini agentic loop as the reviewer
@@ -1964,12 +2015,27 @@ Produce a structured review with APPROVED status and FINDINGS list.
     # Parse the review response
     $approved = $true
     $findings = @()
+    $categoryVerdicts = @{}
+    $failedCategories = @()
     $feedback = ''
 
     $reviewBlock = [regex]::Match($reviewText, '(?s)```review\s*\n(.*?)```')
     if ($reviewBlock.Success) {
         $block = $reviewBlock.Groups[1].Value
         if ($block -match 'APPROVED:\s*(false|no)', 'IgnoreCase') {
+            $approved = $false
+        }
+
+        # Parse per-category verdicts (hard threshold enforcement)
+        $verdictMatches = [regex]::Matches($block, '-\s*(\w[\w\s]*?):\s*(PASS|FAIL)', 'IgnoreCase')
+        foreach ($vm in $verdictMatches) {
+            $catName = $vm.Groups[1].Value.Trim()
+            $catResult = $vm.Groups[2].Value.ToUpper()
+            $categoryVerdicts[$catName] = $catResult
+        }
+        # Any FAIL verdict forces APPROVED: false
+        $failedCategories = @($categoryVerdicts.GetEnumerator() | Where-Object { $_.Value -eq 'FAIL' })
+        if ($failedCategories.Count -gt 0) {
             $approved = $false
         }
 
@@ -1985,26 +2051,36 @@ Produce a structured review with APPROVED status and FINDINGS list.
         }
     }
 
-    # Build feedback from non-low findings
+    # Build feedback from non-low findings and failed category verdicts
     $actionable = @($findings | Where-Object { $_.impact -ne 'low' })
-    if ($actionable.Count -gt 0) {
+    if ($actionable.Count -gt 0 -or $failedCategories.Count -gt 0) {
         $approved = $false
-        $parts = @("[Self-Review FAILED] Address the following $($actionable.Count) finding(s):")
-        $i = 0
-        foreach ($f in $actionable) {
-            $i++
-            $parts += "$i. [$($f.impact.ToUpper())] $($f.category): $($f.description)"
+        $parts = @()
+        if ($failedCategories.Count -gt 0) {
+            $failedNames = @($failedCategories | ForEach-Object { $_.Key }) -join ', '
+            $parts += "[Self-Review FAILED] Categories with FAIL verdict: $failedNames"
+        }
+        if ($actionable.Count -gt 0) {
+            $parts += "Address the following $($actionable.Count) finding(s):"
+            $i = 0
+            foreach ($f in $actionable) {
+                $i++
+                $parts += "$i. [$($f.impact.ToUpper())] $($f.category): $($f.description)"
+            }
         }
         $feedback = $parts -join "`n"
     } elseif (-not $approved) {
         $feedback = "[Self-Review FAILED] Reviewer did not approve. Review output:`n$($reviewText.Substring(0, [Math]::Min(500, $reviewText.Length)))"
     }
 
-    Write-Host "`e[$(if ($approved) {'32'} else {'33'})m  [SELF-REVIEW] $(if ($approved) {'APPROVED'} else {'NOT APPROVED'}) ($($findings.Count) findings, $($actionable.Count) actionable)`e[0m"
+    $failedCatCount = @($categoryVerdicts.GetEnumerator() | Where-Object { $_.Value -eq 'FAIL' }).Count
+    $passedCatCount = @($categoryVerdicts.GetEnumerator() | Where-Object { $_.Value -eq 'PASS' }).Count
+    Write-Host "`e[$(if ($approved) {'32'} else {'33'})m  [SELF-REVIEW] $(if ($approved) {'APPROVED'} else {'NOT APPROVED'}) ($($findings.Count) findings, $($actionable.Count) actionable, categories: $passedCatCount pass / $failedCatCount fail)`e[0m"
 
     return @{
         approved = $approved
         findings = $findings
+        categoryVerdicts = $categoryVerdicts
         feedback = $feedback
     }
 }
@@ -2638,10 +2714,53 @@ function Invoke-AgenticLoop {
                 $selfReviewHistory += $historyEntry
 
                 if (-not $reviewResult.approved) {
+                    # --- Stall detection: pivot-vs-refine decision ---
+                    $stallThreshold = 3
+                    $recentFailures = @($selfReviewHistory | Select-Object -Last $stallThreshold)
+                    $isStalled = ($recentFailures.Count -ge $stallThreshold) -and ($recentFailures | Where-Object { $_.approved } | Measure-Object).Count -eq 0
+                    $stallGuidance = ''
+
+                    if ($isStalled) {
+                        # Check if the same categories are repeatedly failing
+                        $prevCats = @()
+                        if ($reviewResult.categoryVerdicts) {
+                            $prevCats = @($reviewResult.categoryVerdicts.GetEnumerator() | Where-Object { $_.Value -eq 'FAIL' } | ForEach-Object { $_.Key })
+                        }
+                        $repeatedFindings = @($reviewFindings | Where-Object { $_.impact -ne 'low' } | ForEach-Object { $_.category })
+
+                        Write-Host "`e[33m  [STALL DETECTED] $stallThreshold consecutive failures. Injecting pivot-vs-refine guidance.`e[0m"
+                        Add-ExecutionSummaryEvent -Type 'STALL' -Message "Stall detected after $stallThreshold consecutive self-review failures. Pivot-vs-refine guidance injected."
+
+                        $stallGuidance = @"
+
+## STALL DETECTED -- Pivot-vs-Refine Decision Required
+
+You have failed self-review $stallThreshold times in a row. Before attempting
+another fix, STOP and evaluate your approach:
+
+### Option A: REFINE (keep current approach)
+Choose this if: the failures are narrowing (fewer findings each time), the
+approach is fundamentally sound, and only edge cases remain.
+
+### Option B: PIVOT (change approach)
+Choose this if: the same categories keep failing, fixes introduce new problems,
+or the approach has a structural flaw.
+
+### Decision Checklist
+1. Are the failing categories the same as last iteration? -> Likely need PIVOT
+2. Is the finding count decreasing? -> Likely can REFINE
+3. Did your last fix introduce a new finding? -> Likely need PIVOT
+4. Do you understand the root cause? -> If no, PIVOT
+
+Repeatedly failing categories: $($repeatedFindings -join ', ')
+State your PIVOT or REFINE decision and rationale before making changes.
+"@
+                    }
+
                     # Inject feedback and continue the main loop
                     $messages += @{
                         role = 'user'
-                        content = "[Self-Review FAILED - Iteration $selfReviewIteration/$selfReviewMax]`n$($reviewResult.feedback)`n`nPlease address the findings above and try again."
+                        content = "[Self-Review FAILED - Iteration $selfReviewIteration/$selfReviewMax]`n$($reviewResult.feedback)$stallGuidance`n`nPlease address the findings above and try again."
                     }
                     $finalText = ''
                     continue
