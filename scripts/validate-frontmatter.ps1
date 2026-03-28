@@ -125,6 +125,48 @@ function Test-AgentFile([string]$FilePath) {
  }
 }
 
+function Test-PromptFile([string]$FilePath) {
+ $name = Split-Path $FilePath -Leaf
+ $fm = Get-Frontmatter $FilePath
+
+ if (-not $fm) {
+ Write-Fail "$name : Missing frontmatter. FIX: Add YAML frontmatter at the top of the prompt file between --- delimiters. Required fields: name, description. See .github/prompts/code-review.prompt.md for a working example."
+ return
+ }
+
+ if (-not $fm["name"]) {
+ Write-Fail "$name : Missing required field 'name'. FIX: Add a short display name such as name: 'Code Review'."
+ } else {
+ Write-Pass "$name : name OK ($($fm['name']))"
+ }
+
+ if (-not $fm["description"]) {
+ Write-Fail "$name : Missing required field 'description'. FIX: Add a concise 'description:' field that explains when this prompt should be used."
+ } elseif ($fm["description"].Length -lt 10) {
+ Write-Fail "$name : description too short (min 10 chars). FIX: Expand the description so routing surfaces can distinguish this prompt from others."
+ } else {
+ Write-Pass "$name : description OK ($($fm['description'].Length) chars)"
+ }
+}
+
+function Test-ClaudeCommandFile([string]$FilePath) {
+ $name = Split-Path $FilePath -Leaf
+ $fm = Get-Frontmatter $FilePath
+
+ if (-not $fm) {
+ Write-Fail "$name : Missing frontmatter. FIX: Add YAML frontmatter at the top of the Claude command file. Required field: description."
+ return
+ }
+
+ if (-not $fm["description"]) {
+ Write-Fail "$name : Missing required field 'description'. FIX: Add a 'description:' field explaining the command's routing purpose and expected outcome."
+ } elseif ($fm["description"].Length -lt 10) {
+ Write-Fail "$name : description too short (min 10 chars). FIX: Expand the description so slash-command routing has useful context."
+ } else {
+ Write-Pass "$name : description OK ($($fm['description'].Length) chars)"
+ }
+}
+
 function Test-SkillFile([string]$FilePath) {
  $name = (Split-Path (Split-Path $FilePath -Parent) -Leaf)
  $fm = Get-Frontmatter $FilePath
@@ -162,8 +204,10 @@ Write-Host ""
 
 # Instructions
 Write-Host " Instructions:" -ForegroundColor White
-$instructions = Get-ChildItem -Path "$Path/.github/instructions" -Filter "*.instructions.md" -ErrorAction SilentlyContinue
+$instructions = Get-ChildItem -Path "$Path/.github/instructions" -Recurse -Filter "*.instructions.md" -ErrorAction SilentlyContinue
 foreach ($f in $instructions) { Test-InstructionFile $f.FullName }
+$copilotInstructions = Join-Path $Path '.github/copilot-instructions.md'
+if (Test-Path $copilotInstructions) { Test-InstructionFile $copilotInstructions }
 
 # Agents
 Write-Host ""
@@ -172,6 +216,18 @@ $agents = Get-ChildItem -Path "$Path/.github/agents" -Filter "*.agent.md" -Error
 foreach ($f in $agents) { Test-AgentFile $f.FullName }
 $internalAgents = Get-ChildItem -Path "$Path/.github/agents/internal" -Filter "*.agent.md" -ErrorAction SilentlyContinue
 foreach ($f in $internalAgents) { Test-AgentFile $f.FullName }
+
+# Prompts
+Write-Host ""
+Write-Host " Prompts:" -ForegroundColor White
+$prompts = Get-ChildItem -Path "$Path/.github/prompts" -Filter "*.prompt.md" -ErrorAction SilentlyContinue
+foreach ($f in $prompts) { Test-PromptFile $f.FullName }
+
+# Claude Commands
+Write-Host ""
+Write-Host " Claude Commands:" -ForegroundColor White
+$claudeCommands = Get-ChildItem -Path "$Path/.claude/commands" -Filter "*.md" -ErrorAction SilentlyContinue
+foreach ($f in $claudeCommands) { Test-ClaudeCommandFile $f.FullName }
 
 # Skills
 Write-Host ""

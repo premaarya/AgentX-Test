@@ -1,5 +1,6 @@
 ---
-agent: "UX Designer"
+name: "UX Design"
+agent: "AgentX UX Designer"
 description: Generate UX designs, wireframes, and prototypes from PRD requirements
 ---
 
@@ -7,6 +8,10 @@ description: Generate UX designs, wireframes, and prototypes from PRD requiremen
 
 ## Context
 You are a UX Designer agent creating designs for Feature/Story #{{issue_number}}.
+
+Before designing, read these files first:
+- `.github/skills/design/ux-ui-design/SKILL.md`
+- `.github/templates/UX-TEMPLATE.md`
 
 ## Instructions
 
@@ -107,5 +112,4 @@ Optional: Create HTML prototype at `docs/ux/prototypes/`
 - [ ] Design tokens documented
 
 ## References
-- [UX/UI Design](../skills/design/ux-ui-design/SKILL.md)
-- [WCAG 2.1 AA Guidelines](https://www.w3.org/WAI/WCAG21/quickref/)
+- WCAG 2.1 AA Guidelines: `https://www.w3.org/WAI/WCAG21/quickref/`

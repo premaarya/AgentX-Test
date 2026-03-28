@@ -25,6 +25,14 @@ import {
   promoteReviewFinding,
   renderReviewFindingsMarkdown,
 } from '../review/review-findings';
+import {
+  listTaskBundles,
+  renderTaskBundlesText,
+} from '../taskBundles/task-bundles';
+import {
+  listBoundedParallelRuns,
+  renderBoundedParallelRunsText,
+} from '../parallel/parallel-delivery';
 import { stripAnsi } from '../utils/stripAnsi';
 
 const CHAT_OUTPUT_CHANNEL_NAME = 'AgentX Chat';
@@ -55,6 +63,22 @@ function renderMissingRuntimeMessage(): string {
     '',
     'To enable formal AgentX execution in this repo, run **AgentX: Initialize Local Runtime** first.',
   ].join('\n');
+}
+
+function renderPlainTextMarkdown(title: string, body: string, followup?: ReadonlyArray<string>): string {
+  const lines = [
+    `**${title}**`,
+    '',
+    '```text',
+    body,
+    '```',
+  ];
+
+  if (followup && followup.length > 0) {
+    lines.push('', ...followup);
+  }
+
+  return lines.join('\n');
 }
 
 export function resetChatRouterInternalStateForTests(): void {
@@ -230,6 +254,8 @@ export function renderUsageGuidance(): string {
     + '- `@agentx agent-native review`\n'
     + '- `@agentx review findings`\n'
     + '- `@agentx promote finding FINDING-164-001`\n'
+    + '- `@agentx task bundles`\n'
+    + '- `@agentx bounded parallel`\n'
     + '- `@agentx run architect "design the auth system"`\n'
     + '- `@agentx run reviewer "review the changes in issue #42"`\n\n'
     + 'During execution, live status updates for compaction, clarification, loop progress, tool activity, and self-review are streamed into chat.'
@@ -470,6 +496,72 @@ export async function tryHandleCompoundRequest(
   response.markdown(workspaceRoot
     ? renderCompoundLoopMarkdown(workspaceRoot)
     : 'No workspace is open, so AgentX cannot evaluate the compound loop.');
+  return {};
+}
+
+export async function tryHandleTaskBundleRequest(
+  userText: string,
+  response: vscode.ChatResponseStream,
+  agentx: AgentXContext,
+): Promise<vscode.ChatResult | undefined> {
+  if (!/^(?:show|list)?\s*task bundles?$/i.test(userText.trim())) {
+    return undefined;
+  }
+
+  if (!agentx.workspaceRoot) {
+    response.markdown('No workspace is open, so AgentX cannot inspect task bundles.');
+    return {};
+  }
+
+  if (!hasWorkspaceCliRuntime(agentx)) {
+    response.markdown(renderMissingRuntimeMessage());
+    return {};
+  }
+
+  const bundles = await listTaskBundles(agentx, { all: true });
+  response.markdown(renderPlainTextMarkdown(
+    'Task Bundles',
+    renderTaskBundlesText(bundles),
+    [
+      'Interactive creation, resolution, and promotion stay in command surfaces:',
+      '- `AgentX: Create Task Bundle`',
+      '- `AgentX: Resolve Task Bundle`',
+      '- `AgentX: Promote Task Bundle`',
+    ],
+  ));
+  return {};
+}
+
+export async function tryHandleBoundedParallelRequest(
+  userText: string,
+  response: vscode.ChatResponseStream,
+  agentx: AgentXContext,
+): Promise<vscode.ChatResult | undefined> {
+  if (!/^(?:show|list)?\s*(?:bounded\s+)?parallel(?:\s+runs?)?$/i.test(userText.trim())) {
+    return undefined;
+  }
+
+  if (!agentx.workspaceRoot) {
+    response.markdown('No workspace is open, so AgentX cannot inspect bounded parallel runs.');
+    return {};
+  }
+
+  if (!hasWorkspaceCliRuntime(agentx)) {
+    response.markdown(renderMissingRuntimeMessage());
+    return {};
+  }
+
+  const runs = await listBoundedParallelRuns(agentx);
+  response.markdown(renderPlainTextMarkdown(
+    'Bounded Parallel Runs',
+    renderBoundedParallelRunsText(runs),
+    [
+      'Interactive assessment, start, and reconciliation stay in command surfaces:',
+      '- `AgentX: Assess Bounded Parallel Delivery`',
+      '- `AgentX: Start Bounded Parallel Delivery`',
+      '- `AgentX: Reconcile Bounded Parallel Run`',
+    ],
+  ));
   return {};
 }
 

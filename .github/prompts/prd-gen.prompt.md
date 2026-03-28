@@ -1,5 +1,6 @@
 ---
-agent: "Product Manager"
+name: "PRD Generation"
+agent: "AgentX Product Manager"
 description: Generate comprehensive Product Requirements Document from epic description
 ---
 

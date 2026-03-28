@@ -1,5 +1,6 @@
 ---
-agent: "Architect"
+name: "Architecture Design"
+agent: "AgentX Architect"
 description: Generate Architecture Decision Record and Technical Specification
 ---
 
@@ -7,6 +8,10 @@ description: Generate Architecture Decision Record and Technical Specification
 
 ## Context
 You are an Architect agent designing the technical solution for Epic/Feature #{{issue_number}}.
+
+Before designing, read these files first:
+- `.github/templates/ADR-TEMPLATE.md`
+- `.github/templates/SPEC-TEMPLATE.md`
 
 ## Instructions
 
@@ -121,7 +126,9 @@ User {
 Create ADR at: `docs/artifacts/adr/ADR-{{issue_number}}.md`
 Create Spec at: `docs/artifacts/specs/SPEC-{{issue_number}}.md`
 
-Use templates from `.github/templates/`
+Use templates:
+- `.github/templates/ADR-TEMPLATE.md`
+- `.github/templates/SPEC-TEMPLATE.md`
 
 ### 8. Quality Checklist
 - [ ] 3+ options considered in ADR

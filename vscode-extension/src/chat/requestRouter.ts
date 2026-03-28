@@ -9,6 +9,7 @@ import {
   tryHandleWorkspaceSetupRequest,
   tryHandleAgentNativeReviewRequest,
   tryHandleBrainstormRequest,
+  tryHandleBoundedParallelRequest,
   tryHandleCaptureGuidanceRequest,
   tryHandleClarificationStatusRequest,
   tryHandleCompoundRequest,
@@ -20,6 +21,7 @@ import {
   tryHandlePromoteFindingRequest,
   tryHandleReviewKickoffRequest,
   tryHandleReviewFindingsRequest,
+  tryHandleTaskBundleRequest,
   tryHandleWorkflowNextStepRequest,
   tryHandleWorkflowRolloutRequest,
 } from './requestRouterInternals';
@@ -120,6 +122,16 @@ export async function routeAgentXChatRequest(
   const compoundResult = await tryHandleCompoundRequest(userText, response, root);
   if (compoundResult) {
     return compoundResult;
+  }
+
+  const taskBundleResult = await tryHandleTaskBundleRequest(userText, response, agentx);
+  if (taskBundleResult) {
+    return taskBundleResult;
+  }
+
+  const boundedParallelResult = await tryHandleBoundedParallelRequest(userText, response, agentx);
+  if (boundedParallelResult) {
+    return boundedParallelResult;
   }
 
   const createLearningCaptureResult = await tryHandleCreateLearningCaptureRequest(userText, response, root);

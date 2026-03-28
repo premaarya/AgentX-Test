@@ -45,3 +45,6 @@
 - 2026-03-20: After the lightweight starter path is proven, replace generic placeholders with one concrete repo-native example workflow before adding more machinery; a deterministic local baseline is acceptable if it keeps the contract executable and legible.
 - 2026-03-24: For installer regression suites, build one local archive fixture up front and route installer invocations through an environment override instead of patching download URLs inside the installer script.
 - 2026-03-24: For provider-backend migrations in `.agentx/agentx-cli.ps1`, add or preserve shared CRUD/list/update helper seams first, then swap only the provider-specific implementation behind them.
+- 2026-03-28: Keep `.claude/commands/*.md` as thin frontmatter-backed wrappers over canonical `.github/agents/*.agent.md` files instead of duplicating role instructions.
+- 2026-03-28: For agent-chat parity audits, inspect `requestRouter.ts` and `requestRouterInternals.ts` in addition to `chatParticipant.ts`, because the routed capability surface lives there.
+- 2026-03-28: In `.github/prompts/*.prompt.md`, reference local skills and templates as explicit repo-root files to read first; passive relative markdown links are valid references but too weak for prompt-loading semantics.

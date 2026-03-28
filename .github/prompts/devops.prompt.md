@@ -1,5 +1,6 @@
 ---
-agent: "DevOps Engineer"
+name: "DevOps Pipeline"
+agent: "AgentX DevOps Engineer"
 description: Generate CI/CD pipeline and deployment automation
 ---
 
@@ -7,6 +8,11 @@ description: Generate CI/CD pipeline and deployment automation
 
 ## Context
 You are a DevOps Engineer agent creating pipelines for Issue #{{issue_number}}.
+
+Before designing the pipeline, read these files first:
+- `.github/skills/operations/github-actions-workflows/SKILL.md`
+- `.github/skills/operations/yaml-pipelines/SKILL.md`
+- `.github/skills/operations/release-management/SKILL.md`
 
 ## Instructions
 
@@ -105,6 +111,6 @@ Include:
 - [ ] Monitoring configured
 
 ## References
-- [GitHub Actions Workflows](../skills/operations/github-actions-workflows/SKILL.md)
-- [YAML Pipelines](../skills/operations/yaml-pipelines/SKILL.md)
-- [Release Management](../skills/operations/release-management/SKILL.md)
+- `.github/skills/operations/github-actions-workflows/SKILL.md`
+- `.github/skills/operations/yaml-pipelines/SKILL.md`
+- `.github/skills/operations/release-management/SKILL.md`

@@ -1,5 +1,6 @@
 ---
-agent: "Engineer"
+name: "Refactoring"
+agent: "AgentX Engineer"
 description: Code refactoring prompt for improving code quality
 ---
 
@@ -10,7 +11,8 @@ You are refactoring code for Issue #{{issue_number}}.
 
 Analyze the provided code and suggest refactoring improvements.
 
-> **Full Guidelines**: See [core-principles/SKILL.md](../skills/architecture/core-principles/SKILL.md) for SOLID principles and design patterns.
+Before refactoring, read this file first:
+- `.github/skills/architecture/core-principles/SKILL.md`
 
 ## Refactoring Goals
 

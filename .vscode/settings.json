@@ -13,7 +13,8 @@
  "../../docs/artifacts/specs/SPEC-*.md"
  ],
  "files.associations": {
- "*.agent.md": "markdown"
+ "*.agent.md": "markdown",
+ "vscode-extension/.github/agentx/.agentx/*.ps1": "plaintext"
  },
  "markdown.validate.fileLinks.enabled": "warning",
  "[markdown]": {

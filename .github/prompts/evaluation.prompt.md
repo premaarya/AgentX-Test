@@ -1,5 +1,6 @@
 ---
-agent: "Engineer"
+name: "AI Evaluation Setup"
+agent: "AgentX Engineer"
 description: "Set up evaluation for an AI agent or application using Azure AI Evaluation SDK."
 ---
 

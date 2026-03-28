@@ -1,5 +1,6 @@
 ---
-agent: "Reviewer"
+name: "Security Review"
+agent: "AgentX Reviewer"
 description: Perform comprehensive security review of code changes
 ---
 
@@ -7,6 +8,9 @@ description: Perform comprehensive security review of code changes
 
 ## Context
 You are reviewing code for security vulnerabilities in PR/Issue #{{issue_number}}.
+
+Before reviewing, read this file first:
+- `.github/skills/architecture/security/SKILL.md`
 
 ## Instructions
 
@@ -110,6 +114,5 @@ Check for:
 ```
 
 ## References
-- [Security](../skills/architecture/security/SKILL.md)
-- [OWASP Top 10](https://owasp.org/www-project-top-ten/)
-- [CWE Database](https://cwe.mitre.org/)
+- OWASP Top 10: `https://owasp.org/www-project-top-ten/`
+- CWE Database: `https://cwe.mitre.org/`

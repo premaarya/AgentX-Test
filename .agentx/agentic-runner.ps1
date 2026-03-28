@@ -123,7 +123,7 @@ function Get-ResearchFirstMode($Config) {
     }
 }
 
-function Get-SessionSummaryMaxChars($Config) {
+function Get-SessionSummaryCharacterLimit($Config) {
     $nested = Get-RunnerNestedConfigValue $Config 'harness' 'sessionSummaryMaxChars'
     $rawValue = if ($null -ne $nested) { $nested } else { Get-RunnerConfigValue $Config 'sessionSummaryMaxChars' $Script:DEFAULT_SESSION_SUMMARY_MAX_CHARS }
     $value = 0
@@ -205,6 +205,191 @@ function Build-BoundedSessionSummary {
     }
 
     return Get-BoundedPreview -Text ($parts -join "`n`n") -MaxChars $MaxChars
+}
+
+function Read-LoopState {
+    param([string]$WorkspaceRoot)
+
+    if (-not $WorkspaceRoot) { return $null }
+
+    $statePath = Join-Path $WorkspaceRoot '.agentx' 'state' 'loop-state.json'
+    try {
+        if (-not (Test-Path $statePath)) { return $null }
+        return Get-Content $statePath -Raw -Encoding utf8 | ConvertFrom-Json -Depth 20
+    } catch {
+        Write-Verbose "Failed to read loop state from $statePath. $_"
+        return $null
+    }
+}
+
+function Write-LoopState {
+    param(
+        [string]$WorkspaceRoot,
+        $State
+    )
+
+    if (-not $WorkspaceRoot -or -not $State) { return }
+
+    $stateDir = Join-Path $WorkspaceRoot '.agentx' 'state'
+    $statePath = Join-Path $stateDir 'loop-state.json'
+    if (-not (Test-Path $stateDir)) {
+        New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
+    }
+
+    $State | ConvertTo-Json -Depth 20 | Set-Content $statePath -Encoding utf8
+}
+
+function Get-LoopStateLastTouchedUtc {
+    param($State)
+
+    if (-not $State) { return $null }
+
+    foreach ($propertyName in @('lastIterationAt', 'startedAt')) {
+        if (-not ($State.PSObject.Properties.Name -contains $propertyName)) { continue }
+        $rawValue = $State.$propertyName
+        if (-not $rawValue) { continue }
+
+        try {
+            return ([datetimeoffset]::Parse([string]$rawValue)).ToUniversalTime()
+        } catch {
+            continue
+        }
+    }
+
+    return $null
+}
+
+function Get-LoopStateSyncStaleReason {
+    param(
+        $State,
+        [int]$ExpectedIssueNumber = 0
+    )
+
+    if (-not $State) { return $null }
+
+    if ($ExpectedIssueNumber -gt 0 -and ($State.PSObject.Properties.Name -contains 'issueNumber') -and $State.issueNumber) {
+        try {
+            if ([int]$State.issueNumber -ne $ExpectedIssueNumber) {
+                return "loop belongs to issue #$($State.issueNumber), not #$ExpectedIssueNumber"
+            }
+        } catch {
+            return 'loop issue number is invalid'
+        }
+    }
+
+    $lastTouched = Get-LoopStateLastTouchedUtc $State
+    if (-not $lastTouched) {
+        return 'loop timestamp is missing or invalid'
+    }
+
+    $ageHours = ([datetimeoffset]::UtcNow - $lastTouched).TotalHours
+    if ($ageHours -ge 8) {
+        return ('loop last updated {0:N1} hours ago' -f $ageHours)
+    }
+
+    return $null
+}
+
+function Get-EffectiveLoopMinIterationCount {
+    param($State)
+
+    if (-not $State) { return 0 }
+
+    $maxIterations = 0
+    try {
+        $maxIterations = [int]$State.maxIterations
+    } catch {
+        $maxIterations = 0
+    }
+
+    if (($State.PSObject.Properties.Name -contains 'minIterations') -and $State.minIterations) {
+        $minIterations = 0
+        try {
+            $minIterations = [int]$State.minIterations
+            if ($minIterations -gt 0) {
+                return [Math]::Min($minIterations, $maxIterations)
+            }
+        } catch {
+            $minIterations = 0
+        }
+    }
+
+    return [Math]::Min(5, $maxIterations)
+}
+
+function Sync-AgenticLoopState {
+    param(
+        [string]$WorkspaceRoot,
+        [int]$IssueNumber,
+        [int]$Iterations,
+        [string]$ExitReason,
+        [string]$FinalText,
+        [switch]$SkipLoopStateSync
+    )
+
+    if ($SkipLoopStateSync -or -not $WorkspaceRoot) { return }
+
+    $state = Read-LoopState -WorkspaceRoot $WorkspaceRoot
+    if (-not $state -or -not $state.active) { return }
+
+    $staleReason = Get-LoopStateSyncStaleReason -State $state -ExpectedIssueNumber $IssueNumber
+    if ($staleReason) { return }
+
+    $timestamp = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
+    $effectiveIterations = [Math]::Max([int]$state.iteration, [Math]::Max($Iterations, 1))
+    $summaryPreview = Get-BoundedPreview -Text (([string]$FinalText -replace '\s+', ' ').Trim()) -MaxChars 140
+    $historyStatus = 'in-progress'
+    $historyOutcome = 'partial'
+    $summary = ''
+
+    switch ($ExitReason) {
+        'text_response' {
+            $minimumIterations = Get-EffectiveLoopMinIterationCount -State $state
+            if ($effectiveIterations -lt $minimumIterations) {
+                $effectiveIterations = $minimumIterations
+            }
+
+            $state.iteration = $effectiveIterations
+            $state.active = $false
+            $state.status = 'complete'
+            $state.lastIterationAt = $timestamp
+            $historyStatus = 'complete'
+            $historyOutcome = 'pass'
+            $summary = if ($summaryPreview) {
+                "Agentic run completed successfully. $summaryPreview"
+            } else {
+                'Agentic run completed successfully.'
+            }
+        }
+        'human_required' {
+            $state.iteration = $effectiveIterations
+            $state.lastIterationAt = $timestamp
+            $summary = 'Agentic run paused for human clarification.'
+        }
+        default {
+            $state.iteration = $effectiveIterations
+            $state.lastIterationAt = $timestamp
+            $historyOutcome = if ($ExitReason -eq 'empty_response') { 'partial' } else { 'fail' }
+            $summary = "Agentic run ended with $ExitReason."
+        }
+    }
+
+    $history = if (($state.PSObject.Properties.Name -contains 'history') -and $state.history) {
+        @($state.history)
+    } else {
+        @()
+    }
+    $updatedHistory = @($history)
+    $updatedHistory += [PSCustomObject]@{
+        iteration = $state.iteration
+        timestamp = $timestamp
+        summary   = $summary
+        status    = $historyStatus
+        outcome   = $historyOutcome
+    }
+    $state.history = $updatedHistory
+
+    Write-LoopState -WorkspaceRoot $WorkspaceRoot -State $state
 }
 
 function Test-IsResearchReadOnlyTool([string]$ToolName) {
@@ -309,7 +494,9 @@ function Get-GitHubToken {
     try {
         $token = (gh auth token 2>$null)
         if ($token) { return $token.Trim() }
-    } catch {}
+    } catch {
+        Write-Verbose "Unable to read GitHub token from gh auth token. $_"
+    }
     return $null
 }
 
@@ -333,7 +520,9 @@ function Initialize-ApiMode([string]$ghToken) {
         $Script:ApiMode = 'copilot'
         Write-Host "`e[32m  [PASS] Copilot API: All models available (Claude, Gemini, GPT, o-series)`e[0m"
         return
-    } catch {}
+    } catch {
+        Write-Verbose "Copilot API probe failed; falling back to GitHub Models. $_"
+    }
 
     # Fall back to GitHub Models
     $Script:ApiMode = 'models'
@@ -357,7 +546,7 @@ function Resolve-ModelId([string]$agentModel) {
     return $Script:DEFAULT_MODEL
 }
 
-function Parse-ModelFallbackList([string]$modelFallback) {
+function ConvertFrom-ModelFallbackList([string]$modelFallback) {
     if (-not $modelFallback) { return @() }
 
     $trimmed = $modelFallback.Trim()
@@ -374,12 +563,12 @@ function Parse-ModelFallbackList([string]$modelFallback) {
     )
 }
 
-function Get-ModelCandidates([string]$preferredModel, [string]$modelFallback) {
+function Get-ModelCandidateList([string]$preferredModel, [string]$modelFallback) {
     $labels = @()
     if ($preferredModel) {
         $labels += $preferredModel
     }
-    $labels += @(Parse-ModelFallbackList -modelFallback $modelFallback)
+    $labels += @(ConvertFrom-ModelFallbackList -modelFallback $modelFallback)
     $labels += $Script:DEFAULT_MODEL
 
     $candidates = New-Object System.Collections.Generic.List[string]
@@ -410,7 +599,7 @@ function Convert-ReasoningLevelToEffort([string]$level) {
     }
 }
 
-function Get-ReasoningRequestOptions([hashtable]$agentDef, [string]$modelId) {
+function Get-ReasoningRequestConfig([hashtable]$agentDef, [string]$modelId) {
     if (-not $agentDef) { return @{} }
 
     $reasoningLevel = if ($agentDef.ContainsKey('reasoningLevel')) { [string]$agentDef.reasoningLevel } else { '' }
@@ -497,7 +686,7 @@ function Get-ApproxTokenCount([AllowNull()][object]$Value) {
     return [int][Math]::Ceiling($text.Length / 4.0)
 }
 
-function Get-ApproxMessageTokens([object]$Message) {
+function Get-ApproxMessageTokenCount([object]$Message) {
     if ($null -eq $Message) { return 0 }
 
     $tokens = 4
@@ -521,7 +710,7 @@ function Get-ConversationTokenUsage {
     $thresholdTokens = [int][Math]::Floor($window * $ThresholdPercent)
     $totalTokens = 0
     foreach ($message in $Messages) {
-        $totalTokens += Get-ApproxMessageTokens -Message $message
+        $totalTokens += Get-ApproxMessageTokenCount -Message $message
     }
 
     return @{
@@ -694,7 +883,7 @@ Rules:
 # Tool definitions (JSON Schema format for GitHub Models API)
 # ---------------------------------------------------------------------------
 
-function Get-ToolSchemas {
+function Get-ToolSchemaList {
     return @(
         @{
             type = 'function'
@@ -892,7 +1081,12 @@ function Invoke-Tool([string]$name, [hashtable]$params, [string]$workspaceRoot) 
             }
             try {
                 $timeoutSec = if ($params.ContainsKey('timeoutMs') -and $params.timeoutMs) { [Math]::Ceiling([int]$params.timeoutMs / 1000) } else { 30 }
-                $job = Start-Job -ScriptBlock { param($c, $d) Set-Location $d; Invoke-Expression $c 2>&1 } -ArgumentList $cmd, $workspaceRoot
+                $job = Start-Job -ScriptBlock {
+                    param($c, $d)
+                    Set-Location $d
+                    $commandBlock = [scriptblock]::Create($c)
+                    & $commandBlock 2>&1
+                } -ArgumentList $cmd, $workspaceRoot
                 $completed = Wait-Job $job -Timeout $timeoutSec
                 if (-not $completed) { Stop-Job $job; Remove-Job $job -Force; return @{ error = $true; text = "Command timed out after ${timeoutSec}s" } }
                 $output = Receive-Job $job | Out-String
@@ -966,7 +1160,7 @@ function Invoke-LlmChat(
     } catch {
         $statusCode = $_.Exception.Response.StatusCode.value__
         $errBody = ''
-        try { $errBody = $_.ErrorDetails.Message } catch {}
+        try { $errBody = $_.ErrorDetails.Message } catch { $errBody = '' }
         $apiName = if ($Script:ApiMode -eq 'copilot') { 'Copilot' } else { 'GitHub Models' }
         throw "$apiName API error (HTTP $statusCode): $errBody"
     }
@@ -976,7 +1170,7 @@ function Invoke-LlmChat(
 # Agent definition loader
 # ---------------------------------------------------------------------------
 
-function Get-AgentDefDirectories([string]$root) {
+function Get-AgentDefDirectorySet([string]$root) {
     $installRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
     return @(
         (Join-Path $root '.github' 'agents'),
@@ -987,7 +1181,7 @@ function Get-AgentDefDirectories([string]$root) {
 
 function Resolve-AgentDefPath([string]$agentName, [string]$root) {
     $fileName = if ($agentName -like '*.agent.md') { $agentName } else { "$agentName.agent.md" }
-    foreach ($agentsDir in (Get-AgentDefDirectories -root $root)) {
+    foreach ($agentsDir in (Get-AgentDefDirectorySet -root $root)) {
         foreach ($candidate in @(
             (Join-Path $agentsDir $fileName),
             (Join-Path $agentsDir 'internal' $fileName)
@@ -1095,7 +1289,7 @@ function Read-AgentDef([string]$agentName, [string]$root) {
     }
 }
 
-function Normalize-AgentReference([string]$value) {
+function Resolve-AgentReference([string]$value) {
     if (-not $value) { return '' }
 
     $normalized = $value.Trim().ToLower()
@@ -1129,7 +1323,7 @@ function Normalize-AgentReference([string]$value) {
     }
 }
 
-function Resolve-CanClarifyTargets([hashtable]$agentDef) {
+function Resolve-ClarificationTargetList([hashtable]$agentDef) {
     $targets = New-Object System.Collections.Generic.List[string]
     $agentCollaborators = @()
 
@@ -1142,7 +1336,7 @@ function Resolve-CanClarifyTargets([hashtable]$agentDef) {
     }
 
     foreach ($agent in $agentCollaborators) {
-        $normalized = Normalize-AgentReference $agent
+        $normalized = Resolve-AgentReference $agent
         if ($normalized -and -not $targets.Contains($normalized)) {
             $targets.Add($normalized)
         }
@@ -1160,7 +1354,7 @@ function Resolve-CanClarifyTargets([hashtable]$agentDef) {
     if ($clMatch.Success) {
         foreach ($rawTarget in ($clMatch.Groups[1].Value -split ',')) {
             $rawTarget = $rawTarget.Trim().Trim(@([char]39, [char]34))
-            $normalized = Normalize-AgentReference $rawTarget
+            $normalized = Resolve-AgentReference $rawTarget
             if ($normalized -and -not $targets.Contains($normalized)) {
                 $targets.Add($normalized)
             }
@@ -1179,7 +1373,7 @@ function Resolve-CanClarifyTargets([hashtable]$agentDef) {
     if ($handoffSection) {
         $agentPattern = '\b(product-manager|architect|ux-designer|engineer|reviewer|devops-engineer|devops|data-scientist|tester|consulting-research|agent-x|github-ops|ado-ops|powerbi-analyst|reviewer-auto|prompt-engineer|rag-specialist|eval-specialist|ops-monitor|functional-reviewer)\b'
         foreach ($match in [regex]::Matches($handoffSection, $agentPattern, 'IgnoreCase')) {
-            $normalized = Normalize-AgentReference $match.Value
+            $normalized = Resolve-AgentReference $match.Value
             if ($normalized -and -not $targets.Contains($normalized)) {
                 $targets.Add($normalized)
             }
@@ -1414,7 +1608,7 @@ function Invoke-ContextCompaction {
 
     $estimatedBudget = $baseSystemUsage + $Script:COMPACTION_SUMMARY_RESERVED_TOKENS
     foreach ($message in $kept) {
-        $estimatedBudget += Get-ApproxMessageTokens -Message $message
+        $estimatedBudget += Get-ApproxMessageTokenCount -Message $message
     }
 
     while ($estimatedBudget -gt $usage.thresholdTokens -and $kept.Count -gt $minRecentCount) {
@@ -1422,7 +1616,7 @@ function Invoke-ContextCompaction {
         $pruned++
         $estimatedBudget = $baseSystemUsage + $Script:COMPACTION_SUMMARY_RESERVED_TOKENS
         foreach ($message in $kept) {
-            $estimatedBudget += Get-ApproxMessageTokens -Message $message
+            $estimatedBudget += Get-ApproxMessageTokenCount -Message $message
         }
     }
 
@@ -1455,7 +1649,7 @@ function Invoke-ContextCompaction {
 #   - Returns $true if the operation is allowed, $false if blocked
 # ---------------------------------------------------------------------------
 
-function Read-BoundaryRules([hashtable]$AgentDef) {
+function Read-BoundaryRuleSet([hashtable]$AgentDef) {
     $canModify = @()
     $cannotModify = @()
 
@@ -1716,7 +1910,7 @@ Produce a structured review with APPROVED status and FINDINGS list.
     )
 
     # Use read-only tools only (no file_write, file_edit, terminal_exec)
-    $readOnlyTools = Get-ToolSchemas | Where-Object {
+    $readOnlyTools = Get-ToolSchemaList | Where-Object {
         $_.function.name -in @('file_read', 'grep_search', 'list_dir')
     }
 
@@ -1727,7 +1921,7 @@ Produce a structured review with APPROVED status and FINDINGS list.
     while ($reviewerIterations -lt $MaxReviewerIterations) {
         $reviewerIterations++
         try {
-            $reviewRequestOptions = Get-ReasoningRequestOptions -agentDef $agentDef -modelId $ModelId
+            $reviewRequestOptions = Get-ReasoningRequestConfig -agentDef $agentDef -modelId $ModelId
             $response = Invoke-LlmChat -token $Token -modelId $ModelId -messages $reviewMessages -tools $readOnlyTools -RequestOptions $reviewRequestOptions -maxTokens 4096
         } catch {
             Write-Host "`e[31m  [SELF-REVIEW] Reviewer LLM error: $_`e[0m"
@@ -1755,7 +1949,7 @@ Produce a structured review with APPROVED status and FINDINGS list.
                 continue
             }
             $toolArgs = @{}
-            try { $toolArgs = $tc.function.arguments | ConvertFrom-Json -AsHashtable } catch {}
+            try { $toolArgs = $tc.function.arguments | ConvertFrom-Json -AsHashtable } catch { Write-Verbose "Failed to parse review-mode tool arguments for $toolName. $_" }
             $result = Invoke-Tool -name $toolName -params $toolArgs -workspaceRoot $WorkspaceRoot
 
             $paramsJson = $toolArgs | ConvertTo-Json -Depth 5 -Compress
@@ -2019,6 +2213,7 @@ function Invoke-ClarificationLoop {
             -MaxIterations $Script:CLARIFICATION_RESPONDER_MAX_ITERATIONS `
             -WorkspaceRoot $WorkspaceRoot `
             -Model $ModelId `
+                -SkipLoopStateSync `
             -SuppressUserSummary
 
         $answer = if ($subResult.finalText) { $subResult.finalText } else { '(No response from sub-agent)' }
@@ -2166,6 +2361,7 @@ function Invoke-AgenticLoop {
         [string]$WorkspaceRoot = '',
         [string]$ResumeSessionId = '',
         [string]$HumanClarificationResponse = '',
+        [switch]$SkipLoopStateSync,
         [switch]$SuppressUserSummary
     )
 
@@ -2178,7 +2374,7 @@ function Invoke-AgenticLoop {
 
     $runtimeConfig = Get-RunnerConfig -WorkspaceRoot $WorkspaceRoot
     $researchFirstMode = Get-ResearchFirstMode -Config $runtimeConfig
-    $sessionSummaryMaxChars = Get-SessionSummaryMaxChars -Config $runtimeConfig
+    $sessionSummaryMaxChars = Get-SessionSummaryCharacterLimit -Config $runtimeConfig
 
     $isResume = -not [string]::IsNullOrWhiteSpace($ResumeSessionId)
     $resumedSession = $null
@@ -2216,13 +2412,13 @@ function Invoke-AgenticLoop {
     } else {
         $agentDef.model
     }
-    $modelCandidates = @(Get-ModelCandidates -preferredModel $preferredModel -modelFallback $agentDef.modelFallback)
+    $modelCandidates = @(Get-ModelCandidateList -preferredModel $preferredModel -modelFallback $agentDef.modelFallback)
     $modelId = $modelCandidates[0]
     Write-Host "`e[36m  Agent: $($agentDef.name ?? $Agent) | Model: $modelId ($Script:ApiMode mode)`e[0m"
     if ($modelCandidates.Count -gt 1) {
         Write-Host "`e[90m  Model fallback chain: $($modelCandidates -join ' -> ')`e[0m"
     }
-    $reasoningPreview = Get-ReasoningRequestOptions -agentDef $agentDef -modelId $modelId
+    $reasoningPreview = Get-ReasoningRequestConfig -agentDef $agentDef -modelId $modelId
     if ($reasoningPreview.Count -gt 0) {
         $reasoningJson = $reasoningPreview | ConvertTo-Json -Depth 10 -Compress
         Write-Host "`e[90m  Reasoning request options: $reasoningJson`e[0m"
@@ -2235,11 +2431,11 @@ function Invoke-AgenticLoop {
     }
 
     # Parse can_clarify targets from frontmatter collaborators first, then fall back to body hints.
-    $canClarify = @(Resolve-CanClarifyTargets -agentDef $agentDef)
+    $canClarify = @(Resolve-ClarificationTargetList -agentDef $agentDef)
 
     # Initialize session
     $sessionId = if ($isResume) { $ResumeSessionId } else { "$Agent-$(Get-Date -Format 'yyyyMMddHHmmss')-$([System.IO.Path]::GetRandomFileName().Substring(0,4))" }
-    $tools = Get-ToolSchemas
+    $tools = Get-ToolSchemaList
     $loopDetector = New-LoopDetector
     Push-ExecutionSummaryScope
     if ($researchFirstMode -ne 'off') {
@@ -2248,7 +2444,7 @@ function Invoke-AgenticLoop {
     Add-ExecutionSummaryEvent -Type 'SESSION SUMMARY' -Message 'Bounded session summary tracking is active.' -ReplaceExisting
 
     # Parse boundary rules from agent definition (canModify / cannotModify)
-    $boundaryRules = Read-BoundaryRules -AgentDef $agentDef
+    $boundaryRules = Read-BoundaryRuleSet -AgentDef $agentDef
     if ($boundaryRules.canModify.Count -gt 0 -or $boundaryRules.cannotModify.Count -gt 0) {
         Write-Host "`e[90m  Boundaries: canModify=[$($boundaryRules.canModify -join ', ')] cannotModify=[$($boundaryRules.cannotModify -join ', ')]`e[0m"
     }
@@ -2342,7 +2538,7 @@ function Invoke-AgenticLoop {
 
         # Call LLM
         try {
-            $requestOptions = Get-ReasoningRequestOptions -agentDef $agentDef -modelId $modelId
+            $requestOptions = Get-ReasoningRequestConfig -agentDef $agentDef -modelId $modelId
             $response = Invoke-LlmChat -token $token -modelId $modelId -messages $messages -tools $tools -RequestOptions $requestOptions
         } catch {
             $errorText = "$_"
@@ -2482,7 +2678,7 @@ function Invoke-AgenticLoop {
         foreach ($tc in $msg.tool_calls) {
             $toolName = $tc.function.name
             $toolArgs = @{}
-            try { $toolArgs = $tc.function.arguments | ConvertFrom-Json -AsHashtable } catch {}
+            try { $toolArgs = $tc.function.arguments | ConvertFrom-Json -AsHashtable } catch { Write-Verbose "Failed to parse tool arguments for $toolName. $_" }
 
             Write-Host "`e[34m  Tool: $toolName($($toolArgs.Keys -join ', '))...`e[0m"
 
@@ -2574,6 +2770,7 @@ function Invoke-AgenticLoop {
     # Save session
     $duration = ((Get-Date) - $startTime).TotalMilliseconds
     $sessionSummary = Build-BoundedSessionSummary -Messages $messages -FinalText $finalText -ExecutionSummaryEvents $executionSummaryEvents -PendingHumanClarification $pendingHumanClarification -MaxChars $sessionSummaryMaxChars
+    Sync-AgenticLoopState -WorkspaceRoot $WorkspaceRoot -IssueNumber $IssueNumber -Iterations $iterations -ExitReason $exitReason -FinalText $finalText -SkipLoopStateSync:$SkipLoopStateSync
     $meta = @{
         sessionId = $sessionId
         agentName = $Agent
@@ -2611,3 +2808,4 @@ function Invoke-AgenticLoop {
         pendingHumanClarification = ($null -ne $pendingHumanClarification)
     }
 }
+

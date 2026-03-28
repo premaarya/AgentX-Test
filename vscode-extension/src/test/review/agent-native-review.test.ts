@@ -20,32 +20,53 @@ describe('agent-native review', () => {
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentx-agent-review-'));
     writeFile(tmpDir, workflowGuidePath, '# Knowledge And Review Workflows\n');
+    writeFile(tmpDir, 'docs/guides/WORKFLOW-PILOT-ORDER.md', '# Pilot Order\n');
     writeFile(tmpDir, '.github/templates/REVIEW-TEMPLATE.md', '# Review\n');
     writeFile(tmpDir, 'docs/artifacts/learnings/LEARNING-165.md', '# Learning\n');
+    writeFile(tmpDir, 'docs/artifacts/reviews/findings/FINDING-165-001.md', '# Finding\n');
     writeFile(tmpDir, 'vscode-extension/package.json', JSON.stringify({
       contributes: {
         commands: [
+          { command: 'agentx.showBrainstormGuide' },
           { command: 'agentx.runWorkflow' },
           { command: 'agentx.showReviewLearnings' },
+          { command: 'agentx.showCompoundLoop' },
           { command: 'agentx.showKnowledgeCaptureGuidance' },
           { command: 'agentx.showAgentNativeReview' },
+          { command: 'agentx.showTaskBundles' },
+          { command: 'agentx.showBoundedParallelRuns' },
         ],
       },
     }));
     writeFile(tmpDir, 'vscode-extension/src/chat/chatParticipant.ts', [
+      'brainstorm',
       'run engineer',
       'run reviewer',
       'run architect',
       'learnings review',
+      'compound',
       'showReviewLearnings',
       'capture guidance',
       'showKnowledgeCaptureGuidance',
+      'task bundles',
+      'bounded parallel',
+    ].join('\n'));
+    writeFile(tmpDir, 'vscode-extension/src/chat/requestRouter.ts', 'tryHandleTaskBundleRequest\ntryHandleBoundedParallelRequest\n');
+    writeFile(tmpDir, 'vscode-extension/src/chat/requestRouterInternals.ts', [
+      'tryHandleBrainstormRequest',
+      'tryHandleCompoundRequest',
+      'tryHandleTaskBundleRequest',
+      'tryHandleBoundedParallelRequest',
     ].join('\n'));
     writeFile(tmpDir, 'vscode-extension/src/views/workTreeProvider.ts', [
+      'Brainstorm',
+      'agentx.showBrainstormGuide',
       'Show workflow steps',
       'agentx.runWorkflow',
       'Review learnings',
       'agentx.showReviewLearnings',
+      'Compound loop',
+      'agentx.showCompoundLoop',
       'Capture guidance',
       'agentx.showKnowledgeCaptureGuidance',
     ].join('\n'));
@@ -56,6 +77,7 @@ describe('agent-native review', () => {
       'listExecutionPlanFiles',
       'getStatePath',
       'docs/artifacts/learnings',
+      'docs/guides/WORKFLOW-PILOT-ORDER.md',
     ].join('\n'));
   });
 
@@ -69,7 +91,7 @@ describe('agent-native review', () => {
     assert.ok(report);
     assert.equal(report?.score.percent, 100);
     assert.equal(report?.dominantSeverity, 'none');
-    assert.equal(report?.capabilityMap.filter((entry) => entry.severity === 'none').length, 3);
+    assert.equal(report?.capabilityMap.filter((entry) => entry.severity === 'none').length, 7);
   });
 
   it('flags missing agent surfaces as high-severity parity gaps', () => {

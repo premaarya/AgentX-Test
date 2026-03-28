@@ -39,6 +39,7 @@ const rootRuntimeFiles = [
 
 // docs/ reference files referenced by agents (bundled to docs/ subdirectory)
 const docFiles = ['WORKFLOW.md', 'GUIDE.md', 'GOLDEN_PRINCIPLES.md', 'QUALITY_SCORE.md', 'tech-debt-tracker.md'];
+const docGuideDir = path.join(repoRoot, 'docs', 'guides');
 
 const artifactDocFiles = [
     {
@@ -227,6 +228,16 @@ for (const file of docFiles) {
 }
 if (docFileCount > 0) {
     console.log('  Copied ' + docFileCount + ' docs/ reference files');
+}
+
+if (fs.existsSync(docGuideDir)) {
+    const bundledGuideDir = path.join(docsDestDir, 'guides');
+    const compatibilityGuideDir = path.join(compatibilityDocsDir, 'guides');
+    fs.cpSync(docGuideDir, bundledGuideDir, { recursive: true });
+    fs.cpSync(docGuideDir, compatibilityGuideDir, { recursive: true });
+    const guideCount = countFiles(bundledGuideDir);
+    totalFiles += guideCount;
+    console.log('  Copied docs/guides/ (' + guideCount + ' files)');
 }
 
 let artifactDocFileCount = 0;

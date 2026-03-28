@@ -1,5 +1,6 @@
 ---
-agent: "Engineer"
+name: "Test Generation"
+agent: "AgentX Engineer"
 description: Test generation prompt for creating comprehensive test suites
 ---
 
@@ -10,7 +11,8 @@ You are generating tests for Issue #{{issue_number}}.
 
 Generate comprehensive tests for the provided code.
 
-> **Full Guidelines**: See [testing/SKILL.md](../skills/development/testing/SKILL.md) for detailed testing patterns and examples.
+Before generating tests, read this file first:
+- `.github/skills/development/testing/SKILL.md`
 
 ## Testing Principles
 

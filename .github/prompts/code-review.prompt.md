@@ -1,5 +1,6 @@
 ---
-agent: "Reviewer"
+name: "Code Review"
+agent: "AgentX Reviewer"
 description: Structured code review prompt for thorough PR reviews
 ---
 
@@ -10,8 +11,9 @@ You are a Code Reviewer agent reviewing PR/Issue #{{issue_number}}.
 
 Review the following code changes and provide structured feedback.
 
-> **Full Checklist**: See [code-review/SKILL.md](../skills/development/code-review/SKILL.md) for detailed review guidelines.
-> **Template**: See [REVIEW-TEMPLATE.md](../templates/REVIEW-TEMPLATE.md) for complete review structure.
+Before reviewing, read these files first:
+- `.github/skills/development/code-review/SKILL.md`
+- `.github/templates/REVIEW-TEMPLATE.md`
 
 ## Quick Review Focus
 

@@ -49,6 +49,8 @@ interface ReviewSignals {
  readonly root: string;
  readonly packageJson: string;
  readonly chatParticipant: string;
+ readonly requestRouter: string;
+ readonly requestRouterInternals: string;
  readonly workTreeProvider: string;
  readonly statusTreeProvider: string;
  readonly agentxContext: string;
@@ -65,9 +67,17 @@ interface CapabilityDefinition {
 
 const CAPABILITIES: ReadonlyArray<CapabilityDefinition> = [
  {
+  id: 'brainstorm-guidance',
+  label: 'Brainstorm guidance',
+  userSignals: ['agentx.showBrainstormGuide', 'Brainstorm'],
+  agentSignals: ['brainstorm', 'tryHandleBrainstormRequest'],
+  sharedSignals: ['docs/artifacts/learnings', 'workspaceRoot'],
+  summary: 'Brainstorm guidance should be available through both command surfaces and chat against the same learning corpus.',
+ },
+ {
   id: 'workflow-execution',
   label: 'Workflow execution',
-    userSignals: ['agentx.runWorkflow', 'Show workflow steps'],
+  userSignals: ['agentx.runWorkflow', 'Show workflow steps'],
   agentSignals: ['run engineer', 'run reviewer', 'run architect'],
   sharedSignals: ['workspaceRoot', 'listExecutionPlanFiles'],
   summary: 'Workflow execution should exist for both operator-triggered commands and agent-triggered review flows.',
@@ -81,12 +91,36 @@ const CAPABILITIES: ReadonlyArray<CapabilityDefinition> = [
   summary: 'Review surfaces should expose the same ranked learnings guidance to users and agents.',
  },
  {
+  id: 'compound-loop',
+  label: 'Compound loop visibility',
+  userSignals: ['agentx.showCompoundLoop', 'Compound loop'],
+  agentSignals: ['compound', 'tryHandleCompoundRequest'],
+  sharedSignals: [WORKFLOW_GUIDE_PATH, 'docs/artifacts/reviews/findings', 'workspaceRoot'],
+  summary: 'Compound loop status should be reachable in both the sidebar/command surface and chat with the same supporting artifacts.',
+ },
+ {
   id: 'knowledge-capture',
   label: 'Knowledge capture guidance',
   userSignals: ['agentx.showKnowledgeCaptureGuidance', 'Capture guidance'],
   agentSignals: ['capture guidance', 'showKnowledgeCaptureGuidance'],
   sharedSignals: [WORKFLOW_GUIDE_PATH],
   summary: 'Both surfaces should be able to resolve the same post-review capture guidance and artifact rules.',
+ },
+ {
+  id: 'task-bundles',
+  label: 'Task bundle visibility',
+  userSignals: ['agentx.showTaskBundles'],
+  agentSignals: ['task bundles', 'tryHandleTaskBundleRequest'],
+  sharedSignals: ['docs/guides/WORKFLOW-PILOT-ORDER.md', 'workspaceRoot'],
+  summary: 'Task bundle review surfaces should be visible in command mode and queryable in chat against the same workspace state.',
+ },
+ {
+  id: 'bounded-parallel',
+  label: 'Bounded parallel visibility',
+  userSignals: ['agentx.showBoundedParallelRuns'],
+  agentSignals: ['bounded parallel', 'tryHandleBoundedParallelRequest'],
+  sharedSignals: ['docs/guides/WORKFLOW-PILOT-ORDER.md', 'workspaceRoot'],
+  summary: 'Bounded parallel delivery status should be inspectable from both command surfaces and chat via the same workspace-backed records.',
  },
 ];
 
@@ -103,6 +137,8 @@ function readSignals(root: string): ReviewSignals {
   root,
   packageJson: readText(path.join(root, 'vscode-extension', 'package.json')),
   chatParticipant: readText(path.join(root, 'vscode-extension', 'src', 'chat', 'chatParticipant.ts')),
+  requestRouter: readText(path.join(root, 'vscode-extension', 'src', 'chat', 'requestRouter.ts')),
+  requestRouterInternals: readText(path.join(root, 'vscode-extension', 'src', 'chat', 'requestRouterInternals.ts')),
   workTreeProvider: readText(path.join(root, 'vscode-extension', 'src', 'views', 'workTreeProvider.ts')),
   statusTreeProvider: readText(path.join(root, 'vscode-extension', 'src', 'views', 'statusTreeProvider.ts')),
   agentxContext: readText(path.join(root, 'vscode-extension', 'src', 'agentxContext.ts')),
@@ -131,7 +167,10 @@ function getSeverity(userSurface: boolean, agentSurface: boolean, sharedArtifact
 function buildCapabilityMap(signals: ReviewSignals): CapabilityMapEntry[] {
  return CAPABILITIES.map((capability) => {
   const userSurface = hasAllSignals(`${signals.packageJson}\n${signals.workTreeProvider}`, capability.userSignals);
-  const agentSurface = hasAllSignals(signals.chatParticipant, capability.agentSignals);
+  const agentSurface = hasAllSignals(
+   `${signals.chatParticipant}\n${signals.requestRouter}\n${signals.requestRouterInternals}`,
+   capability.agentSignals,
+  );
   const sharedArtifacts = capability.sharedSignals.every((signal) => {
    if (signal.startsWith('docs/')) {
     return fileExists(signals.root, signal);

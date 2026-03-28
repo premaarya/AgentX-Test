@@ -8,7 +8,7 @@
 #   1. Commits land on master with conventional prefixes (feat:, fix:, etc.)
 #   2. release-please opens/updates a Release PR with version bump + CHANGELOG
 #   3. Merging the Release PR creates a GitHub Release + git tag
-#   4. Post-release step packages the VS Code extension VSIX
+#   4. Post-release step stamps release surfaces and packages the VS Code extension VSIX
 #
 # Commit types -> version impact:
 #   feat:     -> minor bump (5.3.0 -> 5.4.0)
@@ -72,13 +72,11 @@ jobs:
           npm run test:coverage
           npm audit --audit-level=high
 
-      - name: Package VSIX
-        working-directory: vscode-extension
-        run: npx @vscode/vsce package
+      - name: Package VSIX via release stamper
+        run: node scripts/stamp-version.js --set "${{ needs.create-release.outputs.version }}" --package-vsix
 
       - name: Upload VSIX to Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          VSIX_FILE=$(ls vscode-extension/*.vsix)
-          gh release upload "${{ needs.create-release.outputs.tag_name }}" "$VSIX_FILE"
+          gh release upload "${{ needs.create-release.outputs.tag_name }}" "vscode-extension/agentx-${{ needs.create-release.outputs.version }}.vsix"

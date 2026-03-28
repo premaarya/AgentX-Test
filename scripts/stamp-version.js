@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 
+const childProcess = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
 const root = path.resolve(__dirname, '..');
 const sourceVersionPath = 'version.json';
+const extensionDir = path.join(root, 'vscode-extension');
 
 function fail(message) {
   console.error(`[FAIL] ${message}`);
@@ -23,6 +25,8 @@ function parseArgs(argv) {
   const parsed = {
     setVersion: null,
     bumpType: null,
+    packageVsix: false,
+    vsixOutput: null,
   };
 
   for (let index = 0; index < argv.length; index++) {
@@ -37,11 +41,24 @@ function parseArgs(argv) {
       index++;
       continue;
     }
+    if (arg === '--package-vsix') {
+      parsed.packageVsix = true;
+      continue;
+    }
+    if (arg === '--vsix-output') {
+      parsed.vsixOutput = argv[index + 1] || null;
+      index++;
+      continue;
+    }
     fail(`Unknown argument: ${arg}`);
   }
 
   if (parsed.setVersion && parsed.bumpType) {
     fail('Use either --set <version> or --bump <major|minor|patch>, not both.');
+  }
+
+   if (parsed.vsixOutput && !parsed.packageVsix) {
+    fail('Use --vsix-output only together with --package-vsix.');
   }
 
   return parsed;
@@ -109,6 +126,61 @@ function updateTextFile(relativePath, edits) {
     content = replaceStrict(content, relativePath, edit.pattern, edit.replacement, edit.label);
   }
   writeText(relativePath, content);
+}
+
+function runCommand(command, args, cwd) {
+  childProcess.execFileSync(command, args, {
+    cwd,
+    stdio: 'inherit',
+  });
+}
+
+function runShellCommand(command, cwd) {
+  childProcess.execSync(command, {
+    cwd,
+    stdio: 'inherit',
+  });
+}
+
+function quoteShellArg(value) {
+  return `"${String(value).replace(/"/g, '\\"')}"`;
+}
+
+function packageVsix(version, vsixOutput) {
+  const defaultOutput = path.join(extensionDir, `agentx-${version}.vsix`);
+  const resolvedOutput = vsixOutput
+    ? path.resolve(root, vsixOutput)
+    : defaultOutput;
+  const vsceBinary = path.join(
+    extensionDir,
+    'node_modules',
+    '.bin',
+    process.platform === 'win32' ? 'vsce.cmd' : 'vsce',
+  );
+
+  fs.mkdirSync(path.dirname(resolvedOutput), { recursive: true });
+  if (fs.existsSync(resolvedOutput)) {
+    fs.unlinkSync(resolvedOutput);
+  }
+
+  if (!fs.existsSync(vsceBinary)) {
+    fail('VS Code extension packaging requires vscode-extension/node_modules/.bin/vsce. Run npm ci in vscode-extension first.');
+  }
+
+  if (process.platform === 'win32') {
+    runShellCommand(
+      `${quoteShellArg(vsceBinary)} package --out ${quoteShellArg(resolvedOutput)}`,
+      extensionDir,
+    );
+  } else {
+    runCommand(vsceBinary, ['package', '--out', resolvedOutput], extensionDir);
+  }
+
+  if (!fs.existsSync(resolvedOutput)) {
+    fail(`VSIX package was not created at ${path.relative(root, resolvedOutput)}.`);
+  }
+
+  console.log(`[OK] Packaged VSIX ${path.relative(root, resolvedOutput)}`);
 }
 
 function main() {
@@ -322,6 +394,10 @@ function main() {
   ]);
 
   console.log(`[OK] Stamped repo version ${targetVersion}`);
+
+  if (args.packageVsix) {
+    packageVsix(targetVersion, args.vsixOutput);
+  }
 }
 
 main();

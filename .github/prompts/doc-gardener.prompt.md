@@ -1,6 +1,7 @@
 ---
+name: 'Doc Gardener'
 description: 'Automated documentation freshness checker. Verifies counts, cross-references, and consistency.'
-mode: 'agent'
+agent: 'AgentX Auto'
 ---
 
 # Doc Gardener
@@ -79,9 +80,9 @@ Report any agents that exist on disk but are missing from the table.
 
 Produce a summary with:
 
-- [PASS] items where documented counts match actual counts
-- [FAIL] items where counts are mismatched (with actual vs documented)
-- [WARN] broken cross-reference links
+- PASS items where documented counts match actual counts
+- FAIL items where counts are mismatched (with actual vs documented)
+- WARN broken cross-reference links
 - Recommended fixes (exact file, line, old value -> new value)
 
 ## When to Run

@@ -1,5 +1,6 @@
 ---
-agent: "Engineer"
+name: "AI Agent Builder"
+agent: "AgentX Engineer"
 description: "Scaffold and build an AI agent application using Microsoft Agent Framework and AI Toolkit."
 ---
 

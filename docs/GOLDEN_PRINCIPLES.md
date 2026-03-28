@@ -13,6 +13,8 @@ Every customization file MUST have valid YAML frontmatter between `---` delimite
 |-----------|----------------|--------------|
 | `.agent.md` | `description`, `model` | `validate-frontmatter.ps1` |
 | `.instructions.md` | `description`, `applyTo` | `validate-frontmatter.ps1` |
+| `.prompt.md` | `name`, `description` | `validate-frontmatter.ps1` |
+| `.claude/commands/*.md` | `description` | `validate-frontmatter.ps1` |
 | `SKILL.md` | `name` (kebab-case), `description` (50+ chars) | `validate-frontmatter.ps1` |
 
 **Rule**: No file passes review without valid frontmatter.

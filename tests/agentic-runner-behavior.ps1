@@ -27,13 +27,13 @@ Write-Host ' ================================================' -ForegroundColor 
 
 $Script:ApiMode = 'models'
 
-$parsedFallbacks = @(Parse-ModelFallbackList "['gpt-4.1', 'gpt-4o-mini']")
-Assert-Equal $parsedFallbacks.Count 2 'Parse-ModelFallbackList returns two entries'
-Assert-Equal $parsedFallbacks[0] 'gpt-4.1' 'Parse-ModelFallbackList trims quotes from first entry'
-Assert-Equal $parsedFallbacks[1] 'gpt-4o-mini' 'Parse-ModelFallbackList trims quotes from second entry'
+$parsedFallbacks = @(ConvertFrom-ModelFallbackList "['gpt-4.1', 'gpt-4o-mini']")
+Assert-Equal $parsedFallbacks.Count 2 'ConvertFrom-ModelFallbackList returns two entries'
+Assert-Equal $parsedFallbacks[0] 'gpt-4.1' 'ConvertFrom-ModelFallbackList trims quotes from first entry'
+Assert-Equal $parsedFallbacks[1] 'gpt-4o-mini' 'ConvertFrom-ModelFallbackList trims quotes from second entry'
 
-$modelCandidates = @(Get-ModelCandidates -preferredModel 'Claude Sonnet 4.6 (copilot)' -modelFallback 'gpt-4o-mini, gpt-4.1')
-Assert-Equal $modelCandidates.Count 3 'Get-ModelCandidates deduplicates resolved models'
+$modelCandidates = @(Get-ModelCandidateList -preferredModel 'Claude Sonnet 4.6 (copilot)' -modelFallback 'gpt-4o-mini, gpt-4.1')
+Assert-Equal $modelCandidates.Count 3 'Get-ModelCandidateList deduplicates resolved models'
 Assert-Equal $modelCandidates[0] 'gpt-4.1' 'Primary model is resolved first in GitHub Models mode'
 Assert-Equal $modelCandidates[1] 'gpt-4o-mini' 'Fallback candidate is preserved after primary model'
 Assert-Equal $modelCandidates[2] 'gpt-4o' 'Default model is appended as final fallback'
@@ -197,13 +197,13 @@ Assert-True ($consultingResearchDef.cannotModify -contains 'src/**') 'Read-Agent
 
 $architectDef = Read-AgentDef -agentName 'architect' -root $script:repoRoot
 Assert-True ($architectDef.agents -contains 'AgentX Product Manager') 'Read-AgentDef parses multiline collaborator agents from frontmatter'
-$architectClarifyTargets = @(Resolve-CanClarifyTargets -agentDef $architectDef)
-Assert-True ($architectClarifyTargets -contains 'product-manager') 'Resolve-CanClarifyTargets maps Architect collaborators to runtime agent IDs'
+$architectClarifyTargets = @(Resolve-ClarificationTargetList -agentDef $architectDef)
+Assert-True ($architectClarifyTargets -contains 'product-manager') 'Resolve-ClarificationTargetList maps Architect collaborators to runtime agent IDs'
 
 $engineerDef = Read-AgentDef -agentName 'engineer' -root $script:repoRoot
-$engineerClarifyTargets = @(Resolve-CanClarifyTargets -agentDef $engineerDef)
-Assert-True ($engineerClarifyTargets -contains 'architect') 'Resolve-CanClarifyTargets keeps direct runtime agent IDs available for Engineer'
-Assert-True ($engineerClarifyTargets -contains 'data-scientist') 'Resolve-CanClarifyTargets includes Data Scientist for Engineer alignment checkpoints'
+$engineerClarifyTargets = @(Resolve-ClarificationTargetList -agentDef $engineerDef)
+Assert-True ($engineerClarifyTargets -contains 'architect') 'Resolve-ClarificationTargetList keeps direct runtime agent IDs available for Engineer'
+Assert-True ($engineerClarifyTargets -contains 'data-scientist') 'Resolve-ClarificationTargetList includes Data Scientist for Engineer alignment checkpoints'
 
 $consultingResearchPrompt = Build-SystemPrompt -agentDef $consultingResearchDef -agentName 'consulting-research'
 Assert-True ($consultingResearchPrompt -match '## Output Types') 'Build-SystemPrompt includes output type guidance for deliverable agents'
@@ -213,8 +213,8 @@ Assert-True ($consultingResearchPrompt -match 'create or update the appropriate 
 $architectPrompt = Build-SystemPrompt -agentDef $architectDef -agentName 'architect'
 Assert-True ($architectPrompt -match 'Use runtime agent IDs such as product-manager, architect, ux-designer, engineer, data-scientist') 'Build-SystemPrompt documents runtime agent IDs for clarification requests'
 
-$consultingResearchBoundaries = Read-BoundaryRules -AgentDef $consultingResearchDef
-Assert-True ($consultingResearchBoundaries.canModify -contains 'docs/coaching/**') 'Read-BoundaryRules honors frontmatter can_modify entries'
+$consultingResearchBoundaries = Read-BoundaryRuleSet -AgentDef $consultingResearchDef
+Assert-True ($consultingResearchBoundaries.canModify -contains 'docs/coaching/**') 'Read-BoundaryRuleSet honors frontmatter can_modify entries'
 Assert-True (-not (Test-BoundaryAllowed -FilePath 'src/app.ts' -Rules $consultingResearchBoundaries -WorkspaceRoot $script:repoRoot)) 'Test-BoundaryAllowed blocks Consulting Research writes outside allowed paths'
 Assert-True (Test-BoundaryAllowed -FilePath 'docs/coaching/BRIEF-demo.md' -Rules $consultingResearchBoundaries -WorkspaceRoot $script:repoRoot) 'Test-BoundaryAllowed permits Consulting Research writes in coaching docs'
 
@@ -250,6 +250,10 @@ try {
 $runnerTestRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("agentx-runner-loop-" + [System.IO.Path]::GetRandomFileName())
 New-Item -ItemType Directory -Path $runnerTestRoot -Force | Out-Null
 try {
+    $loopStateDir = Join-Path $runnerTestRoot '.agentx\state'
+    New-Item -ItemType Directory -Path $loopStateDir -Force | Out-Null
+    $loopStatePath = Join-Path $loopStateDir 'loop-state.json'
+
     $script:runnerMessages = [System.Collections.Generic.List[object]]::new()
     $script:runnerLlmCalls = 0
     $script:selfReviewCalls = 0
@@ -258,9 +262,9 @@ try {
     function Get-GitHubToken { return 'fake-token' }
     function Initialize-ApiMode { param([string]$ghToken) $Script:ApiMode = 'models' }
     function Read-AgentDef { param([string]$agentName, [string]$root) return @{ name = $agentName; description = ''; model = ''; modelFallback = ''; body = ''; canModify = @(); cannotModify = @() } }
-    function Get-ModelCandidates { param([string]$preferredModel, [string]$modelFallback) return @('gpt-4o') }
+    function Get-ModelCandidateList { param([string]$preferredModel, [string]$modelFallback) return @('gpt-4o') }
     function Build-SystemPrompt { param($agentDef, [string]$agentName) return 'system prompt' }
-    function Get-ToolSchemas { return @() }
+    function Get-ToolSchemaList { return @() }
     function Save-Session {
         param($sessionId, $messages, $meta, $root)
         $script:lastSavedSessionMeta = $meta
@@ -289,26 +293,82 @@ try {
         return @{ approved = $true; findings = @(); feedback = 'Looks good' }
     }
 
+    @{
+        active = $true
+        status = 'active'
+        issueNumber = 0
+        iteration = 1
+        minIterations = 5
+        maxIterations = 20
+        completionCriteria = 'TASK_COMPLETE'
+        startedAt = '2026-03-28T00:00:00.000Z'
+        lastIterationAt = '2026-03-28T00:00:00.000Z'
+        history = @(
+            @{
+                iteration = 1
+                timestamp = '2026-03-28T00:00:00.000Z'
+                summary = 'Loop started'
+                status = 'active'
+                outcome = 'pending'
+            }
+        )
+    } | ConvertTo-Json -Depth 6 | Set-Content -Path $loopStatePath -Encoding UTF8
+
     $result = Invoke-AgenticLoop -Agent 'engineer' -Prompt 'Implement the login fix' -MaxIterations 10 -WorkspaceRoot $runnerTestRoot
+    $syncedLoopState = Get-Content -Path $loopStatePath -Raw | ConvertFrom-Json
 
     Assert-Equal $result.exitReason 'text_response' 'Invoke-AgenticLoop still exits normally after minimum self-review passes are met'
     Assert-Equal $script:selfReviewCalls 5 'Invoke-AgenticLoop requires five approved self-review passes before finishing'
     Assert-Equal $result.iterations 5 'Invoke-AgenticLoop continues the main loop until the minimum self-review passes are complete'
     Assert-True ($result.finalText -match '\[SELF-REVIEW SUMMARY\] Completed 5/5 required review iterations') 'Invoke-AgenticLoop appends a final self-review summary once the minimum passes are met'
     Assert-True ($result.finalText -match '\[SELF-REVIEW SUMMARY\] Iteration 5: APPROVED') 'Invoke-AgenticLoop records the final approved review iteration in the summary'
+    Assert-Equal $syncedLoopState.status 'complete' 'Invoke-AgenticLoop marks the active loop complete after a successful run'
+    Assert-True (-not $syncedLoopState.active) 'Invoke-AgenticLoop clears the active loop flag after a successful run'
+    Assert-Equal ([int]$syncedLoopState.iteration) 5 'Invoke-AgenticLoop syncs the loop iteration count to the enforced minimum review passes'
     $minimumReminderSeen = @($script:runnerMessages | Where-Object {
         $_ -match '^\[Self-Review MINIMUM NOT YET MET - Iteration 1/5\]' -and $_ -match 'every role must complete at least 5 self-review passes before finishing'
     }).Count -gt 0
     Assert-True $minimumReminderSeen 'Invoke-AgenticLoop injects a minimum-self-review reminder after the first approved pass'
     Assert-True ($null -ne $script:lastSavedSessionMeta.sessionSummary) 'Invoke-AgenticLoop saves a bounded session summary in session metadata'
     Assert-True ([string]$script:lastSavedSessionMeta.sessionSummary).Length -le 1600 'Invoke-AgenticLoop bounds the saved session summary length'
+
+    @{
+        active = $true
+        status = 'active'
+        issueNumber = 0
+        iteration = 1
+        minIterations = 5
+        maxIterations = 20
+        completionCriteria = 'TASK_COMPLETE'
+        startedAt = '2026-03-28T00:00:00.000Z'
+        lastIterationAt = '2026-03-28T00:00:00.000Z'
+        history = @(
+            @{
+                iteration = 1
+                timestamp = '2026-03-28T00:00:00.000Z'
+                summary = 'Loop started'
+                status = 'active'
+                outcome = 'pending'
+            }
+        )
+    } | ConvertTo-Json -Depth 6 | Set-Content -Path $loopStatePath -Encoding UTF8
+
+    $script:runnerMessages.Clear()
+    $script:selfReviewCalls = 0
+    $skipResult = Invoke-AgenticLoop -Agent 'engineer' -Prompt 'Answer the clarification request' -MaxIterations 10 -WorkspaceRoot $runnerTestRoot -SkipLoopStateSync
+    $unsyncedLoopState = Get-Content -Path $loopStatePath -Raw | ConvertFrom-Json
+
+    Assert-Equal $skipResult.exitReason 'text_response' 'Invoke-AgenticLoop still completes successfully when loop-state sync is skipped'
+    Assert-Equal $unsyncedLoopState.status 'active' 'Invoke-AgenticLoop leaves the parent loop active when SkipLoopStateSync is used'
+    Assert-True $unsyncedLoopState.active 'Invoke-AgenticLoop preserves the active loop flag when SkipLoopStateSync is used'
+    Assert-Equal ([int]$unsyncedLoopState.iteration) 1 'Invoke-AgenticLoop does not mutate loop iterations when SkipLoopStateSync is used'
 } finally {
     Remove-Item Function:Get-GitHubToken -ErrorAction SilentlyContinue
     Remove-Item Function:Initialize-ApiMode -ErrorAction SilentlyContinue
     Remove-Item Function:Read-AgentDef -ErrorAction SilentlyContinue
-    Remove-Item Function:Get-ModelCandidates -ErrorAction SilentlyContinue
+    Remove-Item Function:Get-ModelCandidateList -ErrorAction SilentlyContinue
     Remove-Item Function:Build-SystemPrompt -ErrorAction SilentlyContinue
-    Remove-Item Function:Get-ToolSchemas -ErrorAction SilentlyContinue
+    Remove-Item Function:Get-ToolSchemaList -ErrorAction SilentlyContinue
     Remove-Item Function:Save-Session -ErrorAction SilentlyContinue
     Remove-Item Function:New-LoopDetector -ErrorAction SilentlyContinue
     Remove-Item Function:Add-LoopRecord -ErrorAction SilentlyContinue
