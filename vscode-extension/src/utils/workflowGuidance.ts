@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { readHarnessState } from './harnessState';
+import { getActiveHarnessContract, getHarnessContractFindings, readHarnessState } from './harnessState';
 import { assetExistsInWorkspaceRuntime, resolveWorkspaceRuntimeAssetPath } from './runtimeAssets';
 import { checkHandoffGate, readLoopState } from './loopStateChecker';
 import {
@@ -51,6 +51,12 @@ export interface WorkflowGuidanceSnapshot {
   readonly blockers: readonly string[];
   readonly pendingClarification: boolean;
   readonly activePlanPath?: string;
+  readonly activeContractPath?: string;
+  readonly activeContractStatus?: string;
+  readonly activeContractNextAction?: string;
+  readonly activeContractBlocker?: string;
+  readonly activeContractFindingCount: number;
+  readonly activeContractFindingSummary?: string;
   readonly progressPath?: string;
   readonly reviewPath?: string;
   readonly reviewFindingPaths: readonly string[];
@@ -117,6 +123,11 @@ export function evaluateWorkflowGuidance(
   const hasPlanEvidence = !!activePlanPath;
   const hasReviewEvidence = !!reviewPath || reviewFindingPaths.length > 0 || statusText.includes('review');
   const hasCompoundEvidence = !!learningPath;
+  const activeContract = getActiveHarnessContract(workspaceRoot);
+  const contractFindings = activeContract ? getHarnessContractFindings(workspaceRoot, activeContract.id) : [];
+  const contractFindingSummary = contractFindings.length > 0
+    ? contractFindings.map((finding) => `${finding.severity}: ${finding.nextAction}`).join(' | ')
+    : undefined;
 
   const currentCheckpoint = resolveWorkflowCheckpoint({
     issueNumber,
@@ -179,9 +190,18 @@ export function evaluateWorkflowGuidance(
     recommendedCommand: recommended.command,
     recommendedCommandTitle: recommended.commandTitle,
     rationale: recommended.rationale,
-    blockers: recommended.blockers,
+    blockers: [
+      ...recommended.blockers,
+      ...(activeContract?.blocker ? [activeContract.blocker] : []),
+    ],
     pendingClarification,
     activePlanPath,
+    activeContractPath: activeContract?.contractPath,
+    activeContractStatus: activeContract?.status,
+    activeContractNextAction: activeContract?.nextAction,
+    activeContractBlocker: activeContract?.blocker,
+    activeContractFindingCount: contractFindings.length,
+    activeContractFindingSummary: contractFindingSummary,
     progressPath,
     reviewPath,
     reviewFindingPaths,
@@ -221,6 +241,8 @@ export function renderWorkflowGuidanceMarkdown(
   lines.push(
     `- Pending clarification: ${snapshot.pendingClarification ? 'yes' : 'no'}`,
     `- Plan: ${snapshot.activePlanPath ?? 'none linked'}`,
+    `- Active contract: ${snapshot.activeContractPath ? `${snapshot.activeContractPath} (${snapshot.activeContractStatus ?? 'unknown'})` : 'none linked'}`,
+    `- Contract findings: ${snapshot.activeContractFindingCount}`,
     `- Progress: ${snapshot.progressPath ?? 'none linked'}`,
     `- Review: ${snapshot.reviewPath ?? 'none yet'}`,
     `- Compound capture: ${snapshot.learningPath ?? 'none yet'}`,
@@ -235,6 +257,16 @@ export function renderWorkflowGuidanceMarkdown(
     lines.push('', '## Blockers', '');
     for (const blocker of snapshot.blockers) {
       lines.push(`- ${blocker}`);
+    }
+  }
+
+  if (snapshot.activeContractNextAction || snapshot.activeContractFindingSummary) {
+    lines.push('', '## Active Slice', '');
+    if (snapshot.activeContractNextAction) {
+      lines.push(`- Next action: ${snapshot.activeContractNextAction}`);
+    }
+    if (snapshot.activeContractFindingSummary) {
+      lines.push(`- Findings: ${snapshot.activeContractFindingSummary}`);
     }
   }
 

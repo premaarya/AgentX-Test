@@ -177,6 +177,87 @@ describe('workflow guidance utility', () => {
     assert.ok(checklist.includes('Operator Enablement Checklist'));
   });
 
+  it('includes active contract state and slice findings in workflow guidance', () => {
+    writeFile(tmpDir, '.agentx/state/harness-state.json', JSON.stringify({
+      version: 1,
+      threads: [{
+        id: 'thread-1',
+        title: 'Runtime contract support',
+        taskType: 'story',
+        status: 'active',
+        issueNumber: 253,
+        planPath: 'docs/execution/plans/EXEC-PLAN-253-runtime-contract-state.md',
+        startedAt: '2026-03-28T10:00:00Z',
+        updatedAt: '2026-03-28T10:05:00Z',
+        currentTurnId: 'turn-1',
+      }],
+      turns: [{
+        id: 'turn-1',
+        threadId: 'thread-1',
+        sequence: 1,
+        status: 'active',
+        startedAt: '2026-03-28T10:00:00Z',
+      }],
+      items: [],
+      evidence: [],
+      contracts: [{
+        id: 'contract-1',
+        threadId: 'thread-1',
+        turnId: 'turn-1',
+        contractPath: 'docs/execution/contracts/CONTRACT-253-runtime.md',
+        evidencePath: 'docs/execution/contracts/EVIDENCE-253-runtime.md',
+        status: 'Blocked',
+        title: 'Runtime contract support',
+        nextAction: 'Resolve the active evaluator finding',
+        blocker: 'Runtime evidence is still missing',
+        createdAt: '2026-03-28T10:00:00Z',
+        updatedAt: '2026-03-28T10:05:00Z',
+      }],
+      contractFindings: [{
+        id: 'contract-finding-1',
+        contractId: 'contract-1',
+        threadId: 'thread-1',
+        turnId: 'turn-1',
+        severity: 'high',
+        summary: 'Real-surface verification has not been captured',
+        nextAction: 'Run the runtime proof step',
+        createdAt: '2026-03-28T10:05:00Z',
+      }],
+    }));
+    writeFile(tmpDir, '.agentx/issues/253.json', JSON.stringify({
+      number: 253,
+      title: 'Add runtime support for contract lifecycle and evaluator findings',
+      state: 'open',
+      status: 'In Progress',
+    }));
+    writeFile(tmpDir, '.agentx/state/loop-state.json', JSON.stringify({
+      active: true,
+      status: 'active',
+      prompt: 'runtime work',
+      iteration: 2,
+      minIterations: 5,
+      maxIterations: 10,
+      completionCriteria: 'TASK_COMPLETE',
+      issueNumber: 253,
+      startedAt: isoMinutesAgo(20),
+      lastIterationAt: isoMinutesAgo(2),
+      history: [],
+    }));
+    writeFile(tmpDir, 'docs/execution/plans/EXEC-PLAN-253-runtime-contract-state.md', '# Plan\n');
+    writeFile(tmpDir, 'docs/execution/progress/PROGRESS-253-runtime-contract-state.md', '# Progress\n');
+
+    const snapshot = evaluateWorkflowGuidance(tmpDir);
+
+    assert.ok(snapshot);
+    assert.equal(snapshot?.activeContractStatus, 'Blocked');
+    assert.equal(snapshot?.activeContractFindingCount, 1);
+    assert.ok(snapshot?.blockers.includes('Runtime evidence is still missing'));
+
+    const guidance = renderWorkflowGuidanceMarkdown(snapshot);
+    assert.ok(guidance.includes('Active contract: docs/execution/contracts/CONTRACT-253-runtime.md (Blocked)'));
+    assert.ok(guidance.includes('Findings: high: Run the runtime proof step'));
+  });
+
   it('falls back to hidden runtime workflow guides when visible guides are absent', () => {
     fs.rmSync(path.join(tmpDir, 'docs', 'guides'), { recursive: true, force: true });
     writeFile(tmpDir, '.agentx/runtime/docs/guides/WORKFLOW-ROLLOUT-SCORECARD.md', '# Scorecard\n');

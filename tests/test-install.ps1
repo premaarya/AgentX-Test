@@ -51,7 +51,35 @@ function Invoke-InstallerFile {
  $previousArchive = $env:AGENTX_INSTALL_ARCHIVE
  $env:AGENTX_INSTALL_ARCHIVE = $ArchiveOverride
  try {
-   $process = Start-Process -FilePath 'pwsh' -ArgumentList (@('-NoProfile', '-File', $SCRIPT_PATH) + $ArgumentList) -NoNewWindow -Wait -PassThru
+   $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+   $startInfo.FileName = 'pwsh'
+   $startInfo.UseShellExecute = $false
+   $startInfo.RedirectStandardOutput = $true
+   $startInfo.RedirectStandardError = $true
+  $startInfo.WorkingDirectory = (Get-Location).Path
+   $startInfo.ArgumentList.Add('-NoProfile')
+   $startInfo.ArgumentList.Add('-File')
+   $startInfo.ArgumentList.Add($SCRIPT_PATH)
+   foreach ($argument in $ArgumentList) {
+    $startInfo.ArgumentList.Add($argument)
+   }
+
+   $process = [System.Diagnostics.Process]::Start($startInfo)
+   if ($null -eq $process) {
+    throw 'Installer process failed to start.'
+   }
+
+   $stdout = $process.StandardOutput.ReadToEnd()
+   $stderr = $process.StandardError.ReadToEnd()
+   $process.WaitForExit()
+
+   if ($stdout) {
+    Write-Host $stdout.TrimEnd()
+   }
+   if ($stderr) {
+    Write-Host $stderr.TrimEnd()
+   }
+
    if ($process.ExitCode -ne 0) {
     throw "Installer exited with code $($process.ExitCode)."
    }

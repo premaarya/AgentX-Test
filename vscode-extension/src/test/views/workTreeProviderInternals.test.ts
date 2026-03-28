@@ -140,6 +140,11 @@ describe('workTreeProviderInternals', () => {
       recommendedAction: 'Kick off review',
       recommendedCommand: 'agentx.kickoffReview',
       recommendedCommandTitle: 'Kick Off Review',
+      activeContractPath: 'docs/execution/contracts/CONTRACT-253-runtime.md',
+      activeContractStatus: 'Blocked',
+      activeContractNextAction: 'Resolve the active slice blocker',
+      activeContractFindingCount: 1,
+      activeContractFindingSummary: 'high: Run the runtime proof step',
       planDeepening: { allowed: true },
       reviewKickoff: { allowed: true },
       blockers: ['Waiting on review evidence'],
@@ -148,6 +153,9 @@ describe('workTreeProviderInternals', () => {
     assert.equal(populatedChildren[0].label, 'Kick off review');
     assert.ok(populatedChildren.some((item) => item.label === 'Deepen plan'));
     assert.ok(populatedChildren.some((item) => item.label === 'Kick off review'));
+    assert.ok(populatedChildren.some((item) => item.label === 'Active contract'));
+    assert.ok(populatedChildren.some((item) => item.label === 'Slice next action'));
+    assert.ok(populatedChildren.some((item) => item.label === 'Slice findings'));
     assert.ok(populatedChildren.some((item) => item.label === 'Blocker'));
   });
 });

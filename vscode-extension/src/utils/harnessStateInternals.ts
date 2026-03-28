@@ -16,6 +16,8 @@ export function createDefaultState(): HarnessState {
     turns: [],
     items: [],
     evidence: [],
+    contracts: [],
+    contractFindings: [],
   };
 }
 

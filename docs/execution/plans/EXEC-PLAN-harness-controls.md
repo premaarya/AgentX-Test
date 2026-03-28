@@ -129,4 +129,4 @@ Implemented enforcement profiles with disabled checks, bounded session summary p
 
 ---
 
-**Template**: [EXEC-PLAN-TEMPLATE.md](../../.github/templates/EXEC-PLAN-TEMPLATE.md)
+**Template**: [EXEC-PLAN-TEMPLATE.md](../../../.github/templates/EXEC-PLAN-TEMPLATE.md)

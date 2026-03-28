@@ -13,12 +13,16 @@ import {
  writeHarnessState,
 } from './harnessStateInternals';
 import type {
+ AddHarnessContractFindingOptions,
  CompleteHarnessThreadOptions,
+ HarnessContract,
+ HarnessContractFinding,
  HarnessEvidence,
  HarnessItem,
  HarnessState,
  HarnessThread,
  HarnessTurn,
+ SetHarnessContractStateOptions,
  StartHarnessThreadOptions,
 } from './harnessStateTypes';
 
@@ -37,10 +41,32 @@ export function readHarnessState(workspaceRoot: string): HarnessState {
    turns: parsed.turns ?? [],
    items: parsed.items ?? [],
    evidence: parsed.evidence ?? [],
+   contracts: parsed.contracts ?? [],
+   contractFindings: parsed.contractFindings ?? [],
   };
  } catch {
   return createDefaultState();
  }
+}
+
+export function getActiveHarnessContract(workspaceRoot: string): HarnessContract | undefined {
+ const state = readHarnessState(workspaceRoot);
+ const thread = getActiveThread(state);
+ if (!thread) {
+  return undefined;
+ }
+
+ return [...state.contracts]
+  .reverse()
+  .find((contract) => contract.threadId === thread.id && contract.status !== 'Superseded');
+}
+
+export function getHarnessContractFindings(
+ workspaceRoot: string,
+ contractId: string,
+): HarnessContractFinding[] {
+ const state = readHarnessState(workspaceRoot);
+ return state.contractFindings.filter((finding) => finding.contractId === contractId);
 }
 
 export function findDefaultExecutionPlanPath(workspaceRoot: string): string | undefined {
@@ -261,6 +287,122 @@ export function recordHarnessIteration(workspaceRoot: string, summary: string): 
  };
 
  writeHarnessState(workspaceRoot, nextState);
+}
+
+export function setHarnessContractState(
+ workspaceRoot: string,
+ options: SetHarnessContractStateOptions,
+): HarnessContract {
+ const state = readHarnessState(workspaceRoot);
+ const thread = getActiveThread(state);
+ if (!thread) {
+  throw new Error('No active harness thread exists for storing contract state.');
+ }
+
+ const turn = getActiveTurn(state, thread.id);
+ const createdAt = nowIso();
+ const existing = [...state.contracts]
+  .reverse()
+  .find((contract) => contract.threadId === thread.id && contract.contractPath === options.contractPath);
+
+ const contract: HarnessContract = existing
+  ? {
+   ...existing,
+   evidencePath: options.evidencePath ?? existing.evidencePath,
+   status: options.status,
+   title: options.title,
+   summary: options.summary,
+   nextAction: options.nextAction,
+   blocker: options.blocker,
+   turnId: turn?.id,
+   updatedAt: createdAt,
+  }
+  : {
+   id: makeId('contract', state.contracts.length),
+   threadId: thread.id,
+   turnId: turn?.id,
+   contractPath: options.contractPath,
+   evidencePath: options.evidencePath,
+   status: options.status,
+   title: options.title,
+   summary: options.summary,
+   nextAction: options.nextAction,
+   blocker: options.blocker,
+   createdAt,
+   updatedAt: createdAt,
+  };
+
+ const contracts = existing
+  ? state.contracts.map((candidate) => candidate.id === existing.id ? contract : candidate)
+  : [...state.contracts, contract];
+
+ writeHarnessState(workspaceRoot, {
+  ...state,
+  contracts,
+  items: [
+   ...state.items,
+   {
+    id: makeId('item', state.items.length),
+    threadId: thread.id,
+    turnId: turn?.id,
+    itemType: 'status',
+    summary: `Contract ${options.status}: ${options.contractPath}`,
+    createdAt,
+    metadata: {
+     contractPath: options.contractPath,
+     nextAction: options.nextAction ?? null,
+     blocker: options.blocker ?? null,
+    },
+   },
+  ],
+ });
+
+ return contract;
+}
+
+export function addHarnessContractFinding(
+ workspaceRoot: string,
+ options: AddHarnessContractFindingOptions,
+): HarnessContractFinding {
+ const contract = getActiveHarnessContract(workspaceRoot);
+ if (!contract || contract.contractPath !== options.contractPath) {
+  throw new Error('The requested contract is not the active harness contract.');
+ }
+
+ const state = readHarnessState(workspaceRoot);
+ const createdAt = nowIso();
+ const finding: HarnessContractFinding = {
+  id: makeId('contract-finding', state.contractFindings.length),
+  contractId: contract.id,
+  threadId: contract.threadId,
+  turnId: contract.turnId,
+  severity: options.severity,
+  summary: options.summary,
+  nextAction: options.nextAction,
+  createdAt,
+ };
+
+ writeHarnessState(workspaceRoot, {
+  ...state,
+  contractFindings: [...state.contractFindings, finding],
+  items: [
+   ...state.items,
+   {
+    id: makeId('item', state.items.length),
+    threadId: contract.threadId,
+    turnId: contract.turnId,
+    itemType: 'status',
+    summary: `Contract finding ${options.severity}: ${options.summary}`,
+    createdAt,
+    metadata: {
+     contractPath: options.contractPath,
+     nextAction: options.nextAction,
+    },
+   },
+  ],
+ });
+
+ return finding;
 }
 
 export function completeHarnessThread(

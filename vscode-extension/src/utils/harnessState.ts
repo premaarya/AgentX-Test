@@ -1,5 +1,10 @@
 export type {
+  AddHarnessContractFindingOptions,
   CompleteHarnessThreadOptions,
+  HarnessContract,
+  HarnessContractFinding,
+  HarnessContractFindingSeverity,
+  HarnessContractStatus,
   HarnessEvidence,
   HarnessEvidenceType,
   HarnessItem,
@@ -9,15 +14,20 @@ export type {
   HarnessThreadStatus,
   HarnessTurn,
   HarnessTurnStatus,
+  SetHarnessContractStateOptions,
   StartHarnessThreadOptions,
 } from './harnessStateTypes';
 
 export {
+ addHarnessContractFinding,
  completeHarnessThread,
  findDefaultExecutionPlanPath,
+ getActiveHarnessContract,
+ getHarnessContractFindings,
  getHarnessStatusDisplay,
  readHarnessState,
  recordHarnessIteration,
  recordHarnessStatusCheck,
+ setHarnessContractState,
  startHarnessThread,
 } from './harnessStateEngine';

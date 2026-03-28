@@ -136,4 +136,4 @@ Revert the provider-dispatch slice in `.agentx/agentx-cli.ps1` and keep the curr
 
 ---
 
-**Template**: [EXEC-PLAN-TEMPLATE.md](../../.github/templates/EXEC-PLAN-TEMPLATE.md)
+**Template**: [EXEC-PLAN-TEMPLATE.md](../../../.github/templates/EXEC-PLAN-TEMPLATE.md)

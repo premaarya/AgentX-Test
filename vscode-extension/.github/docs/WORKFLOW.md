@@ -120,7 +120,7 @@ The current checkpoint is resolved from durable evidence, not chat history or mo
 |------------|-------------------------|-------------------|----------------------|-------------------|
 | `Brainstorm` | No active issue or harness thread is linked yet | Open workspace plus missing scoped issue context | Frame the work before durable planning starts | Use brainstorm guidance to tighten scope |
 | `Plan` | Scope exists, but no durable execution plan is linked yet | Active issue or harness thread, but no execution plan/progress pair | Attach or refine the plan before implementation spreads across surfaces | Use `Deepen Plan` |
-| `Work` | A durable plan exists and review evidence does not yet exist | Execution plan, optionally progress log, active issue context | Produce validation-ready work without outrunning the plan | Continue implementation and validation |
+| `Work` | A durable plan exists and review evidence does not yet exist | Execution plan, optionally progress log, active issue context, and bounded work contract for complex slices when available | Produce validation-ready work without outrunning the plan | Continue implementation and validation |
 | `Review` | Review evidence exists, or the quality loop is complete and review is the next bounded checkpoint | Review artifact, durable finding, `In Review` status, or completed quality loop | Settle correctness and risk before closure | Use `Kick Off Review` or resume review |
 | `Compound Capture` | The issue is effectively closed for delivery, but reusable learning capture is still unresolved | Closed issue plus review evidence, but no curated learning capture | Preserve reusable learning or record an explicit closeout rationale | Create learning capture or document why none is needed |
 | `Done` | Delivery and compound closeout are both complete | Closed issue, review evidence, and durable compound-closeout evidence | No further lifecycle action is required | Review rollout posture or move to the next slice |
@@ -131,7 +131,7 @@ The current checkpoint is resolved from durable evidence, not chat history or mo
 |------------|--------|----------------|---------------|----------------------------|
 | `Brainstorm` | Shape the problem before planning | Need is visible, but issue scope is not yet durable enough to plan | A concrete issue, thread, or bounded task exists | Brainstorm guidance, issue discovery, prior learnings when available |
 | `Plan` | Turn scope into a durable execution path | Active issue or task context exists, but no linked plan anchors the work | Execution plan exists and can carry progress forward | Issue context, `docs/execution/plans/`, optional `docs/execution/progress/` |
-| `Work` | Produce the change while keeping evidence current | Durable plan exists and the task is in active delivery | Validation evidence is strong enough to begin or resume review | Execution plan, progress log, loop state, implementation evidence |
+| `Work` | Produce the change while keeping evidence current | Durable plan exists and the task is in active delivery | Validation evidence is strong enough to begin or resume review | Execution plan, progress log, optional bounded work contract, loop state, implementation evidence |
 | `Review` | Assess readiness, correctness, and follow-up work | Validation-ready output exists or review has already started | Review outcome is explicit: approved, changes requested, or follow-up captured | Review artifact, durable findings, `In Review` or `Validating` status |
 | `Compound Capture` | Preserve reusable learning before final closure drifts | Delivery is closed or closing, but reusable outcome capture is unresolved | Curated learning capture exists or an explicit closeout rationale is recorded | `docs/artifacts/learnings/`, issue closeout comment, related ADR/spec/review links |
 | `Done` | Mark the lifecycle complete with no remaining compound work | Review outcome and compound closeout are both settled | No further required lifecycle work remains | Closed issue, stable review outcome, durable capture or documented skip |
@@ -141,8 +141,90 @@ The current checkpoint is resolved from durable evidence, not chat history or mo
 | Transition | Required Before Transition | Blockers |
 |------------|----------------------------|----------|
 | `Brainstorm -> Plan` | The work is named and scoped to an issue, thread, or bounded task | Missing scope owner, unresolved problem statement |
-| `Plan -> Work` | A durable execution plan exists and the main constraints are explicit | No plan, no progress anchor for complex work, pending clarification |
-| `Work -> Review` | Validation evidence is ready and the quality loop is complete when applicable | Incomplete validation, unresolved clarification, no plan context for review |
+| `Plan -> Work` | A durable execution plan exists and the main constraints are explicit; for complex work, the next bounded slice is ready to be expressed as a work contract | No plan, no progress anchor for complex work, pending clarification |
+| `Work -> Review` | Validation evidence is ready, the quality loop is complete when applicable, and any active bounded work contract is satisfied or explicitly superseded | Incomplete validation, unresolved clarification, no plan context for review |
+
+#### Bounded Work Contracts
+
+Bounded work contracts are the durable artifact used to define the next scoped slice inside `Work` for complex tasks. They do not introduce a new checkpoint or state machine. Instead, they narrow the active work surface so implementation, evaluator feedback, and evidence collection can happen against an explicit contract rather than broad plan intent alone.
+
+Use a bounded work contract when one or more of these conditions apply:
+
+- the task spans multiple files or surfaces and the next change set needs explicit boundaries
+- the slice has meaningful runtime-proof requirements that should be declared before coding begins
+- evaluator feedback is expected during `Work`, not only at final review
+- the task may need a clean-slate reset or handoff and the next slice must be resumable from durable artifacts alone
+
+Recommended artifact location:
+
+- `docs/execution/contracts/CONTRACT-<issue>-<topic>.md`
+
+Minimum contract sections:
+
+- Purpose
+- Scope
+- Not In Scope
+- Acceptance Criteria
+- Verification Method
+- Runtime Evidence Expectations
+- Risks
+- Recovery Path
+
+#### Evidence Classes Inside `Work`
+
+Bounded work contracts are expected to point at or embed an evidence summary that distinguishes three evidence classes:
+
+- `Implementation evidence`: what changed
+- `Verification evidence`: what checks passed or failed
+- `Runtime evidence`: what was observed on the real surface
+
+Recommended evidence summary location:
+
+- `docs/execution/contracts/EVIDENCE-<issue>-<topic>.md`
+
+Durable evidence expectations:
+
+- implementation evidence can live in a contract-linked summary, plan note, or progress note
+- verification evidence should reference tests, builds, lint, typecheck, or equivalent checks
+- runtime evidence should reference the real-surface observation or a durable summary of it
+
+Review and evaluator surfaces should reuse these evidence classes rather than inventing separate proof vocabularies. Final review artifacts and durable findings can cite the evidence summary, but the execution-layer contract remains the source of truth for what proof the active slice expected.
+
+Bounded work contracts are nested under `Work` with these expectations:
+
+- execution plans still define the larger multi-step path
+- progress logs still record milestone and checkpoint progress
+- contracts define the current bounded slice
+- evaluator findings and evidence summaries can refer back to the active contract
+
+Contract status is local to the artifact and MUST NOT be treated as a new checkpoint. Typical statuses such as `Proposed`, `Active`, `Blocked`, `Complete`, or `Superseded` help describe the slice, but the issue lifecycle still resolves through the canonical checkpoints and normal AgentX status values.
+
+#### Reset Vs Compaction Policy
+
+Long-running work inside `Work` should prefer durable artifact continuity over transcript continuity.
+
+Decision order:
+
+- continue in place when the active issue, plan, slice, and blocker state are still coherent
+- compact when the work is still coherent but token pressure is the main constraint
+- reset when continuation would rely on stale chat state or conflicting assumptions instead of durable artifacts
+
+Primary decision inputs:
+
+- active issue status
+- execution plan freshness
+- progress log freshness
+- bounded contract state
+- evidence summary state
+- harness thread status
+- loop completion or staleness state
+
+Provider-aware guidance:
+
+- reason from available context budget, compaction behavior, and summary support
+- do not hardcode one model vendor or model family into the policy
+
+If the current session cannot reconstruct the active slice, blocker, and next action from durable artifacts, prefer reset over compaction.
 | `Review -> Compound Capture` | Review outcome is explicit and any durable findings are captured | Review still in progress, unresolved findings, approval state unclear |
 | `Compound Capture -> Done` | Curated learning exists or the closeout rationale is explicitly recorded in durable artifacts | Missing learning capture and no durable skip rationale |
 

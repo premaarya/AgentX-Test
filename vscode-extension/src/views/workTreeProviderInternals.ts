@@ -212,6 +212,25 @@ export function buildWorkflowGuidanceChildren(snapshot: WorkflowGuidanceSnapshot
   children.push(SidebarTreeItem.action('Kick off review', 'comment-discussion', 'agentx.kickoffReview', 'Kick Off Review'));
  }
 
+  if (snapshot.activeContractPath) {
+    children.push(
+      SidebarTreeItem.detail('Active contract', 'note', snapshot.activeContractPath, snapshot.activeContractStatus ?? 'unknown'),
+    );
+    if (snapshot.activeContractNextAction) {
+      children.push(SidebarTreeItem.detail('Slice next action', 'debug-step-over', snapshot.activeContractNextAction));
+    }
+    if (snapshot.activeContractFindingCount > 0) {
+      children.push(
+        SidebarTreeItem.detail(
+          'Slice findings',
+          'warning',
+          String(snapshot.activeContractFindingCount),
+          snapshot.activeContractFindingSummary,
+        ),
+      );
+    }
+  }
+
  for (const blocker of snapshot.blockers) {
   children.push(SidebarTreeItem.detail('Blocker', 'warning', blocker));
  }

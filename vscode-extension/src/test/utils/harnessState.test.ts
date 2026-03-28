@@ -3,12 +3,16 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import {
+  addHarnessContractFinding,
   completeHarnessThread,
   findDefaultExecutionPlanPath,
+  getActiveHarnessContract,
+  getHarnessContractFindings,
   getHarnessStatusDisplay,
   readHarnessState,
   recordHarnessIteration,
   recordHarnessStatusCheck,
+  setHarnessContractState,
   startHarnessThread,
 } from '../../utils/harnessState';
 
@@ -118,5 +122,54 @@ describe('harnessState', () => {
 
     const display = getHarnessStatusDisplay(wsRoot);
     assert.ok(display.includes('Harness iterative-loop turn 1'));
+  });
+
+  it('persists active contract state alongside the current harness thread', () => {
+    startHarnessThread(wsRoot, {
+      taskType: 'story',
+      title: 'Implement bounded work slice',
+      prompt: 'Implement contract runtime support',
+      issueNumber: 253,
+    });
+
+    const contract = setHarnessContractState(wsRoot, {
+      contractPath: 'docs/execution/contracts/CONTRACT-253-runtime.md',
+      evidencePath: 'docs/execution/contracts/EVIDENCE-253-runtime.md',
+      status: 'Active',
+      title: 'Runtime contract support',
+      nextAction: 'Attach evaluator findings before review',
+    });
+
+    const state = readHarnessState(wsRoot);
+    assert.equal(state.contracts.length, 1);
+    assert.equal(contract.status, 'Active');
+    assert.equal(getActiveHarnessContract(wsRoot)?.contractPath, 'docs/execution/contracts/CONTRACT-253-runtime.md');
+  });
+
+  it('attaches evaluator findings to the active contract with severity and next action', () => {
+    startHarnessThread(wsRoot, {
+      taskType: 'story',
+      title: 'Implement bounded work slice',
+      prompt: 'Implement contract runtime support',
+      issueNumber: 253,
+    });
+    const contract = setHarnessContractState(wsRoot, {
+      contractPath: 'docs/execution/contracts/CONTRACT-253-runtime.md',
+      status: 'Blocked',
+      title: 'Runtime contract support',
+      blocker: 'Evaluator finding unresolved',
+    });
+
+    addHarnessContractFinding(wsRoot, {
+      contractPath: 'docs/execution/contracts/CONTRACT-253-runtime.md',
+      severity: 'high',
+      summary: 'Runtime proof is missing for the active slice',
+      nextAction: 'Run the real-surface verification before advancing to review',
+    });
+
+    const findings = getHarnessContractFindings(wsRoot, contract.id);
+    assert.equal(findings.length, 1);
+    assert.equal(findings[0].severity, 'high');
+    assert.equal(findings[0].nextAction, 'Run the real-surface verification before advancing to review');
   });
 });
