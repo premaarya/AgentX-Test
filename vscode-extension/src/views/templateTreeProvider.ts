@@ -13,7 +13,6 @@ import {
  * Tree data provider for the Templates sidebar view.
  * Shows available markdown templates from workspace overrides, hidden runtime defaults,
  * or extension-bundled defaults.
- * with their input variables as expandable children.
  */
 export class TemplateTreeProvider implements vscode.TreeDataProvider<TemplateTreeItem> {
  private _onDidChangeTreeData = new vscode.EventEmitter<TemplateTreeItem | undefined | void>();
@@ -47,7 +46,7 @@ export class TemplateTreeProvider implements vscode.TreeDataProvider<TemplateTre
  }
 
  /**
-  * Parse a template file and build a tree item with input variable children.
+  * Build a tree item for a template file.
   */
  private createTemplateItem(filePath: string, fileName: string): TemplateTreeItem {
     return createTemplateTreeItem(filePath, fileName);

@@ -69,26 +69,17 @@ function buildInputChildren(inputs: TemplateInput[]): TemplateTreeItem[] {
 }
 
 export function createTemplateTreeItem(filePath: string, fileName: string): TemplateTreeItem {
- const def = parseTemplate(filePath, fileName);
- const item = new TemplateTreeItem(
-  def.name,
-  def.inputs.length > 0
-   ? vscode.TreeItemCollapsibleState.Collapsed
-   : vscode.TreeItemCollapsibleState.None,
- );
+ const name = fileName.replace(/-TEMPLATE\.md$/i, '').replace(/\.md$/i, '');
+ const item = new TemplateTreeItem(name, vscode.TreeItemCollapsibleState.None);
 
- item.iconPath = new vscode.ThemeIcon(TEMPLATE_ICONS[def.name] || 'file');
+ item.iconPath = new vscode.ThemeIcon(TEMPLATE_ICONS[name] || 'file');
  item.command = {
   command: 'vscode.open',
   title: 'Open Template',
   arguments: [vscode.Uri.file(filePath)],
  };
- item.tooltip = `Open ${def.name} template (${def.inputs.length} input${def.inputs.length !== 1 ? 's' : ''})`;
- item.description = `${def.inputs.length} input${def.inputs.length !== 1 ? 's' : ''}`;
+ item.tooltip = `Open ${name} template`;
  item.contextValue = 'templateItem';
- if (def.inputs.length > 0) {
-  item.children = buildInputChildren(def.inputs);
- }
 
  return item;
 }

@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import { AgentXContext } from '../agentxContext';
 import { SidebarTreeItem } from './sidebarTreeItem';
 import {
- buildActionChildren,
  buildIssueChildren,
  buildOverviewChildren,
  getLocalIssues,
@@ -39,7 +38,6 @@ export class WorkTreeProvider implements vscode.TreeDataProvider<SidebarTreeItem
   return [
    SidebarTreeItem.section('Overview', 'home', buildOverviewChildren(root, pending, openIssues.length)),
    SidebarTreeItem.section('Open issues', 'issues', buildIssueChildren(openIssues), String(openIssues.length)),
-   SidebarTreeItem.section('Actions', 'play', buildActionChildren()),
   ];
  }
 }
