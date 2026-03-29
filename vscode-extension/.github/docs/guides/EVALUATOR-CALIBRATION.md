@@ -164,4 +164,4 @@ When adding new calibration examples:
 
 ---
 
-**See Also**: [WORKFLOW.md](../WORKFLOW.md) | [engineer.agent.md](../../.github/agents/engineer.agent.md) | [reviewer.agent.md](../../.github/agents/reviewer.agent.md)
+**See Also**: [WORKFLOW.md](../WORKFLOW.md) | [engineer.agent.md](../../agentx/agents/engineer.agent.md) | [reviewer.agent.md](../../agentx/agents/reviewer.agent.md)

@@ -11,6 +11,7 @@ constraints:
   - "MUST link all child issues to the parent Epic"
   - "MUST document user needs and business value in every PRD"
   - "MUST classify AI domain intent and add `needs:ai` label when detected"
+  - "MUST make AI-bearing PRDs implementation-informing at the product layer: capture the user-visible AI job, grounding sources, tool or action boundaries, fallback expectations, quality thresholds, and review triggers so Architect and Data Scientist do not have to infer them later"
   - "MUST NOT write code or technical specifications"
   - "MUST NOT create UX designs or wireframes"
   - "MUST NOT add constraints that contradict the user's stated technology intent"
@@ -125,6 +126,7 @@ Scan the user's request for technology signals:
 **If `needs:ai` detected**:
 - MUST read `.github/skills/ai-systems/ai-agent-development/SKILL.md` before writing PRD
 - MUST include GenAI Requirements in PRD: LLM selection criteria, evaluation strategy, model pinning approach, guardrails, responsible AI considerations
+- MUST capture the product-facing AI contract clearly enough for Architect and Data Scientist to deepen it into an implementation-ready spec: primary AI user jobs, grounding or knowledge sources, tool or action boundaries, structured output or response expectations, fallback behavior, and human-review triggers for high-risk actions
 - MUST NOT downgrade to "rule-based" without explicit user confirmation
 
 ### 3. Create PRD (LOCAL FILE -- NOT GitHub)
@@ -179,6 +181,7 @@ Before handoff, verify with fresh eyes:
 - [ ] **Standards checked**: Relevant industry standards and compliance requirements identified
 - [ ] **Intent preserved**: if user said "AI/GenAI", PRD includes GenAI Requirements section
 - [ ] **GenAI completeness**: GenAI Requirements cover LLM selection, evaluation strategy, model pinning, guardrails, and responsible AI
+- [ ] **AI handoff quality**: AI-bearing PRDs define the product-facing AI contract well enough that Architect and Data Scientist can specify model behavior, retrieval, tooling, fallback, and evaluation without inventing missing requirements
 - [ ] **No contradictions**: constraints do not conflict with user's technology intent
 
 ### 6. Commit & Handoff

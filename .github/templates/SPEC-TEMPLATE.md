@@ -857,31 +857,57 @@ graph LR
 ## 13. AI/ML Specification (if applicable)
 
 > **Trigger**: Include this section when the issue has `needs:ai` label or the ADR includes an AI/ML Architecture section. If the product does NOT involve AI/ML, skip this section entirely.
+> **Depth rule**: This section MUST be implementation-ready for Engineer. Naming a model or provider is not enough. Capture concrete AI contracts: prompt assets, schemas, retrieval behavior, evaluation hooks, fallback behavior, guardrails, observability, and failure modes.
+> **Alignment rule**: Before the spec returns to `Ready`, Architect MUST involve Data Scientist to review and deepen this section for any AI-bearing product or `needs:ai` work. Record the result below.
+
+### 13.0 AI/ML Alignment Record
+
+| Field | Value |
+|-------|-------|
+| **Architect Owner** | {name} |
+| **Data Scientist Reviewer** | {name or clarification thread reference} |
+| **Review Status** | {Reviewed / Blocked / Follow-up required} |
+| **Review Date** | {YYYY-MM-DD} |
+| **Implementation Risks Raised** | {summary of any unresolved AI implementation risks} |
 
 ### 13.1 Model Configuration
 
 | Parameter | Value |
 |-----------|-------|
-| **Model** | {e.g., gpt-4o, claude-sonnet-4, o3} |
+| **Primary Model** | {e.g., gpt-5.2-2026-01-15, claude-sonnet-4-2026-02-10, o3-2026-01-31} |
+| **Fallback Model** | {different provider/model when applicable} |
 | **Provider** | {Microsoft Foundry / OpenAI / Anthropic / Google / Local} |
 | **Endpoint** | {URL or environment variable name} |
 | **Authentication** | {API key env var / Managed Identity / OAuth} |
-| **System Prompt** | {Summary - full prompt in separate file if >200 tokens} |
+| **Prompt File(s)** | {paths under `prompts/`} |
+| **System Prompt Contract** | {summary - role, constraints, variable inputs, expected tool usage} |
 | **Temperature** | {0.0 - 2.0} |
 | **Top-P** | {0.0 - 1.0} |
 | **Max Tokens** | {output token limit} |
 | **Structured Output** | {JSON schema reference, if applicable} |
 | **Timeout** | {seconds} |
 | **Retry Policy** | {max retries, backoff strategy} |
+| **Fallback Trigger** | {timeout, schema failure, provider outage, safety block, etc.} |
 
-### 13.2 Agent Tools / Functions
+### 13.2 Input / Output Contract
+
+| Contract Element | Value |
+|------------------|-------|
+| **Input Schema** | {request fields, required/optional inputs, validation constraints} |
+| **Context Inputs** | {conversation state, retrieved docs, tool outputs, user profile, etc.} |
+| **Output Schema** | {response shape, required fields, typed schema location} |
+| **Schema Validation Path** | {where validation happens and what blocks invalid output} |
+| **User-visible Failure Modes** | {empty result, fallback response, retry message, handoff to human, etc.} |
+| **Non-retryable Errors** | {what should fail fast instead of retrying} |
+
+### 13.3 Agent Tools / Functions
 
 | Tool Name | Purpose | Input Schema | Output Schema | Side Effects |
 |-----------|---------|-------------|---------------|--------------|
 | {tool_1} | {what it does} | {params} | {return type} | {DB write / API call / none} |
 | {tool_2} | {what it does} | {params} | {return type} | {side effects} |
 
-### 13.3 Inference Pipeline
+### 13.4 Inference Pipeline
 
 ```mermaid
 graph LR
@@ -903,18 +929,22 @@ graph LR
 3. **Postprocessing**: {Output parsing, structured output validation, safety filtering}
 4. **Error Handling**: {Fallback model, cached response, graceful degradation}
 
-### 13.4 Context / RAG Design (if applicable)
+### 13.5 Prompt, Retrieval, and Context Assets
 
-| Parameter | Value |
-|-----------|-------|
+| Asset / Concern | Value |
+|-----------------|-------|
+| **Prompt Files** | {system/user/tool prompt paths} |
+| **Prompt Variables** | {runtime variables injected into prompts} |
+| **Few-shot / Examples** | {source and maintenance approach} |
 | **Knowledge Source** | {Documents / Database / API / Vector Store} |
 | **Embedding Model** | {model name} |
 | **Vector Store** | {Azure AI Search / Chroma / Pinecone / FAISS} |
 | **Chunk Strategy** | {size, overlap, method} |
 | **Top-K Results** | {number of chunks retrieved} |
 | **Relevance Threshold** | {minimum similarity score} |
+| **Fallback Retrieval Behavior** | {what happens when retrieval returns weak or empty context} |
 
-### 13.5 Evaluation Strategy
+### 13.6 Evaluation Strategy
 
 | Metric | Evaluator | Threshold | Test Dataset |
 |--------|-----------|-----------|--------------|
@@ -927,11 +957,21 @@ graph LR
 
 **Evaluation Dataset**: {Location, format, number of test cases, how generated}
 
-### 13.6 Observability
+**Regression Hooks:**
+- Baseline file: {e.g. `evaluation/baseline.json`}
+- Schema-validity target: {e.g. >= 95%}
+- Fallback model test expectation: {what must also pass}
+- Guardrail test coverage: {adversarial / jailbreak / out-of-domain cases}
 
+### 13.7 Guardrails, Observability, and Operations
+
+- **Safety Guardrails**: {prompt injection handling, moderation, output filtering, out-of-domain policy}
 - **Tracing**: {OpenTelemetry / Azure Monitor / Custom} - trace all model calls with input/output
 - **Token Tracking**: Log prompt tokens, completion tokens, total cost per request
+- **Latency Budget**: {p50 / p95 expectations and timeout budget}
+- **Cost Budget**: {expected cost per request / per session / alert threshold}
 - **Quality Monitoring**: Log evaluation scores in production, alert on degradation
+- **Drift Signals**: {what constitutes model drift or input-distribution drift}
 - **Dashboard**: {Link to monitoring dashboard}
 
 > **Reference**: Read `.github/skills/ai-systems/ai-agent-development/SKILL.md` for implementation patterns, model guidance, and production checklist.

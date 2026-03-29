@@ -1,3 +1,5 @@
+- 2026-03-29: AI-bearing PRDs must now carry an explicit product-facing AI contract before architecture begins: PM guidance and the PRD template require primary AI job, grounding sources, tool boundaries, response contract, fallback behavior, and human-review triggers so Architect/Data Scientist alignment starts from concrete product intent.
+- 2026-03-29: AI-bearing architecture work now requires Architect/Data Scientist alignment before the spec returns to `Ready`; Architect keeps ADR/Spec ownership, while Data Scientist must deepen the AI implementation-facing sections so Engineer receives an implementation-ready contract.
 - 2026-03-08: First harness runtime slice uses `.agentx/state/harness-state.json` beside the existing loop state file instead of replacing loop-state handling.
 - 2026-03-08: Complex-work harness enforcement is centralized in `scripts/check-harness-compliance.ps1` and invoked by `.github/workflows/quality-gates.yml`.
 - 2026-03-08: Provider selection is now normalized through `provider` with fallback to legacy `integration` and `mode` fields to preserve old workspaces.

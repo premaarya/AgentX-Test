@@ -395,7 +395,7 @@ In Review + needs:testing -> Tester (pre-release certification)
 **Validation checks:**
 - PM: PRD exists, child issues created, required sections present
 - UX: Wireframes + user flows + **HTML/CSS prototypes (MANDATORY)** complete, accessibility considered
-- Architect: ADR + Tech Spec exist, NO CODE EXAMPLES compliance, PM requirement-fit validation captured
+- Architect: ADR + Tech Spec exist, NO CODE EXAMPLES compliance, PM requirement-fit validation captured, and AI-bearing specs capture Data Scientist implementation-depth alignment
 - Data Scientist: ML pipeline design, evaluation plan, model card present
 - Engineer: Code committed, tests 80% coverage, docs updated, and required Architect/Data Scientist design alignment captured when the issue crosses those boundaries
 - Reviewer: Review document complete, approval decision present
@@ -441,10 +441,11 @@ For complex tasks, self-review also checks that the execution plan and progress 
 ## Handoff Flow
 
 ```
-Discover/Plan -> [Architect, Data Scientist, UX] -> Architect/PM fit check -> Engineer -> conditional Architect/Data Scientist alignment -> Reviewer -> [DevOps, Tester] -> Engineer (bug fixes if needed)
+Discover/Plan -> [Architect, Data Scientist, UX] -> Architect/Data Scientist AI alignment (if `needs:ai`) -> Architect/PM fit check -> Engineer -> conditional Architect/Data Scientist alignment -> Reviewer -> [DevOps, Tester] -> Engineer (bug fixes if needed)
 ```
 
 **Design Phase**: Architect, Data Scientist, and UX inputs are applied before implementation when complexity requires them.
+**Architect AI/ML Alignment Check**: When the product includes AI/ML behavior or carries `needs:ai`, Architect MUST involve Data Scientist before the spec returns to `Ready`. The goal is to turn the AI section into an implementation-ready contract for Engineer, not just a high-level architecture note.
 **Architect Requirement-Fit Check**: Before architecture returns to `Ready`, Architect performs a lightweight review with PM to confirm the ADR and Tech Spec still satisfy PRD scope, business outcomes, and success metrics. PM validates requirement fit, not low-level technical correctness.
 **Engineer Design Alignment Check**: Before implementation, Engineer consults Architect when the implementation crosses architecture boundaries or diverges from the ADR/Spec, and consults Data Scientist when `needs:ai` work changes model, eval, prompt, RAG, or ML contracts. These are conditional checkpoints, not mandatory approvals on every story.
 **Parallel Validation Phase**: DevOps Engineer and Tester validate in parallel after Reviewer approves.
@@ -494,6 +495,7 @@ In live AgentX execution, run these checkpoints through the existing clarificati
 
 | Checkpoint | Trigger | Participants | Purpose | Output |
 |------------|---------|--------------|---------|--------|
+| Architect AI/ML spec alignment | `needs:ai` issue, AI/ML in PRD, or AI/ML behavior in the selected architecture | Architect + Data Scientist | Ensure the spec's AI implementation-facing sections are concrete enough for Engineer, covering model/runtime contracts, prompts, schemas, retrieval, evaluation, guardrails, observability, and fallback behavior | Short validation note or clarification record |
 | Architect requirement-fit validation | ADR + Tech Spec drafted | Architect + PM | Confirm the proposed solution still satisfies PRD scope, business outcomes, and success metrics | Short validation note or clarification record |
 | Engineer architecture alignment | Implementation crosses architecture boundaries, introduces a new pattern, or diverges from ADR/Spec | Engineer + Architect | Confirm the implementation approach still fits the selected architecture | Short validation note or clarification record |
 | Engineer AI/ML alignment | `needs:ai` work changes model behavior, prompt flow, evals, RAG, or ML contracts | Engineer + Data Scientist | Confirm AI/ML contracts, eval hooks, and operating assumptions before coding | Short validation note or clarification record |

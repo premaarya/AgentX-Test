@@ -69,6 +69,12 @@ const bundledMarkdownRewrites = [
         ],
     },
     {
+        relativePath: path.join('docs', 'guides', 'EVALUATOR-CALIBRATION.md'),
+        replacements: [
+            ['(../../.github/agents/', '(../../agents/'],
+        ],
+    },
+    {
         relativePath: 'CONTRIBUTING.md',
         replacements: [
             ['(.github/skills/', '(skills/'],
@@ -353,6 +359,17 @@ function rewriteCompatibilityDocs() {
 
         if (updated !== original) {
             fs.writeFileSync(techDebtPath, updated, 'utf8');
+        }
+    }
+
+    const evaluatorCalibrationPath = path.join(compatibilityRoot, 'docs', 'guides', 'EVALUATOR-CALIBRATION.md');
+    if (fs.existsSync(evaluatorCalibrationPath)) {
+        const original = fs.readFileSync(evaluatorCalibrationPath, 'utf8');
+        const updated = original
+            .split('(../../.github/agents/').join('(../../agentx/agents/');
+
+        if (updated !== original) {
+            fs.writeFileSync(evaluatorCalibrationPath, updated, 'utf8');
         }
     }
 }

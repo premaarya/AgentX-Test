@@ -152,6 +152,18 @@ inputs:
 | **Cost Budget** | ${amount} per 1M tokens / per request / per month |
 | **Data Sensitivity** | PII / Confidential / Internal / Public |
 
+#### Product-Facing AI Contract
+| Requirement | Specification |
+|-------------|---------------|
+| **Primary AI Job** | {What user-visible reasoning, generation, classification, or decision-support task the AI must perform} |
+| **Grounding Sources** | {Docs, KBs, APIs, files, databases, or none} |
+| **Tool / Action Boundaries** | {What the AI may read, write, trigger, or recommend; what it MUST NOT do autonomously} |
+| **Response Contract** | {Free-form text / structured JSON / citations / action plan / draft output} |
+| **Fallback Behavior** | {What the product should do when confidence is low, retrieval fails, or the model is unavailable} |
+| **Human Review Trigger** | {When a human must approve, edit, or confirm the result before completion} |
+
+> **Depth rule**: Keep this section product-facing, not implementation-facing. The goal is to make the intended AI behavior, boundaries, and failure posture explicit so Architect and Data Scientist can turn it into a concrete technical contract later.
+
 #### Inference Pattern
 - [ ] Real-time API (user-facing, low latency)
 - [ ] Batch processing (offline, high throughput)
@@ -201,6 +213,7 @@ graph TD
 - **Grounding data**: {knowledge base, documents, APIs}
 - **Data sensitivity**: {PII / Confidential / Public}
 - **Volume**: {requests per hour/day/month}
+- **Freshness requirement**: {static corpus / daily sync / near-real-time / user-provided only}
 
 #### MCP Requirements (if MCP Server or MCP App)
 
@@ -230,8 +243,10 @@ graph TD
 - [ ] Inference latency meets requirements
 - [ ] Cost per request within budget
 - [ ] Evaluation dataset created with {N} test cases
+- [ ] Evaluation dataset covers expected happy paths, edge cases, refusals, and fallback scenarios
 - [ ] Graceful fallback when model is unavailable
 - [ ] Guardrails block harmful/off-topic content
+- [ ] Human-review path is defined for high-risk or low-confidence outcomes
 - [ ] MCP tools/resources respond within latency budget (if MCP)
 - [ ] MCP App renders correctly in target AI host (if MCP App)
 

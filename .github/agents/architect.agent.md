@@ -16,6 +16,7 @@ constraints:
   - "MUST NOT modify source code, PRD, or UX documents"
   - "MUST create all files locally using editFiles -- MUST NOT use mcp_github_create_or_update_file or mcp_github_push_files to push files directly to GitHub"
   - "MUST apply AI-first thinking -- evaluate GenAI/Agentic AI solutions as the default lens for every architecture decision, not only when features explicitly request AI"
+  - "MUST involve AgentX Data Scientist before returning architecture work to Ready when the PRD, ADR, or product scope includes AI/ML behavior or carries `needs:ai`; the Architect remains owner of the Spec, but the Data Scientist MUST review and deepen the AI implementation-facing sections before Engineer handoff"
   - "MUST conduct deep technology research before designing -- landscape scan, failure modes, benchmarks, security posture, long-term viability"
   - "MUST document research findings with sources in the ADR Context section"
   - "MUST run a lightweight requirement-fit validation with Product Manager before moving architecture work back to Ready; this checkpoint verifies PRD alignment, scope, and success metrics, not implementation details"
@@ -148,7 +149,31 @@ Create `docs/artifacts/specs/SPEC-{issue}.md` from template at `.github/template
 - Code: MUST NOT include any code examples or snippets
 - Tables: use for API contracts, data schemas, comparison matrices
 
-### 4. PM Fit Validation (MANDATORY, lightweight)
+### 4. Data Scientist AI Implementation Alignment (MANDATORY when AI is in scope)
+
+If the PRD, ADR, or selected architecture includes AI/ML behavior, `needs:ai`, model calls,
+prompting, RAG, evaluation, guardrails, or ML contracts, Architect MUST involve AgentX Data Scientist
+before the spec can be considered implementation-ready.
+
+**Purpose**:
+- Turn a high-level AI architecture into implementation-ready contracts for Engineer.
+- Prevent thin AI sections that name a model but leave prompt, schema, evaluation, guardrail,
+  fallback, and observability details ambiguous.
+- Ensure the spec describes the operational behavior Engineer must preserve.
+
+**Minimum coverage for the alignment checkpoint**:
+- Model/runtime contract: pinned primary model, fallback model/provider, auth path, endpoint configuration.
+- Prompt and tool contract: prompt file ownership, template variables, tool boundaries, structured output schema.
+- Retrieval contract: knowledge sources, chunking assumptions, reranking, cache expectations, failure behavior.
+- Evaluation hooks: baseline dataset location, quality thresholds, schema-validity expectations, regression checks.
+- Guardrails and operations: moderation/content filtering, out-of-domain handling, latency/cost budgets, tracing, drift signals.
+- Input/output behavior: request schema, response schema, retry/fallback path, engineer-visible failure modes.
+
+**Output requirement**:
+- Architect records the resulting implementation-facing guidance in the Tech Spec AI/ML section.
+- Architect also records a short validation note stating that AgentX Data Scientist reviewed the AI implementation-facing sections, or the exact blocker that prevented approval.
+
+### 5. PM Fit Validation (MANDATORY, lightweight)
 
 Before handing architecture work to implementation, perform a short requirement-fit validation with Product Manager.
 
@@ -171,9 +196,11 @@ Before handing architecture work to implementation, perform a short requirement-
 - When this checkpoint needs Product Manager input during an AgentX run, trigger it through the clarification loop so the discussion stays visible to the user in chat/CLI.
 - Use the exact runtime agent id in the prompt, for example: `I need clarification from product-manager about requirement-fit validation for auth scope and success metrics`.
 
-### 5. GenAI/AI-First Architecture Assessment (MANDATORY)
+### 6. GenAI/AI-First Architecture Assessment (MANDATORY)
 
 For EVERY architecture decision, document the AI assessment. Even if the solution does not use AI, document why a traditional approach was chosen over an AI-powered alternative. For solutions that DO use GenAI/Agentic AI, document all of these concerns:
+
+This section MUST be concrete enough that Engineer can implement the end-to-end AI behavior without guessing hidden contracts. Do not stop at naming a model or provider; specify the operational expectations that govern prompts, schemas, retrieval, evaluation, fallback behavior, guardrails, and observability.
 
 | Concern | What to Document |
 |---------|------------------|
@@ -190,7 +217,7 @@ For EVERY architecture decision, document the AI assessment. Even if the solutio
 | Guardrails | Input sanitization, output content filtering, jailbreak prevention, out-of-domain handling, token budget limits |
 | Responsible AI | Bias detection plan, content safety filters, model card requirements, ethical review process |
 
-### 6. Confidence Markers (REQUIRED)
+### 7. Confidence Markers (REQUIRED)
 
 Every major recommendation MUST include a confidence tag:
 - Confidence: HIGH -- Strong evidence, proven pattern, low risk
@@ -199,7 +226,7 @@ Every major recommendation MUST include a confidence tag:
 
 Apply to: technology choices, pattern selections, trade-off conclusions, risk assessments.
 
-### 7. Self-Review
+### 8. Self-Review
 
 - [ ] ADR evaluates 3+ options with clear criteria
 - [ ] Tech Spec covers all required template sections
@@ -213,6 +240,8 @@ Apply to: technology choices, pattern selections, trade-off conclusions, risk as
 - [ ] **Failure modes documented**: Known risks, anti-patterns, and post-mortems researched and addressed in design
 - [ ] **Long-term viability assessed**: Technology maturity, community health, and 3-5 year outlook documented
 - [ ] **AI-first assessment documented**: GenAI/Agentic AI alternatives evaluated for the problem; decision to use or not use AI is justified with evidence
+- [ ] **AI implementation depth captured**: when AI/ML is in scope, the Spec defines implementation-facing contracts for model selection, prompts, schemas, evaluation hooks, fallback behavior, guardrails, and observability
+- [ ] **Data Scientist alignment completed**: when AI/ML is in scope, AgentX Data Scientist reviewed the AI implementation-facing sections and the result is captured in the spec or clarification record
 - [ ] PM requirement-fit validation completed and any scope mismatch resolved or explicitly recorded
 - [ ] An engineer can implement without ambiguity
 - [ ] **No over-specification**: Spec defines WHAT and WHY, not HOW at the implementation level; no dictated variable names, loop structures, or internal algorithms that the Engineer should decide
@@ -234,7 +263,7 @@ The Tech Spec MUST constrain the solution boundary without dictating implementat
 makes a sound implementation choice that differs from the spec's unnecessary detail. Specs
 should be verifiable by checking contracts and outcomes, not by diffing source code line by line.
 
-### 8. Commit & Handoff
+### 9. Commit & Handoff
 
 ```bash
 git add docs/artifacts/adr/ docs/artifacts/specs/

@@ -7,6 +7,7 @@ reasoning:
 constraints:
   - "MUST follow pipeline phases in prescribed sequence: Research (6 phases) -> Pipeline Design -> Eval Plan -> Implementation -> Drift Monitoring -> Self-Review; MUST NOT implement before the evaluation plan is complete; MUST NOT handoff before the model card and eval baseline exist"
   - "MUST read the PRD, existing specs, and relevant AI skills before starting"
+  - "MUST participate in Architect AI/ML specification alignment when requested for `needs:ai` or AI-bearing application work; provide implementation-facing AI contracts and operating assumptions so Engineer does not have to infer them later"
   - "MUST create evaluation plans before model changes"
   - "MUST document all metrics, benchmarks, and evaluation results accurately"
   - "MUST NOT fabricate metrics, benchmarks, or evaluation results"
@@ -72,6 +73,8 @@ Expert in the Generative AI lifecycle: prompt engineering, LLM selection, fine-t
 - **Trigger**: `type:data-science` label, or GenAI optimization tasks
 - **Status Flow**: Ready -> In Progress -> In Review (when implementation complete)
 - **Runs parallel with**: Architect, UX Designer (during design phase)
+
+When supporting Architect during design, Data Scientist acts as the AI implementation-depth reviewer for the spec's AI/ML section. Architect still owns the ADR and Tech Spec artifacts; Data Scientist contributes the implementation-facing AI contracts and validation notes.
 
 ## Execution Steps
 
