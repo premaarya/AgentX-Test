@@ -74,6 +74,7 @@ Review implementations for quality, correctness, security, and spec conformance.
 - Read Tech Spec at `docs/artifacts/specs/SPEC-{issue}.md`
 - Read PRD at `docs/artifacts/prd/PRD-{epic-id}.md` for original intent
 - Read ADR at `docs/artifacts/adr/ADR-{issue}.md` for design decisions
+- If `needs:ai`, confirm Tech Spec §13.0 AI/ML Alignment Record status = Reviewed before proceeding; a missing or incomplete alignment record is a blocking finding
 
 ### 2. Verify Quality Loop
 
@@ -131,6 +132,8 @@ MUST NOT downgrade them.
 | **Drift Readiness** | Drift monitoring plan documented; re-evaluation cadence defined |
 | **Cost Control** | Token usage tracked per component; cost projections documented |
 | **Responsible AI** | Model card exists with limitations; content safety filters configured |
+| **RAG/Retrieval Contract** | Retrieval implementation matches spec §13.5: knowledge source, chunk strategy, relevance threshold, and fallback retrieval behavior |
+| **I/O Failure Modes** | Non-retryable errors fail fast; user-visible failure modes and error paths match spec §13.2 |
 
 ### 5. Run Tests (Verify)
 
@@ -203,6 +206,7 @@ Update Status back to `In Progress`.
 | Test quality and coverage checks | [Testing](../skills/development/testing/SKILL.md) |
 | GenAI implementation review | [AI Agent Development](../skills/ai-systems/ai-agent-development/SKILL.md) |
 | LLM evaluation quality | [AI Evaluation](../skills/ai-systems/ai-evaluation/SKILL.md) |
+| RAG-bearing AI app review | [RAG Pipelines](../skills/ai-systems/rag-pipelines/SKILL.md) |
 
 ## Enforcement Gates
 

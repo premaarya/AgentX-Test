@@ -72,8 +72,8 @@ Extends the standard Reviewer with the ability to auto-apply safe fixes. Complex
 
 | Category | Action | Examples |
 |----------|--------|----------|
-| **Safe (auto-fix)** | Apply automatically | Formatting, import sorting, unused imports, naming conventions, null checks, missing docs, type annotations |
-| **Risky (suggest only)** | Comment with suggestion | Logic changes, refactoring, architecture changes, dependency updates, API changes |
+| **Safe (auto-fix)** | Apply automatically | Formatting, import sorting, unused imports, naming conventions, null checks, missing docs, type annotations, prompt file path references, AI schema type annotations |
+| **Risky (suggest only)** | Comment with suggestion | Logic changes, refactoring, architecture changes, dependency updates, API changes, prompt content, model config, temperature, evaluation thresholds |
 | **Critical (block)** | Reject, require Engineer | Security flaws, data loss risk, spec violations |
 
 ## Decision Matrix
@@ -95,6 +95,7 @@ Is it a security issue?             -> Block & reject
 Same as standard Reviewer:
 - Read Tech Spec, PRD, ADR
 - Verify quality loop status = `complete`
+- If `needs:ai`, confirm Tech Spec §13.0 AI/ML Alignment Record status = Reviewed before proceeding
 
 ### 2. Review Code Changes
 
@@ -154,6 +155,8 @@ Before issuing the final decision, verify with fresh eyes:
 | Safe auto-fix boundaries and review process | [Code Review](../skills/development/code-review/SKILL.md) |
 | Test regressions after auto-fixes | [Testing](../skills/development/testing/SKILL.md) |
 | Security blocking criteria | [Security](../skills/architecture/security/SKILL.md) |
+| GenAI implementation review | [AI Agent Development](../skills/ai-systems/ai-agent-development/SKILL.md) |
+| LLM evaluation quality | [AI Evaluation](../skills/ai-systems/ai-evaluation/SKILL.md) |
 
 ## Enforcement Gates
 
