@@ -94,6 +94,7 @@ Write and execute automated tests to validate software quality. Automation-first
 - Read Tech Spec for testable requirements
 - Read existing test suites at `tests/**` and `e2e/**`
 - Identify test gaps from the review document
+- If `needs:ai`, confirm Tech Spec §13.0 AI/ML Alignment Record is complete (status = Reviewed) before writing GenAI tests
 
 ### 2. Write Tests
 
@@ -119,6 +120,8 @@ Follow the test pyramid:
 | Guardrail validation | Jailbreak, off-topic, and adversarial inputs are handled | Red-team test dataset |
 | Drift baseline | Establish evaluation baseline for ongoing drift detection | Baseline snapshot script |
 | Cost/latency bounds | Token usage and latency stay within budget per request | Tracing metrics validation |
+| RAG/retrieval quality | Context relevance, faithfulness, top-K accuracy, and fallback retrieval behavior | RAGAS / DeepEval |
+| I/O contract validation | Input/output schemas correct, non-retryable error paths fail fast, failure modes match spec §13.2 | JSON Schema + custom test harness |
 
 ### 3. Execute Full Suite
 
@@ -172,7 +175,7 @@ Before committing, verify with fresh eyes:
 - [ ] Certification report is complete with all required sections
 - [ ] No false positives or flaky tests in the results
 - [ ] Security and accessibility testing not skipped
-- [ ] GenAI (when applicable): evaluation dataset covers critical scenarios (50+ cases)
+- [ ] GenAI (when applicable): evaluation dataset covers happy paths, edge cases, refusals, and fallback scenarios
 - [ ] GenAI (when applicable): LLM-as-judge rubric validated against known-answer set
 - [ ] GenAI (when applicable): model comparison run against primary + fallback
 - [ ] GenAI (when applicable): guardrail tests include adversarial / jailbreak inputs
@@ -189,6 +192,7 @@ Before committing, verify with fresh eyes:
 | Performance testing | [Performance Testing](../skills/testing/performance-testing/SKILL.md) |
 | Security testing | [Security Testing](../skills/testing/security-testing/SKILL.md) |
 | GenAI evaluation testing | [AI Evaluation](../skills/ai-systems/ai-evaluation/SKILL.md) |
+| RAG-bearing AI apps | [RAG Pipelines](../skills/ai-systems/rag-pipelines/SKILL.md) |
 | Model drift and comparison | [Model Drift Management](../skills/ai-systems/model-drift-management/SKILL.md) |
 
 ## Enforcement Gates
