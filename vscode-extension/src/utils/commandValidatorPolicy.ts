@@ -56,8 +56,11 @@ export const BLOCKED_PATTERNS: readonly RegExp[] = [
   /\bDROP\s+TABLE\b/i,
   /\bgit\s+push\s+.*--force\b/i,
   /\bgit\s+push\s+.*-f\b/i,
+  /\biex\s*\(/i,
+  /\binvoke-expression\s*\(/i,
   /\bpowershell\b.*-[Ee]ncodedCommand\b/i,
   /\bpwsh\b.*-[Ee]ncodedCommand\b/i,
+  /\b(?:powershell|pwsh)\b.*\s-[Ee]\s+/i,
   /\bcertutil\b.*-decode\b/i,
 ] as const;
 

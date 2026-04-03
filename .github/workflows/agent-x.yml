@@ -36,7 +36,7 @@ jobs:
     steps:
       - name: Determine Agent
         id: route
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b
         with:
           script: |
             const rerouteCommand = '/agentx route';
@@ -280,7 +280,7 @@ jobs:
     if: needs.route.outputs.agent == 'pm'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Create PRD Scaffold
         run: |
@@ -321,7 +321,7 @@ jobs:
     if: needs.route.outputs.agent == 'ux'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Create UX Scaffold
         run: |
@@ -353,7 +353,7 @@ jobs:
     if: needs.route.outputs.agent == 'architect'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Create ADR + Spec Scaffold
         run: |
@@ -401,7 +401,7 @@ jobs:
     if: needs.route.outputs.agent == 'reviewer'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Create Review Scaffold
         run: |
@@ -433,7 +433,7 @@ jobs:
     if: needs.route.outputs.agent == 'devops'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Create Deployment Scaffold
         run: |
@@ -482,7 +482,7 @@ jobs:
     if: needs.route.outputs.agent == 'data-scientist'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Create Data Science Scaffold
         run: |

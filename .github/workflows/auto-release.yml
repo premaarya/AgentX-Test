@@ -40,7 +40,7 @@ jobs:
       tag_name: ${{ steps.detect.outputs.tag_name }}
       tag_exists: ${{ steps.detect.outputs.tag_exists }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           fetch-depth: 0
 
@@ -77,7 +77,7 @@ jobs:
       tag_name: ${{ steps.release.outputs.tag_name }}
       version: ${{ steps.release.outputs.version }}
     steps:
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@16a9c90856f42705d54a6fda1823352bdc62cf38
         id: release
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -94,7 +94,7 @@ jobs:
       tag_name: ${{ steps.publish.outputs.tag_name }}
       version: ${{ steps.publish.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Create GitHub release for stamped version
         id: publish
@@ -124,9 +124,9 @@ jobs:
       RELEASE_TAG: ${{ needs.create-release.outputs.tag_name || needs.create-version-bump-release.outputs.tag_name }}
       RELEASE_VERSION: ${{ needs.create-release.outputs.version || needs.create-version-bump-release.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '20'
 

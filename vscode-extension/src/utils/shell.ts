@@ -9,6 +9,8 @@ import {
  resolveShellPath,
 } from './shellInternals';
 
+const DEFAULT_EXEC_TIMEOUT_MS = 120_000;
+
 /**
  * Cached result of PowerShell availability check.
  * null = not yet checked, string = resolved shell path.
@@ -75,7 +77,7 @@ export function execShell(
  cwd,
  shell: shellPath,
  maxBuffer: 1024 * 1024,
- timeout: 30_000,
+ timeout: DEFAULT_EXEC_TIMEOUT_MS,
  env: { ...process.env, ...envOverrides, NO_COLOR: '1' },
  };
 

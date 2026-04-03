@@ -64,6 +64,10 @@ $Script:SELF_REVIEW_REVIEWER_MAX_ITERATIONS = 8
 $Script:CLARIFICATION_MAX_ITERATIONS = 6
 $Script:CLARIFICATION_RESPONDER_MAX_ITERATIONS = 5
 
+function Write-RunnerConsole([string]$Message) {
+    Write-Information $Message -InformationAction Continue
+}
+
 $Script:MODEL_CAPABILITIES = @{
     'claude-opus-4.6' = @{ contextWindow = 200000; providers = @('copilot', 'claude-code', 'anthropic-api'); reasoningMode = 'claude-thinking' }
     'claude-sonnet-4.6' = @{ contextWindow = 200000; providers = @('copilot', 'claude-code', 'anthropic-api'); reasoningMode = 'claude-thinking' }
@@ -361,7 +365,7 @@ function Get-RunnerModelCapability([string]$ModelId) {
     return $null
 }
 
-function New-RunnerProviderRecord {
+function Get-RunnerProviderRecord {
     param(
         [string]$ProviderId,
         [bool]$Enabled,
@@ -556,22 +560,22 @@ function Test-RunnerModelSupportedByProvider([string]$ProviderId, [string]$Model
     }
 }
 
-function Write-RunnerProviderDiagnostics($Provider, [array]$ModelCandidates = @()) {
+function Write-RunnerProviderDiagnostic($Provider, [array]$ModelCandidates = @()) {
     if (-not $Provider) { return }
 
     $detail = @("Provider: $($Provider.displayName)")
     if ($Provider.selectionSource) { $detail += "source: $($Provider.selectionSource)" }
     if ($Provider.authSource) { $detail += "auth: $($Provider.authSource)" }
     $detail += "transport: $($Provider.transport)"
-    Write-Host "`e[36m  $($detail -join ' | ')`e[0m"
+    Write-RunnerConsole "`e[36m  $($detail -join ' | ')`e[0m"
 
     if (-not [string]::IsNullOrWhiteSpace([string]$Provider.reason)) {
         $tone = if ($Provider.ready) { 90 } else { 33 }
-        Write-Host ("`e[{0}m  {1}`e[0m" -f $tone, $Provider.reason)
+        Write-RunnerConsole ("`e[{0}m  {1}`e[0m" -f $tone, $Provider.reason)
     }
 
     if ($ModelCandidates -and $ModelCandidates.Count -gt 0) {
-        Write-Host "`e[90m  Model fallback chain: $($ModelCandidates -join ' -> ')`e[0m"
+        Write-RunnerConsole "`e[90m  Model fallback chain: $($ModelCandidates -join ' -> ')`e[0m"
     }
 }
 
@@ -596,11 +600,11 @@ function Initialize-ProviderRegistry([string]$GitHubToken) {
     $openAiApiProbe = if ($openAiApiEnabled) { Test-OpenAIApiProviderReady -Config $Script:RunnerConfig } else { [PSCustomObject]@{ ready = $false; reason = 'OpenAI API is disabled in configuration.' } }
 
     $Script:ProviderRegistry = @{
-        'copilot' = New-RunnerProviderRecord -ProviderId 'copilot' -Enabled $copilotEnabled -Ready ([bool]$copilotProbe.ready) -Reason ([string]$copilotProbe.reason) -AuthSource 'gh' -SelectionSource $preference.source -RequestedProviderId $requestedProviderId
-        'github-models' = New-RunnerProviderRecord -ProviderId 'github-models' -Enabled $githubModelsEnabled -Ready $githubModelsReady -Reason $githubModelsReason -AuthSource 'gh' -SelectionSource $preference.source -RequestedProviderId $requestedProviderId
-        'claude-code' = New-RunnerProviderRecord -ProviderId 'claude-code' -Enabled $claudeCodeEnabled -Ready ([bool]$claudeCodeProbe.ready) -Reason ([string]$claudeCodeProbe.reason) -AuthSource 'claude' -SelectionSource $preference.source -RequestedProviderId $requestedProviderId
-        'anthropic-api' = New-RunnerProviderRecord -ProviderId 'anthropic-api' -Enabled $anthropicApiEnabled -Ready ([bool]$anthropicApiProbe.ready) -Reason ([string]$anthropicApiProbe.reason) -AuthSource 'env' -SelectionSource $preference.source -RequestedProviderId $requestedProviderId
-        'openai-api' = New-RunnerProviderRecord -ProviderId 'openai-api' -Enabled $openAiApiEnabled -Ready ([bool]$openAiApiProbe.ready) -Reason ([string]$openAiApiProbe.reason) -AuthSource 'env' -SelectionSource $preference.source -RequestedProviderId $requestedProviderId
+        'copilot' = Get-RunnerProviderRecord -ProviderId 'copilot' -Enabled $copilotEnabled -Ready ([bool]$copilotProbe.ready) -Reason ([string]$copilotProbe.reason) -AuthSource 'gh' -SelectionSource $preference.source -RequestedProviderId $requestedProviderId
+        'github-models' = Get-RunnerProviderRecord -ProviderId 'github-models' -Enabled $githubModelsEnabled -Ready $githubModelsReady -Reason $githubModelsReason -AuthSource 'gh' -SelectionSource $preference.source -RequestedProviderId $requestedProviderId
+        'claude-code' = Get-RunnerProviderRecord -ProviderId 'claude-code' -Enabled $claudeCodeEnabled -Ready ([bool]$claudeCodeProbe.ready) -Reason ([string]$claudeCodeProbe.reason) -AuthSource 'claude' -SelectionSource $preference.source -RequestedProviderId $requestedProviderId
+        'anthropic-api' = Get-RunnerProviderRecord -ProviderId 'anthropic-api' -Enabled $anthropicApiEnabled -Ready ([bool]$anthropicApiProbe.ready) -Reason ([string]$anthropicApiProbe.reason) -AuthSource 'env' -SelectionSource $preference.source -RequestedProviderId $requestedProviderId
+        'openai-api' = Get-RunnerProviderRecord -ProviderId 'openai-api' -Enabled $openAiApiEnabled -Ready ([bool]$openAiApiProbe.ready) -Reason ([string]$openAiApiProbe.reason) -AuthSource 'env' -SelectionSource $preference.source -RequestedProviderId $requestedProviderId
     }
 
     $Script:ActiveProvider = Select-RunnerProviderFromRegistry -Registry $Script:ProviderRegistry -RequestedProviderId $requestedProviderId -ReadinessMode $readinessMode
@@ -952,7 +956,7 @@ function Get-LoopTaskClassFromState {
     return 'standard'
 }
 
-function Get-RunnerSelfReviewMinIterations {
+function Get-RunnerSelfReviewMinIteration {
     param(
         [string]$AgentName,
         [string]$Prompt,
@@ -1575,7 +1579,7 @@ Rules:
         }
         return $summaryText
     } catch {
-        Write-Host "`e[90m  [COMPACTION WARN] Summary generation failed; using deterministic fallback summary. $_`e[0m"
+        Write-RunnerConsole "`e[90m  [COMPACTION WARN] Summary generation failed; using deterministic fallback summary. $_`e[0m"
         Add-ExecutionSummaryEvent -Type 'WARN' -Message 'Compaction summary generation failed; used deterministic fallback summary.' -ReplaceExisting
         return Get-DeterministicCompactionSummary -ExistingSummary $ExistingSummary -Messages $Messages -MaxChars $MaxSummaryChars
     }
@@ -1784,11 +1788,10 @@ function Invoke-Tool([string]$name, [hashtable]$params, [string]$workspaceRoot) 
             try {
                 $timeoutSec = if ($params.ContainsKey('timeoutMs') -and $params.timeoutMs) { [Math]::Ceiling([int]$params.timeoutMs / 1000) } else { 30 }
                 $job = Start-Job -ScriptBlock {
-                    param($c, $d)
-                    Set-Location $d
-                    $commandBlock = [scriptblock]::Create($c)
+                    Set-Location $using:workspaceRoot
+                    $commandBlock = [scriptblock]::Create($using:cmd)
                     & $commandBlock 2>&1
-                } -ArgumentList $cmd, $workspaceRoot
+                }
                 $completed = Wait-Job $job -Timeout $timeoutSec
                 if (-not $completed) { Stop-Job $job; Remove-Job $job -Force; return @{ error = $true; text = "Command timed out after ${timeoutSec}s" } }
                 $output = Receive-Job $job | Out-String
@@ -1876,7 +1879,7 @@ function ConvertTo-AnthropicToolSchema([array]$Tools) {
     return @($converted)
 }
 
-function ConvertTo-AnthropicMessages([array]$Messages) {
+function ConvertTo-AnthropicMessage([array]$Messages) {
     $systemParts = New-Object System.Collections.Generic.List[string]
     $converted = New-Object System.Collections.Generic.List[object]
 
@@ -2001,7 +2004,7 @@ function ConvertTo-ClaudeCodeModelId([string]$ModelId) {
     return $normalized
 }
 
-function Get-ClaudeCodeAllowedTools([array]$Tools) {
+function Get-ClaudeCodeAllowedTool([array]$Tools) {
     $mapped = New-Object System.Collections.Generic.List[string]
 
     foreach ($tool in @($Tools)) {
@@ -2235,7 +2238,7 @@ function Invoke-ClaudeCodePrintMode(
             '--append-system-prompt-file', $systemPromptFile
             '--model', (ConvertTo-ClaudeCodeModelId -ModelId $ModelId)
             '--permission-mode', 'bypassPermissions'
-            '--tools', (Get-ClaudeCodeAllowedTools -Tools $Tools)
+            '--tools', (Get-ClaudeCodeAllowedTool -Tools $Tools)
             '--max-turns', [string]$Script:CLAUDE_CODE_MAX_TURNS
             '--no-session-persistence'
         )
@@ -2275,7 +2278,7 @@ function Invoke-LlmChat(
     }
 
     if ($activeProviderId -eq 'anthropic-api') {
-        $anthropicRequest = ConvertTo-AnthropicMessages -Messages $messages
+        $anthropicRequest = ConvertTo-AnthropicMessage -Messages $messages
         $body = @{
             model = $modelId
             messages = $anthropicRequest.messages
@@ -2358,7 +2361,7 @@ function Invoke-LlmChat(
         try { $errBody = $_.ErrorDetails.Message } catch { $errBody = '' }
 
         if ($activeProviderId -eq 'copilot' -and $statusCode -in @(401, 403)) {
-            Write-Host "`e[33m  [API FALLBACK] Copilot API returned HTTP $statusCode. Retrying with GitHub Models.`e[0m"
+            Write-RunnerConsole "`e[33m  [API FALLBACK] Copilot API returned HTTP $statusCode. Retrying with GitHub Models.`e[0m"
             if ($Script:ProviderRegistry.ContainsKey('github-models')) {
                 $fallback = $Script:ProviderRegistry['github-models']
                 $fallback.reason = 'Copilot API returned an auth failure during request execution. Falling back to GitHub Models.'
@@ -2693,7 +2696,7 @@ function Build-SystemPrompt([hashtable]$agentDef, [string]$agentName) {
 # Loop detection (simplified hash-based)
 # ---------------------------------------------------------------------------
 
-function New-LoopDetector {
+function Get-LoopDetector {
     return @{
         history = [System.Collections.ArrayList]::new()
         windowSize = 30
@@ -2850,7 +2853,7 @@ function Invoke-ContextCompaction {
         $resultUsage = Get-ConversationTokenUsage -Messages $result -ModelId $ModelId -ThresholdPercent $ThresholdPercent
     }
 
-    Write-Host "`e[90m  [COMPACTION] $pruned messages pruned ($($Messages.Count) -> $($result.Count), approx tokens $($resultUsage.totalTokens)/$($resultUsage.thresholdTokens))`e[0m"
+    Write-RunnerConsole "`e[90m  [COMPACTION] $pruned messages pruned ($($Messages.Count) -> $($result.Count), approx tokens $($resultUsage.totalTokens)/$($resultUsage.thresholdTokens))`e[0m"
     Add-ExecutionSummaryEvent -Type 'COMPACTION' -Message "$pruned messages pruned to stay within the token threshold." -ReplaceExisting
 
     return $result
@@ -3044,7 +3047,7 @@ function Get-ClarificationSection([string]$Text, [string]$Heading) {
     return ''
 }
 
-function Parse-ClarificationResponseContract([string]$Text) {
+function Read-ClarificationResponseContract([string]$Text) {
     $status = 'unknown'
     $statusMatch = [regex]::Match($Text, '(?im)^status\s*:\s*(resolved|partial|unknown|needs-human)\s*$')
     if ($statusMatch.Success) {
@@ -3234,7 +3237,7 @@ Produce a structured review with per-category verdicts, APPROVED status, and FIN
 
     $reviewerIterations = 0
     $reviewText = ''
-    $reviewerDetector = New-LoopDetector
+    $reviewerDetector = Get-LoopDetector
 
     while ($reviewerIterations -lt $MaxReviewerIterations) {
         $reviewerIterations++
@@ -3242,7 +3245,7 @@ Produce a structured review with per-category verdicts, APPROVED status, and FIN
             $reviewRequestOptions = Get-ReasoningRequestConfig -agentDef $agentDef -modelId $ModelId
             $response = Invoke-LlmChat -token $Token -modelId $ModelId -messages $reviewMessages -tools $readOnlyTools -RequestOptions $reviewRequestOptions -maxTokens 4096
         } catch {
-            Write-Host "`e[31m  [SELF-REVIEW] Reviewer LLM error: $_`e[0m"
+            Write-RunnerConsole "`e[31m  [SELF-REVIEW] Reviewer LLM error: $_`e[0m"
             return @{ approved = $true; findings = @(); feedback = '(Reviewer error -- auto-approving)' }
         }
 
@@ -3342,7 +3345,7 @@ Produce a structured review with per-category verdicts, APPROVED status, and FIN
 
     $failedCatCount = @($categoryVerdicts.GetEnumerator() | Where-Object { $_.Value -eq 'FAIL' }).Count
     $passedCatCount = @($categoryVerdicts.GetEnumerator() | Where-Object { $_.Value -eq 'PASS' }).Count
-    Write-Host "`e[$(if ($approved) {'32'} else {'33'})m  [SELF-REVIEW] $(if ($approved) {'APPROVED'} else {'NOT APPROVED'}) ($($findings.Count) findings, $($actionable.Count) actionable, categories: $passedCatCount pass / $failedCatCount fail)`e[0m"
+    Write-RunnerConsole "`e[$(if ($approved) {'32'} else {'33'})m  [SELF-REVIEW] $(if ($approved) {'APPROVED'} else {'NOT APPROVED'}) ($($findings.Count) findings, $($actionable.Count) actionable, categories: $passedCatCount pass / $failedCatCount fail)`e[0m"
 
     return @{
         approved = $approved
@@ -3517,7 +3520,6 @@ function Invoke-ClarificationLoop {
         [Parameter(Mandatory)][string]$TargetAgent,
         [Parameter(Mandatory)][string]$Topic,
         [Parameter(Mandatory)][string]$Question,
-        [Parameter(Mandatory)][string]$Token,
         [Parameter(Mandatory)][string]$ModelId,
         [Parameter(Mandatory)][string]$WorkspaceRoot,
         [int]$MaxIterations = $Script:CLARIFICATION_MAX_ITERATIONS,
@@ -3528,7 +3530,7 @@ function Invoke-ClarificationLoop {
     $exchanges = @()
 
     for ($i = 1; $i -le $MaxIterations; $i++) {
-        Write-Host "`e[33m  [CLARIFY $i/$MaxIterations] Asking $TargetAgent about: $Topic`e[0m"
+        Write-RunnerConsole "`e[33m  [CLARIFY $i/$MaxIterations] Asking $TargetAgent about: $Topic`e[0m"
         if ($i -eq 1) {
             Add-ExecutionSummaryEvent -Type 'CLARIFY' -Message "Asked $TargetAgent about $Topic."
         }
@@ -3562,7 +3564,7 @@ function Invoke-ClarificationLoop {
             -SuppressUserSummary
 
         $answer = if ($subResult.finalText) { $subResult.finalText } else { '(No response from sub-agent)' }
-        $answerContract = Parse-ClarificationResponseContract -Text $answer
+        $answerContract = Read-ClarificationResponseContract -Text $answer
 
         $exchanges += @{
             question = $currentQuestion
@@ -3572,14 +3574,14 @@ function Invoke-ClarificationLoop {
             status = $answerContract.status
         }
 
-        Write-Host "`e[32m  [CLARIFY RESPONSE] $TargetAgent answered ($($answer.Length) chars)`e[0m"
+        Write-RunnerConsole "`e[32m  [CLARIFY RESPONSE] $TargetAgent answered ($($answer.Length) chars)`e[0m"
         Add-ExecutionSummaryEvent -Type 'CLARIFY RESPONSE' -Message "$TargetAgent answered on iteration $i."
         $answerPreview = ($answer -replace '\s+', ' ').Trim()
         if ($answerPreview.Length -gt 220) {
             $answerPreview = $answerPreview.Substring(0, 220) + '...'
         }
         if ($answerPreview) {
-            Write-Host "`e[90m  [CLARIFY DETAIL] $answerPreview`e[0m"
+            Write-RunnerConsole "`e[90m  [CLARIFY DETAIL] $answerPreview`e[0m"
             Add-ExecutionSummaryEvent -Type 'CLARIFY DETAIL' -Message $answerPreview
         }
 
@@ -3605,7 +3607,7 @@ function Invoke-ClarificationLoop {
     }
 
     # Exhausted iterations -- escalate to human
-    Write-Host "`e[35m  [HUMAN ESCALATION] Clarification not resolved after $MaxIterations iterations.`e[0m"
+    Write-RunnerConsole "`e[35m  [HUMAN ESCALATION] Clarification not resolved after $MaxIterations iterations.`e[0m"
     Add-ExecutionSummaryEvent -Type 'HUMAN ESCALATION' -Message "Clarification on $Topic was not resolved after $MaxIterations attempts." -ReplaceExisting
     $escalationContext = "[Clarification Pending]`n"
     $escalationContext += "From: $FromAgent`n"
@@ -3617,7 +3619,7 @@ function Invoke-ClarificationLoop {
         $escalationContext += "  Iteration $($ex.iteration): Q: $($ex.question.Substring(0, [Math]::Min(100, $ex.question.Length)))... A: $($ex.response.Substring(0, [Math]::Min(100, $ex.response.Length)))...`n"
     }
 
-    Write-Host "`e[35m  [HUMAN REQUIRED]`n$escalationContext`e[0m"
+    Write-RunnerConsole "`e[35m  [HUMAN REQUIRED]`n$escalationContext`e[0m"
     Add-ExecutionSummaryEvent -Type 'HUMAN REQUIRED' -Message "Awaiting human guidance for $Topic." -ReplaceExisting
 
     $humanAnswer = ''
@@ -3627,7 +3629,7 @@ function Invoke-ClarificationLoop {
         $awaitingHuman = $true
     } else {
         try {
-            Write-Host "`e[35m  Please provide guidance (or press Enter to skip):`e[0m"
+            Write-RunnerConsole "`e[35m  Please provide guidance (or press Enter to skip):`e[0m"
             $humanAnswer = Read-Host '  > '
         } catch {
             $humanAnswer = '(Human escalation -- no response in non-interactive mode)'
@@ -3650,7 +3652,7 @@ function Invoke-ClarificationLoop {
         $humanPreview = $humanPreview.Substring(0, 220) + '...'
     }
     if ($humanPreview) {
-        Write-Host "`e[90m  [HUMAN RESPONSE] $humanPreview`e[0m"
+        Write-RunnerConsole "`e[90m  [HUMAN RESPONSE] $humanPreview`e[0m"
         Add-ExecutionSummaryEvent -Type 'HUMAN RESPONSE' -Message $humanPreview -ReplaceExisting
     }
 
@@ -3739,7 +3741,7 @@ function Invoke-AgenticLoop {
     if ($isResume) {
         $resumedSession = Read-Session -sessionId $ResumeSessionId -root $WorkspaceRoot
         if (-not $resumedSession) {
-            Write-Host "`e[31m  [FAIL] Session '$ResumeSessionId' not found.`e[0m"
+            Write-RunnerConsole "`e[31m  [FAIL] Session '$ResumeSessionId' not found.`e[0m"
             return @{ sessionId = $ResumeSessionId; iterations = 0; toolCalls = 0; finalText = 'Session not found'; exitReason = 'error' }
         }
     }
@@ -3752,7 +3754,7 @@ function Invoke-AgenticLoop {
     # Load agent definition
     $agentDef = Read-AgentDef -agentName $Agent -root $WorkspaceRoot
     if (-not $agentDef) {
-        Write-Host "`e[33m  [WARN] Agent '$Agent' not found. Using defaults.`e[0m"
+        Write-RunnerConsole "`e[33m  [WARN] Agent '$Agent' not found. Using defaults.`e[0m"
         $agentDef = @{ name = $Agent; description = ''; model = ''; body = '' }
     }
 
@@ -3766,16 +3768,16 @@ function Invoke-AgenticLoop {
     }
     $modelCandidates = @(Get-ModelCandidateList -preferredModel $preferredModel -modelFallback $agentDef.modelFallback)
     $modelId = $modelCandidates[0]
-    Write-Host "`e[36m  Agent: $($agentDef.name ?? $Agent) | Model: $modelId`e[0m"
-    Write-RunnerProviderDiagnostics -Provider $Script:ActiveProvider -ModelCandidates $modelCandidates
+    Write-RunnerConsole "`e[36m  Agent: $($agentDef.name ?? $Agent) | Model: $modelId`e[0m"
+    Write-RunnerProviderDiagnostic -Provider $Script:ActiveProvider -ModelCandidates $modelCandidates
     if (-not (Test-RunnerModelSupportedByProvider -ProviderId (Get-ActiveProviderId) -ModelId $modelId)) {
-        Write-Host "`e[31m  [FAIL] Model '$modelId' is not supported by provider '$((Get-ActiveProviderId))'.`e[0m"
+        Write-RunnerConsole "`e[31m  [FAIL] Model '$modelId' is not supported by provider '$((Get-ActiveProviderId))'.`e[0m"
         return @{ sessionId = ''; iterations = 0; toolCalls = 0; finalText = 'Unsupported model for provider'; exitReason = 'error' }
     }
     $reasoningPreview = Get-ReasoningRequestConfig -agentDef $agentDef -modelId $modelId
     if ($reasoningPreview.Count -gt 0) {
         $reasoningJson = $reasoningPreview | ConvertTo-Json -Depth 10 -Compress
-        Write-Host "`e[90m  Reasoning request options: $reasoningJson`e[0m"
+        Write-RunnerConsole "`e[90m  Reasoning request options: $reasoningJson`e[0m"
     }
 
     # Build system prompt
@@ -3790,7 +3792,7 @@ function Invoke-AgenticLoop {
     # Initialize session
     $sessionId = if ($isResume) { $ResumeSessionId } else { "$Agent-$(Get-Date -Format 'yyyyMMddHHmmss')-$([System.IO.Path]::GetRandomFileName().Substring(0,4))" }
     $tools = Get-ToolSchemaList
-    $loopDetector = New-LoopDetector
+    $loopDetector = Get-LoopDetector
     Push-ExecutionSummaryScope
     if ($researchFirstMode -ne 'off') {
         Add-ExecutionSummaryEvent -Type 'RESEARCH MODE' -Message "Research-first mode '$researchFirstMode' is active." -ReplaceExisting
@@ -3800,7 +3802,7 @@ function Invoke-AgenticLoop {
     # Parse boundary rules from agent definition (canModify / cannotModify)
     $boundaryRules = Read-BoundaryRuleSet -AgentDef $agentDef
     if ($boundaryRules.canModify.Count -gt 0 -or $boundaryRules.cannotModify.Count -gt 0) {
-        Write-Host "`e[90m  Boundaries: canModify=[$($boundaryRules.canModify -join ', ')] cannotModify=[$($boundaryRules.cannotModify -join ', ')]`e[0m"
+        Write-RunnerConsole "`e[90m  Boundaries: canModify=[$($boundaryRules.canModify -join ', ')] cannotModify=[$($boundaryRules.cannotModify -join ', ')]`e[0m"
     }
 
     # Conversation messages
@@ -3814,11 +3816,11 @@ function Invoke-AgenticLoop {
             $researchExplorationCount = [int]$resumedSession.meta.researchExplorationCount
         }
         if (-not $pendingHumanClarification) {
-            Write-Host "`e[31m  [FAIL] Session '$ResumeSessionId' has no pending human clarification.`e[0m"
+            Write-RunnerConsole "`e[31m  [FAIL] Session '$ResumeSessionId' has no pending human clarification.`e[0m"
             return @{ sessionId = $sessionId; iterations = 0; toolCalls = 0; finalText = 'No pending clarification'; exitReason = 'error' }
         }
         if (-not $HumanClarificationResponse) {
-            Write-Host "`e[31m  [FAIL] Human clarification response required to resume session '$ResumeSessionId'.`e[0m"
+            Write-RunnerConsole "`e[31m  [FAIL] Human clarification response required to resume session '$ResumeSessionId'.`e[0m"
             return @{ sessionId = $sessionId; iterations = 0; toolCalls = 0; finalText = 'Clarification response required'; exitReason = 'error' }
         }
 
@@ -3832,7 +3834,7 @@ function Invoke-AgenticLoop {
             -EscalatedToHuman $true
 
         $messages += @{ role = 'user'; content = "[Clarification from human]`n$resumeSummary" }
-        Write-Host "`e[35m  [HUMAN RESPONSE] Resuming session $sessionId with provided guidance.`e[0m"
+    Write-RunnerConsole "`e[35m  [HUMAN RESPONSE] Resuming session $sessionId with provided guidance.`e[0m"
         Add-ExecutionSummaryEvent -Type 'HUMAN RESPONSE' -Message 'Resumed the session with human guidance.' -ReplaceExisting
         $pendingHumanClarification = $null
     } else {
@@ -3851,7 +3853,7 @@ function Invoke-AgenticLoop {
     $selfReviewIteration = 0
     $selfReviewMax = $Script:SELF_REVIEW_MAX_ITERATIONS
     $activeLoopState = Read-LoopState -WorkspaceRoot $WorkspaceRoot
-    $selfReviewMin = Get-RunnerSelfReviewMinIterations -AgentName $Agent -Prompt $Prompt -LoopState $activeLoopState -MaxReviewerIterations $selfReviewMax
+    $selfReviewMin = Get-RunnerSelfReviewMinIteration -AgentName $Agent -Prompt $Prompt -LoopState $activeLoopState -MaxReviewerIterations $selfReviewMax
     $selfReviewHistory = @()
     $finalSelfReviewSummary = ''
 
@@ -3881,12 +3883,12 @@ function Invoke-AgenticLoop {
     }
     Save-Session -sessionId $sessionId -messages $messages -meta $initialMeta -root $WorkspaceRoot
 
-    Write-Host "`e[90m  -----------------------------------------------`e[0m"
+    Write-RunnerConsole "`e[90m  -----------------------------------------------`e[0m"
 
     # --- Main loop ---
     while ($iterations -lt $MaxIterations) {
         $iterations++
-        Write-Host "`e[90m  Iteration $iterations/$MaxIterations...`e[0m"
+        Write-RunnerConsole "`e[90m  Iteration $iterations/$MaxIterations...`e[0m"
 
         # Context compaction: compact before each LLM call based on token budget
         $messages = @(Invoke-ContextCompaction -Messages $messages -Token $token -ModelId $modelId -KeepRecent 40 -MinRecent 10 -ThresholdPercent $Script:COMPACTION_THRESHOLD_PERCENT)
@@ -3902,7 +3904,7 @@ function Invoke-AgenticLoop {
 
             if ($hasNextModel -and (Test-IsModelAvailabilityError -errorText $errorText)) {
                 $nextModelId = $modelCandidates[$currentModelIndex + 1]
-                Write-Host "`e[33m  [MODEL FALLBACK] $modelId unavailable. Retrying with $nextModelId`e[0m"
+                Write-RunnerConsole "`e[33m  [MODEL FALLBACK] $modelId unavailable. Retrying with $nextModelId`e[0m"
                 Add-ExecutionSummaryEvent -Type 'MODEL FALLBACK' -Message "$modelId unavailable. Retried with $nextModelId." -ReplaceExisting
                 $modelId = $nextModelId
                 continue
@@ -3910,7 +3912,7 @@ function Invoke-AgenticLoop {
 
             $finalText = "LLM error: $errorText"
             $exitReason = 'error'
-            Write-Host "`e[31m  [FAIL] $finalText`e[0m"
+            Write-RunnerConsole "`e[31m  [FAIL] $finalText`e[0m"
             Add-ExecutionSummaryEvent -Type 'FAIL' -Message $finalText -ReplaceExisting
             break
         }
@@ -3936,7 +3938,7 @@ function Invoke-AgenticLoop {
             # --- Step 1: Check for clarification request ---
             $clarifyReq = Find-ClarificationRequest -text $finalText -canClarify $canClarify
             if ($clarifyReq) {
-                Write-Host "`e[33m  [CLARIFY] Asking $($clarifyReq.targetAgent) about: $($clarifyReq.topic)`e[0m"
+                Write-RunnerConsole "`e[33m  [CLARIFY] Asking $($clarifyReq.targetAgent) about: $($clarifyReq.topic)`e[0m"
                 Add-ExecutionSummaryEvent -Type 'CLARIFY' -Message "Asked $($clarifyReq.targetAgent) about $($clarifyReq.topic)."
 
                 # Use the new iterative clarification loop
@@ -3945,7 +3947,6 @@ function Invoke-AgenticLoop {
                     -TargetAgent $clarifyReq.targetAgent `
                     -Topic $clarifyReq.topic `
                     -Question $clarifyReq.question `
-                    -Token $token `
                     -ModelId $modelId `
                     -WorkspaceRoot $WorkspaceRoot `
                     -NonInteractiveHumanEscalation:($env:AGENTX_NONINTERACTIVE_HUMAN -eq '1')
@@ -3954,7 +3955,7 @@ function Invoke-AgenticLoop {
                     $pendingHumanClarification = $clarifyResult.pendingClarification
                     $finalText = $clarifyResult.humanPrompt
                     $exitReason = 'human_required'
-                    Write-Host "`e[35m  [HUMAN REQUIRED SESSION] $sessionId`e[0m"
+                    Write-RunnerConsole "`e[35m  [HUMAN REQUIRED SESSION] $sessionId`e[0m"
                     Add-ExecutionSummaryEvent -Type 'HUMAN REQUIRED' -Message "Waiting for human guidance before session $sessionId can continue." -ReplaceExisting
                     break
                 }
@@ -3972,7 +3973,7 @@ function Invoke-AgenticLoop {
             # --- Step 2: Self-review gate ---
             if ($selfReviewIteration -lt $selfReviewMax) {
                 $selfReviewIteration++
-                Write-Host "`e[36m  [SELF-REVIEW] Iteration $selfReviewIteration/$selfReviewMax...`e[0m"
+                Write-RunnerConsole "`e[36m  [SELF-REVIEW] Iteration $selfReviewIteration/$selfReviewMax...`e[0m"
 
                 $reviewResult = Invoke-SelfReviewLoop `
                     -AgentName $Agent `
@@ -4002,7 +4003,7 @@ function Invoke-AgenticLoop {
                     if ($isStalled) {
                         $repeatedFindings = @($reviewFindings | Where-Object { $_.impact -ne 'low' } | ForEach-Object { $_.category })
 
-                        Write-Host "`e[33m  [STALL DETECTED] $stallThreshold consecutive failures. Injecting pivot-vs-refine guidance.`e[0m"
+                        Write-RunnerConsole "`e[33m  [STALL DETECTED] $stallThreshold consecutive failures. Injecting pivot-vs-refine guidance.`e[0m"
                         Add-ExecutionSummaryEvent -Type 'STALL' -Message "Stall detected after $stallThreshold consecutive self-review failures. Pivot-vs-refine guidance injected."
 
                         $stallGuidance = @"
@@ -4040,7 +4041,7 @@ State your PIVOT or REFINE decision and rationale before making changes.
                     continue
                 }
 
-                Write-Host "`e[32m  [SELF-REVIEW] Approved on iteration $selfReviewIteration`e[0m"
+                Write-RunnerConsole "`e[32m  [SELF-REVIEW] Approved on iteration $selfReviewIteration`e[0m"
                 if ($selfReviewIteration -lt $selfReviewMin) {
                     $historyEntry.minimumNotYetMet = $true
                     $messages += @{
@@ -4073,7 +4074,7 @@ State your PIVOT or REFINE decision and rationale before making changes.
             $toolArgs = @{}
             try { $toolArgs = $tc.function.arguments | ConvertFrom-Json -AsHashtable } catch { Write-Verbose "Failed to parse tool arguments for $toolName. $_" }
 
-            Write-Host "`e[34m  Tool: $toolName($($toolArgs.Keys -join ', '))...`e[0m"
+            Write-RunnerConsole "`e[34m  Tool: $toolName($($toolArgs.Keys -join ', '))...`e[0m"
 
             # --- Boundary enforcement: block unauthorized file modifications ---
             $boundaryBlocked = $false
@@ -4082,7 +4083,7 @@ State your PIVOT or REFINE decision and rationale before making changes.
             if ($researchCheck.blocked) {
                 $researchBlocked = $true
                 $result = @{ error = $true; text = "[RESEARCH FIRST] $($researchCheck.reason)" }
-                Write-Host "`e[33m  [RESEARCH FIRST] $($researchCheck.reason)`e[0m"
+                Write-RunnerConsole "`e[33m  [RESEARCH FIRST] $($researchCheck.reason)`e[0m"
                 Add-ExecutionSummaryEvent -Type 'RESEARCH FIRST' -Message $researchCheck.reason -ReplaceExisting
             }
             if ($toolName -in @('file_write', 'file_edit') -and $toolArgs.ContainsKey('filePath')) {
@@ -4090,7 +4091,7 @@ State your PIVOT or REFINE decision and rationale before making changes.
                 if (-not $allowed) {
                     $boundaryBlocked = $true
                     $result = @{ error = $true; text = "[BOUNDARY BLOCKED] Agent '$Agent' is not allowed to modify '$($toolArgs.filePath)'. Check canModify/cannotModify rules." }
-                    Write-Host "`e[31m  [BOUNDARY BLOCKED] $toolName -> $($toolArgs.filePath)`e[0m"
+                    Write-RunnerConsole "`e[31m  [BOUNDARY BLOCKED] $toolName -> $($toolArgs.filePath)`e[0m"
                     Add-ExecutionSummaryEvent -Type 'BOUNDARY BLOCKED' -Message "$toolName was blocked for $($toolArgs.filePath)."
                 }
             }
@@ -4105,7 +4106,7 @@ State your PIVOT or REFINE decision and rationale before making changes.
             $totalToolCalls++
 
             if ($result.error) {
-                Write-Host "`e[31m  [TOOL ERROR] $toolName`: $($result.text.Substring(0, [Math]::Min(100, $result.text.Length)))`e[0m"
+                Write-RunnerConsole "`e[31m  [TOOL ERROR] $toolName`: $($result.text.Substring(0, [Math]::Min(100, $result.text.Length)))`e[0m"
                 Add-ExecutionSummaryEvent -Type 'TOOL ERROR' -Message "$toolName failed: $($result.text.Substring(0, [Math]::Min(160, $result.text.Length)))"
             }
 
@@ -4124,14 +4125,14 @@ State your PIVOT or REFINE decision and rationale before making changes.
         # Loop detection
         $loopResult = Test-LoopDetection -detector $loopDetector
         if ($loopResult.severity -eq 'circuit_breaker') {
-            Write-Host "`e[31m  [CIRCUIT BREAKER] $($loopResult.message)`e[0m"
+            Write-RunnerConsole "`e[31m  [CIRCUIT BREAKER] $($loopResult.message)`e[0m"
             Add-ExecutionSummaryEvent -Type 'CIRCUIT BREAKER' -Message $loopResult.message -ReplaceExisting
             $finalText = "Loop detection: $($loopResult.message)"
             $exitReason = 'circuit_breaker'
             break
         }
         if ($loopResult.severity -eq 'warning') {
-            Write-Host "`e[33m  [LOOP WARNING] $($loopResult.message)`e[0m"
+            Write-RunnerConsole "`e[33m  [LOOP WARNING] $($loopResult.message)`e[0m"
             Add-ExecutionSummaryEvent -Type 'LOOP WARNING' -Message $loopResult.message -ReplaceExisting
         }
     }
@@ -4184,11 +4185,11 @@ State your PIVOT or REFINE decision and rationale before making changes.
     }
     Save-Session -sessionId $sessionId -messages $messages -meta $meta -root $WorkspaceRoot
 
-    Write-Host "`e[90m  -----------------------------------------------`e[0m"
-    Write-Host "`e[36m  Loop: $iterations iterations, $totalToolCalls tool calls, exit: $exitReason ($([int]$duration)ms)`e[0m"
+    Write-RunnerConsole "`e[90m  -----------------------------------------------`e[0m"
+    Write-RunnerConsole "`e[36m  Loop: $iterations iterations, $totalToolCalls tool calls, exit: $exitReason ($([int]$duration)ms)`e[0m"
 
     if ($finalText) {
-        Write-Host "`n$finalText`n"
+        Write-RunnerConsole "`n$finalText`n"
     }
 
     return [PSCustomObject]@{

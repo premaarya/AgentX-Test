@@ -10,8 +10,8 @@
 # ./install.sh --force # Full reinstall (overwrite)
 # ./install.sh --azure # Force Azure Skills companion install
 #
-# # One-liner install (local mode, no prompts)
-# curl -fsSL https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.sh | bash
+# # One-liner install (local mode, no prompts, pinned to a release tag)
+# curl -fsSL https://raw.githubusercontent.com/jnPiyush/AgentX/v8.4.25/install.sh | bash
 #
 # # One-liner for GitHub mode
 # MODE=github curl -fsSL ... | bash
@@ -32,10 +32,10 @@ FORCE="${FORCE:-false}"
 NO_SETUP="${NO_SETUP:-false}"
 INSTALL_PATH="${AGENTX_PATH:-}"
 AZURE="${AGENTX_AZURE:-false}"
-BRANCH="master"
+BRANCH="v8.4.25"
 TMP=".agentx-install-tmp"
 TMPARCHIVE="$TMP.tar.gz"
-ARCHIVE_URL="https://github.com/jnPiyush/AgentX/archive/refs/heads/$BRANCH.tar.gz"
+ARCHIVE_URL="https://github.com/jnPiyush/AgentX/archive/refs/tags/$BRANCH.tar.gz"
 ARCHIVE_SOURCE="${AGENTX_INSTALL_ARCHIVE:-$ARCHIVE_URL}"
 
 # -- Guaranteed cleanup (runs on success, error, or Ctrl+C) --

@@ -30,16 +30,17 @@
  .\install.ps1 -Force # Full reinstall (overwrite)
  .\install.ps1 -Azure # Force Azure Skills companion install
 
- # One-liner install (local mode, no prompts - auto-detects piped execution)
- irm https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.ps1 | iex
+ # One-liner install (local mode, no prompts - pinned to a release tag)
+ irm https://raw.githubusercontent.com/jnPiyush/AgentX/v8.4.25/install.ps1 | iex
 
  # One-liner for GitHub mode
- $env:AGENTX_MODE="github"; irm https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.ps1 | iex
+ $env:AGENTX_MODE="github"; irm https://raw.githubusercontent.com/jnPiyush/AgentX/v8.4.25/install.ps1 | iex
 
  # One-liner to include Azure companion support
- $env:AGENTX_AZURE="true"; irm https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.ps1 | iex
+ $env:AGENTX_AZURE="true"; irm https://raw.githubusercontent.com/jnPiyush/AgentX/v8.4.25/install.ps1 | iex
 #>
 
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '', Justification='Interactive installer output is intentionally written directly to the host.')]
 param(
  [string]$Mode,
  [string]$Path,
@@ -51,7 +52,7 @@ param(
 
 $MinimumPowerShellVersion = [Version]'7.4.0'
 
-function Add-PathEntryIfExists {
+function Add-PathEntryIfPresent {
  param([string]$Candidate)
 
  if (-not $Candidate -or -not (Test-Path $Candidate)) {
@@ -66,22 +67,29 @@ function Add-PathEntryIfExists {
  $env:Path = "$Candidate;$env:Path"
 }
 
-function Update-WindowsDependencyPaths {
- Add-PathEntryIfExists 'C:\Program Files\PowerShell\7'
- Add-PathEntryIfExists 'C:\Program Files\PowerShell\7-preview'
- Add-PathEntryIfExists 'C:\Program Files\Git\cmd'
- Add-PathEntryIfExists 'C:\Program Files\Git\bin'
+function Update-WindowsDependencyPath {
+ [CmdletBinding(SupportsShouldProcess)]
+ param()
+
+ if (-not $PSCmdlet.ShouldProcess('PATH', 'Add common PowerShell and Git install locations')) {
+  return
+ }
+
+ Add-PathEntryIfPresent 'C:\Program Files\PowerShell\7'
+ Add-PathEntryIfPresent 'C:\Program Files\PowerShell\7-preview'
+ Add-PathEntryIfPresent 'C:\Program Files\Git\cmd'
+ Add-PathEntryIfPresent 'C:\Program Files\Git\bin'
 }
 
-function Get-InstallRelaunchArgs {
- $args = @()
- if ($Mode) { $args += @('-Mode', $Mode) }
- if ($Path) { $args += @('-Path', $Path) }
- if ($Force) { $args += '-Force' }
- if ($NoSetup) { $args += '-NoSetup' }
- if ($Local) { $args += '-Local' }
- if ($Azure) { $args += '-Azure' }
- return $args
+function Get-InstallRelaunchParameter {
+ $relaunchParameters = @()
+ if ($Mode) { $relaunchParameters += @('-Mode', $Mode) }
+ if ($Path) { $relaunchParameters += @('-Path', $Path) }
+ if ($Force) { $relaunchParameters += '-Force' }
+ if ($NoSetup) { $relaunchParameters += '-NoSetup' }
+ if ($Local) { $relaunchParameters += '-Local' }
+ if ($Azure) { $relaunchParameters += '-Azure' }
+ return $relaunchParameters
 }
 
 function Install-WindowsPackageIfPossible {
@@ -100,7 +108,7 @@ function Install-WindowsPackageIfPossible {
  return $LASTEXITCODE -eq 0
 }
 
-function Ensure-GitInstalled {
+function Invoke-GitInstallIfMissing {
  if (Get-Command git -ErrorAction SilentlyContinue) {
   return $true
  }
@@ -111,7 +119,7 @@ function Ensure-GitInstalled {
   if (-not (Install-WindowsPackageIfPossible -Id 'Git.Git' -DisplayName 'Git')) {
    return $false
   }
-  Update-WindowsDependencyPaths
+  Update-WindowsDependencyPath -Confirm:$false
  } elseif (Get-Command brew -ErrorAction SilentlyContinue) {
   & brew install git
  } elseif (Get-Command apt-get -ErrorAction SilentlyContinue) {
@@ -156,17 +164,17 @@ if ($Mode -and $Mode -notin @("github", "local")) {
 }
 
 if ($IsWindows -or $env:OS -eq 'Windows_NT') {
- Update-WindowsDependencyPaths
+ Update-WindowsDependencyPath -Confirm:$false
 }
 
 # -- PowerShell version check --
 # Supported runtime: PowerShell 7.4+ only.
 if ($PSVersionTable.PSVersion -lt $MinimumPowerShellVersion) {
  $relaunchPath = $MyInvocation.MyCommand.Path
- $relaunchArgs = Get-InstallRelaunchArgs
+ $relaunchArgs = Get-InstallRelaunchParameter
 
  if (($IsWindows -or $env:OS -eq 'Windows_NT') -and (Install-WindowsPackageIfPossible -Id 'Microsoft.PowerShell' -DisplayName 'PowerShell 7.4+')) {
-  Update-WindowsDependencyPaths
+  Update-WindowsDependencyPath -Confirm:$false
   $pwsh = Get-Command pwsh -ErrorAction SilentlyContinue
   if ($pwsh -and $relaunchPath) {
    Write-Host ' Relaunching installer in PowerShell 7...' -ForegroundColor DarkGray
@@ -193,11 +201,11 @@ if ($PSVersionTable.PSVersion -lt $MinimumPowerShellVersion) {
 $isPiped = -not $MyInvocation.MyCommand.Path
 
 $ErrorActionPreference = "Stop"
-$BRANCH = "master"
+$BRANCH = "v8.4.25"
 $TMP = ".agentx-install-tmp"
 $TMPRAW = ".agentx-install-raw"
 $ZIPFILE = ".agentx-install.zip"
-$ARCHIVE = "https://github.com/jnPiyush/AgentX/archive/refs/heads/$BRANCH.zip"
+$ARCHIVE = "https://github.com/jnPiyush/AgentX/archive/refs/tags/$BRANCH.zip"
 $ARCHIVE_SOURCE = if ($env:AGENTX_INSTALL_ARCHIVE) { $env:AGENTX_INSTALL_ARCHIVE } else { $ARCHIVE }
 
 function Write-OK($m) { Write-Host "[OK] $m" -ForegroundColor Green }
@@ -256,7 +264,9 @@ function Test-AzureWorkspace {
  try {
   $azureInfra = Get-ChildItem -Path . -Recurse -File -Include *.bicep, *.bicepparam -ErrorAction SilentlyContinue | Select-Object -First 1
   if ($azureInfra) { return $true }
- } catch {}
+ } catch {
+  Write-Verbose "Azure workspace scan skipped because infrastructure file discovery failed: $($_.Exception.Message)"
+ }
 
  foreach ($hintFile in @('README.md', 'package.json', 'pyproject.toml', '.agentx/config.json')) {
   try {
@@ -265,7 +275,9 @@ function Test-AzureWorkspace {
    if ($content -match '\bazure\b' -or $content -match '\bazd\b' -or $content -match 'Azure Functions' -or $content -match 'Container Apps' -or $content -match 'App Service' -or $content -match 'Static Web Apps') {
     return $true
    }
-  } catch {}
+  } catch {
+   Write-Verbose "Azure workspace hint scan skipped for ${hintFile}: $($_.Exception.Message)"
+  }
  }
 
  return $false
@@ -311,7 +323,7 @@ Write-Host ""
 
 # -- Prerequisites ---------------------------------------
 # Install required CLI prerequisites up front.
-if (-not (Ensure-GitInstalled)) {
+if (-not (Invoke-GitInstallIfMissing)) {
  Write-Error 'Git is required for AgentX install and could not be installed automatically.'
  return
 }
@@ -322,12 +334,14 @@ if (Test-Path ".agentx/version.json") {
  try {
   $vInfo = Get-Content ".agentx/version.json" -Raw | ConvertFrom-Json
   $previousVersion = $vInfo.version
- } catch {}
+ } catch {
+  Write-Verbose "Unable to read prior version metadata from .agentx/version.json: $($_.Exception.Message)"
+ }
 }
 
 if ($previousVersion -and $previousVersion -ne "8.4.25") {
  $majorVersion = 0
- try { $majorVersion = [int]($previousVersion -split '\.')[0] } catch {}
+ try { $majorVersion = [int]($previousVersion -split '\.')[0] } catch { Write-Verbose "Could not parse major version from '$previousVersion'." }
 
  if ($majorVersion -lt 8) {
     Write-Host "[!] Detected AgentX v$previousVersion - upgrading to v8.4.25..." -ForegroundColor Yellow
@@ -623,10 +637,10 @@ if (-not $NoSetup) {
  # Username for CODEOWNERS
  $username = $null
  if (Get-Command gh -ErrorAction SilentlyContinue) {
- try { $username = gh api user --jq '.login' 2>$null } catch {}
+ try { $username = gh api user --jq '.login' 2>$null } catch { Write-Verbose "GitHub CLI username auto-detect failed: $($_.Exception.Message)" }
  }
  if (-not $username -and (Get-Command git -ErrorAction SilentlyContinue)) {
- try { $username = git config user.name 2>$null } catch {}
+ try { $username = git config user.name 2>$null } catch { Write-Verbose "Git username auto-detect failed: $($_.Exception.Message)" }
  }
  if (-not $username) {
  $username = Read-Host " GitHub username (for CODEOWNERS)"
@@ -650,10 +664,12 @@ if (-not $NoSetup) {
  if ($remoteUrl -match 'github\.com[:/]([^/]+/[^/.]+)') {
  $repoSlug = $Matches[1] -replace '\.git$', ''
  }
- } catch {}
+ } catch {
+  Write-Verbose "Git remote auto-detect failed: $($_.Exception.Message)"
+ }
  }
  if (-not $repoSlug -and (Get-Command gh -ErrorAction SilentlyContinue)) {
- try { $repoSlug = gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>$null } catch {}
+ try { $repoSlug = gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>$null } catch { Write-Verbose "GitHub CLI repo auto-detect failed: $($_.Exception.Message)" }
  }
 
  if ($repoSlug) {
@@ -690,7 +706,9 @@ if (-not $NoSetup) {
  }
  }
  }
- } catch {}
+ } catch {
+  Write-Verbose "GitHub project auto-detect failed: $($_.Exception.Message)"
+ }
  }
  if (-not $projectNum) {
  $projectNumInput = Read-Host " GitHub Project number (Enter to skip)"

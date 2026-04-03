@@ -96,7 +96,10 @@ function Lock-JsonFile([string]$jsonPath, [string]$agent = 'cli') {
         try {
             $stream = [System.IO.File]::Open($lockPath, [System.IO.FileMode]::CreateNew,
                 [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)
-            $payload = '{"agent":"' + $agent + '","created":"' + [datetime]::UtcNow.ToString('o') + '"}'
+                $payload = ([ordered]@{
+                        agent = $agent
+                        created = [datetime]::UtcNow.ToString('o')
+                    } | ConvertTo-Json -Compress)
             $bytes = [System.Text.Encoding]::UTF8.GetBytes($payload)
             $stream.Write($bytes, 0, $bytes.Length)
             $stream.Dispose()
@@ -4171,15 +4174,6 @@ function Get-HarnessLoopAuditResult([string]$workspaceRoot) {
         Get-LoopDefaultMinIterations $state
     }
     $loopHealth = Get-LoopStateHealth -State $state
-
-    $lastTouched = $null
-    foreach ($candidate in @([string]$state.lastIterationAt, [string]$state.startedAt)) {
-        $parsed = [datetime]::MinValue
-        if ([datetime]::TryParse($candidate, [ref]$parsed)) {
-            $lastTouched = $parsed
-            break
-        }
-    }
 
     if ($state.active) {
         if ($loopHealth.kind -eq 'stuck') {

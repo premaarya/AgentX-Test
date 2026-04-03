@@ -35,13 +35,13 @@
 ```powershell
 # PowerShell -- into an existing project directory
 cd your-project
-irm https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.ps1 | iex
+irm https://raw.githubusercontent.com/jnPiyush/AgentX/v8.4.25/install.ps1 | iex
 ```
 
 ```bash
 # Bash
 cd your-project
-curl -fsSL https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/jnPiyush/AgentX/v8.4.25/install.sh | bash
 ```
 
 **What happens**: AgentX copies agents, skills, templates, and CLI into your project. Your existing code is untouched.
@@ -153,8 +153,8 @@ Each agent produces a deliverable, validates it, and hands off to the next.
 ./install.sh
 
 # One-liner (downloads and runs)
-irm https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.ps1 | iex    # PowerShell
-curl -fsSL https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.sh | bash  # Bash
+irm https://raw.githubusercontent.com/jnPiyush/AgentX/v8.4.25/install.ps1 | iex    # PowerShell
+curl -fsSL https://raw.githubusercontent.com/jnPiyush/AgentX/v8.4.25/install.sh | bash  # Bash
 ```
 
 PowerShell install path note:
@@ -188,7 +188,7 @@ Control what gets installed with the `-Profile` flag:
 ./install.sh --no-setup
 
 # One-liner with profile (env vars)
-PROFILE=python curl -fsSL https://raw.githubusercontent.com/jnPiyush/AgentX/master/install.sh | bash
+PROFILE=python curl -fsSL https://raw.githubusercontent.com/jnPiyush/AgentX/v8.4.25/install.sh | bash
 ```
 
 ### What the Installer Does
@@ -244,6 +244,8 @@ AgentX now resolves runtime behavior from `.agentx/config.json` in this order:
 3. `mode` (legacy compatibility)
 
 Use `provider` for new workspaces. Older fields are still read so existing repos continue to work.
+
+When the `claude-code` provider is used through `.agentx/agentic-runner.ps1`, AgentX invokes the Claude Code CLI with `--permission-mode bypassPermissions` so loop-driven execution can use tools without interactive prompts. Use that provider only in trusted workspaces where full tool autonomy is acceptable.
 
 ---
 

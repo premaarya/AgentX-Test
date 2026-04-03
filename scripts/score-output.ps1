@@ -42,7 +42,7 @@ function Test-FileExists([string]$pattern) {
     return $null -ne $found
 }
 
-function Score-Engineer {
+function Invoke-EngineerScore {
     $score = 0; $max = 45; $checks = @()
     $nodeProjectRoot = Get-NodeProjectRoot
 
@@ -72,9 +72,9 @@ function Score-Engineer {
     $secretPatterns = @('password\s*=\s*["\x27]', 'api[_-]?key\s*=\s*["\x27]', 'secret\s*=\s*["\x27]')
     $secretFound = $false
     foreach ($p in $secretPatterns) {
-        $matches = Get-ChildItem -Path (Join-Path $ROOT 'src'), (Join-Path $ROOT 'vscode-extension/src') -Filter '*.ts' -Recurse -File -ErrorAction SilentlyContinue |
+        $secretHits = Get-ChildItem -Path (Join-Path $ROOT 'src'), (Join-Path $ROOT 'vscode-extension/src') -Filter '*.ts' -Recurse -File -ErrorAction SilentlyContinue |
             Select-String -Pattern $p -ErrorAction SilentlyContinue
-        if ((Get-ItemCount $matches) -gt 0) { $secretFound = $true; break }
+        if ((Get-ItemCount $secretHits) -gt 0) { $secretFound = $true; break }
     }
     if (-not $secretFound) { $score += 5; $checks += '[PASS] No hardcoded secrets (+5)' }
     else { $checks += '[FAIL] Hardcoded secrets detected (+0)' }
@@ -120,7 +120,7 @@ function Score-Engineer {
     return @{ Score = $score; Max = $max; Checks = $checks }
 }
 
-function Score-Architect {
+function Invoke-ArchitectScore {
     $score = 0; $max = 40; $checks = @()
     $id = if ($IssueNumber -gt 0) { $IssueNumber } else { '*' }
 
@@ -175,7 +175,7 @@ function Score-Architect {
     return @{ Score = $score; Max = $max; Checks = $checks }
 }
 
-function Score-PM {
+function Invoke-PMScore {
     $score = 0; $max = 33; $checks = @()
     $id = if ($IssueNumber -gt 0) { $IssueNumber } else { '*' }
 
@@ -227,9 +227,9 @@ function Score-PM {
 
 # Main execution
 $result = switch ($Role) {
-    'engineer'  { Score-Engineer }
-    'architect' { Score-Architect }
-    'pm'        { Score-PM }
+    'engineer'  { Invoke-EngineerScore }
+    'architect' { Invoke-ArchitectScore }
+    'pm'        { Invoke-PMScore }
 }
 
 $pct = [math]::Round(($result.Score / $result.Max) * 100, 0)

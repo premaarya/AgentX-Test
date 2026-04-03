@@ -62,6 +62,16 @@ const RULES: readonly RedactionRule[] = [
     pattern: /AccountKey=[A-Za-z0-9+/=]{20,}/gi,
     replacement: 'AccountKey=[REDACTED:azure-key]',
   },
+  // Azure SAS tokens in URLs or connection strings
+  {
+    pattern: /([?&]sv=[^&\s"']+&[^\s"']*sig=)[A-Za-z0-9%+/=:-]{16,}/gi,
+    replacement: '$1[REDACTED:azure-sas]',
+  },
+  // GCP service account private key blocks inside JSON blobs
+  {
+    pattern: /"private_key"\s*:\s*"-----BEGIN PRIVATE KEY-----[\s\S]*?-----END PRIVATE KEY-----\\n?"/g,
+    replacement: '"private_key":"[REDACTED:gcp-private-key]"',
+  },
   // Generic password / secret / token / api_key assignments
   // Matches: password=foo, secret:"bar", "token": "baz123", TOKEN = 'qux' etc.
   // The optional ["']? before [=:] handles JSON-style "key": "value" patterns.
@@ -88,7 +98,7 @@ const RULES: readonly RedactionRule[] = [
  * This avoids running all 8 replacement regexes on clean strings.
  */
 const QUICK_CHECK_PATTERN =
-  /Bearer\s|eyJ[A-Za-z0-9_-]{10,}\.|sk-[A-Za-z0-9]{20}|github_pat_|gh[ps]_|AKIA[A-Z0-9]{16}|AccountKey=|(?:password|secret|token|api[_-]?key)["']?\s*[=:]/i;
+  /Bearer\s|eyJ[A-Za-z0-9_-]{10,}\.|sk-[A-Za-z0-9]{20}|github_pat_|gh[ps]_|AKIA[A-Z0-9]{16}|AccountKey=|[?&]sv=|"private_key"\s*:|(?:password|secret|token|api[_-]?key)["']?\s*[=:]/i;
 
 // ---------------------------------------------------------------------------
 // Public API

@@ -60,3 +60,4 @@
 - 2026-04-03: Treat deterministic confidence as a separate reporting dimension from workflow compliance and evidence strength. UI summaries and tooltips should show all three scores instead of collapsing them into one headline percentage.
 - 2026-04-03: For clarification in the runner, prefer an explicit response contract (`Status`, `Direct Answer`, `Evidence And Constraints`, `Remaining Uncertainty`) and parse completion from those sections instead of using answer-length or vague-response heuristics.
 - 2026-04-03: For context compaction, keep a deterministic fact-extraction fallback that preserves issue refs, file refs, tool refs, and key highlights when token-backed summarization is unavailable or fails.
+- 2026-04-03: When fixing security-review findings, mirror changes across shipped docs and bundled extension docs/runtime assets where the same guidance is duplicated; root-only fixes leave packaged AgentX behavior and guidance stale.

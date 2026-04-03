@@ -20,12 +20,12 @@ jobs:
     name: Enforce Quality Gates
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '20'
 
@@ -116,8 +116,8 @@ jobs:
 
           check_tokens() {
             local f="$1" limit="$2"
-            CHARS=$(wc -c < "$f")
-            TOKENS=$((CHARS / 4))
+            CHARS=$(wc -m < "$f")
+            TOKENS=$(((CHARS + 1) / 2))
             if [ "$TOKENS" -gt "$limit" ]; then
               echo "[FAIL] $f: $TOKENS tokens (limit: $limit)"
               VIOLATIONS=$((VIOLATIONS + 1))
@@ -174,9 +174,9 @@ jobs:
                   FAIL=$((FAIL + 1))
                 fi
 
-                # Check token budget (5000 tokens ~ 20000 chars)
-                CHARS=$(wc -c < "$sub_dir/SKILL.md")
-                TOKENS=$((CHARS / 4))
+                # Check token budget with a conservative character-to-token estimate.
+                CHARS=$(wc -m < "$sub_dir/SKILL.md")
+                TOKENS=$(((CHARS + 1) / 2))
                 if [ "$TOKENS" -gt 5000 ]; then
                   echo "[FAIL] $SKILL_NAME: $TOKENS tokens (limit: 5000)"
                   FAIL=$((FAIL + 1))
@@ -312,7 +312,7 @@ jobs:
 
       - name: Post Quality Report
         if: always() && github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b
         with:
           script: |
             const status = '${{ job.status }}' === 'success' ? '[PASS]' : '[FAIL]';

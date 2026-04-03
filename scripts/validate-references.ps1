@@ -22,17 +22,17 @@ $broken = @()
 $total = 0
 $checked = 0
 
-function Get-FencedCodeRanges {
+function Get-FencedCodeRange {
     param(
         [string]$Content
     )
 
     $ranges = @()
-    $matches = [regex]::Matches($Content, '(?ms)```.*?```')
-    foreach ($match in $matches) {
+    $codeBlocks = [regex]::Matches($Content, '(?ms)```.*?```')
+    foreach ($block in $codeBlocks) {
         $ranges += [PSCustomObject]@{
-            Start = $match.Index
-            End   = $match.Index + $match.Length
+            Start = $block.Index
+            End   = $block.Index + $block.Length
         }
     }
 
@@ -60,7 +60,7 @@ $mdFiles = Get-ChildItem -Path $ScanDir -Filter '*.md' -Recurse -File -ErrorActi
 foreach ($file in $mdFiles) {
     $content = Get-Content $file.FullName -Raw -Encoding utf8
     $links = [regex]::Matches($content, '\[([^\]]+)\]\(([^)]+)\)')
-    $fencedCodeRanges = Get-FencedCodeRanges -Content $content
+    $fencedCodeRanges = Get-FencedCodeRange -Content $content
     $lines = $content -split "`n"
 
     foreach ($match in $links) {
