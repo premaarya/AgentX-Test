@@ -4889,18 +4889,25 @@ function Invoke-HireCmd {
     if (-not $agentName) {
         Write-Host "`n$($C.c)  AgentX Hire - Create a Custom Agent$($C.n)"
         Write-Host "$($C.d)  Scaffold a new agent definition in .github/agents/$($C.n)`n"
-        Write-Host "$($C.w)  Usage:$($C.n)"
-        Write-Host '  agentx hire <name>'
-        Write-Host '  agentx hire "Security Auditor" -d "Performs security audits" -r Researcher'
-        Write-Host '  agentx hire "Data Pipeline" -m claude-sonnet-4 -r Engineer'
+
+        # Interactive prompts
+        Write-Host "$($C.w)  Agent display name$($C.n) $($C.d)(e.g. Security Auditor)$($C.n): " -NoNewline
+        $agentName = (Read-Host).Trim()
+        if (-not $agentName) { Write-Host "$($C.r)  Name is required. Aborting.$($C.n)"; return }
+
+        Write-Host "$($C.w)  Description$($C.n) $($C.d)(optional, press Enter to skip)$($C.n): " -NoNewline
+        $inputDesc = (Read-Host).Trim()
+        if ($inputDesc) { $description = $inputDesc }
+
+        Write-Host "$($C.w)  Role$($C.n) $($C.d)[Engineer / Architect / Researcher / Analyst / DevOps / Tester / Designer]$($C.n) $($C.d)(default: Engineer)$($C.n): " -NoNewline
+        $inputRole = (Read-Host).Trim()
+        if ($inputRole) { $role = $inputRole }
+
+        Write-Host "$($C.w)  Model$($C.n) $($C.d)[gpt-4.1 / claude-sonnet-4 / o4-mini / gpt-4.1-mini]$($C.n) $($C.d)(default: gpt-4.1)$($C.n): " -NoNewline
+        $inputModel = (Read-Host).Trim()
+        if ($inputModel) { $model = $inputModel }
+
         Write-Host ''
-        Write-Host "$($C.w)  Options:$($C.n)"
-        Write-Host '  -n, --name          Agent display name (required)'
-        Write-Host '  -d, --description   Short description'
-        Write-Host '  -m, --model         LLM model (default: gpt-4.1)'
-        Write-Host '  -r, --role          Role type (default: Engineer)'
-        Write-Host ''
-        return
     }
 
     $agentId = $agentName.ToLower() -replace '[^a-z0-9]+', '-' -replace '^-|-$', ''
