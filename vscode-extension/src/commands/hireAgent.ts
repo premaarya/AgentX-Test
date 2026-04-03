@@ -1,12 +1,7 @@
-import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as vscode from 'vscode';
 import { AgentXContext } from '../agentxContext';
-import {
-  generateAgentContent,
-  promptAgentDetails,
-  resolveAgentOutputDir,
-} from './hireAgentInternals';
 
 export function registerHireAgentCommand(
   context: vscode.ExtensionContext,
@@ -20,39 +15,22 @@ export function registerHireAgentCommand(
         return;
       }
 
-      const details = await promptAgentDetails();
-      if (!details) { return; }
+      const hasCliRuntime = agentx.hasCliRuntime();
+      if (hasCliRuntime) {
+        // Prefer workspace-local CLI; fall back to bundled copy inside the extension.
+        const workspaceCli = path.join(root, '.agentx', 'agentx.ps1');
+        const bundledCli = path.join(context.extensionUri.fsPath, '.github', 'agentx', 'agentx.ps1');
+        const cliPath = fs.existsSync(workspaceCli) ? workspaceCli : bundledCli;
 
-      const outputDir = resolveAgentOutputDir(root);
-      if (!fs.existsSync(outputDir)) {
-        fs.mkdirSync(outputDir, { recursive: true });
-      }
-
-      const fileName = `${details.id}.agent.md`;
-      const filePath = path.join(outputDir, fileName);
-
-      if (fs.existsSync(filePath)) {
-        const overwrite = await vscode.window.showWarningMessage(
-          `Agent "${details.id}" already exists. Overwrite?`,
-          'Overwrite',
-          'Cancel',
+        const terminal = vscode.window.createTerminal('AgentX Hire Agent');
+        terminal.show();
+        terminal.sendText(`cd "${root}"`);
+        terminal.sendText(`pwsh -NoProfile -File "${cliPath}" hire`);
+      } else {
+        vscode.window.showInformationMessage(
+          'Hiring an agent requires the AgentX CLI runtime. Run "AgentX: Initialize Local Runtime" first.',
         );
-        if (overwrite !== 'Overwrite') { return; }
       }
-
-      const content = generateAgentContent(details);
-      try {
-        fs.writeFileSync(filePath, content, 'utf-8');
-      } catch (err) {
-        vscode.window.showErrorMessage(`Failed to write agent file: ${err instanceof Error ? err.message : String(err)}`);
-        return;
-      }
-
-      const doc = await vscode.workspace.openTextDocument(filePath);
-      await vscode.window.showTextDocument(doc);
-
-      vscode.window.showInformationMessage(`Agent "${details.name}" hired at ${fileName}`);
-      await vscode.commands.executeCommand('agentx.refresh');
     }),
   );
 }

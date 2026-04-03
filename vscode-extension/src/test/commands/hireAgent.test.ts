@@ -8,7 +8,6 @@ import { AgentXContext } from '../../agentxContext';
 import { registerHireAgentCommand } from '../../commands/hireAgent';
 import {
   generateAgentContent,
-  promptAgentDetails,
   resolveAgentOutputDir,
 } from '../../commands/hireAgentInternals';
 
@@ -73,8 +72,8 @@ describe('registerHireAgentCommand', () => {
 
   beforeEach(() => {
     sandbox = sinon.createSandbox();
-    fakeContext = { subscriptions: [] } as unknown as vscode.ExtensionContext;
-    fakeAgentx = { workspaceRoot: '/tmp/workspace' } as unknown as AgentXContext;
+    fakeContext = { subscriptions: [], extensionUri: { fsPath: '/ext' } } as unknown as vscode.ExtensionContext;
+    fakeAgentx = { workspaceRoot: '/tmp/workspace', hasCliRuntime: () => false } as unknown as AgentXContext;
 
     sandbox.stub(vscode.commands, 'registerCommand').callsFake(
       (_cmd: string, _cb: (...args: unknown[]) => unknown) => ({ dispose: () => { /* noop */ } }),
@@ -106,8 +105,14 @@ describe('hireAgent command - execution', () => {
     sandbox = sinon.createSandbox();
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentx-hire-test-'));
 
-    fakeContext = { subscriptions: [] } as unknown as vscode.ExtensionContext;
-    fakeAgentx = { workspaceRoot: tmpDir } as unknown as AgentXContext;
+    fakeContext = {
+      subscriptions: [],
+      extensionUri: { fsPath: '/ext' },
+    } as unknown as vscode.ExtensionContext;
+    fakeAgentx = {
+      workspaceRoot: tmpDir,
+      hasCliRuntime: () => true,
+    } as unknown as AgentXContext;
 
     sandbox.stub(vscode.commands, 'registerCommand').callsFake(
       (_cmd: string, cb: (...args: unknown[]) => unknown) => {
@@ -115,10 +120,6 @@ describe('hireAgent command - execution', () => {
         return { dispose: () => { /* noop */ } };
       },
     );
-
-    sandbox.stub(vscode.commands, 'executeCommand').resolves();
-    sandbox.stub(vscode.workspace, 'openTextDocument').resolves({} as any);
-    sandbox.stub(vscode.window, 'showTextDocument').resolves();
 
     registerHireAgentCommand(fakeContext, fakeAgentx);
   });
@@ -137,33 +138,31 @@ describe('hireAgent command - execution', () => {
     assert.ok(warnStub.calledOnce);
   });
 
-  it('returns silently when user cancels the wizard', async () => {
-    sandbox.stub(vscode.window, 'showInputBox').resolves(undefined);
+  it('shows info message when CLI runtime is not available', async () => {
+    (fakeAgentx as any).hasCliRuntime = () => false;
     const infoStub = sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
 
     await commandCallback();
 
-    assert.ok(infoStub.notCalled, 'should not show success message when user cancels');
+    assert.ok(infoStub.calledOnce, 'should prompt user to initialize runtime');
   });
 
-  it('writes agent file and shows success when wizard completes', async () => {
-    const inputStub = sandbox.stub(vscode.window, 'showInputBox');
-    inputStub.onFirstCall().resolves('My Test Agent');
-    inputStub.onSecondCall().resolves('Performs test automation tasks');
-
-    const pickStub = sandbox.stub(vscode.window, 'showQuickPick') as sinon.SinonStub;
-    pickStub.onFirstCall().resolves({ label: 'Engineer', description: 'Code implementation' });
-    pickStub.onSecondCall().resolves({ label: 'GPT-4.1', value: 'gpt-4.1' });
-
-    const infoStub = sandbox.stub(vscode.window, 'showInformationMessage').resolves(undefined);
+  it('opens a terminal and runs agentx hire when CLI runtime is available', async () => {
+    const sendTextStub = sandbox.stub();
+    const fakeTerminal = { show: sandbox.stub(), sendText: sendTextStub };
+    sandbox.stub(vscode.window, 'createTerminal').returns(fakeTerminal as any);
 
     await commandCallback();
 
-    const agentFile = path.join(tmpDir, '.github', 'agents', 'my-test-agent.agent.md');
-    assert.ok(fs.existsSync(agentFile), 'agent file should be created');
-
-    const content = fs.readFileSync(agentFile, 'utf-8');
-    assert.ok(content.includes('name: My Test Agent'), 'should include name in frontmatter');
-    assert.ok(infoStub.calledOnce, 'should show success message');
+    assert.ok(
+      (vscode.window.createTerminal as sinon.SinonStub).calledOnce,
+      'should create a terminal',
+    );
+    assert.ok(
+      sendTextStub.calledWith(`cd "${tmpDir}"`),
+      'should cd to workspace root',
+    );
+    const hireCalls = sendTextStub.args.filter((a: string[]) => a[0].includes('hire'));
+    assert.ok(hireCalls.length > 0, 'should send hire command to terminal');
   });
 });

@@ -21,7 +21,6 @@
 #>
 param(
  [Parameter(Mandatory = $true)]
- [ValidatePattern('^[a-z][a-z0-9-]{0,63}$')]
  [string]$Name,
 
  [Parameter(Mandatory = $true)]
@@ -39,12 +38,26 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# Convert display name to a valid kebab-case slug for directory/frontmatter name.
+# e.g. "C/C++" -> "c-cpp", "My Skill!" -> "my-skill"
+$Slug = $Name.ToLower() `
+  -replace '[+]+', 'plus' `
+  -replace '[#]+', 'sharp' `
+  -replace '[^a-z0-9]+', '-' `
+  -replace '-{2,}', '-' `
+  -replace '^-|-$', ''
+if ($Slug -notmatch '^[a-z][a-z0-9-]{0,63}$') {
+  Write-Host " [FAIL] Could not generate a valid skill slug from name '$Name'. Got: '$Slug'" -ForegroundColor Red
+  Write-Host "        Slug must match ^[a-z][a-z0-9-]{0,63}$. Please use a simpler name." -ForegroundColor Red
+  exit 1
+}
+
 # Resolve skill root
 $repoRoot = git rev-parse --show-toplevel 2>$null
 if (-not $repoRoot) { $repoRoot = Get-Location }
-$skillDir = Join-Path $repoRoot ".github" "skills" $Category $Name
+$skillDir = Join-Path $repoRoot ".github" "skills" $Category $Slug
 
-Write-Host "`n=== Creating Skill: $Name ===" -ForegroundColor Cyan
+Write-Host "`n=== Creating Skill: $Name (slug: $Slug) ===" -ForegroundColor Cyan
 
 if (Test-Path $skillDir) {
  Write-Host " Skill directory already exists: $skillDir" -ForegroundColor Red
@@ -59,7 +72,7 @@ Write-Host " Created: $skillDir" -ForegroundColor Green
 $today = Get-Date -Format "yyyy-MM-dd"
 $skillContent = @"
 ---
-name: "$Name"
+name: "$Slug"
 description: "$Description"
 metadata:
  author: "AgentX"
@@ -68,7 +81,7 @@ metadata:
  updated: "$today"
 ---
 
-# $($Name.Replace('-', ' ').ToUpper().Substring(0,1) + $Name.Replace('-', ' ').Substring(1))
+# $Name
 
 > $Description
 
