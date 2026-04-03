@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { AgentXContext } from '../agentxContext';
+import { getConfiguredLlmProviderRecord } from '../agentxContextInternals';
 import { getAzureCompanionState } from '../utils/companionExtensions';
 import { SidebarTreeItem } from './sidebarTreeItem';
 
@@ -26,6 +27,25 @@ function readJsonFile<T>(filePath: string): T | undefined {
 
 function formatConnection(value: boolean): string {
  return value ? 'connected' : 'not connected';
+}
+
+function getLlmAdapterLabel(root: string | undefined, configInfo: VersionStamp | undefined): string {
+ if (!root) {
+  return configInfo?.llmProvider ?? 'copilot (default)';
+ }
+
+ const provider = configInfo?.llmProvider ?? 'copilot';
+ if (provider !== 'claude-code') {
+  return provider;
+ }
+
+ const claudeCodeRecord = getConfiguredLlmProviderRecord(root, 'claude-code');
+ const profile = typeof claudeCodeRecord?.profile === 'string' ? claudeCodeRecord.profile.trim() : '';
+ if (profile === 'local-gateway') {
+  return 'claude-code (LiteLLM + Ollama)';
+ }
+
+ return 'claude-code';
 }
 
 export class StatusTreeProvider implements vscode.TreeDataProvider<SidebarTreeItem> {
@@ -69,7 +89,7 @@ export class StatusTreeProvider implements vscode.TreeDataProvider<SidebarTreeIt
    SidebarTreeItem.detail('Workspace', 'root-folder', root ? 'ready' : 'none'),
    SidebarTreeItem.detail('Version', 'versions', versionInfo?.version ?? 'not installed'),
    SidebarTreeItem.detail('Mode', 'server-environment', configInfo?.provider ?? configInfo?.integration ?? configInfo?.mode ?? versionInfo?.mode ?? 'workspace only'),
-    SidebarTreeItem.detail('LLM Adapter', 'hubot', configInfo?.llmProvider ?? 'copilot (default)'),
+    SidebarTreeItem.detail('LLM Adapter', 'hubot', getLlmAdapterLabel(root, configInfo)),
    SidebarTreeItem.detail('GitHub MCP', 'github', formatConnection(this.agentx.githubConnected)),
     SidebarTreeItem.detail('ADO Provider', 'repo', formatConnection(this.agentx.adoConnected)),
    SidebarTreeItem.detail('Azure skills', azureCompanionIcon, azureCompanionDescription),

@@ -35,6 +35,7 @@ const PENDING_SETUP_KEY = 'agentx.pendingSetup';
 const AGENTX_WORKSPACE_ROOT_ENV = 'AGENTX_WORKSPACE_ROOT';
 const OPENAI_SECRET_STORAGE_KEY = 'agentx.llm.openai-api';
 const ANTHROPIC_SECRET_STORAGE_KEY = 'agentx.llm.anthropic-api';
+const CLAUDE_CODE_SECRET_STORAGE_KEY = 'agentx.llm.claude-code';
 
 function getWorkspaceScopedSecretKey(root: string, providerId: string): string {
   return `${providerId}::${root.toLowerCase()}`;
@@ -157,7 +158,7 @@ export class AgentXContext {
   );
  }
 
- async storeWorkspaceLlmSecret(providerId: 'openai-api' | 'anthropic-api', secret: string): Promise<void> {
+ async storeWorkspaceLlmSecret(providerId: 'openai-api' | 'anthropic-api' | 'claude-code', secret: string): Promise<void> {
   const root = this.workspaceRoot ?? this.firstWorkspaceFolder;
   if (!root || !this.extensionContext.secrets?.store) {
     return;
@@ -165,6 +166,8 @@ export class AgentXContext {
 
   const storageKey = providerId === 'openai-api'
     ? OPENAI_SECRET_STORAGE_KEY
+    : providerId === 'claude-code'
+      ? CLAUDE_CODE_SECRET_STORAGE_KEY
     : ANTHROPIC_SECRET_STORAGE_KEY;
   await this.extensionContext.secrets.store(
     getWorkspaceScopedSecretKey(root, `${storageKey}:${providerId}`),
@@ -172,7 +175,7 @@ export class AgentXContext {
   );
  }
 
- async deleteWorkspaceLlmSecret(providerId: 'openai-api' | 'anthropic-api'): Promise<void> {
+ async deleteWorkspaceLlmSecret(providerId: 'openai-api' | 'anthropic-api' | 'claude-code'): Promise<void> {
   const root = this.workspaceRoot ?? this.firstWorkspaceFolder;
   if (!root || !this.extensionContext.secrets?.delete) {
     return;
@@ -180,15 +183,19 @@ export class AgentXContext {
 
   const storageKey = providerId === 'openai-api'
     ? OPENAI_SECRET_STORAGE_KEY
+    : providerId === 'claude-code'
+      ? CLAUDE_CODE_SECRET_STORAGE_KEY
     : ANTHROPIC_SECRET_STORAGE_KEY;
   await this.extensionContext.secrets.delete(
     getWorkspaceScopedSecretKey(root, `${storageKey}:${providerId}`),
   );
  }
 
- async hasWorkspaceLlmSecret(providerId: 'openai-api' | 'anthropic-api'): Promise<boolean> {
+ async hasWorkspaceLlmSecret(providerId: 'openai-api' | 'anthropic-api' | 'claude-code'): Promise<boolean> {
   const storageKey = providerId === 'openai-api'
     ? OPENAI_SECRET_STORAGE_KEY
+    : providerId === 'claude-code'
+      ? CLAUDE_CODE_SECRET_STORAGE_KEY
     : ANTHROPIC_SECRET_STORAGE_KEY;
   return !!(await this.getWorkspaceSecret(storageKey, providerId));
  }
@@ -239,6 +246,49 @@ export class AgentXContext {
     }
   }
 
+  const claudeCodeRecord = getConfiguredLlmProviderRecord(root, 'claude-code');
+  if (claudeCodeRecord) {
+    const profile = typeof claudeCodeRecord.profile === 'string' ? claudeCodeRecord.profile.trim() : '';
+    const baseUrl = typeof claudeCodeRecord.baseUrl === 'string' ? claudeCodeRecord.baseUrl.trim() : '';
+    const defaultModel = typeof claudeCodeRecord.defaultModel === 'string'
+      ? claudeCodeRecord.defaultModel.trim()
+      : '';
+    const modelRouting = typeof claudeCodeRecord.modelRouting === 'string'
+      ? claudeCodeRecord.modelRouting.trim()
+      : '';
+    const customModelName = typeof claudeCodeRecord.customModelName === 'string'
+      ? claudeCodeRecord.customModelName.trim()
+      : '';
+    const customModelDescription = typeof claudeCodeRecord.customModelDescription === 'string'
+      ? claudeCodeRecord.customModelDescription.trim()
+      : '';
+    const disableExperimentalBetas = claudeCodeRecord.disableExperimentalBetas === true;
+
+    if (profile) {
+      env.AGENTX_CLAUDE_CODE_PROFILE = profile;
+    }
+    if (defaultModel) {
+      env.AGENTX_CLAUDE_CODE_MODEL = defaultModel;
+      env.ANTHROPIC_CUSTOM_MODEL_OPTION = defaultModel;
+    }
+    if (baseUrl) {
+      env.AGENTX_CLAUDE_CODE_BASE_URL = baseUrl;
+      env.ANTHROPIC_BASE_URL = baseUrl;
+    }
+    if (modelRouting) {
+      env.AGENTX_CLAUDE_CODE_MODEL_ROUTING = modelRouting;
+    }
+    if (customModelName) {
+      env.ANTHROPIC_CUSTOM_MODEL_OPTION_NAME = customModelName;
+    }
+    if (customModelDescription) {
+      env.ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION = customModelDescription;
+    }
+    if (disableExperimentalBetas) {
+      env.CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS = '1';
+    }
+  }
+
   const openAiSecret = await this.getWorkspaceSecret(OPENAI_SECRET_STORAGE_KEY, 'openai-api');
   if (openAiSecret) {
     env.OPENAI_API_KEY = openAiSecret;
@@ -247,6 +297,11 @@ export class AgentXContext {
   const anthropicSecret = await this.getWorkspaceSecret(ANTHROPIC_SECRET_STORAGE_KEY, 'anthropic-api');
   if (anthropicSecret) {
     env.ANTHROPIC_API_KEY = anthropicSecret;
+  }
+
+  const claudeCodeSecret = await this.getWorkspaceSecret(CLAUDE_CODE_SECRET_STORAGE_KEY, 'claude-code');
+  if (claudeCodeSecret) {
+    env.ANTHROPIC_AUTH_TOKEN = claudeCodeSecret;
   }
 
   return env;

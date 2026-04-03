@@ -6,6 +6,8 @@ import { promptWorkspaceRoot, readJsonWithComments } from './initializeInternals
 import { runCriticalPreCheck } from './setupWizard';
 
 export type LlmAdapterMode = 'copilot' | 'claude-code' | 'anthropic-api' | 'openai-api';
+export type LlmAdapterSetupMode = LlmAdapterMode | 'claude-code-local';
+export type ClaudeCodeProfile = 'subscription' | 'local-gateway';
 
 interface AgentXConfig {
   readonly created?: string;
@@ -20,6 +22,11 @@ export interface ProviderPromptResult {
   readonly baseUrl?: string;
   readonly anthropicVersion?: string;
   readonly apiKey?: string;
+  readonly profile?: ClaudeCodeProfile;
+  readonly modelRouting?: 'mapped' | 'default-only';
+  readonly customModelName?: string;
+  readonly customModelDescription?: string;
+  readonly disableExperimentalBetas?: boolean;
 }
 
 export interface LlmAdapterApplyResult {
@@ -29,7 +36,11 @@ export interface LlmAdapterApplyResult {
 }
 
 interface LlmProviderPick extends vscode.QuickPickItem {
-  readonly value: LlmAdapterMode;
+  readonly value: LlmAdapterSetupMode;
+}
+
+interface LlmModelPick extends vscode.QuickPickItem {
+  readonly value: string;
 }
 
 const LLM_PROVIDER_ITEMS: readonly LlmProviderPick[] = [
@@ -46,6 +57,12 @@ const LLM_PROVIDER_ITEMS: readonly LlmProviderPick[] = [
     detail: 'Uses the local Claude Code subscription/runtime when authenticated.',
   },
   {
+    label: 'Claude Code + LiteLLM + Ollama',
+    value: 'claude-code-local',
+    description: 'Local-model gateway profile',
+    detail: 'Routes Claude Code through a LiteLLM proxy to an Ollama-hosted coding model.',
+  },
+  {
     label: 'Claude API',
     value: 'anthropic-api',
     description: 'Anthropic API key',
@@ -59,21 +76,55 @@ const LLM_PROVIDER_ITEMS: readonly LlmProviderPick[] = [
   },
 ];
 
-const CLAUDE_MODEL_ITEMS = [
-  { label: 'claude-sonnet-4.6', description: 'Default balanced Claude model' },
-  { label: 'claude-opus-4.6', description: 'Higher capability Claude model' },
-  { label: 'claude-sonnet-4.5', description: 'Previous Sonnet generation' },
-  { label: 'claude-haiku-4.5', description: 'Lower-cost Claude model' },
+const DEFAULT_LITELLM_BASE_URL = 'http://127.0.0.1:4000';
+
+const CLAUDE_MODEL_ITEMS: readonly LlmModelPick[] = [
+  { label: 'claude-sonnet-4.6', value: 'claude-sonnet-4.6', description: 'Default balanced Claude model' },
+  { label: 'claude-opus-4.6', value: 'claude-opus-4.6', description: 'Higher capability Claude model' },
+  { label: 'claude-sonnet-4.5', value: 'claude-sonnet-4.5', description: 'Previous Sonnet generation' },
+  { label: 'claude-haiku-4.5', value: 'claude-haiku-4.5', description: 'Lower-cost Claude model' },
 ];
 
-const OPENAI_MODEL_ITEMS = [
-  { label: 'gpt-5.4', description: 'Default highest-capability GPT model' },
-  { label: 'gpt-5.1', description: 'Stable GPT-5 generation' },
-  { label: 'gpt-5-mini', description: 'Lower-cost GPT-5 tier' },
-  { label: 'gpt-4.1', description: 'High-compatibility GPT model' },
-  { label: 'gpt-4o', description: 'Fast multimodal GPT model' },
-  { label: 'gpt-5.2-codex', description: 'Codex-family model over API access' },
+const CLAUDE_LOCAL_MODEL_ITEMS: readonly LlmModelPick[] = [
+  {
+    label: 'Qwen 2.5 Coder 14B',
+    value: 'qwen2.5-coder:14b',
+    description: 'Recommended local coding default',
+    detail: 'Good default for Ollama-backed coding tasks when LiteLLM accepts the raw Ollama model name.',
+  },
+  {
+    label: 'DeepSeek Coder',
+    value: 'deepseek-coder:latest',
+    description: 'Alternative local coding model',
+    detail: 'Use if your Ollama install exposes DeepSeek Coder under this model name.',
+  },
+  {
+    label: 'Codestral',
+    value: 'codestral:latest',
+    description: 'Alternative local coding model',
+    detail: 'Use if your Ollama install exposes Codestral under this model name.',
+  },
+  {
+    label: 'Custom LiteLLM model id',
+    value: '__custom__',
+    description: 'Enter the exact model id expected by LiteLLM',
+    detail: 'Use this when your LiteLLM endpoint expects a prefixed id such as ollama_chat/<model>.',
+  },
 ];
+
+const OPENAI_MODEL_ITEMS: readonly LlmModelPick[] = [
+  { label: 'gpt-5.4', value: 'gpt-5.4', description: 'Default highest-capability GPT model' },
+  { label: 'gpt-5.1', value: 'gpt-5.1', description: 'Stable GPT-5 generation' },
+  { label: 'gpt-5-mini', value: 'gpt-5-mini', description: 'Lower-cost GPT-5 tier' },
+  { label: 'gpt-4.1', value: 'gpt-4.1', description: 'High-compatibility GPT model' },
+  { label: 'gpt-4o', value: 'gpt-4o', description: 'Fast multimodal GPT model' },
+  { label: 'gpt-5.2-codex', value: 'gpt-5.2-codex', description: 'Codex-family model over API access' },
+];
+
+function sanitizeOptionalString(value: string | undefined): string | undefined {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+}
 
 function writeJsonIfChanged(filePath: string, content: unknown): boolean {
   const next = JSON.stringify(content, null, 2);
@@ -92,6 +143,12 @@ function sanitizeProviderRecord(providerId: LlmAdapterMode, settings: ProviderPr
       return {
         enabled: true,
         defaultModel: settings.defaultModel ?? 'claude-sonnet-4.6',
+        profile: settings.profile ?? 'subscription',
+        baseUrl: sanitizeOptionalString(settings.baseUrl),
+        modelRouting: settings.modelRouting ?? 'mapped',
+        customModelName: sanitizeOptionalString(settings.customModelName),
+        customModelDescription: sanitizeOptionalString(settings.customModelDescription),
+        disableExperimentalBetas: settings.disableExperimentalBetas === true,
       };
     case 'anthropic-api':
       return {
@@ -133,7 +190,19 @@ function upsertLlmAdapterConfig(
   return writeJsonIfChanged(configFile, nextConfig);
 }
 
-async function promptProviderPick(preferredProviderId?: LlmAdapterMode): Promise<LlmAdapterMode | undefined> {
+function getClaudeCodeProviderLabel(profile: ClaudeCodeProfile | undefined): string {
+  return profile === 'local-gateway'
+    ? 'Claude Code + LiteLLM + Ollama'
+    : 'Claude Subscription';
+}
+
+function getProviderIdForSetupMode(setupMode: LlmAdapterSetupMode): LlmAdapterMode {
+  return setupMode === 'claude-code-local' ? 'claude-code' : setupMode;
+}
+
+async function promptProviderPick(
+  preferredProviderId?: LlmAdapterSetupMode,
+): Promise<LlmAdapterSetupMode | undefined> {
   if (preferredProviderId) {
     return preferredProviderId;
   }
@@ -157,7 +226,77 @@ async function promptClaudeCodeSettings(): Promise<ProviderPromptResult | undefi
   }
 
   return {
-    defaultModel: model.label,
+    defaultModel: model.value,
+    profile: 'subscription',
+    modelRouting: 'mapped',
+  };
+}
+
+async function promptClaudeLocalGatewaySettings(): Promise<ProviderPromptResult | undefined> {
+  const model = await vscode.window.showQuickPick(CLAUDE_LOCAL_MODEL_ITEMS, {
+    placeHolder: 'Select the Ollama coding model exposed through LiteLLM',
+    title: 'AgentX - Claude Code + LiteLLM + Ollama',
+  });
+  if (!model) {
+    return undefined;
+  }
+
+  let modelId = model.value;
+  if (modelId === '__custom__') {
+    const customModelId = await vscode.window.showInputBox({
+      prompt: 'LiteLLM model id',
+      placeHolder: 'qwen2.5-coder:14b or ollama_chat/qwen2.5-coder:14b',
+      validateInput: (value) => value.trim().length < 3 ? 'Enter the model id your LiteLLM gateway expects' : undefined,
+    });
+    if (!customModelId) {
+      return undefined;
+    }
+    modelId = customModelId.trim();
+  }
+
+  const baseUrlInput = await vscode.window.showInputBox({
+    prompt: 'LiteLLM Anthropic base URL',
+    placeHolder: DEFAULT_LITELLM_BASE_URL,
+    value: DEFAULT_LITELLM_BASE_URL,
+    validateInput: (value) => {
+      const trimmed = value.trim();
+      if (!trimmed) {
+        return 'Enter the LiteLLM base URL';
+      }
+
+      try {
+        const parsed = new URL(trimmed);
+        return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+          ? undefined
+          : 'Use an http or https URL';
+      } catch {
+        return 'Enter a valid URL';
+      }
+    },
+  });
+  if (!baseUrlInput) {
+    return undefined;
+  }
+
+  const authToken = await vscode.window.showInputBox({
+    prompt: 'LiteLLM auth token (optional)',
+    placeHolder: 'Leave blank if the local proxy does not require auth',
+    password: true,
+  });
+
+  const customModelName = model.value === '__custom__'
+    ? 'Custom local coding model'
+    : model.label;
+
+  return {
+    defaultModel: modelId,
+    baseUrl: baseUrlInput.trim(),
+    apiKey: sanitizeOptionalString(authToken),
+    profile: 'local-gateway',
+    modelRouting: 'default-only',
+    customModelName,
+    customModelDescription: 'LiteLLM + Ollama local coding model',
+    disableExperimentalBetas: true,
   };
 }
 
@@ -186,7 +325,7 @@ async function promptAnthropicSettings(): Promise<ProviderPromptResult | undefin
   });
 
   return {
-    defaultModel: model.label,
+    defaultModel: model.value,
     apiKey: apiKey.trim(),
     baseUrl: baseUrl?.trim(),
     anthropicVersion: '2023-06-01',
@@ -218,18 +357,20 @@ async function promptOpenAiSettings(): Promise<ProviderPromptResult | undefined>
   });
 
   return {
-    defaultModel: model.label,
+    defaultModel: model.value,
     apiKey: apiKey.trim(),
     baseUrl: baseUrl?.trim(),
   };
 }
 
-async function promptProviderSettings(providerId: LlmAdapterMode): Promise<ProviderPromptResult | undefined> {
-  switch (providerId) {
+async function promptProviderSettings(setupMode: LlmAdapterSetupMode): Promise<ProviderPromptResult | undefined> {
+  switch (setupMode) {
     case 'copilot':
       return {};
     case 'claude-code':
       return promptClaudeCodeSettings();
+    case 'claude-code-local':
+      return promptClaudeLocalGatewaySettings();
     case 'anthropic-api':
       return promptAnthropicSettings();
     case 'openai-api':
@@ -239,12 +380,12 @@ async function promptProviderSettings(providerId: LlmAdapterMode): Promise<Provi
   }
 }
 
-function getProviderLabel(providerId: LlmAdapterMode): string {
+function getProviderLabel(providerId: LlmAdapterMode, profile?: ClaudeCodeProfile): string {
   switch (providerId) {
     case 'copilot':
       return 'GitHub Copilot';
     case 'claude-code':
-      return 'Claude Subscription';
+      return getClaudeCodeProviderLabel(profile);
     case 'anthropic-api':
       return 'Claude API';
     case 'openai-api':
@@ -268,6 +409,7 @@ export async function applyLlmAdapterConfiguration(
       await agentx.storeWorkspaceLlmSecret('openai-api', settings.apiKey);
     }
     await agentx.deleteWorkspaceLlmSecret('anthropic-api');
+    await agentx.deleteWorkspaceLlmSecret('claude-code');
   }
 
   if (providerId === 'anthropic-api') {
@@ -275,11 +417,23 @@ export async function applyLlmAdapterConfiguration(
       await agentx.storeWorkspaceLlmSecret('anthropic-api', settings.apiKey);
     }
     await agentx.deleteWorkspaceLlmSecret('openai-api');
+    await agentx.deleteWorkspaceLlmSecret('claude-code');
   }
 
-  if (providerId === 'copilot' || providerId === 'claude-code') {
+  if (providerId === 'claude-code') {
+    if (settings.apiKey) {
+      await agentx.storeWorkspaceLlmSecret('claude-code', settings.apiKey);
+    } else {
+      await agentx.deleteWorkspaceLlmSecret('claude-code');
+    }
     await agentx.deleteWorkspaceLlmSecret('openai-api');
     await agentx.deleteWorkspaceLlmSecret('anthropic-api');
+  }
+
+  if (providerId === 'copilot') {
+    await agentx.deleteWorkspaceLlmSecret('openai-api');
+    await agentx.deleteWorkspaceLlmSecret('anthropic-api');
+    await agentx.deleteWorkspaceLlmSecret('claude-code');
   }
 
   agentx.invalidateCache();
@@ -295,14 +449,14 @@ export async function applyLlmAdapterConfiguration(
 
   return {
     changed,
-    providerLabel: getProviderLabel(providerId),
+    providerLabel: getProviderLabel(providerId, settings.profile),
     preCheckPassed,
   };
 }
 
 export async function runAddLlmAdapterCommand(
   agentx: AgentXContext,
-  preferredProviderId?: LlmAdapterMode,
+  preferredProviderId?: LlmAdapterSetupMode,
 ): Promise<void> {
   const root = await promptWorkspaceRoot('AgentX - Add LLM Adapter');
   if (!root) {
@@ -317,12 +471,13 @@ export async function runAddLlmAdapterCommand(
     return;
   }
 
-  const providerId = await promptProviderPick(preferredProviderId);
-  if (!providerId) {
+  const setupMode = await promptProviderPick(preferredProviderId);
+  if (!setupMode) {
     return;
   }
 
-  const settings = await promptProviderSettings(providerId);
+  const providerId = getProviderIdForSetupMode(setupMode);
+  const settings = await promptProviderSettings(setupMode);
   if (!settings) {
     return;
   }
@@ -331,13 +486,15 @@ export async function runAddLlmAdapterCommand(
 
   if (!result.preCheckPassed && providerId === 'claude-code') {
     vscode.window.showWarningMessage(
-      'AgentX: Claude subscription mode was saved, but Claude Code CLI still needs installation or login.',
+      settings.profile === 'local-gateway'
+        ? 'AgentX: Claude Code local gateway mode was saved, but Claude Code CLI still needs installation or login.'
+        : 'AgentX: Claude subscription mode was saved, but Claude Code CLI still needs installation or login.',
     );
     return;
   }
 
   const suffix = result.changed ? 'saved for this workspace' : 'already configured for this workspace';
   vscode.window.showInformationMessage(
-    `AgentX: ${getProviderLabel(providerId)} is now the active LLM adapter and has been ${suffix}.`,
+    `AgentX: ${getProviderLabel(providerId, settings.profile)} is now the active LLM adapter and has been ${suffix}.`,
   );
 }

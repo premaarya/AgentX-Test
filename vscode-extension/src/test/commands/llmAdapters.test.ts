@@ -85,7 +85,7 @@ describe('runAddLlmAdapterCommand', () => {
       invalidateCache: sandbox.stub(),
       githubConnected: false,
       adoConnected: false,
-      storeWorkspaceLlmSecret: async (_providerId: 'openai-api' | 'anthropic-api', secret: string) => {
+      storeWorkspaceLlmSecret: async (_providerId: 'openai-api' | 'anthropic-api' | 'claude-code', secret: string) => {
         storedSecrets.set('openai-api', secret);
       },
       deleteWorkspaceLlmSecret: async () => {},
@@ -126,5 +126,46 @@ describe('runAddLlmAdapterCommand', () => {
     const config = JSON.parse(fs.readFileSync(path.join(tempRoot, '.agentx', 'config.json'), 'utf-8'));
     assert.equal(config.llmProvider, 'claude-code');
     assert.equal(config.llmProviders['claude-code'].defaultModel, 'claude-sonnet-4.6');
+  });
+
+  it('stores Claude Code local gateway config and secret storage', async () => {
+    const initializeInternals = await import('../../commands/initializeInternals');
+    const setupWizard = await import('../../commands/setupWizard');
+
+    sandbox.stub(initializeInternals, 'promptWorkspaceRoot').resolves(tempRoot);
+    sandbox.stub(vscode.window, 'showQuickPick')
+      .onFirstCall().resolves({
+        label: 'qwen2.5-coder:14b',
+        value: 'qwen2.5-coder:14b',
+        description: 'Recommended local coding model via Ollama',
+      } as any)
+      .onSecondCall().resolves(undefined);
+    sandbox.stub(vscode.window, 'showInputBox')
+      .onFirstCall().resolves('http://127.0.0.1:4000')
+      .onSecondCall().resolves('litellm-secret');
+    sandbox.stub(setupWizard, 'runCriticalPreCheck').resolves({ passed: true, report: { healthy: true } as never });
+
+    const storedSecrets = new Map<string, string>();
+    const fakeAgentx = {
+      workspaceRoot: tempRoot,
+      firstWorkspaceFolder: tempRoot,
+      invalidateCache: sandbox.stub(),
+      githubConnected: false,
+      adoConnected: false,
+      storeWorkspaceLlmSecret: async (providerId: 'openai-api' | 'anthropic-api' | 'claude-code', secret: string) => {
+        storedSecrets.set(providerId, secret);
+      },
+      deleteWorkspaceLlmSecret: async () => {},
+    } as unknown as AgentXContext;
+
+    await runAddLlmAdapterCommand(fakeAgentx, 'claude-code-local');
+
+    const config = JSON.parse(fs.readFileSync(path.join(tempRoot, '.agentx', 'config.json'), 'utf-8'));
+    assert.equal(config.llmProvider, 'claude-code');
+    assert.equal(config.llmProviders['claude-code'].profile, 'local-gateway');
+    assert.equal(config.llmProviders['claude-code'].defaultModel, 'qwen2.5-coder:14b');
+    assert.equal(config.llmProviders['claude-code'].baseUrl, 'http://127.0.0.1:4000');
+    assert.equal(config.llmProviders['claude-code'].modelRouting, 'default-only');
+    assert.equal(storedSecrets.get('claude-code'), 'litellm-secret');
   });
 });

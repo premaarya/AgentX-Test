@@ -70,7 +70,7 @@ To run AgentX successfully within VS Code:
 2. **Open** your target project workspace in VS Code.
 3. **Initialize** the workspace by running `AgentX: Initialize Local Runtime` from the Command Palette, or start the same flow in chat with `@agentx initialize local runtime`.
 4. **Optionally add a remote adapter** with `AgentX: Add Remote Adapter` or start it in chat with `@agentx connect github`, `@agentx connect ado`, `@agentx use local`, or `@agentx add remote adapter`.
-5. **Optionally switch the workspace LLM adapter** with `AgentX: Add LLM Adapter` or start it in chat with `@agentx switch llm`, `@agentx connect claude`, `@agentx connect openai`, or `@agentx use copilot`.
+5. **Optionally switch the workspace LLM adapter** with `AgentX: Add LLM Adapter` or start it in chat with `@agentx switch llm`, `@agentx connect claude`, `@agentx connect claude local`, `@agentx connect openai`, or `@agentx use copilot`.
 6. **Select a role in Copilot Chat** and run the next step for that role, or select **AgentX Auto** to orchestrate the full flow in one session.
 7. **Capture reusable outcomes** with `AgentX: Create Learning Capture` once review confirms the result should compound future work.
 
@@ -128,10 +128,13 @@ You can also start LLM setup in chat with:
 
 - `@agentx switch llm`
 - `@agentx connect claude`
+- `@agentx connect claude local`
 - `@agentx connect openai`
 - `@agentx use copilot`
 
 The extension now keeps LLM setup conversational. Non-secret values are collected in chat, pending setup survives between turns, and secret-bearing steps use VS Code's secure password prompt instead of asking you to paste keys into the chat transcript.
+
+Available workspace LLM adapters include GitHub Copilot, Claude Subscription, Claude Code + LiteLLM + Ollama, Claude API, and OpenAI API. The local Claude option keeps `claude-code` as the execution transport while injecting Anthropic-compatible LiteLLM gateway settings and pinning the runner to the configured local coding model.
 
 ## Build Software With AgentX
 

@@ -295,6 +295,11 @@ describe('chatParticipant', () => {
         expectedProvider: 'claude-code',
         expectedText: 'Configured **Claude Subscription**',
       },
+      {
+        prompt: 'connect claude local',
+        expectedProvider: 'claude-code',
+        expectedText: 'Configured **Claude Code + LiteLLM + Ollama**',
+      },
     ];
 
     try {
@@ -316,14 +321,20 @@ describe('chatParticipant', () => {
           getPendingClarification: async () => undefined,
           getPendingSetup: async () => undefined,
           clearPendingSetup: async () => undefined,
+          storeWorkspaceLlmSecret: async () => undefined,
           deleteWorkspaceLlmSecret: async () => undefined,
         };
+
+        const originalShowInputBox = vscode.window.showInputBox;
+        (vscode.window as any).showInputBox = async () => undefined;
 
         await handleAgentXChatRequest(
           { prompt: testCase.prompt } as any,
           response as any,
           agentx as any,
         );
+
+        (vscode.window as any).showInputBox = originalShowInputBox;
 
         const config = JSON.parse(fs.readFileSync(path.join(tmpDir, '.agentx', 'config.json'), 'utf-8'));
         assert.equal(config.llmProvider, testCase.expectedProvider);
@@ -360,7 +371,67 @@ describe('chatParticipant', () => {
       prompt: 'switch llm',
     });
     assert.ok(response.getMarkdown().includes('Choose an LLM adapter'));
+    assert.ok(response.getMarkdown().includes('claude local'));
     assert.ok(response.getMarkdown().includes('claude api'));
+  });
+
+  it('completes a chat-first Claude local setup flow using the LiteLLM gateway profile', async () => {
+    const response = createMockResponseStream();
+    let pending: unknown;
+    const originalExecuteCommand = vscode.commands.executeCommand;
+    const originalShowInputBox = vscode.window.showInputBox;
+
+    fs.mkdirSync(path.join(tmpDir, '.agentx'), { recursive: true });
+    fs.writeFileSync(
+      path.join(tmpDir, '.agentx', 'config.json'),
+      JSON.stringify({ provider: 'local', integration: 'local', mode: 'local', created: '2026-04-02T00:00:00.000Z' }, null, 2),
+    );
+
+    const storedSecrets = new Map<string, string>();
+    const agentx = {
+      checkInitialized: async () => true,
+      workspaceRoot: tmpDir,
+      githubConnected: false,
+      adoConnected: false,
+      invalidateCache: () => undefined,
+      getPendingClarification: async () => undefined,
+      getPendingSetup: async () => pending,
+      setPendingSetup: async (value: unknown) => { pending = value; },
+      clearPendingSetup: async () => { pending = undefined; },
+      storeWorkspaceLlmSecret: async (_providerId: 'openai-api' | 'anthropic-api' | 'claude-code', secret: string) => {
+        storedSecrets.set('claude-code', secret);
+      },
+      deleteWorkspaceLlmSecret: async () => undefined,
+    };
+
+    try {
+      (vscode.commands as any).executeCommand = async () => undefined;
+      (vscode.window as any).showInputBox = async () => 'litellm-secret';
+
+      await handleAgentXChatRequest(
+        { prompt: 'switch llm' } as any,
+        response as any,
+        agentx as any,
+      );
+
+      const applyResponse = createMockResponseStream();
+      await handleAgentXChatRequest(
+        { prompt: 'claude local' } as any,
+        applyResponse as any,
+        agentx as any,
+      );
+
+      const config = JSON.parse(fs.readFileSync(path.join(tmpDir, '.agentx', 'config.json'), 'utf-8'));
+      assert.equal(config.llmProvider, 'claude-code');
+      assert.equal(config.llmProviders['claude-code'].profile, 'local-gateway');
+      assert.equal(config.llmProviders['claude-code'].defaultModel, 'qwen2.5-coder:14b');
+      assert.equal(storedSecrets.get('claude-code'), 'litellm-secret');
+      assert.equal(pending, undefined);
+      assert.ok(applyResponse.getMarkdown().includes('Configured **Claude Code + LiteLLM + Ollama**'));
+    } finally {
+      (vscode.commands as any).executeCommand = originalExecuteCommand;
+      (vscode.window as any).showInputBox = originalShowInputBox;
+    }
   });
 
   it('completes a chat-first OpenAI setup flow using a secure API key prompt', async () => {
@@ -386,7 +457,7 @@ describe('chatParticipant', () => {
       getPendingSetup: async () => pending,
       setPendingSetup: async (value: unknown) => { pending = value; },
       clearPendingSetup: async () => { pending = undefined; },
-      storeWorkspaceLlmSecret: async (_providerId: 'openai-api' | 'anthropic-api', secret: string) => {
+      storeWorkspaceLlmSecret: async (_providerId: 'openai-api' | 'anthropic-api' | 'claude-code', secret: string) => {
         storedSecrets.set('openai-api', secret);
       },
       deleteWorkspaceLlmSecret: async () => undefined,

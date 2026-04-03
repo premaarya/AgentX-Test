@@ -11,10 +11,13 @@ import {
 } from '../commands/adaptersCommandInternals';
 import {
   type LlmAdapterMode,
+  type LlmAdapterSetupMode,
   applyLlmAdapterConfiguration,
 } from '../commands/llmAdaptersCommandInternals';
 
 const DEFAULT_CLAUDE_MODEL = 'claude-sonnet-4.6';
+const DEFAULT_CLAUDE_LOCAL_MODEL = 'qwen2.5-coder:14b';
+const DEFAULT_CLAUDE_LOCAL_BASE_URL = 'http://127.0.0.1:4000';
 const DEFAULT_OPENAI_MODEL = 'gpt-5.4';
 const DEFAULT_ANTHROPIC_MODEL = 'claude-sonnet-4.6';
 
@@ -60,7 +63,7 @@ function renderPendingSetupMessage(pending: PendingSetup): string {
       return [
         '**Choose an LLM adapter**',
         '',
-        'Reply with one of: `copilot`, `claude subscription`, `claude api`, or `openai api`.',
+        'Reply with one of: `copilot`, `claude subscription`, `claude local`, `claude api`, or `openai api`.',
         'Reply `cancel` to stop this setup flow.',
       ].join('\n');
     case 'choose-remote-adapter':
@@ -92,10 +95,11 @@ function renderPendingSetupMessage(pending: PendingSetup): string {
   }
 }
 
-function parseLlmProviderReply(userText: string): LlmAdapterMode | undefined {
+function parseLlmProviderReply(userText: string): LlmAdapterSetupMode | undefined {
   const normalized = userText.trim().toLowerCase();
   if (normalized.includes('openai')) { return 'openai-api'; }
   if (normalized.includes('copilot')) { return 'copilot'; }
+  if (normalized.includes('local') || normalized.includes('litellm') || normalized.includes('ollama')) { return 'claude-code-local'; }
   if (normalized.includes('claude') && normalized.includes('api')) { return 'anthropic-api'; }
   if (normalized.includes('anthropic')) { return 'anthropic-api'; }
   if (normalized.includes('claude')) { return 'claude-code'; }
@@ -151,7 +155,7 @@ async function completeLlmProviderSetup(
   response: vscode.ChatResponseStream,
   agentx: AgentXContext,
   root: string,
-  providerId: LlmAdapterMode,
+  providerId: LlmAdapterSetupMode,
 ): Promise<vscode.ChatResult> {
   await clearPendingSetup(agentx);
 
@@ -173,6 +177,37 @@ async function completeLlmProviderSetup(
         `Configured **Claude Subscription** with default model \`${DEFAULT_CLAUDE_MODEL}\`.`,
         '',
         'If Claude Code is not installed or logged in yet, run `claude auth login` and retry your next AgentX task.',
+      ].join('\n'));
+      return {};
+    }
+    case 'claude-code-local': {
+      const authToken = await vscode.window.showInputBox({
+        prompt: 'LiteLLM auth token (optional)',
+        placeHolder: 'Leave blank if your local LiteLLM proxy does not require auth',
+        password: true,
+      });
+
+      await applyLlmAdapterConfiguration(
+        agentx,
+        root,
+        'claude-code',
+        {
+          defaultModel: DEFAULT_CLAUDE_LOCAL_MODEL,
+          baseUrl: DEFAULT_CLAUDE_LOCAL_BASE_URL,
+          apiKey: authToken?.trim() ? authToken.trim() : undefined,
+          profile: 'local-gateway',
+          modelRouting: 'default-only',
+          customModelName: 'Qwen 2.5 Coder 14B',
+          customModelDescription: 'LiteLLM + Ollama local coding model',
+          disableExperimentalBetas: true,
+        },
+        { runPreCheck: false },
+      );
+      response.markdown([
+        `Configured **Claude Code + LiteLLM + Ollama** with default model \`${DEFAULT_CLAUDE_LOCAL_MODEL}\`.`,
+        '',
+        `Claude Code will now target LiteLLM at \`${DEFAULT_CLAUDE_LOCAL_BASE_URL}\` and route AgentX model selection to the configured local coding model.`,
+        'Keep LiteLLM, Ollama, and the selected model running before starting AgentX tasks.',
       ].join('\n'));
       return {};
     }
@@ -238,7 +273,7 @@ async function completeLlmProviderSetup(
 async function beginLlmSetup(
   response: vscode.ChatResponseStream,
   agentx: AgentXContext,
-  providerId?: LlmAdapterMode,
+  providerId?: LlmAdapterSetupMode,
   prompt = '',
 ): Promise<vscode.ChatResult> {
   const root = getWorkspaceRoot(agentx);
@@ -323,10 +358,12 @@ export async function tryHandleAdapterSetupRequest(
   response: vscode.ChatResponseStream,
   agentx: AgentXContext,
 ): Promise<vscode.ChatResult | undefined> {
-  if (/^(?:agentx:\s*)?(?:add llm adapter|switch llm|switch model provider|connect claude|connect claude api|connect openai|setup claude|setup claude api|setup openai|use claude|use claude api|use openai|use copilot)$/i.test(userText)) {
+  if (/^(?:agentx:\s*)?(?:add llm adapter|switch llm|switch model provider|connect claude|connect claude local|connect claude api|connect openai|setup claude|setup claude local|setup claude api|setup openai|use claude|use claude local|use claude api|use openai|use copilot)$/i.test(userText)) {
     const normalized = userText.toLowerCase();
-    const preferredProvider = normalized.includes('openai')
+    const preferredProvider: LlmAdapterSetupMode | undefined = normalized.includes('openai')
       ? 'openai-api'
+      : normalized.includes('local') || normalized.includes('litellm') || normalized.includes('ollama')
+        ? 'claude-code-local'
       : normalized.includes('claude') && normalized.includes('api')
         ? 'anthropic-api'
         : normalized.includes('claude')

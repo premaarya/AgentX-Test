@@ -198,6 +198,7 @@ You can also start the same flow directly in chat. Common phrases include:
 
 - `@agentx switch llm`
 - `@agentx connect claude`
+- `@agentx connect claude local`
 - `@agentx connect openai`
 - `@agentx use copilot`
 
@@ -207,6 +208,7 @@ Supported workspace adapters:
 
 - `GitHub Copilot` keeps the current default behavior for Copilot Chat and the AgentX CLI runner.
 - `Claude Subscription` uses the local Claude Code CLI after `claude auth login` succeeds.
+- `Claude Code + LiteLLM + Ollama` keeps Claude Code as the runner transport, but routes requests through an Anthropic-compatible LiteLLM gateway to a local Ollama coding model such as `qwen2.5-coder:14b`.
 - `Claude API` uses an Anthropic API key stored in VS Code secret storage.
 - `OpenAI API` uses an OpenAI API key stored in VS Code secret storage.
 
@@ -224,6 +226,7 @@ Security note:
 Provider notes:
 
 - `Claude Subscription` requires the Claude Code CLI to be installed and authenticated. AgentX uses Claude Code's official non-interactive print mode for execution.
+- `Claude Code + LiteLLM + Ollama` requires Claude Code, a running LiteLLM Anthropic-compatible endpoint, Ollama, and an available local coding model. AgentX stores the local gateway URL in `.agentx/config.json`, stores the optional LiteLLM auth token in VS Code secret storage, and pins runner model routing to the configured local model.
 - `Claude API` requires `ANTHROPIC_API_KEY`-equivalent credentials, but the extension stores the key for the workspace and injects it automatically when AgentX runs.
 - `OpenAI API` is handled the same way with workspace-scoped secret storage and automatic injection at runtime.
 

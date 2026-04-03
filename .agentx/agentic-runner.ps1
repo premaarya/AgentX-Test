@@ -260,6 +260,21 @@ function Get-RunnerProviderTransport([string]$ProviderId) {
 }
 
 function Get-RunnerDefaultModel([string]$ProviderId) {
+    $configuredModel = ''
+    switch ($ProviderId) {
+        'claude-code' { $configuredModel = [string][Environment]::GetEnvironmentVariable('AGENTX_CLAUDE_CODE_MODEL') }
+        'anthropic-api' { $configuredModel = [string][Environment]::GetEnvironmentVariable('AGENTX_ANTHROPIC_MODEL') }
+        'openai-api' { $configuredModel = [string][Environment]::GetEnvironmentVariable('AGENTX_OPENAI_MODEL') }
+    }
+
+    if ([string]::IsNullOrWhiteSpace($configuredModel) -and $Script:RunnerConfig) {
+        $configuredModel = Get-RunnerProviderConfigString -Config $Script:RunnerConfig -ProviderId $ProviderId -SettingName 'defaultModel' -DefaultValue ''
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($configuredModel)) {
+        return $configuredModel.Trim()
+    }
+
     switch ($ProviderId) {
         'claude-code' { return 'claude-sonnet-4.6' }
         'anthropic-api' { return 'claude-sonnet-4.6' }
@@ -268,6 +283,24 @@ function Get-RunnerDefaultModel([string]$ProviderId) {
         'github-models' { return $Script:DEFAULT_MODEL }
         default { return $Script:DEFAULT_MODEL }
     }
+}
+
+function Get-RunnerProviderModelRouting([string]$ProviderId) {
+    if ($ProviderId -eq 'claude-code') {
+        $routing = [string][Environment]::GetEnvironmentVariable('AGENTX_CLAUDE_CODE_MODEL_ROUTING')
+        if (-not [string]::IsNullOrWhiteSpace($routing)) {
+            return $routing.Trim().ToLowerInvariant()
+        }
+    }
+
+    if ($Script:RunnerConfig) {
+        $configuredRouting = Get-RunnerProviderConfigString -Config $Script:RunnerConfig -ProviderId $ProviderId -SettingName 'modelRouting' -DefaultValue ''
+        if (-not [string]::IsNullOrWhiteSpace($configuredRouting)) {
+            return $configuredRouting.Trim().ToLowerInvariant()
+        }
+    }
+
+    return 'mapped'
 }
 
 function Get-RunnerProviderEnvVarName(
@@ -490,6 +523,11 @@ function Test-RunnerModelSupportedByProvider([string]$ProviderId, [string]$Model
     $normalizedProviderId = if ($ProviderId) { $ProviderId.Trim().ToLowerInvariant() } else { '' }
     $normalizedModelId = if ($ModelId) { $ModelId.Trim().ToLowerInvariant() } else { '' }
     if (-not $normalizedModelId) { return $false }
+
+    $configuredDefaultModel = Get-RunnerDefaultModel -ProviderId $normalizedProviderId
+    if (-not [string]::IsNullOrWhiteSpace($configuredDefaultModel) -and $normalizedModelId -eq $configuredDefaultModel.Trim().ToLowerInvariant()) {
+        return $true
+    }
 
     $capability = Get-RunnerModelCapability -ModelId $normalizedModelId
     if ($capability) {
@@ -1026,6 +1064,9 @@ function Initialize-ApiMode([string]$ghToken) {
 function Resolve-ModelId([string]$agentModel) {
     $providerId = Get-ActiveProviderId
     if (-not $agentModel) { return Get-RunnerDefaultModel -ProviderId $providerId }
+    if ($providerId -eq 'claude-code' -and (Get-RunnerProviderModelRouting -ProviderId $providerId) -eq 'default-only') {
+        return Get-RunnerDefaultModel -ProviderId $providerId
+    }
     $lower = $agentModel.ToLower() -replace '\(copilot\)', '' -replace '\s+', ' ' | ForEach-Object { $_.Trim() }
     $map = Get-RunnerModelMap -ProviderId $providerId
     foreach ($key in @($map.Keys | Sort-Object Length -Descending)) {
@@ -1798,7 +1839,12 @@ function ConvertTo-ClaudeCodeModelId([string]$ModelId) {
         return 'claude-sonnet-4-6'
     }
 
-    return ($ModelId.Trim().ToLowerInvariant()) -replace '\.', '-'
+    $normalized = $ModelId.Trim().ToLowerInvariant()
+    if ($normalized -match '^claude-(opus|sonnet|haiku)-') {
+        return $normalized -replace '\.', '-'
+    }
+
+    return $normalized
 }
 
 function Get-ClaudeCodeAllowedTools([array]$Tools) {
