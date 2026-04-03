@@ -210,7 +210,11 @@ describe('checkHandoffGate', () => {
   });
 
   it('blocks when a completed loop does not meet the minimum review iterations', () => {
-    writeLoopState(wsRoot, makeCompleteState({ iteration: 1, minIterations: 3 }));
+    writeLoopState(wsRoot, makeCompleteState({
+      iteration: 1,
+      minIterations: 3,
+      history: [{ iteration: 1, timestamp: isoMinutesAgo(5), summary: 'Only pass so far', status: 'complete' }],
+    }));
 
     const gate = checkHandoffGate(wsRoot);
     assert.equal(gate.allowed, false);
@@ -218,8 +222,11 @@ describe('checkHandoffGate', () => {
     assert.ok(gate.reason.includes('1/3'));
   });
 
-  it('uses five as the default minimum when minIterations is missing', () => {
-    const state = makeCompleteState({ iteration: 4 }) as Record<string, unknown>;
+  it('uses the complex-task five-iteration default when minIterations is missing', () => {
+    const state = makeCompleteState({
+      iteration: 4,
+      history: [{ iteration: 4, timestamp: isoMinutesAgo(5), summary: 'Review pass four', status: 'complete' }],
+    }) as Record<string, unknown>;
     delete state.minIterations;
     writeLoopState(wsRoot, state);
 
@@ -341,18 +348,48 @@ describe('getLoopStatusDisplay', () => {
     writeLoopState(wsRoot, {
       active: true,
       status: 'active',
-      prompt: 'Legacy loop',
+      prompt: 'Legacy PRD loop',
       iteration: 1,
       maxIterations: 10,
       completionCriteria: 'TASK_COMPLETE',
       issueNumber: null,
         startedAt: isoMinutesAgo(10),
         lastIterationAt: isoMinutesAgo(5),
-      history: [],
+      history: [{ iteration: 1, timestamp: isoMinutesAgo(5), summary: 'Legacy loop started', status: 'iterated' }],
     });
 
     const display = getLoopStatusDisplay(wsRoot);
-    assert.ok(display.includes('1/5'));
+    assert.ok(display.includes('1/3'));
+  });
+
+  it('defaults complex delivery loops to five iterations when minIterations is missing', () => {
+    writeLoopState(wsRoot, {
+      active: true,
+      status: 'active',
+      prompt: 'Implement the workflow engine changes',
+      iteration: 2,
+      maxIterations: 10,
+      completionCriteria: 'ALL_TESTS_PASSING',
+      issueNumber: null,
+      startedAt: isoMinutesAgo(20),
+      lastIterationAt: isoMinutesAgo(5),
+      history: [{ iteration: 1, timestamp: isoMinutesAgo(10), summary: 'Started', status: 'iterated' }],
+    });
+
+    const display = getLoopStatusDisplay(wsRoot);
+    assert.ok(display.includes('2/5'));
+  });
+
+  it('shows stuck loops clearly when an active loop has not progressed recently', () => {
+    writeLoopState(wsRoot, makeActiveState({
+      startedAt: isoMinutesAgo(120),
+      lastIterationAt: isoMinutesAgo(100),
+    }));
+
+    const gate = checkHandoffGate(wsRoot);
+    assert.equal(gate.allowed, false);
+    assert.ok(gate.reason.includes('stuck'));
+    assert.ok(getLoopStatusDisplay(wsRoot).includes('stuck; loop last updated'));
   });
 
   it('shows when minimum iterations are met for an active loop', () => {

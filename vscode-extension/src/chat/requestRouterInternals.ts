@@ -211,12 +211,41 @@ export async function getPendingClarification(
 }
 
 export function buildPendingClarificationMessage(
-  pending: { agentName: string; prompt: string; humanPrompt?: string },
+  pending: {
+    agentName: string;
+    prompt: string;
+    humanPrompt?: string;
+    fromAgent?: string;
+    targetAgent?: string;
+    topic?: string;
+    status?: string;
+    exchangeCount?: number;
+  },
 ): string {
   const lines = [
     `**Pending clarification for ${pending.agentName}**`,
     '',
   ];
+
+  if (pending.topic || pending.targetAgent || pending.fromAgent || pending.status) {
+    lines.push('Contract state:');
+    if (pending.fromAgent) {
+      lines.push(`- From: ${pending.fromAgent}`);
+    }
+    if (pending.targetAgent) {
+      lines.push(`- To: ${pending.targetAgent}`);
+    }
+    if (pending.topic) {
+      lines.push(`- Topic: ${pending.topic}`);
+    }
+    if (pending.status) {
+      lines.push(`- Status: ${pending.status}`);
+    }
+    if (typeof pending.exchangeCount === 'number') {
+      lines.push(`- Exchanges so far: ${pending.exchangeCount}`);
+    }
+    lines.push('');
+  }
 
   if (pending.humanPrompt) {
     lines.push(pending.humanPrompt, '');
@@ -376,6 +405,53 @@ export async function tryHandleEnablementChecklistRequest(
 
 export function buildContinueGuidance(agentName: string): string {
   return `Clarification is waiting for your input for the ${agentName} agent. Continue with:\n\n- \`@agentx continue "your guidance here"\``;
+}
+
+function parsePendingClarificationDetails(humanPrompt?: string): {
+  fromAgent?: string;
+  targetAgent?: string;
+  topic?: string;
+  status?: string;
+  exchangeCount?: number;
+} {
+  if (!humanPrompt) {
+    return {};
+  }
+
+  const details: {
+    fromAgent?: string;
+    targetAgent?: string;
+    topic?: string;
+    status?: string;
+    exchangeCount?: number;
+  } = {};
+
+  const fromMatch = humanPrompt.match(/^From:\s*(.+)$/im);
+  if (fromMatch) {
+    details.fromAgent = fromMatch[1].trim();
+  }
+
+  const toMatch = humanPrompt.match(/^To:\s*(.+)$/im);
+  if (toMatch) {
+    details.targetAgent = toMatch[1].trim();
+  }
+
+  const topicMatch = humanPrompt.match(/^Topic:\s*(.+)$/im);
+  if (topicMatch) {
+    details.topic = topicMatch[1].trim();
+  }
+
+  const statusMatch = humanPrompt.match(/^Status:\s*(.+)$/im);
+  if (statusMatch) {
+    details.status = statusMatch[1].trim();
+  }
+
+  const exchangeMatches = humanPrompt.match(/^\s*Iteration\s+\d+:/gim);
+  if (exchangeMatches) {
+    details.exchangeCount = exchangeMatches.length;
+  }
+
+  return details;
 }
 
 export async function tryHandleClarificationStatusRequest(
@@ -792,7 +868,10 @@ async function updatePendingClarification(
   pending: { sessionId: string; agentName: string; prompt: string; humanPrompt?: string },
 ): Promise<void> {
   if (typeof agentx.setPendingClarification === 'function') {
-    await agentx.setPendingClarification(pending);
+    await agentx.setPendingClarification({
+      ...pending,
+      ...parsePendingClarificationDetails(pending.humanPrompt),
+    });
   }
 }
 

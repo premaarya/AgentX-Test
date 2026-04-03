@@ -24,6 +24,8 @@ export interface LoopState {
   readonly active: boolean;
   readonly status: 'active' | 'complete' | 'cancelled';
   readonly prompt: string;
+  readonly taskType?: string;
+  readonly taskClass?: 'complex-delivery' | 'standard';
   readonly iteration: number;
   readonly minIterations?: number;
   readonly maxIterations: number;
@@ -58,14 +60,56 @@ export interface LoopGateResult {
 /** Relative path from workspace root to the loop state file. */
 const LOOP_STATE_REL = '.agentx/state/loop-state.json';
 const LOOP_STALE_AFTER_MS = 8 * 60 * 60 * 1000;
+const LOOP_STUCK_AFTER_MS = 90 * 60 * 1000;
+const DEFAULT_COMPLEX_MIN_ITERATIONS = 5;
+const DEFAULT_STANDARD_MIN_ITERATIONS = 3;
+
+type LoopTaskClass = 'complex-delivery' | 'standard';
+type LoopHealthKind = 'healthy' | 'stale' | 'stuck';
+
+interface LoopHealth {
+  readonly kind: LoopHealthKind;
+  readonly reason: string | null;
+}
+
+function inferLoopTaskClass(state: Pick<LoopState, 'prompt' | 'completionCriteria' | 'taskType' | 'taskClass'>): LoopTaskClass {
+  const explicitTaskClass = (state.taskClass ?? '').trim().toLowerCase();
+  if (explicitTaskClass === 'complex-delivery') {
+    return 'complex-delivery';
+  }
+
+  if (explicitTaskClass === 'standard') {
+    return 'standard';
+  }
+
+  const fingerprint = `${state.taskType ?? ''}\n${state.prompt ?? ''}\n${state.completionCriteria ?? ''}`.toLowerCase();
+  const standardPattern = /\b(bug|hotfix|regression|prd|product requirement|tech spec|technical spec|specification|adr|architecture doc|review|brainstorm|clarification|docs|documentation)\b/;
+  const complexPattern = /\b(implement|implementation|build|create|ship|refactor|feature|endpoint|component|screen|prototype|wireframe|ux|ui|frontend|backend|model|training|data science|evaluation pipeline|notebook|agent|workflow|all_tests_passing|coverage)\b/;
+
+  if (standardPattern.test(fingerprint)) {
+    return 'standard';
+  }
+
+  if (complexPattern.test(fingerprint)) {
+    return 'complex-delivery';
+  }
+
+  return 'standard';
+}
+
+function getDefaultMinIterations(state: LoopState): number {
+  const baseMinimum = inferLoopTaskClass(state) === 'complex-delivery'
+    ? DEFAULT_COMPLEX_MIN_ITERATIONS
+    : DEFAULT_STANDARD_MIN_ITERATIONS;
+  return Math.min(baseMinimum, state.maxIterations);
+}
 
 function getEffectiveMinIterations(state: LoopState): number {
-  const defaultMin = Math.min(5, state.maxIterations);
   if (typeof state.minIterations === 'number' && state.minIterations > 0) {
     return Math.min(state.minIterations, state.maxIterations);
   }
 
-  return defaultMin;
+  return getDefaultMinIterations(state);
 }
 
 function getLoopLastTouchedMs(state: LoopState): number | null {
@@ -80,26 +124,74 @@ function getLoopLastTouchedMs(state: LoopState): number | null {
   return null;
 }
 
-function getLoopStaleReason(
+function getLoopHealth(
   state: LoopState,
   expectedIssue?: number | null,
   nowMs: number = Date.now(),
-): string | null {
+): LoopHealth {
   if (typeof expectedIssue === 'number' && expectedIssue > 0 && typeof state.issueNumber === 'number' && state.issueNumber !== expectedIssue) {
-    return `loop belongs to issue #${state.issueNumber}, not #${expectedIssue}`;
+    return {
+      kind: 'stale',
+      reason: `loop belongs to issue #${state.issueNumber}, not #${expectedIssue}`,
+    };
   }
 
   const lastTouchedMs = getLoopLastTouchedMs(state);
   if (lastTouchedMs === null) {
-    return 'loop timestamp is missing or invalid';
+    return {
+      kind: 'stale',
+      reason: 'loop timestamp is missing or invalid',
+    };
+  }
+
+  if (state.maxIterations <= 0 || state.iteration <= 0) {
+    return {
+      kind: 'stuck',
+      reason: 'loop counters are missing or invalid',
+    };
+  }
+
+  if (state.active && state.status !== 'active') {
+    return {
+      kind: 'stuck',
+      reason: `active loop has unexpected status '${state.status}'`,
+    };
+  }
+
+  if (state.active && state.history.length === 0) {
+    return {
+      kind: 'stuck',
+      reason: 'active loop has no iteration history',
+    };
+  }
+
+  const latestHistory = state.history[state.history.length - 1];
+  if (latestHistory && typeof latestHistory.iteration === 'number' && latestHistory.iteration > state.iteration) {
+    return {
+      kind: 'stuck',
+      reason: `history iteration ${latestHistory.iteration} is ahead of loop iteration ${state.iteration}`,
+    };
   }
 
   const ageMs = nowMs - lastTouchedMs;
-  if (ageMs >= LOOP_STALE_AFTER_MS) {
-    return `loop last updated ${(ageMs / (60 * 60 * 1000)).toFixed(1)} hours ago`;
+  if (state.active && ageMs >= LOOP_STUCK_AFTER_MS) {
+    return {
+      kind: 'stuck',
+      reason: `loop last updated ${(ageMs / (60 * 1000)).toFixed(0)} minutes ago`,
+    };
   }
 
-  return null;
+  if (ageMs >= LOOP_STALE_AFTER_MS) {
+    return {
+      kind: 'stale',
+      reason: `loop last updated ${(ageMs / (60 * 60 * 1000)).toFixed(1)} hours ago`,
+    };
+  }
+
+  return {
+    kind: 'healthy',
+    reason: null,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -193,13 +285,21 @@ export function checkHandoffGate(workspaceRoot: string, expectedIssue?: number |
     };
   }
 
-  const staleReason = getLoopStaleReason(state, expectedIssue);
+  const health = getLoopHealth(state, expectedIssue);
 
   if (state.active) {
-    if (staleReason) {
+    if (health.kind === 'stale') {
       return {
         allowed: false,
-        reason: `Quality loop is stale (${staleReason}). Start a new loop for the current task.`,
+        reason: `Quality loop is stale (${health.reason}). Start a new loop for the current task.`,
+        state,
+      };
+    }
+
+    if (health.kind === 'stuck') {
+      return {
+        allowed: false,
+        reason: `Quality loop is stuck (${health.reason}). Cancel or reset it, then start a new loop for the current task.`,
         state,
       };
     }
@@ -221,10 +321,18 @@ export function checkHandoffGate(workspaceRoot: string, expectedIssue?: number |
     };
   }
 
-  if (staleReason) {
+  if (health.kind === 'stale') {
     return {
       allowed: false,
-      reason: `Quality loop is stale (${staleReason}). Start a new loop for the current task.`,
+      reason: `Quality loop is stale (${health.reason}). Start a new loop for the current task.`,
+      state,
+    };
+  }
+
+  if (health.kind === 'stuck') {
+    return {
+      allowed: false,
+      reason: `Quality loop is stuck (${health.reason}). Start a new loop for the current task.`,
       state,
     };
   }
@@ -266,7 +374,7 @@ export function shouldAutoStartLoop(workspaceRoot: string, expectedIssue?: numbe
   }
 
   if (state.active) {
-    return getLoopStaleReason(state, expectedIssue) !== null;
+    return getLoopHealth(state, expectedIssue).kind !== 'healthy';
   }
 
   return true;
@@ -281,21 +389,29 @@ export function getLoopStatusDisplay(workspaceRoot: string): string {
     return 'No loop';
   }
   const minIterations = getEffectiveMinIterations(state);
-  const staleReason = getLoopStaleReason(state);
+  const health = getLoopHealth(state);
   const budgetSuffix = getBudgetSuffix(state);
   const scoreSuffix = getScoreTrendSuffix(state);
   if (state.active) {
     const readiness = state.iteration < minIterations
       ? `not ready to complete (${state.iteration}/${minIterations} min)`
       : 'minimum iterations met';
-    if (staleReason) {
-      return `Loop active ${state.iteration}/${state.maxIterations} (stale; ${staleReason}) [${state.completionCriteria}]${budgetSuffix}${scoreSuffix}`;
+    if (health.kind === 'stale') {
+      return `Loop active ${state.iteration}/${state.maxIterations} (stale; ${health.reason}) [${state.completionCriteria}]${budgetSuffix}${scoreSuffix}`;
+    }
+
+    if (health.kind === 'stuck') {
+      return `Loop active ${state.iteration}/${state.maxIterations} (stuck; ${health.reason}) [${state.completionCriteria}]${budgetSuffix}${scoreSuffix}`;
     }
 
     return `Loop active ${state.iteration}/${state.maxIterations} (${readiness}) [${state.completionCriteria}]${budgetSuffix}${scoreSuffix}`;
   }
-  if (staleReason) {
-    return `Loop ${state.status} (stale; ${staleReason})${scoreSuffix}`;
+  if (health.kind === 'stale') {
+    return `Loop ${state.status} (stale; ${health.reason})${scoreSuffix}`;
+  }
+
+  if (health.kind === 'stuck') {
+    return `Loop ${state.status} (stuck; ${health.reason})${scoreSuffix}`;
   }
 
   return `Loop ${state.status} (${state.iteration} iterations, min ${minIterations})${scoreSuffix}`;

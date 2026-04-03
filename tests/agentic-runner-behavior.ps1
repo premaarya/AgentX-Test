@@ -278,6 +278,7 @@ $summaryCompacted = @(Invoke-ContextCompaction -Messages $summaryHeavyMessages -
 $summaryMessages = @($summaryCompacted | Where-Object { $_.content -is [string] -and $_.content.StartsWith('[Context Compaction Summary]') })
 Assert-Equal $summaryMessages.Count 1 'Invoke-ContextCompaction keeps a single merged compaction summary message'
 Assert-True ($summaryMessages[0].content -match 'Decisions') 'Merged compaction summary preserves structured sections'
+Assert-True ($summaryMessages[0].content -match 'Deterministic facts') 'Merged compaction summary now carries deterministic fact extraction'
 
 $script:compactionSummaryRequest = $null
 $originalInvokeLlmChat = ${function:Invoke-LlmChat}
@@ -344,6 +345,14 @@ try {
     ${function:Invoke-LlmChat} = $originalInvokeLlmChat
 }
 
+$fallbackSummary = Invoke-CompactionSummary -Token '' -ModelId 'gpt-4o' -ExistingSummary 'Decisions: keep billing changes documented.' -Messages @(
+    @{ role = 'assistant'; content = 'Updated docs/billing.md for issue #42.'; tool_calls = @(@{ function = @{ name = 'file_edit' } }) }
+    @{ role = 'user'; content = 'Need follow-up in src/app.ts before rollout.' }
+)
+Assert-True ($fallbackSummary -match 'Deterministic facts') 'Invoke-CompactionSummary falls back to deterministic facts when no token is available'
+Assert-True ($fallbackSummary -match 'docs/billing\.md') 'Deterministic compaction fallback preserves file references'
+Assert-True ($fallbackSummary -match '#42') 'Deterministic compaction fallback preserves issue references'
+
 Push-ExecutionSummaryScope
 Add-ExecutionSummaryEvent -Type 'COMPACTION' -Message 'Initial compaction event.'
 Add-ExecutionSummaryEvent -Type 'COMPACTION' -Message 'Latest compaction event.' -ReplaceExisting
@@ -383,6 +392,27 @@ Assert-True ($clarificationSummary -match 'To: architect') 'Build-ClarificationS
 Assert-True ($clarificationSummary -match 'database indexing') 'Build-ClarificationSummary includes the clarification topic'
 Assert-True ($clarificationSummary -match 'resolved') 'Build-ClarificationSummary includes the resolution status'
 
+$clarificationContract = Parse-ClarificationResponseContract @"
+Status: resolved
+## Direct Answer
+Use the composite index on tenant_id and created_at.
+## Evidence And Constraints
+The current query path filters by tenant first and sorts by created_at.
+## Remaining Uncertainty
+Review ingest amplification before enabling it on the highest-volume table.
+"@
+Assert-Equal $clarificationContract.status 'resolved' 'Parse-ClarificationResponseContract reads the declared status'
+Assert-True $clarificationContract.resolved 'Parse-ClarificationResponseContract recognizes a complete resolved clarification contract'
+Assert-Equal $clarificationContract.missingSections.Count 0 'Parse-ClarificationResponseContract tracks no missing sections for a complete contract'
+
+$clarificationMissingSections = Parse-ClarificationResponseContract @"
+Status: partial
+## Direct Answer
+Use the composite index.
+"@
+Assert-True (-not $clarificationMissingSections.resolved) 'Parse-ClarificationResponseContract does not treat partial answers as resolved'
+Assert-True ($clarificationMissingSections.missingSections -contains 'Evidence And Constraints') 'Parse-ClarificationResponseContract reports missing evidence sections'
+
 $consultingResearchDef = Read-AgentDef -agentName 'consulting-research' -root $script:repoRoot
 Assert-True ($null -ne $consultingResearchDef) 'Read-AgentDef loads the Consulting Research definition'
 Assert-True ($consultingResearchDef.constraints.Count -gt 0) 'Read-AgentDef parses multiline frontmatter constraints'
@@ -406,6 +436,7 @@ Assert-True ($consultingResearchPrompt -match 'create or update the appropriate 
 
 $architectPrompt = Build-SystemPrompt -agentDef $architectDef -agentName 'architect'
 Assert-True ($architectPrompt -match 'Use runtime agent IDs such as product-manager, architect, ux-designer, engineer, data-scientist') 'Build-SystemPrompt documents runtime agent IDs for clarification requests'
+Assert-True ($architectPrompt -match 'Workflow And Skill Adherence') 'Build-SystemPrompt includes workflow and skill adherence guidance'
 
 $consultingResearchBoundaries = Read-BoundaryRuleSet -AgentDef $consultingResearchDef
 Assert-True ($consultingResearchBoundaries.canModify -contains 'docs/coaching/**') 'Read-BoundaryRuleSet honors frontmatter can_modify entries'
@@ -526,6 +557,40 @@ try {
     Assert-True $minimumReminderSeen 'Invoke-AgenticLoop injects a minimum-self-review reminder after the first approved pass'
     Assert-True ($null -ne $script:lastSavedSessionMeta.sessionSummary) 'Invoke-AgenticLoop saves a bounded session summary in session metadata'
     Assert-True ([string]$script:lastSavedSessionMeta.sessionSummary).Length -le 1600 'Invoke-AgenticLoop bounds the saved session summary length'
+
+    @{
+        active = $true
+        status = 'active'
+        issueNumber = 0
+        prompt = 'Fix bug in login redirect handling'
+        taskClass = 'standard'
+        iteration = 1
+        minIterations = 3
+        maxIterations = 20
+        completionCriteria = 'TASK_COMPLETE'
+        startedAt = $currentLoopTimestamp
+        lastIterationAt = $currentLoopTimestamp
+        history = @(
+            @{
+                iteration = 1
+                timestamp = $currentLoopTimestamp
+                summary = 'Loop started'
+                status = 'active'
+                outcome = 'pending'
+            }
+        )
+    } | ConvertTo-Json -Depth 6 | Set-Content -Path $loopStatePath -Encoding UTF8
+
+    $script:runnerMessages.Clear()
+    $script:selfReviewCalls = 0
+    $bugResult = Invoke-AgenticLoop -Agent 'engineer' -Prompt 'Fix bug in login redirect handling' -MaxIterations 10 -WorkspaceRoot $runnerTestRoot
+    $bugLoopState = Get-Content -Path $loopStatePath -Raw | ConvertFrom-Json
+
+    Assert-Equal $bugResult.exitReason 'text_response' 'Invoke-AgenticLoop still completes successfully for standard bug work'
+    Assert-Equal $script:selfReviewCalls 3 'Invoke-AgenticLoop requires only three self-review passes for standard work such as bugs'
+    Assert-Equal $bugResult.iterations 3 'Invoke-AgenticLoop finishes after the standard minimum review passes are met'
+    Assert-True ($bugResult.finalText -match '\[SELF-REVIEW SUMMARY\] Completed 3/3 required review iterations') 'Invoke-AgenticLoop records the standard three-pass summary for bug work'
+    Assert-Equal ([int]$bugLoopState.iteration) 3 'Invoke-AgenticLoop syncs standard bug loops to the three-iteration minimum'
 
     @{
         active = $true

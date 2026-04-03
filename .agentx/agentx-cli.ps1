@@ -36,6 +36,9 @@ $Script:AGENTX_DIR = Join-Path $Script:ROOT '.agentx'
 $Script:STATE_FILE = Join-Path $AGENTX_DIR 'state' 'agent-status.json'
 $Script:LOOP_STATE_FILE = Join-Path $AGENTX_DIR 'state' 'loop-state.json'
 $Script:LOOP_STALE_AFTER_HOURS = 8
+$Script:LOOP_STUCK_AFTER_MINUTES = 90
+$Script:LOOP_COMPLEX_MIN_ITERATIONS = 5
+$Script:LOOP_STANDARD_MIN_ITERATIONS = 3
 $Script:ISSUES_DIR = Join-Path $AGENTX_DIR 'issues'
 $Script:TASK_BUNDLES_DIR = Join-Path $ROOT 'docs' 'execution' 'task-bundles'
 $Script:BOUNDED_PARALLEL_DIR = Join-Path $ROOT 'docs' 'execution' 'bounded-parallel'
@@ -3634,14 +3637,108 @@ function Get-LoopStateStaleReason {
     return $null
 }
 
+function Get-LoopTaskClass {
+    param($State)
+
+    if (-not $State) { return 'standard' }
+
+    $explicitTaskClass = ''
+    if ($State.PSObject.Properties.Name -contains 'taskClass' -and $State.taskClass) {
+        $explicitTaskClass = ([string]$State.taskClass).Trim().ToLowerInvariant()
+    }
+
+    if ($explicitTaskClass -eq 'complex-delivery') { return 'complex-delivery' }
+    if ($explicitTaskClass -eq 'standard') { return 'standard' }
+
+    $fingerprint = @(
+        if ($State.PSObject.Properties.Name -contains 'taskType') { [string]$State.taskType } else { '' }
+        if ($State.PSObject.Properties.Name -contains 'prompt') { [string]$State.prompt } else { '' }
+        if ($State.PSObject.Properties.Name -contains 'completionCriteria') { [string]$State.completionCriteria } else { '' }
+    ) -join "`n"
+    $normalized = $fingerprint.ToLowerInvariant()
+
+    if ($normalized -match '\b(bug|hotfix|regression|prd|product requirement|tech spec|technical spec|specification|adr|architecture doc|review|brainstorm|clarification|docs|documentation)\b') {
+        return 'standard'
+    }
+
+    if ($normalized -match '\b(implement|implementation|build|create|ship|refactor|feature|endpoint|component|screen|prototype|wireframe|ux|ui|frontend|backend|model|training|data science|evaluation pipeline|notebook|agent|workflow|all_tests_passing|coverage)\b') {
+        return 'complex-delivery'
+    }
+
+    return 'standard'
+}
+
+function Get-LoopDefaultMinIterations {
+    param($State)
+
+    if (-not $State) { return 0 }
+    $maxIterations = if ($State.PSObject.Properties.Name -contains 'maxIterations') { [int]$State.maxIterations } else { 0 }
+    $defaultMin = if ((Get-LoopTaskClass $State) -eq 'complex-delivery') {
+        $Script:LOOP_COMPLEX_MIN_ITERATIONS
+    } else {
+        $Script:LOOP_STANDARD_MIN_ITERATIONS
+    }
+
+    return [Math]::Min($defaultMin, $maxIterations)
+}
+
+function Get-LoopStateHealth {
+    param(
+        $State,
+        [Nullable[int]]$ExpectedIssue = $null
+    )
+
+    if (-not $State) {
+        return [PSCustomObject]@{ kind = 'healthy'; reason = $null }
+    }
+
+    $staleReason = Get-LoopStateStaleReason -State $State -ExpectedIssue $ExpectedIssue
+    if ($staleReason) {
+        return [PSCustomObject]@{ kind = 'stale'; reason = $staleReason }
+    }
+
+    $maxIterations = if ($State.PSObject.Properties.Name -contains 'maxIterations') { [int]$State.maxIterations } else { 0 }
+    $iteration = if ($State.PSObject.Properties.Name -contains 'iteration') { [int]$State.iteration } else { 0 }
+    if ($maxIterations -le 0 -or $iteration -le 0) {
+        return [PSCustomObject]@{ kind = 'stuck'; reason = 'loop counters are missing or invalid' }
+    }
+
+    if ($State.active -and [string]$State.status -ne 'active') {
+        return [PSCustomObject]@{ kind = 'stuck'; reason = "active loop has unexpected status '$($State.status)'" }
+    }
+
+    $history = @($State.history)
+    if ($State.active -and $history.Count -eq 0) {
+        return [PSCustomObject]@{ kind = 'stuck'; reason = 'active loop has no iteration history' }
+    }
+
+    if ($history.Count -gt 0) {
+        $latest = $history[-1]
+        if ($latest.iteration -gt $iteration) {
+            return [PSCustomObject]@{ kind = 'stuck'; reason = "history iteration $($latest.iteration) is ahead of loop iteration $iteration" }
+        }
+    }
+
+    $lastTouched = Get-LoopStateLastTouchedUtc $State
+    if ($State.active -and $lastTouched) {
+        $ageMinutes = ([datetimeoffset]::UtcNow - $lastTouched).TotalMinutes
+        if ($ageMinutes -ge $Script:LOOP_STUCK_AFTER_MINUTES) {
+            return [PSCustomObject]@{ kind = 'stuck'; reason = ('loop last updated {0:N0} minutes ago' -f $ageMinutes) }
+        }
+    }
+
+    return [PSCustomObject]@{ kind = 'healthy'; reason = $null }
+}
+
 function Invoke-LoopStart {
     $prompt = Get-Flag @('-p', '--prompt')
     if (-not $prompt) { Write-Host 'Error: --prompt required'; exit 1 }
     $max = [int](Get-Flag @('-m', '--max') '20')
-    $min = [Math]::Min(5, $max)
     $criteria = Get-Flag @('-c', '--criteria') 'TASK_COMPLETE'
     $issue = [int](Get-Flag @('-i', '--issue') '0')
     if (-not $issue) { $issue = $null }
+    $taskClass = Get-LoopTaskClass ([PSCustomObject]@{ prompt = $prompt; completionCriteria = $criteria; maxIterations = $max })
+    $min = Get-LoopDefaultMinIterations ([PSCustomObject]@{ prompt = $prompt; completionCriteria = $criteria; taskClass = $taskClass; maxIterations = $max })
     $budgetRaw = Get-Flag @('-b', '--budget') ''
     $budget = $null
     if ($budgetRaw) {
@@ -3654,9 +3751,9 @@ function Invoke-LoopStart {
     }
 
     $existing = Read-JsonFile $Script:LOOP_STATE_FILE
-    $staleReason = Get-LoopStateStaleReason $existing $issue
+    $loopHealth = Get-LoopStateHealth -State $existing -ExpectedIssue $issue
     if ($existing -and $existing.active) {
-        if (-not $staleReason) {
+        if ($loopHealth.kind -eq 'healthy') {
             Write-Host 'An active loop exists. Cancel it first.'
             return
         }
@@ -3672,13 +3769,14 @@ function Invoke-LoopStart {
                 outcome   = 'fail'
             })
         Write-JsonFile $Script:LOOP_STATE_FILE $existing
-        Write-Host "$($C.y)  Auto-reset stale active loop ($staleReason).$($C.n)"
+        Write-Host "$($C.y)  Auto-reset $($loopHealth.kind) active loop ($($loopHealth.reason)).$($C.n)"
     }
 
     $state = [PSCustomObject]@{
         active             = $true
         status             = 'active'
         prompt             = $prompt
+        taskClass          = $taskClass
         iteration          = 1
         minIterations      = $min
         maxIterations      = $max
@@ -3705,7 +3803,7 @@ function Invoke-LoopStatus {
         return
     }
     if (-not ($state.PSObject.Properties.Name -contains 'minIterations') -or -not $state.minIterations) {
-        $state | Add-Member -NotePropertyName minIterations -NotePropertyValue ([Math]::Min(5, [int]$state.maxIterations)) -Force
+        $state | Add-Member -NotePropertyName minIterations -NotePropertyValue (Get-LoopDefaultMinIterations $state) -Force
     }
     if ($Script:JsonOutput) { $state | ConvertTo-Json -Depth 5; return }
 
@@ -3742,12 +3840,18 @@ function Invoke-LoopStatus {
         }
     }
 
-    $staleReason = Get-LoopStateStaleReason $state
-    if ($staleReason) {
-        Write-Host "$($C.y)  Staleness: $staleReason. Start a new loop for the current task.$($C.n)"
+    $loopHealth = Get-LoopStateHealth $state
+    if ($loopHealth.kind -eq 'stale') {
+        Write-Host "$($C.y)  Staleness: $($loopHealth.reason). Start a new loop for the current task.$($C.n)"
     }
-    if ($state.status -eq 'complete' -and $staleReason) {
+    elseif ($loopHealth.kind -eq 'stuck') {
+        Write-Host "$($C.y)  Health: STUCK. $($loopHealth.reason). Reset the loop before trusting it for handoff.$($C.n)"
+    }
+    if ($state.status -eq 'complete' -and $loopHealth.kind -eq 'stale') {
         Write-Host "$($C.y)  Completion gate: STALE. A previous completed loop does not satisfy the current task.$($C.n)"
+    }
+    elseif ($loopHealth.kind -eq 'stuck') {
+        Write-Host "$($C.y)  Completion gate: BLOCKED. Loop data is stuck and must be reset before handoff.$($C.n)"
     }
     elseif ($state.status -eq 'complete') {
         Write-Host "$($C.g)  Completion gate: SATISFIED (loop already completed).$($C.n)"
@@ -3830,7 +3934,7 @@ function Invoke-LoopComplete {
     $state = Read-JsonFile $Script:LOOP_STATE_FILE
     if (-not $state -or -not $state.active) { Write-Host 'No active loop.'; return }
     if (-not ($state.PSObject.Properties.Name -contains 'minIterations') -or -not $state.minIterations) {
-        $state | Add-Member -NotePropertyName minIterations -NotePropertyValue ([Math]::Min(5, [int]$state.maxIterations)) -Force
+        $state | Add-Member -NotePropertyName minIterations -NotePropertyValue (Get-LoopDefaultMinIterations $state) -Force
     }
     if ([int]$state.iteration -lt [int]$state.minIterations) {
         Write-Host "$($C.y)  Minimum review iterations not yet met: $($state.iteration)/$($state.minIterations). Use 'agentx loop iterate' before completing.$($C.n)"
@@ -4064,8 +4168,9 @@ function Get-HarnessLoopAuditResult([string]$workspaceRoot) {
     $minIterations = if ($hasMinIterations -and [int]$state.minIterations -gt 0) {
         [Math]::Min([int]$state.minIterations, $maxIterations)
     } else {
-        [Math]::Min(5, $maxIterations)
+        Get-LoopDefaultMinIterations $state
     }
+    $loopHealth = Get-LoopStateHealth -State $state
 
     $lastTouched = $null
     foreach ($candidate in @([string]$state.lastIterationAt, [string]$state.startedAt)) {
@@ -4077,6 +4182,14 @@ function Get-HarnessLoopAuditResult([string]$workspaceRoot) {
     }
 
     if ($state.active) {
+        if ($loopHealth.kind -eq 'stuck') {
+            return [PSCustomObject]@{
+                passed = $false
+                attribution = 'policy'
+                summary = "Quality loop is stuck ($($loopHealth.reason)). Reset it before handoff."
+            }
+        }
+
         return [PSCustomObject]@{
             passed = $false
             attribution = 'policy'
@@ -4092,7 +4205,7 @@ function Get-HarnessLoopAuditResult([string]$workspaceRoot) {
         }
     }
 
-    if ($lastTouched -and (((Get-Date).ToUniversalTime()) - $lastTouched.ToUniversalTime()).TotalHours -ge $Script:LOOP_STALE_AFTER_HOURS) {
+    if ($loopHealth.kind -eq 'stale') {
         return [PSCustomObject]@{
             passed = $false
             attribution = 'policy'

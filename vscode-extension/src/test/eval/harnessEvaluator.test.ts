@@ -49,7 +49,7 @@ describe('harness evaluator', () => {
       completionCriteria: 'TASK_COMPLETE',
       startedAt: recentTimestamp,
       lastIterationAt: recentTimestamp,
-      history: [],
+      history: [{ iteration: 5, timestamp: recentTimestamp, summary: 'All green', status: 'complete', outcome: 'pass' }],
     }), 'utf-8');
     fs.writeFileSync(path.join(root, '.agentx', 'state', 'harness-state.json'), JSON.stringify({
       version: 1,
@@ -75,10 +75,12 @@ describe('harness evaluator', () => {
     const report = evaluateHarnessQuality(createAgentxStub(root));
 
     assert.ok(report);
-    assert.equal(report?.score.percent, 100);
+    assert.equal(report?.scores.workflowCompliance.percent, 100);
+    assert.equal(report?.scores.evidenceStrength.percent, 100);
+    assert.equal(report?.scores.outputConfidence.percent, 100);
     assert.equal(report?.coverage.percent, 100);
     assert.equal(report?.dominantAttribution, 'clear');
-    assert.equal(report?.checks.filter((check) => check.passed).length, 5);
+    assert.equal(report?.checks.filter((check) => check.passed).length, 10);
   });
 
   it('should attribute missing artifacts to harness gaps', () => {
@@ -87,7 +89,9 @@ describe('harness evaluator', () => {
     const report = evaluateHarnessQuality(createAgentxStub(root));
 
     assert.ok(report);
-    assert.equal(report?.score.percent, 0);
+    assert.equal(report?.scores.workflowCompliance.percent, 0);
+    assert.equal(report?.scores.evidenceStrength.percent, 0);
+    assert.equal(report?.scores.outputConfidence.percent, 0);
     assert.equal(report?.coverage.percent, 0);
     assert.equal(report?.dominantAttribution, 'harness');
     assert.ok(report?.checks.some((check) => check.id === 'loop-complete' && check.attribution === 'policy'));
@@ -109,7 +113,7 @@ describe('harness evaluator', () => {
       completionCriteria: 'TASK_COMPLETE',
       startedAt: recentTimestamp,
       lastIterationAt: recentTimestamp,
-      history: [],
+      history: [{ iteration: 5, timestamp: recentTimestamp, summary: 'All green', status: 'complete', outcome: 'pass' }],
     }), 'utf-8');
     fs.writeFileSync(path.join(root, '.agentx', 'state', 'harness-state.json'), JSON.stringify({
       version: 1,
@@ -135,9 +139,11 @@ describe('harness evaluator', () => {
     const report = evaluateHarnessQuality(createAgentxStub(root));
 
     assert.ok(report);
-    assert.equal(report?.checks.length, 3);
+    assert.equal(report?.checks.length, 8);
     assert.ok(report?.checks.every((check) => check.id !== 'execution-plan-present'));
     assert.ok(report?.checks.every((check) => check.id !== 'progress-log-present'));
-    assert.equal(report?.score.percent, 100);
+    assert.equal(report?.scores.workflowCompliance.percent, 100);
+    assert.equal(report?.scores.evidenceStrength.percent, 100);
+    assert.equal(report?.scores.outputConfidence.percent, 100);
   });
 });

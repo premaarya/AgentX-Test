@@ -3,6 +3,11 @@ export interface PendingClarificationState {
   agentName: string;
   prompt: string;
   humanPrompt?: string;
+  fromAgent?: string;
+  targetAgent?: string;
+  topic?: string;
+  status?: string;
+  exchangeCount?: number;
 }
 
 export interface PendingSetupState {

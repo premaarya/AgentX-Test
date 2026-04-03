@@ -36,13 +36,17 @@ describe('harnessEvaluator facade', () => {
 
   it('maps workspace inputs through to the evaluator internals and formats summaries', () => {
     sandbox.stub(internals, 'evaluateHarnessQualityFromInput').returns({
-      score: { percent: 84, passedChecks: 21, totalChecks: 25 },
+      scores: {
+        workflowCompliance: { percent: 84, passedChecks: 3, totalChecks: 4 },
+        evidenceStrength: { percent: 73, passedChecks: 2, totalChecks: 3 },
+        outputConfidence: { percent: 68, passedChecks: 2, totalChecks: 3 },
+      },
       coverage: { percent: 73 },
-      dominantAttribution: 'workflow',
+      dominantAttribution: 'policy',
       observations: [{ label: 'Plans', detail: '2 observed' }],
       checks: [
         { label: 'Plans', summary: 'present', passed: true, attribution: 'clear' },
-        { label: 'Evidence', summary: 'missing', passed: false, attribution: 'workflow' },
+        { label: 'Evidence', summary: 'missing', passed: false, attribution: 'policy' },
       ],
     } as any);
     const agentx = {
@@ -53,12 +57,18 @@ describe('harnessEvaluator facade', () => {
 
     const report = evaluateHarnessQuality(agentx);
 
-    assert.equal(report?.score.percent, 84);
-    assert.equal(getEvaluationSummary(agentx), '84% (21/25 checks)');
-    assert.equal(getEvaluationTooltip(agentx), 'Evidence: missing');
+    assert.equal(report?.scores.workflowCompliance.percent, 84);
+    assert.equal(getEvaluationSummary(agentx), 'Workflow 84% | Evidence 73% | Confidence 68%');
+    assert.equal(getEvaluationTooltip(agentx), [
+      'Workflow compliance: 84% (3/4 checks)',
+      'Evidence strength: 73% (2/3 checks)',
+      'Output confidence: 68% (2/3 checks)',
+      'Confidence reflects the deterministic evidence behind the reported state, not semantic correctness of the output.',
+      'Evidence: missing',
+    ].join('\n'));
     assert.equal(getCoverageSummary(agentx), '73% observed');
     assert.equal(getCoverageTooltip(agentx), 'Plans: 2 observed');
-    assert.equal(getAttributionSummary(agentx), 'workflow');
+    assert.equal(getAttributionSummary(agentx), 'policy');
     assert.equal(getAttributionTooltip(agentx), 'Evidence: missing');
   });
 });

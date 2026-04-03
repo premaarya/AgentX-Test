@@ -1003,6 +1003,11 @@ describe('chatParticipant', () => {
         agentName: 'engineer',
         prompt: 'implement the login fix',
         humanPrompt: 'Need your guidance on auth rollout.',
+        fromAgent: 'engineer',
+        targetAgent: 'architect',
+        topic: 'auth rollout',
+        status: 'needs-human',
+        exchangeCount: 3,
       }),
     };
 
@@ -1014,6 +1019,8 @@ describe('chatParticipant', () => {
 
     assert.ok(response.getMarkdown().includes('Pending clarification for engineer'));
     assert.ok(response.getMarkdown().includes('Need your guidance on auth rollout.'));
+    assert.ok(response.getMarkdown().includes('Topic: auth rollout'));
+    assert.ok(response.getMarkdown().includes('Status: needs-human'));
   });
 
   it('uses plain-language replies as clarification responses when one is pending', async () => {

@@ -1,6 +1,7 @@
 export type EvaluationPillar = 'planning' | 'execution' | 'evidence';
 export type ObservationMode = 'observed' | 'reconstructed' | 'inferred';
 export type EvaluationAttribution = 'harness' | 'policy' | 'environment' | 'model' | 'unknown' | 'clear';
+export type EvaluationDimension = 'workflowCompliance' | 'evidenceStrength' | 'outputConfidence';
 
 export interface ArtifactObservation {
   readonly id: string;
@@ -12,6 +13,7 @@ export interface ArtifactObservation {
 
 export interface EvaluationCheckResult {
   readonly id: string;
+  readonly dimension: EvaluationDimension;
   readonly pillar: EvaluationPillar;
   readonly label: string;
   readonly passed: boolean;
@@ -35,8 +37,14 @@ export interface ObservationCoverage {
   readonly percent: number;
 }
 
+export interface EvaluationScores {
+  readonly workflowCompliance: EvaluationScore;
+  readonly evidenceStrength: EvaluationScore;
+  readonly outputConfidence: EvaluationScore;
+}
+
 export interface EvaluationReport {
-  readonly score: EvaluationScore;
+  readonly scores: EvaluationScores;
   readonly dominantAttribution: EvaluationAttribution;
   readonly coverage: ObservationCoverage;
   readonly observations: ReadonlyArray<ArtifactObservation>;

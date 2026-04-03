@@ -1,12 +1,13 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { readHarnessState } from '../utils/harnessState';
-import { checkHandoffGate } from '../utils/loopStateChecker';
+import { checkHandoffGate, readLoopState } from '../utils/loopStateChecker';
 import {
  ArtifactObservation,
  EvaluationAttribution,
  EvaluationCheckResult,
  EvaluationReport,
+ EvaluationScore,
 } from './types';
 
 interface CheckContext {
@@ -18,14 +19,8 @@ interface CheckContext {
  readonly handoffReason: string;
  readonly harnessThreadCount: number;
  readonly harnessEvidenceCount: number;
-}
-
-interface DeterministicCheck {
- readonly id: string;
- readonly pillar: EvaluationCheckResult['pillar'];
- readonly label: string;
- readonly maxScore: number;
- run(context: CheckContext): EvaluationCheckResult;
+ readonly coveragePercent: number;
+ readonly loopHistoryCount: number;
 }
 
 export interface HarnessEvaluationInput {
@@ -93,7 +88,12 @@ function readHarnessPolicy(root: string): HarnessPolicy {
  }
 }
 
-function buildObservations(input: HarnessEvaluationInput): {
+function buildObservations(
+ input: HarnessEvaluationInput,
+ harnessThreadCount: number,
+ harnessEvidenceCount: number,
+ loopHistoryCount: number,
+): {
  readonly observations: ReadonlyArray<ArtifactObservation>;
  readonly progressFiles: ReadonlyArray<string>;
 } {
@@ -137,101 +137,202 @@ function buildObservations(input: HarnessEvaluationInput): {
     ? 'Harness state file observed'
     : 'Harness state file missing',
   },
+  {
+   id: 'harness-thread',
+   label: 'Harness thread',
+   mode: harnessThreadCount > 0 ? 'observed' : 'inferred',
+   present: harnessThreadCount > 0,
+   detail: harnessThreadCount > 0
+    ? `${formatCount('thread', harnessThreadCount)} recorded in harness state`
+    : 'No harness thread recorded',
+  },
+  {
+   id: 'captured-evidence',
+   label: 'Captured evidence',
+   mode: harnessEvidenceCount > 0 ? 'observed' : 'inferred',
+   present: harnessEvidenceCount > 0,
+   detail: harnessEvidenceCount > 0
+    ? `${formatCount('evidence item', harnessEvidenceCount)} recorded in harness state`
+    : 'No captured evidence recorded',
+  },
+  {
+   id: 'loop-history',
+   label: 'Loop history',
+   mode: loopHistoryCount > 0 ? 'observed' : 'inferred',
+   present: loopHistoryCount > 0,
+   detail: loopHistoryCount > 0
+    ? `${formatCount('iteration entry', loopHistoryCount)} available in loop history`
+    : 'No loop history entries recorded',
+  },
  ];
 
  return { observations, progressFiles };
 }
 
-const CHECKS: ReadonlyArray<DeterministicCheck> = [
- {
-  id: 'execution-plan-present',
-  pillar: 'planning',
-  label: 'Execution plan linked',
-  maxScore: 20,
-  run: (context) => ({
+function buildScore(checks: ReadonlyArray<EvaluationCheckResult>): EvaluationScore {
+ const earned = checks.reduce((sum, check) => sum + check.score, 0);
+ const max = checks.reduce((sum, check) => sum + check.maxScore, 0);
+ return {
+  earned,
+  max,
+  percent: max === 0 ? 0 : Math.round((earned / max) * 100),
+  passedChecks: checks.filter((check) => check.passed).length,
+  totalChecks: checks.length,
+ };
+}
+
+function buildWorkflowChecks(context: CheckContext): ReadonlyArray<EvaluationCheckResult> {
+ return [
+  {
    id: 'execution-plan-present',
+   dimension: 'workflowCompliance',
    pillar: 'planning',
    label: 'Execution plan linked',
    passed: context.planFiles.length > 0,
-   score: context.planFiles.length > 0 ? 20 : 0,
-   maxScore: 20,
+   score: context.planFiles.length > 0 ? 25 : 0,
+   maxScore: 25,
    attribution: context.planFiles.length > 0 ? 'clear' : 'harness',
    summary: context.planFiles.length > 0
     ? `${formatCount('plan file', context.planFiles.length)} available for evaluation`
     : 'No execution plan found for the current workspace',
-  }),
- },
- {
-  id: 'progress-log-present',
-  pillar: 'planning',
-  label: 'Progress log tracked',
-  maxScore: 20,
-  run: (context) => ({
+  },
+  {
    id: 'progress-log-present',
+   dimension: 'workflowCompliance',
    pillar: 'planning',
    label: 'Progress log tracked',
    passed: context.progressFiles.length > 0,
-   score: context.progressFiles.length > 0 ? 20 : 0,
-   maxScore: 20,
+   score: context.progressFiles.length > 0 ? 25 : 0,
+   maxScore: 25,
    attribution: context.progressFiles.length > 0 ? 'clear' : 'harness',
    summary: context.progressFiles.length > 0
     ? `${formatCount('progress log', context.progressFiles.length)} available for evaluation`
-    : 'No progress log found under docs/progress',
-  }),
- },
- {
-  id: 'loop-complete',
-  pillar: 'execution',
-  label: 'Loop gate satisfied',
-  maxScore: 20,
-  run: (context) => ({
+    : 'No progress log found under docs/execution/progress',
+  },
+  {
    id: 'loop-complete',
+   dimension: 'workflowCompliance',
    pillar: 'execution',
    label: 'Loop gate satisfied',
    passed: context.handoffAllowed,
-   score: context.handoffAllowed ? 20 : 0,
-   maxScore: 20,
+   score: context.handoffAllowed ? 25 : 0,
+   maxScore: 25,
    attribution: context.handoffAllowed ? 'clear' : 'policy',
    summary: context.handoffAllowed ? 'Quality loop completed successfully' : context.handoffReason,
-  }),
- },
- {
-  id: 'harness-thread-recorded',
-  pillar: 'execution',
-  label: 'Harness thread captured',
-  maxScore: 20,
-  run: (context) => ({
+  },
+  {
    id: 'harness-thread-recorded',
+   dimension: 'workflowCompliance',
    pillar: 'execution',
    label: 'Harness thread captured',
    passed: context.harnessThreadCount > 0,
-   score: context.harnessThreadCount > 0 ? 20 : 0,
-   maxScore: 20,
+   score: context.harnessThreadCount > 0 ? 25 : 0,
+   maxScore: 25,
    attribution: context.harnessThreadCount > 0 ? 'clear' : 'harness',
    summary: context.harnessThreadCount > 0
     ? `${formatCount('thread', context.harnessThreadCount)} recorded in harness state`
     : 'Harness state has no recorded threads',
-  }),
- },
- {
-  id: 'evidence-recorded',
-  pillar: 'evidence',
-  label: 'Evidence captured',
-  maxScore: 20,
-  run: (context) => ({
+  },
+ ];
+}
+
+function buildEvidenceChecks(context: CheckContext): ReadonlyArray<EvaluationCheckResult> {
+ const coverageScore = context.coveragePercent >= 67 ? 30 : context.coveragePercent >= 34 ? 15 : 0;
+
+ return [
+  {
    id: 'evidence-recorded',
+   dimension: 'evidenceStrength',
    pillar: 'evidence',
    label: 'Evidence captured',
    passed: context.harnessEvidenceCount > 0,
-   score: context.harnessEvidenceCount > 0 ? 20 : 0,
-   maxScore: 20,
+   score: context.harnessEvidenceCount > 0 ? 40 : 0,
+   maxScore: 40,
    attribution: context.harnessEvidenceCount > 0 ? 'clear' : 'harness',
    summary: context.harnessEvidenceCount > 0
     ? `${formatCount('evidence item', context.harnessEvidenceCount)} available for evaluation`
     : 'Harness state has no recorded evidence',
-  }),
- },
-];
+  },
+  {
+   id: 'observation-coverage',
+   dimension: 'evidenceStrength',
+   pillar: 'evidence',
+   label: 'Observed artifact coverage',
+   passed: context.coveragePercent >= 67,
+   score: coverageScore,
+   maxScore: 30,
+   attribution: context.coveragePercent >= 67 ? 'clear' : 'harness',
+   summary: context.coveragePercent >= 67
+    ? `${context.coveragePercent}% of tracked artifacts were observed directly`
+    : `Only ${context.coveragePercent}% of tracked artifacts were observed directly`,
+  },
+  {
+   id: 'loop-history-recorded',
+   dimension: 'evidenceStrength',
+   pillar: 'evidence',
+   label: 'Loop history recorded',
+   passed: context.loopHistoryCount > 0,
+   score: context.loopHistoryCount > 0 ? 30 : 0,
+   maxScore: 30,
+   attribution: context.loopHistoryCount > 0 ? 'clear' : 'harness',
+   summary: context.loopHistoryCount > 0
+    ? `${formatCount('iteration entry', context.loopHistoryCount)} recorded in loop history`
+    : 'Loop state has no recorded iteration history',
+  },
+ ];
+}
+
+function buildConfidenceChecks(
+ context: CheckContext,
+ workflowScore: EvaluationScore,
+ evidenceScore: EvaluationScore,
+): ReadonlyArray<EvaluationCheckResult> {
+ const workflowAlignmentScore = workflowScore.percent >= 75 ? 35 : workflowScore.percent >= 50 ? 20 : 0;
+ const evidenceAlignmentScore = evidenceScore.percent >= 70 ? 35 : evidenceScore.percent >= 40 ? 20 : 0;
+ const coverageAlignmentScore = context.coveragePercent >= 67 ? 30 : context.coveragePercent >= 34 ? 15 : 0;
+
+ return [
+  {
+   id: 'workflow-supports-confidence',
+   dimension: 'outputConfidence',
+   pillar: 'execution',
+   label: 'Workflow supports confidence',
+   passed: workflowScore.percent >= 75,
+   score: workflowAlignmentScore,
+   maxScore: 35,
+   attribution: workflowScore.percent >= 75 ? 'clear' : 'policy',
+   summary: workflowScore.percent >= 75
+    ? `Workflow compliance is strong at ${workflowScore.percent}%`
+    : `Workflow compliance is only ${workflowScore.percent}%, so reported confidence stays conservative`,
+  },
+  {
+   id: 'evidence-supports-confidence',
+   dimension: 'outputConfidence',
+   pillar: 'evidence',
+   label: 'Evidence supports confidence',
+   passed: evidenceScore.percent >= 70,
+   score: evidenceAlignmentScore,
+   maxScore: 35,
+   attribution: evidenceScore.percent >= 70 ? 'clear' : 'harness',
+   summary: evidenceScore.percent >= 70
+    ? `Evidence strength is strong at ${evidenceScore.percent}%`
+    : `Evidence strength is only ${evidenceScore.percent}%, so confidence remains capped`,
+  },
+  {
+   id: 'coverage-supports-confidence',
+   dimension: 'outputConfidence',
+   pillar: 'evidence',
+   label: 'Observed coverage supports confidence',
+   passed: context.coveragePercent >= 67,
+   score: coverageAlignmentScore,
+   maxScore: 30,
+   attribution: context.coveragePercent >= 67 ? 'clear' : 'harness',
+   summary: context.coveragePercent >= 67
+    ? `${context.coveragePercent}% observed coverage supports the reported state`
+    : `${context.coveragePercent}% observed coverage is too low for high confidence`,
+  },
+ ];
+}
 
 function determineDominantAttribution(
  checks: ReadonlyArray<EvaluationCheckResult>,
@@ -253,10 +354,23 @@ function determineDominantAttribution(
 export function evaluateHarnessQualityFromInput(
  input: HarnessEvaluationInput,
 ): EvaluationReport {
- const { observations, progressFiles } = buildObservations(input);
  const harnessState = readHarnessState(input.root);
+ const loopState = readLoopState(input.root);
+ const loopHistoryCount = loopState?.history.length ?? 0;
+ const { observations, progressFiles } = buildObservations(
+  input,
+  harnessState.threads.length,
+  harnessState.evidence.length,
+  loopHistoryCount,
+ );
  const policy = readHarnessPolicy(input.root);
  const handoff = checkHandoffGate(input.root);
+ const observed = observations.filter((observation) => observation.mode === 'observed' && observation.present).length;
+ const coverage = {
+  observed,
+  total: observations.length,
+  percent: observations.length === 0 ? 0 : Math.round((observed / observations.length) * 100),
+ };
  const context: CheckContext = {
   root: input.root,
   observations,
@@ -266,29 +380,29 @@ export function evaluateHarnessQualityFromInput(
   handoffReason: handoff.reason,
   harnessThreadCount: harnessState.threads.length,
   harnessEvidenceCount: harnessState.evidence.length,
+  coveragePercent: coverage.percent,
+  loopHistoryCount,
  };
 
- const checks = CHECKS
-  .filter((check) => !policy.disabledChecks.has(check.id))
-  .map((check) => check.run(context));
- const earned = checks.reduce((sum, check) => sum + check.score, 0);
- const max = checks.reduce((sum, check) => sum + check.maxScore, 0);
- const observed = observations.filter((observation) => observation.mode === 'observed' && observation.present).length;
+ const workflowChecks = buildWorkflowChecks(context)
+  .filter((check) => !policy.disabledChecks.has(check.id));
+ const evidenceChecks = buildEvidenceChecks(context)
+  .filter((check) => !policy.disabledChecks.has(check.id));
+ const workflowCompliance = buildScore(workflowChecks);
+ const evidenceStrength = buildScore(evidenceChecks);
+ const confidenceChecks = buildConfidenceChecks(context, workflowCompliance, evidenceStrength)
+  .filter((check) => !policy.disabledChecks.has(check.id));
+ const outputConfidence = buildScore(confidenceChecks);
+ const checks = [...workflowChecks, ...evidenceChecks, ...confidenceChecks];
 
  return {
-  score: {
-   earned,
-   max,
-   percent: max === 0 ? 0 : Math.round((earned / max) * 100),
-   passedChecks: checks.filter((check) => check.passed).length,
-   totalChecks: checks.length,
+  scores: {
+   workflowCompliance,
+   evidenceStrength,
+   outputConfidence,
   },
   dominantAttribution: determineDominantAttribution(checks),
-  coverage: {
-   observed,
-   total: observations.length,
-   percent: observations.length === 0 ? 0 : Math.round((observed / observations.length) * 100),
-  },
+  coverage,
   observations,
   checks,
  };

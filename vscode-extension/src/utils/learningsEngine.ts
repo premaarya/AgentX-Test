@@ -240,6 +240,11 @@ export function renderCaptureGuidanceMarkdown(root?: string): string {
   '- **Optional** when the work is useful but narrow, local, or low-leverage.',
   '- **Skip** when the outcome is trivial, transient, or already captured elsewhere.',
   '',
+  'Evidence tiers:',
+  '- Observations: raw runtime evidence such as evaluator notes, logs, traces, or captured execution facts. These help review, but they are not reusable guidance by default.',
+  '- Findings: durable review problems or follow-up items that may need promotion into the backlog.',
+  '- Learnings: curated reusable guidance that has enough validation to preserve across sessions.',
+  '',
   'Operator-facing path:',
   '- Finish review first, then decide whether capture is mandatory, optional, or skipped.',
   `- Store curated capture artifacts under \`${learningsPath}\` and link them back to the issue, ADR/spec, review, and other source artifacts.`,
@@ -324,6 +329,8 @@ export function renderCompoundLoopMarkdown(root: string): string {
  const findings = loadReviewFindingRecords(root);
  const promotable = getPromotableReviewFindings(root);
  const target = getLearningCaptureTarget(root);
+ const harnessState = readHarnessState(root);
+ const openFindings = findings.filter((record) => record.status !== 'Done');
 
  const lines: string[] = [
   '**Compound Loop**',
@@ -331,9 +338,16 @@ export function renderCompoundLoopMarkdown(root: string): string {
   target
    ? `Active context: ${target.title}${target.issueNumber ? ` (#${target.issueNumber})` : ''}`
    : 'Active context: no active harness thread detected.',
-  `Open review findings: ${findings.filter((record) => record.status !== 'Done').length}`,
+  `Runtime observations: ${harnessState.evidence.length}`,
+  `Open review findings: ${openFindings.length}`,
   `Promotable findings: ${promotable.length}`,
+  `Curated capture candidates: ${captureLearnings.length}`,
   `Capture target: docs/artifacts/learnings/LEARNING-${target?.issueNumber ?? '<issue>'}.md`,
+  '',
+  'Tier checks:',
+  '- Observations: confirm the raw runtime evidence is attached to the review or execution context.',
+  '- Findings: decide whether any open or promotable review finding must be promoted before closeout.',
+  '- Learnings: only create a curated learning when the outcome is reusable and validated enough to preserve.',
   '',
   'Compound checks:',
   '- Has review finished with enough evidence to preserve a reusable learning?',

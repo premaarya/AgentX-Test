@@ -43,6 +43,7 @@ $Script:COMPACTION_THRESHOLD_PERCENT = 0.70
 $Script:COMPACTION_SUMMARY_MAX_CHARS = 2200
 $Script:COMPACTION_SUMMARY_MAX_SOURCE_CHARS = 24000
 $Script:COMPACTION_SUMMARY_RESERVED_TOKENS = 800
+$Script:COMPACTION_DETERMINISTIC_MAX_ITEMS = 6
 $Script:MAX_ITERATIONS = 30
 $Script:MAX_TOOL_RESULT_CHARS = 8000
 $Script:CLAUDE_CODE_MAX_TURNS = 12
@@ -53,6 +54,8 @@ $Script:ProviderRegistry = @{}
 $Script:RunnerConfig = @{}
 $Script:DEFAULT_SESSION_SUMMARY_MAX_CHARS = 1600
 $Script:RESEARCH_FIRST_MIN_STEPS = 2
+$Script:DEFAULT_COMPLEX_SELF_REVIEW_MIN_ITERATIONS = 5
+$Script:DEFAULT_STANDARD_SELF_REVIEW_MIN_ITERATIONS = 3
 
 # Self-review & clarification defaults (configurable per invocation)
 $Script:SELF_REVIEW_MAX_ITERATIONS = 15
@@ -653,6 +656,93 @@ function Get-MessagePreview([object]$Message, [int]$MaxChars = 320) {
     return Get-BoundedPreview -Text $content -MaxChars $MaxChars
 }
 
+function Get-PlainTextPreview([string]$Text, [int]$MaxChars = 220) {
+    if (-not $Text) { return '' }
+    $normalized = (($Text -replace "\r", '') -replace "\s+", ' ').Trim()
+    if (-not $normalized) { return '' }
+    if ($normalized.Length -le $MaxChars) { return $normalized }
+    if ($MaxChars -le 3) { return $normalized.Substring(0, $MaxChars) }
+    return $normalized.Substring(0, $MaxChars - 3).TrimEnd() + '...'
+}
+
+function Add-OrderedUniqueMatch {
+    param(
+        [System.Collections.Generic.List[string]]$Target,
+        [string]$Value,
+        [int]$MaxItems = $Script:COMPACTION_DETERMINISTIC_MAX_ITEMS
+    )
+
+    if ($null -eq $Target) { return }
+    if (-not $Value) { return }
+    $normalized = $Value.Trim()
+    if (-not $normalized) { return }
+    if ($Target.Contains($normalized)) { return }
+    if ($Target.Count -ge $MaxItems) { return }
+    $Target.Add($normalized)
+}
+
+function Get-DeterministicCompactionSummary {
+    [CmdletBinding()]
+    param(
+        [string]$ExistingSummary = '',
+        [Parameter(Mandatory)][array]$Messages,
+        [int]$MaxChars = $Script:COMPACTION_SUMMARY_MAX_CHARS
+    )
+
+    $issueRefs = New-Object System.Collections.Generic.List[string]
+    $fileRefs = New-Object System.Collections.Generic.List[string]
+    $toolRefs = New-Object System.Collections.Generic.List[string]
+    $highlights = New-Object System.Collections.Generic.List[string]
+
+    foreach ($message in $Messages) {
+        $content = [string](Get-MessageFieldValue -Message $message -Name 'content')
+        if ($content) {
+            foreach ($match in [regex]::Matches($content, '#\d+')) {
+                Add-OrderedUniqueMatch -Target $issueRefs -Value $match.Value
+            }
+
+            foreach ($match in [regex]::Matches($content, '(?<![A-Za-z0-9_.-])(?:[A-Za-z0-9_.-]+[\\/])+[A-Za-z0-9_.-]+\.[A-Za-z0-9]+')) {
+                Add-OrderedUniqueMatch -Target $fileRefs -Value ($match.Value -replace '\\', '/')
+            }
+
+            $preview = Get-PlainTextPreview -Text $content -MaxChars 160
+            if ($preview) {
+                Add-OrderedUniqueMatch -Target $highlights -Value $preview
+            }
+        }
+
+        $toolCalls = Get-MessageFieldValue -Message $message -Name 'tool_calls'
+        if ($null -ne $toolCalls) {
+            foreach ($toolCall in @($toolCalls)) {
+                $toolName = [string]$toolCall.function.name
+                Add-OrderedUniqueMatch -Target $toolRefs -Value $toolName
+            }
+        }
+    }
+
+    $lines = @('[Context Compaction Summary]')
+    if ($ExistingSummary) {
+        $lines += 'Prior summary:'
+        $lines += (Get-BoundedPreview -Text $ExistingSummary -MaxChars 500)
+        $lines += ''
+    }
+
+    $lines += 'Deterministic facts:'
+    $lines += if ($issueRefs.Count -gt 0) { "- Issues: $($issueRefs -join ', ')" } else { '- Issues: None' }
+    $lines += if ($fileRefs.Count -gt 0) { "- Files: $($fileRefs -join ', ')" } else { '- Files: None' }
+    $lines += if ($toolRefs.Count -gt 0) { "- Tools: $($toolRefs -join ', ')" } else { '- Tools: None' }
+    if ($highlights.Count -gt 0) {
+        $lines += '- Recent highlights:'
+        foreach ($highlight in $highlights) {
+            $lines += "  - $highlight"
+        }
+    } else {
+        $lines += '- Recent highlights: None'
+    }
+
+    return Get-BoundedPreview -Text (($lines -join "`n").Trim()) -MaxChars $MaxChars
+}
+
 function Build-BoundedSessionSummary {
     param(
         [array]$Messages,
@@ -695,10 +785,14 @@ function Build-BoundedSessionSummary {
     if ($null -ne $PendingHumanClarification) {
         $topic = [string]$PendingHumanClarification.topic
         $target = [string]$PendingHumanClarification.targetAgent
+        $status = [string]$PendingHumanClarification.status
         $pendingText = if ($topic -or $target) {
             "Awaiting clarification from $target on $topic."
         } else {
             'Awaiting human clarification.'
+        }
+        if ($status) {
+            $pendingText += " Status: $status."
         }
         $parts += "Pending: $pendingText"
     }
@@ -817,7 +911,67 @@ function Get-EffectiveLoopMinIterationCount {
         }
     }
 
-    return [Math]::Min(5, $maxIterations)
+    $taskClass = Get-LoopTaskClassFromState -State $State
+    $defaultMin = if ($taskClass -eq 'complex-delivery') {
+        $Script:DEFAULT_COMPLEX_SELF_REVIEW_MIN_ITERATIONS
+    } else {
+        $Script:DEFAULT_STANDARD_SELF_REVIEW_MIN_ITERATIONS
+    }
+
+    return [Math]::Min($defaultMin, $maxIterations)
+}
+
+function Get-LoopTaskClassFromState {
+    param($State)
+
+    if (-not $State) { return 'standard' }
+
+    $explicitTaskClass = ''
+    if ($State.PSObject.Properties.Name -contains 'taskClass' -and $State.taskClass) {
+        $explicitTaskClass = ([string]$State.taskClass).Trim().ToLowerInvariant()
+    }
+
+    if ($explicitTaskClass -eq 'complex-delivery') { return 'complex-delivery' }
+    if ($explicitTaskClass -eq 'standard') { return 'standard' }
+
+    $fingerprint = @(
+        if ($State.PSObject.Properties.Name -contains 'taskType') { [string]$State.taskType } else { '' }
+        if ($State.PSObject.Properties.Name -contains 'prompt') { [string]$State.prompt } else { '' }
+        if ($State.PSObject.Properties.Name -contains 'completionCriteria') { [string]$State.completionCriteria } else { '' }
+    ) -join "`n"
+    $normalized = $fingerprint.ToLowerInvariant()
+
+    if ($normalized -match '\b(bug|hotfix|regression|prd|product requirement|tech spec|technical spec|specification|adr|architecture doc|review|brainstorm|clarification|docs|documentation)\b') {
+        return 'standard'
+    }
+
+    if ($normalized -match '\b(implement|implementation|build|create|ship|refactor|feature|endpoint|component|screen|prototype|wireframe|ux|ui|frontend|backend|model|training|data science|evaluation pipeline|notebook|agent|workflow|all_tests_passing|coverage)\b') {
+        return 'complex-delivery'
+    }
+
+    return 'standard'
+}
+
+function Get-RunnerSelfReviewMinIterations {
+    param(
+        [string]$AgentName,
+        [string]$Prompt,
+        $LoopState,
+        [int]$MaxReviewerIterations
+    )
+
+    if ($LoopState) {
+        return [Math]::Min((Get-EffectiveLoopMinIterationCount -State $LoopState), $MaxReviewerIterations)
+    }
+
+    $syntheticState = [PSCustomObject]@{
+        prompt = $Prompt
+        completionCriteria = 'TASK_COMPLETE'
+        taskClass = if ($AgentName -in @('ux-designer', 'data-scientist')) { 'complex-delivery' } else { $null }
+        maxIterations = $MaxReviewerIterations
+    }
+
+    return [Math]::Min((Get-EffectiveLoopMinIterationCount -State $syntheticState), $MaxReviewerIterations)
 }
 
 function Sync-AgenticLoopState {
@@ -1368,7 +1522,7 @@ function Invoke-CompactionSummary {
     )
 
     if (-not $ModelId) {
-        return $ExistingSummary
+        return Get-DeterministicCompactionSummary -ExistingSummary $ExistingSummary -Messages $Messages -MaxChars $MaxSummaryChars
     }
 
     if (-not $Messages -or $Messages.Count -eq 0) {
@@ -1376,7 +1530,7 @@ function Invoke-CompactionSummary {
     }
 
     if (-not $Token) {
-        return $ExistingSummary
+        return Get-DeterministicCompactionSummary -ExistingSummary $ExistingSummary -Messages $Messages -MaxChars $MaxSummaryChars
     }
 
     $transcript = Get-CompactionTranscript -ExistingSummary $ExistingSummary -Messages $Messages
@@ -1421,9 +1575,9 @@ Rules:
         }
         return $summaryText
     } catch {
-        Write-Host "`e[90m  [COMPACTION WARN] Summary generation failed; retaining the prior summary and prune-only context. $_`e[0m"
-        Add-ExecutionSummaryEvent -Type 'WARN' -Message 'Compaction summary generation failed; retained the prior summary and prune-only context.' -ReplaceExisting
-        return $ExistingSummary
+        Write-Host "`e[90m  [COMPACTION WARN] Summary generation failed; using deterministic fallback summary. $_`e[0m"
+        Add-ExecutionSummaryEvent -Type 'WARN' -Message 'Compaction summary generation failed; used deterministic fallback summary.' -ReplaceExisting
+        return Get-DeterministicCompactionSummary -ExistingSummary $ExistingSummary -Messages $Messages -MaxChars $MaxSummaryChars
     }
 }
 
@@ -2516,6 +2670,11 @@ function Build-SystemPrompt([hashtable]$agentDef, [string]$agentName) {
     $parts += "If the task implies a deliverable artifact, create or update the appropriate file in the workspace before you finish."
     $parts += "After completing any required file changes, provide a concise text summary of what you created or changed."
     $parts += ""
+    $parts += "## Workflow And Skill Adherence"
+    $parts += "Read the relevant repo artifacts before deciding or editing when the task depends on workflow, design, or implementation context."
+    $parts += "Treat raw observations, durable findings, and curated learnings as different things. Do not report a raw observation as if it were a reusable learning."
+    $parts += "Do not claim completion unless the required evidence, artifacts, and validation steps are actually present."
+    $parts += ""
     $parts += "## Self-Review"
     $parts += "When you report work as complete, a same-role reviewer sub-agent will"
     $parts += "automatically review your output. If the reviewer finds HIGH or MEDIUM"
@@ -2872,6 +3031,57 @@ function Build-ClarificationSummary {
     )
 
     return ($parts -join "`n")
+}
+
+function Get-ClarificationSection([string]$Text, [string]$Heading) {
+    if (-not $Text) { return '' }
+
+    $match = [regex]::Match($Text, "(?ms)^##\s+$([regex]::Escape($Heading))\s*$\n(.*?)(?=^##\s|\z)")
+    if ($match.Success) {
+        return $match.Groups[1].Value.Trim()
+    }
+
+    return ''
+}
+
+function Parse-ClarificationResponseContract([string]$Text) {
+    $status = 'unknown'
+    $statusMatch = [regex]::Match($Text, '(?im)^status\s*:\s*(resolved|partial|unknown|needs-human)\s*$')
+    if ($statusMatch.Success) {
+        $status = $statusMatch.Groups[1].Value.ToLowerInvariant()
+    }
+
+    $directAnswer = Get-ClarificationSection -Text $Text -Heading 'Direct Answer'
+    $evidence = Get-ClarificationSection -Text $Text -Heading 'Evidence And Constraints'
+    $uncertainty = Get-ClarificationSection -Text $Text -Heading 'Remaining Uncertainty'
+
+    if (-not $directAnswer) {
+        $fallback = (($Text -replace '(?im)^status\s*:\s*(resolved|partial|unknown|needs-human)\s*$', '') -replace '\r', '').Trim()
+        if ($fallback) {
+            $directAnswer = (($fallback -split "`n`n")[0]).Trim()
+        }
+    }
+
+    $normalizedAnswer = ($directAnswer -replace '\s+', ' ').Trim()
+    $isNonAnswer = $normalizedAnswer -match "I don't know|I'm not sure|I cannot|unable to|no information|cannot determine|needs human"
+    $missingSections = New-Object System.Collections.Generic.List[string]
+    if (-not $directAnswer) { $missingSections.Add('Direct Answer') }
+    if (-not $evidence) { $missingSections.Add('Evidence And Constraints') }
+    if (-not $uncertainty) { $missingSections.Add('Remaining Uncertainty') }
+
+    $isSubstantive = (-not $isNonAnswer) -and $normalizedAnswer.Length -ge 25
+    $resolved = $status -eq 'resolved' -and $isSubstantive -and $missingSections.Count -eq 0
+
+    return [PSCustomObject]@{
+        status = $status
+        directAnswer = $directAnswer
+        evidence = $evidence
+        uncertainty = $uncertainty
+        missingSections = @($missingSections)
+        isNonAnswer = $isNonAnswer
+        isSubstantive = $isSubstantive
+        resolved = $resolved
+    }
 }
 
 # ---------------------------------------------------------------------------
@@ -3333,10 +3543,12 @@ function Invoke-ClarificationLoop {
             $discussionHistory,
             '',
             "Respond as the $TargetAgent agent. Use workspace tools to research if needed.",
-            'Provide:',
-            '1. A direct answer.',
-            '2. Key evidence, assumptions, or constraints.',
-            '3. Any remaining uncertainty that the requesting agent should know.'
+            'Read the relevant repo artifacts first when they are needed to answer reliably.',
+            'Return ASCII only and use this exact structure:',
+            'Status: resolved|partial|unknown|needs-human',
+            '## Direct Answer',
+            '## Evidence And Constraints',
+            '## Remaining Uncertainty'
         ) -join "`n"
 
         # Run a sub-agent loop as the target agent
@@ -3350,12 +3562,14 @@ function Invoke-ClarificationLoop {
             -SuppressUserSummary
 
         $answer = if ($subResult.finalText) { $subResult.finalText } else { '(No response from sub-agent)' }
+        $answerContract = Parse-ClarificationResponseContract -Text $answer
 
         $exchanges += @{
             question = $currentQuestion
             response = $answer
             iteration = $i
             respondedBy = 'sub-agent'
+            status = $answerContract.status
         }
 
         Write-Host "`e[32m  [CLARIFY RESPONSE] $TargetAgent answered ($($answer.Length) chars)`e[0m"
@@ -3369,11 +3583,7 @@ function Invoke-ClarificationLoop {
             Add-ExecutionSummaryEvent -Type 'CLARIFY DETAIL' -Message $answerPreview
         }
 
-        # Evaluate the answer using heuristics
-        $isNonAnswer = $answer -match "I don't know|I'm not sure|I cannot|unable to|no information|cannot determine"
-        $isTooShort = $answer.Length -lt 50
-
-        if (-not $isNonAnswer -and -not $isTooShort) {
+        if ($answerContract.resolved) {
             # Answer seems substantive -- resolved
             return @{
                 resolved = $true
@@ -3386,13 +3596,22 @@ function Invoke-ClarificationLoop {
         }
 
         # Generate follow-up question
-        $currentQuestion = "Your previous answer was not sufficient. Original question: $Question`nYour answer: $($answer.Substring(0, [Math]::Min(200, $answer.Length)))`nPlease provide a more detailed and specific answer."
+        $missingText = if ($answerContract.missingSections.Count -gt 0) {
+            "Missing sections: $($answerContract.missingSections -join ', ')."
+        } else {
+            "Reported status: $($answerContract.status)."
+        }
+        $currentQuestion = "Your previous answer did not satisfy the clarification contract. Original question: $Question`n$missingText`nAnswer preview: $(Get-PlainTextPreview -Text $answer -MaxChars 200)`nPlease respond again using the required structure and give the most specific repo-grounded answer you can."
     }
 
     # Exhausted iterations -- escalate to human
     Write-Host "`e[35m  [HUMAN ESCALATION] Clarification not resolved after $MaxIterations iterations.`e[0m"
     Add-ExecutionSummaryEvent -Type 'HUMAN ESCALATION' -Message "Clarification on $Topic was not resolved after $MaxIterations attempts." -ReplaceExisting
-    $escalationContext = "The $FromAgent agent asked the $TargetAgent agent about '$Topic' but could not get a satisfactory answer after $MaxIterations attempts.`n"
+    $escalationContext = "[Clarification Pending]`n"
+    $escalationContext += "From: $FromAgent`n"
+    $escalationContext += "To: $TargetAgent`n"
+    $escalationContext += "Topic: $Topic`n"
+    $escalationContext += "Status: needs-human`n"
     $escalationContext += "Original question: $Question`n"
     foreach ($ex in $exchanges) {
         $escalationContext += "  Iteration $($ex.iteration): Q: $($ex.question.Substring(0, [Math]::Min(100, $ex.question.Length)))... A: $($ex.response.Substring(0, [Math]::Min(100, $ex.response.Length)))...`n"
@@ -3446,6 +3665,7 @@ function Invoke-ClarificationLoop {
             fromAgent = $FromAgent
             targetAgent = $TargetAgent
             topic = $Topic
+            status = 'needs-human'
             question = $Question
             exchanges = $exchanges
         }
@@ -3630,7 +3850,8 @@ function Invoke-AgenticLoop {
     # Self-review state (tracks review iterations across the main loop)
     $selfReviewIteration = 0
     $selfReviewMax = $Script:SELF_REVIEW_MAX_ITERATIONS
-    $selfReviewMin = [Math]::Min($Script:SELF_REVIEW_MIN_ITERATIONS, $selfReviewMax)
+    $activeLoopState = Read-LoopState -WorkspaceRoot $WorkspaceRoot
+    $selfReviewMin = Get-RunnerSelfReviewMinIterations -AgentName $Agent -Prompt $Prompt -LoopState $activeLoopState -MaxReviewerIterations $selfReviewMax
     $selfReviewHistory = @()
     $finalSelfReviewSummary = ''
 
@@ -3779,11 +4000,6 @@ function Invoke-AgenticLoop {
                     $stallGuidance = ''
 
                     if ($isStalled) {
-                        # Check if the same categories are repeatedly failing
-                        $prevCats = @()
-                        if ($reviewResult.categoryVerdicts) {
-                            $prevCats = @($reviewResult.categoryVerdicts.GetEnumerator() | Where-Object { $_.Value -eq 'FAIL' } | ForEach-Object { $_.Key })
-                        }
                         $repeatedFindings = @($reviewFindings | Where-Object { $_.impact -ne 'low' } | ForEach-Object { $_.category })
 
                         Write-Host "`e[33m  [STALL DETECTED] $stallThreshold consecutive failures. Injecting pivot-vs-refine guidance.`e[0m"

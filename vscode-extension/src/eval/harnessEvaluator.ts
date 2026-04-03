@@ -24,7 +24,7 @@ export function getEvaluationSummary(agentx: AgentXContext): string {
     return 'No evaluation';
   }
 
-  return `${report.score.percent}% (${report.score.passedChecks}/${report.score.totalChecks} checks)`;
+  return `Workflow ${report.scores.workflowCompliance.percent}% | Evidence ${report.scores.evidenceStrength.percent}% | Confidence ${report.scores.outputConfidence.percent}%`;
 }
 
 export function getEvaluationTooltip(agentx: AgentXContext): string {
@@ -34,11 +34,17 @@ export function getEvaluationTooltip(agentx: AgentXContext): string {
   }
 
   const failingChecks = report.checks.filter((check) => !check.passed);
+  const summaryLines = [
+    `Workflow compliance: ${report.scores.workflowCompliance.percent}% (${report.scores.workflowCompliance.passedChecks}/${report.scores.workflowCompliance.totalChecks} checks)`,
+    `Evidence strength: ${report.scores.evidenceStrength.percent}% (${report.scores.evidenceStrength.passedChecks}/${report.scores.evidenceStrength.totalChecks} checks)`,
+    `Output confidence: ${report.scores.outputConfidence.percent}% (${report.scores.outputConfidence.passedChecks}/${report.scores.outputConfidence.totalChecks} checks)`,
+    'Confidence reflects the deterministic evidence behind the reported state, not semantic correctness of the output.',
+  ];
   if (failingChecks.length === 0) {
-    return 'All deterministic harness checks passed.';
+    return `${summaryLines.join('\n')}\nAll deterministic harness checks passed.`;
   }
 
-  return failingChecks.map((check) => `${check.label}: ${check.summary}`).join('\n');
+  return `${summaryLines.join('\n')}\n${failingChecks.map((check) => `${check.label}: ${check.summary}`).join('\n')}`;
 }
 
 export function getCoverageSummary(agentx: AgentXContext): string {
