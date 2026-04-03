@@ -34,17 +34,13 @@ Running autonomous agents from the CLI lacks visibility. The AgentX VS Code exte
 
 ```mermaid
 flowchart LR
-    classDef chat fill:#fdf4ff,stroke:#d946ef,stroke-width:2px,color:#701a75
-    classDef core fill:#eff6ff,stroke:#3b82f6,stroke-width:2px,color:#1e40af
-    classDef repo fill:#f0fdf4,stroke:#22c55e,stroke-width:2px,color:#166534
+    Chat[Copilot Chat] --> Context[AgentX Context] --> Engine[Execution Engine]
 
-    Chat([Copilot Chat]):::chat --> Context[AgentX Context]:::core --> Engine[Execution Engine]:::core
-    
     Engine --> View[Sidebar & Live State]
-    Engine --> File[Repo-Defined Assets]:::repo
-    
-    View -.->|Queues & Workflows| UI((VS Code UI))
-    File -.->|Skills & Templates| Workspace((Local Files))
+    Engine --> File[Repo-Defined Assets]
+
+    View -.->|Queues and Workflows| UI[VS Code UI]
+    File -.->|Skills and Templates| Workspace[Local Files]
 ```
 
 * **Inputs:** VS Code Chat drives intent into the orchestrator.

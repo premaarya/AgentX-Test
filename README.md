@@ -56,17 +56,12 @@ AgentX is powered by a rich knowledge layer of **69 production skills** distribu
 ```mermaid
 stateDiagram-v2
     direction LR
-    classDef highlight fill:#eff6ff,stroke:#3b82f6,stroke-width:2px,color:#1e40af
-    classDef success fill:#f0fdf4,stroke:#22c55e,stroke-width:2px,color:#166534
 
     [*] --> Generate
     Generate --> Verify
     Verify --> SelfReview
     SelfReview --> Generate : Fix Gaps
     SelfReview --> Done : Approved
-
-    class Verify,SelfReview highlight
-    class Done success
 ```
 AgentX leverages a robust, iterative execution model. The agent researches the repo, classifies the task, writes code against clear criteria, verifies the result, and loops until the task is definitively "Done."
 
@@ -97,21 +92,17 @@ AgentX now adds explicit brainstorm and compound-loop entry points, ranked plann
 
 ```mermaid
 flowchart LR
-    classDef intent fill:#fffbeb,stroke:#f59e0b,stroke-width:2px,color:#92400e
-    classDef hub fill:#eff6ff,stroke:#3b82f6,stroke-width:2px,color:#1e40af
-    classDef phase fill:#f0fdf4,stroke:#22c55e,stroke-width:2px,color:#166534
-    
-    UI((User Intent)):::intent --> Hub{AgentX Hub}:::hub
-    
-    subgraph SpecialistRouting [Specialist Routing]
+  UI([User Intent]) --> Hub{AgentX Hub}
+
+  subgraph SpecialistRouting[Specialist Routing]
         direction LR
-        D[Discover & Plan]:::phase --> I[Implement]:::phase --> V[Validate]:::phase
+    D[Discover and Plan] --> I[Implement] --> V[Validate]
     end
-    
+
     Hub --> SpecialistRouting
-    
-    D -.->|PM, UX, Architect| Assets[(Repo Assets)]
-    I -.->|Engineer + Skills| Assets
+
+  D -.->|PM, UX, Architect| Assets[(Repo Assets)]
+  I -.->|Engineer and Skills| Assets
     V -.->|Reviewer, Tester| Assets
 ```
 
@@ -236,12 +227,12 @@ Once a workspace is initialized, AgentX can drive delivery from planning through
 
 ```mermaid
 flowchart LR
-  I[Install Extension] --> W[Open Workspace]
-  W --> R[Initialize Local Runtime]
-  R --> B[Brainstorm Or Create Work]
-  B --> E[Implement With AgentX]
-  E --> V[Review And Validate]
-  V --> C[Capture Learnings]
+    I[Install Extension] --> W[Open Workspace]
+    W --> R[Initialize Local Runtime]
+    R --> B[Brainstorm Or Create Work]
+    B --> E[Implement With AgentX]
+    E --> V[Review And Validate]
+    V --> C[Capture Learnings]
 ```
 
 ### Recommended Flow
