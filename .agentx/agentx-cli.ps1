@@ -20,6 +20,14 @@
 # ---------------------------------------------------------------------------
 
 #Requires -Version 7.0
+# PSScriptAnalyzer file-level suppressions
+# PSUseSingularNouns: Internal collection-returning helpers use plural names by design.
+# PSUseShouldProcessForStateChangingFunctions: These are private internal helpers, not exported cmdlets.
+# PSAvoidUsingWriteHost: Write-CliOutput is the sanctioned console-output wrapper; Console::Write is used only for prompt styling.
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '', Scope = 'Function', Target = '*')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Scope = 'Function', Target = '*')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '', Scope = 'Function', Target = 'Write-CliOutput')]
+param()
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
@@ -49,6 +57,20 @@ $Script:VERSION_FILE = Join-Path $AGENTX_DIR 'version.json'
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+# Write-CliOutput: thin wrapper over Write-Information so PSAvoidUsingWriteHost
+# does not flag every console output line in this CLI script.
+# -NoNewline uses [Console]::Write for interactive prompts (e.g. Read-Host pairs).
+
+
+function Write-CliOutput {
+    param([string]$Message = '', [switch]$NoNewline)
+    if ($NoNewline) {
+        [Console]::Write($Message)
+    } else {
+        Write-Information $Message -InformationAction Continue
+    }
+}
 
 function Read-JsonFile([string]$p) {
     if (-not (Test-Path $p)) { return $null }
@@ -138,6 +160,9 @@ function Invoke-WithJsonLock([string]$jsonPath, [string]$agent = 'cli', [scriptb
 
 function Get-Timestamp { return (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ') }
 
+
+
+
 function Get-AgentDefinitionDirectories {
     return @(
         (Join-Path $Script:ROOT '.github' 'agents'),
@@ -145,6 +170,9 @@ function Get-AgentDefinitionDirectories {
         (Join-Path $Script:INSTALL_ROOT '.github' 'agents')
     )
 }
+
+
+
 
 function Get-AgentDefinitionFiles([switch]$IncludeInternal) {
     $files = @{}
@@ -196,6 +224,9 @@ function Get-ConfigValue($cfg, [string]$name, $default = $null) {
     return $default
 }
 
+
+
+
 function Set-ConfigValue($cfg, [string]$name, $value) {
     if ($cfg -is [hashtable]) {
         $cfg[$name] = $value
@@ -228,7 +259,7 @@ function ConvertTo-StringArray($value) {
             try {
                 return @(ConvertTo-StringArray ($trimmed | ConvertFrom-Json -Depth 10))
             } catch {
-                # Fall back to delimiter parsing.
+                Write-Verbose "JSON array parse failed, falling back to delimiter parsing."
             }
         }
 
@@ -279,6 +310,9 @@ function Get-HarnessEnforcementProfile($cfg, [string]$override = '') {
     }
 }
 
+
+
+
 function Get-HarnessDisabledChecks($cfg, [string[]]$overrides = @()) {
     $rawValues = @()
     if ($overrides.Count -gt 0) {
@@ -301,6 +335,9 @@ function Get-HarnessDisabledChecks($cfg, [string[]]$overrides = @()) {
     )
 }
 
+
+
+
 function Initialize-AgentXAdapters($cfg) {
     $adapters = Get-ConfigValue $cfg 'adapters'
     if ($adapters) { return $adapters }
@@ -320,6 +357,9 @@ function Get-AgentXAdapterValue($cfg, [string]$adapterName, [string]$name, $defa
     return Get-ConfigValue $adapter $name $default
 }
 
+
+
+
 function Set-AgentXAdapterValue($cfg, [string]$adapterName, [string]$name, $value) {
     $adapters = Initialize-AgentXAdapters $cfg
     $adapter = Get-ConfigValue $adapters $adapterName
@@ -330,6 +370,9 @@ function Set-AgentXAdapterValue($cfg, [string]$adapterName, [string]$name, $valu
 
     Set-ConfigValue $adapter $name $value
 }
+
+
+
 
 function Get-AgentXConfiguredAdapters {
     $cfg = Get-AgentXConfig
@@ -442,14 +485,14 @@ function Save-InferredProvider([string]$provider, [string]$reason, [string]$repo
             Write-JsonFile $Script:CONFIG_FILE $cfg
         }
         if (-not $Script:JsonOutput) {
-            Write-Host "$($C.y)  [WARN] Auto-switched provider to '$provider' because $reason.$($C.n)"
+            Write-CliOutput "$($C.y)  [WARN] Auto-switched provider to '$provider' because $reason.$($C.n)"
         }
         if ($provider -eq 'github' -and -not [string]::IsNullOrWhiteSpace($repo)) {
             Sync-LocalBacklogToGitHubIfNeeded -Repo $repo -Reason $reason
         }
     } catch {
         if (-not $Script:JsonOutput) {
-            Write-Host "$($C.y)  [WARN] Failed to persist inferred provider '$provider': $_$($C.n)"
+            Write-CliOutput "$($C.y)  [WARN] Failed to persist inferred provider '$provider': $_$($C.n)"
         }
     }
 }
@@ -507,6 +550,9 @@ function Get-AgentXProviderInfo {
     }
 }
 
+
+
+
 function Get-LocalBacklogIssues {
     $backend = Get-LocalIssueBackend
     if ($backend -eq 'backlog') {
@@ -537,6 +583,10 @@ function Get-LocalBacklogIssues {
         Where-Object { $_ } |
         Sort-Object -Property number)
 }
+
+
+
+
 
 function Remove-SurroundingQuotes([string]$value) {
     $trimmed = [string]$value
@@ -599,6 +649,9 @@ function ConvertFrom-BacklogYamlFrontmatter([string]$yamlText) {
     return $metadata
 }
 
+
+
+
 function Get-BacklogFrontmatterParts([string]$content) {
     if ($content -match '(?ms)^---\s*\r?\n(?<yaml>.*?)\r?\n---\s*\r?\n?(?<body>.*)$') {
         return [PSCustomObject]@{
@@ -611,6 +664,9 @@ function Get-BacklogFrontmatterParts([string]$content) {
         body = [string]$content
     }
 }
+
+
+
 
 function Read-BacklogConfigMetadata([string]$configPath) {
     if (-not (Test-Path $configPath)) { return @{} }
@@ -691,6 +747,9 @@ function Get-LocalIssueBackend {
     return 'json'
 }
 
+
+
+
 function Get-BacklogLocalPaths {
     $resolution = Get-BacklogLocalResolution
     return [PSCustomObject]@{
@@ -767,10 +826,16 @@ function Get-MarkdownSectionContent([string]$content, [string]$heading) {
     return $match.Groups['section'].Value.Trim()
 }
 
+
+
+
 function Remove-MarkdownSection([string]$content, [string]$heading) {
     $pattern = '(?ms)^##\s+' + [regex]::Escape($heading) + '\s*\r?\n.*?(?=^##\s|\z)'
     return ([regex]::Replace($content, $pattern, '')).Trim()
 }
+
+
+
 
 function Set-MarkdownSectionContent([string]$content, [string]$heading, [string]$sectionContent) {
     $replacement = "## $heading`n`n$($sectionContent.Trim())"
@@ -947,6 +1012,9 @@ function Build-BacklogTaskContent($issue, [string]$existingContent = '') {
     return (($frontmatterLines -join "`n") + "`n`n" + $bodyContent.Trim() + "`n")
 }
 
+
+
+
 function New-LocalIssue([string]$title, [string]$body, [string[]]$labels) {
     $num = Get-NextIssueNumber
     $issue = [PSCustomObject]@{
@@ -1009,6 +1077,9 @@ function Get-ProviderIssue([int]$num) {
     return Get-LocalIssue $num
 }
 
+
+
+
 function Get-ProviderIssues {
     $provider = Get-AgentXProvider
     if ($provider -eq 'github') {
@@ -1026,7 +1097,7 @@ function Get-ProviderIssues {
                     Convert-GitHubIssueToAgentXIssue $_ $status
                 })
             }
-        } catch { }
+        } catch { Write-Verbose "Provider issue fetch failed: $_" }
         return @()
     }
 
@@ -1055,12 +1126,15 @@ function Get-ProviderIssues {
                     if ($issues.Count -gt 0) { return $issues }
                 }
             }
-        } catch { }
+        } catch { Write-Verbose "ADO issue fetch failed: $_" }
         return @()
     }
 
     return @(Get-LocalBacklogIssues)
 }
+
+
+
 
 function Update-ProviderIssue([int]$num, [string]$title, [string]$body, [string]$status, [string]$labelStr) {
     $provider = Get-AgentXProvider
@@ -1098,9 +1172,9 @@ function Update-ProviderIssue([int]$num, [string]$title, [string]$body, [string]
         if ($status) {
             if (-not (Set-GitHubProjectIssueStatus $num $status $false)) {
                 if (Test-GitHubProjectConfigured) {
-                    Write-Host "$($C.y)GitHub project status was not updated for issue #${num}. Ensure the issue is added to the configured project and the project has a matching Status option.$($C.n)"
+                    Write-CliOutput "$($C.y)GitHub project status was not updated for issue #${num}. Ensure the issue is added to the configured project and the project has a matching Status option.$($C.n)"
                 } else {
-                    Write-Host "$($C.y)GitHub project status was not updated because no project number is configured. Set .agentx/config.json `project` to enable Project V2 status sync.$($C.n)"
+                    Write-CliOutput "$($C.y)GitHub project status was not updated because no project number is configured. Set .agentx/config.json `project` to enable Project V2 status sync.$($C.n)"
                 }
             }
         }
@@ -1157,7 +1231,7 @@ function Close-ProviderIssue([int]$num) {
         $null = Invoke-GitHubCli $ghArgs "Failed to close GitHub issue #$num." -AllowEmptyOutput
         if (Test-GitHubProjectConfigured) {
             if (-not (Set-GitHubProjectIssueStatus $num 'Done' $false)) {
-                Write-Host "$($C.y)GitHub issue #${num} was closed, but the configured project status could not be updated to Done.$($C.n)"
+                Write-CliOutput "$($C.y)GitHub issue #${num} was closed, but the configured project status could not be updated to Done.$($C.n)"
             }
         }
         return (Get-GitHubIssue $num)
@@ -1342,6 +1416,9 @@ function Sync-LocalIssueToGitHub($localIssue, [int]$remoteIssueNumber) {
     return $true
 }
 
+
+
+
 function New-GitHubIssueFromLocalIssue($localIssue, [string]$localIssueNumber) {
     $createArgs = @('issue', 'create', '--title', $localIssue.title)
     $issueBody = if ([string]::IsNullOrWhiteSpace($localIssue.body)) { $localIssue.title } else { $localIssue.body }
@@ -1423,7 +1500,7 @@ function Sync-LocalBacklogToGitHubIfNeeded([string]$Repo, [string]$Reason, [swit
     }
 
     if (-not $Script:JsonOutput -and ($migratedCount -gt 0 -or $syncedCount -gt 0)) {
-        Write-Host "$($C.g)  Synced local backlog to GitHub for $Repo. Created: $migratedCount, refreshed: $syncedCount.$($C.n)"
+        Write-CliOutput "$($C.g)  Synced local backlog to GitHub for $Repo. Created: $migratedCount, refreshed: $syncedCount.$($C.n)"
     }
 }
 
@@ -1481,6 +1558,9 @@ function Read-GitJson([string]$filePath) {
     try { return $raw | ConvertFrom-Json } catch { return $null }
 }
 
+
+
+
 function Write-GitFiles([array]$entries, [string]$message) {
     Initialize-GitDataBranch
     $gitDir = (& git -C $Script:ROOT rev-parse --git-dir 2>$null).Trim()
@@ -1514,7 +1594,7 @@ function Write-GitFiles([array]$entries, [string]$message) {
         try {
             $parent = (& git -C $Script:ROOT rev-parse $Script:DATA_BRANCH 2>$null).Trim()
             if ($parent) { $parentArgs = @('-p', $parent) }
-        } catch {}
+        } catch { Write-Verbose "No existing data branch parent: $_" }
 
         # Create commit
         $commitHash = (& git -C $Script:ROOT commit-tree $treeHash @parentArgs -m $message 2>$null).Trim()
@@ -1538,6 +1618,9 @@ function Write-GitJson([string]$filePath, $data, [string]$message) {
     $json = ($data | ConvertTo-Json -Depth 10) + "`n"
     return Write-GitFile $filePath $json $message
 }
+
+
+
 
 function Remove-GitFile([string]$filePath, [string]$message) {
     if (-not (Test-GitDataBranch)) { return $null }
@@ -1586,34 +1669,34 @@ function Invoke-GitSyncCmd {
     $action = if ($Script:SubArgs.Count -gt 0) { $Script:SubArgs[0] } else { 'status' }
     switch ($action) {
         'push' {
-            if (-not (Test-GitDataBranch)) { Write-Host "$($C.y)No data branch to push.$($C.n)"; return }
+            if (-not (Test-GitDataBranch)) { Write-CliOutput "$($C.y)No data branch to push.$($C.n)"; return }
             try {
                 & git -C $Script:ROOT push origin "${Script:DATA_BRANCH}:${Script:DATA_BRANCH}" 2>&1
-                Write-Host "$($C.g)  Pushed data branch to origin.$($C.n)"
+                Write-CliOutput "$($C.g)  Pushed data branch to origin.$($C.n)"
             } catch {
-                Write-Host "$($C.r)  Push failed: $_$($C.n)"
+                Write-CliOutput "$($C.r)  Push failed: $_$($C.n)"
             }
         }
         'pull' {
             try {
                 & git -C $Script:ROOT fetch origin "${Script:DATA_BRANCH}:${Script:DATA_BRANCH}" 2>&1
-                Write-Host "$($C.g)  Pulled data branch from origin.$($C.n)"
+                Write-CliOutput "$($C.g)  Pulled data branch from origin.$($C.n)"
             } catch {
-                Write-Host "$($C.r)  Pull failed: $_$($C.n)"
+                Write-CliOutput "$($C.r)  Pull failed: $_$($C.n)"
             }
         }
         default {
-            Write-Host "`n$($C.c)  Git Data Sync$($C.n)"
-            Write-Host "$($C.d)  ---------------------------------------------$($C.n)"
+            Write-CliOutput "`n$($C.c)  Git Data Sync$($C.n)"
+            Write-CliOutput "$($C.d)  ---------------------------------------------$($C.n)"
             $persistence = Get-PersistenceMode
-            Write-Host "  Persistence mode: $persistence"
+            Write-CliOutput "  Persistence mode: $persistence"
             if (Test-GitDataBranch) {
                 $lastCommit = (& git -C $Script:ROOT log -1 --format='%h %s (%ar)' $Script:DATA_BRANCH 2>$null)
-                if ($lastCommit) { Write-Host "  Branch: $Script:DATA_BRANCH" ; Write-Host "  Last commit: $lastCommit" }
+                if ($lastCommit) { Write-CliOutput "  Branch: $Script:DATA_BRANCH" ; Write-CliOutput "  Last commit: $lastCommit" }
             } else {
-                Write-Host "  No data branch found. Run 'agentx config set persistence git' to enable."
+                Write-CliOutput "  No data branch found. Run 'agentx config set persistence git' to enable."
             }
-            Write-Host "`n  Usage: agentx git-sync [push|pull]`n"
+            Write-CliOutput "`n  Usage: agentx git-sync [push|pull]`n"
         }
     }
 }
@@ -1626,20 +1709,20 @@ function Invoke-BacklogSyncCmd {
         'github' {
             $repo = Get-GitHubRepoSlug
             if ([string]::IsNullOrWhiteSpace($repo)) {
-                Write-Host 'Error: No GitHub repo configured or detected from origin.'
+                Write-CliOutput 'Error: No GitHub repo configured or detected from origin.'
                 exit 1
             }
             if (-not (Test-GitHubCliAuthenticated)) {
-                Write-Host 'Error: GitHub CLI authentication is required to sync backlog to GitHub.'
+                Write-CliOutput 'Error: GitHub CLI authentication is required to sync backlog to GitHub.'
                 exit 1
             }
             Sync-LocalBacklogToGitHubIfNeeded -Repo $repo -Reason 'manual backlog sync request' -Force:$force
             if (-not $Script:JsonOutput) {
-                Write-Host "$($C.g)  GitHub backlog sync completed for $repo.$($C.n)"
+                Write-CliOutput "$($C.g)  GitHub backlog sync completed for $repo.$($C.n)"
             }
         }
         default {
-            Write-Host "Usage: agentx backlog-sync [github] [--force]"
+            Write-CliOutput "Usage: agentx backlog-sync [github] [--force]"
             exit 1
         }
     }
@@ -1839,6 +1922,9 @@ function Get-TaskBundleActiveIssueContext {
     }
 }
 
+
+
+
 function Get-TaskBundlePlanCandidates {
     $candidates = @()
     foreach ($relativeDir in @('docs/execution/plans', 'docs/plans')) {
@@ -1932,11 +2018,17 @@ function Resolve-TaskBundleContext([int]$issueNumber = 0, [string]$planReference
     throw 'Task bundle context is ambiguous. Use --issue <number>, --plan <path>, or --all for a repo-wide list.'
 }
 
+
+
+
 function New-TaskBundleId {
     $stamp = (Get-Date).ToUniversalTime().ToString('yyyyMMdd-HHmmssfff')
     $suffix = [System.Guid]::NewGuid().ToString('N').Substring(0, 6)
     return "bundle-$stamp-$suffix"
 }
+
+
+
 
 function Get-TaskBundles {
     $directory = Get-TaskBundleDirectory
@@ -2058,6 +2150,9 @@ function Get-TaskBundleFindingPath([string]$bundleId) {
     return Join-Path (Get-TaskBundleFindingDirectory) ("FINDING-$bundleId.md")
 }
 
+
+
+
 function New-TaskBundleFinding($bundle) {
     $directory = Get-TaskBundleFindingDirectory
     if (-not (Test-Path $directory)) { New-Item -ItemType Directory -Path $directory -Force | Out-Null }
@@ -2122,7 +2217,7 @@ function Invoke-BundleCmd {
         'get' { Invoke-BundleGet }
         'resolve' { Invoke-BundleResolve }
         'promote' { Invoke-BundlePromote }
-        default { Write-Host "Unknown bundle action: $action"; exit 1 }
+        default { Write-CliOutput "Unknown bundle action: $action"; exit 1 }
     }
 }
 
@@ -2137,7 +2232,7 @@ function Invoke-BundleCreate {
     $tags = ConvertTo-StringArray (Get-Flag @('--tags'))
     $evidenceLinks = ConvertTo-StringArray (Get-Flag @('-e', '--evidence'))
 
-    if ([string]::IsNullOrWhiteSpace($title)) { Write-Host 'Error: --title is required'; exit 1 }
+    if ([string]::IsNullOrWhiteSpace($title)) { Write-CliOutput 'Error: --title is required'; exit 1 }
 
     try {
         $context = Resolve-TaskBundleContext -issueNumber $explicitIssueNumber -planReference $explicitPlan
@@ -2165,10 +2260,10 @@ function Invoke-BundleCreate {
         if ($Script:JsonOutput) {
             $bundle | ConvertTo-Json -Depth 8
         } else {
-            Write-Host "$($C.g)Created task bundle $($bundle.bundle_id): $($bundle.title)$($C.n)"
+            Write-CliOutput "$($C.g)Created task bundle $($bundle.bundle_id): $($bundle.title)$($C.n)"
         }
     } catch {
-        Write-Host "Error: $($_.Exception.Message)"
+        Write-CliOutput "Error: $($_.Exception.Message)"
         exit 1
     }
 }
@@ -2188,23 +2283,23 @@ function Invoke-BundleList {
             return
         }
         if ($bundles.Count -eq 0) {
-            Write-Host "$($C.y)No task bundles found.$($C.n)"
+            Write-CliOutput "$($C.y)No task bundles found.$($C.n)"
             return
         }
         foreach ($bundle in $bundles) {
-            Write-Host "$($bundle.bundle_id) [$($bundle.state)] $($bundle.priority) - $($bundle.title)"
+            Write-CliOutput "$($bundle.bundle_id) [$($bundle.state)] $($bundle.priority) - $($bundle.title)"
         }
     } catch {
-        Write-Host "Error: $($_.Exception.Message)"
+        Write-CliOutput "Error: $($_.Exception.Message)"
         exit 1
     }
 }
 
 function Invoke-BundleGet {
     $bundleId = Get-Flag @('--id', '-n')
-    if ([string]::IsNullOrWhiteSpace($bundleId)) { Write-Host 'Error: --id is required'; exit 1 }
+    if ([string]::IsNullOrWhiteSpace($bundleId)) { Write-CliOutput 'Error: --id is required'; exit 1 }
     $bundle = Get-TaskBundle $bundleId
-    if (-not $bundle) { Write-Host "Error: Task bundle '$bundleId' was not found."; exit 1 }
+    if (-not $bundle) { Write-CliOutput "Error: Task bundle '$bundleId' was not found."; exit 1 }
     $bundle | ConvertTo-Json -Depth 8
 }
 
@@ -2212,10 +2307,10 @@ function Invoke-BundleResolve {
     $bundleId = Get-Flag @('--id', '-n')
     $stateValue = Get-Flag @('--state')
     $archiveReason = Get-DecodedFlag @('--archive-reason') @('--archive-reason-base64')
-    if ([string]::IsNullOrWhiteSpace($bundleId)) { Write-Host 'Error: --id is required'; exit 1 }
+    if ([string]::IsNullOrWhiteSpace($bundleId)) { Write-CliOutput 'Error: --id is required'; exit 1 }
 
     $bundle = Get-TaskBundle $bundleId
-    if (-not $bundle) { Write-Host "Error: Task bundle '$bundleId' was not found."; exit 1 }
+    if (-not $bundle) { Write-CliOutput "Error: Task bundle '$bundleId' was not found."; exit 1 }
 
     try {
         $targetState = if ($stateValue) { Format-TaskBundleState $stateValue } elseif ($archiveReason) { 'Archived' } else { 'Done' }
@@ -2231,10 +2326,10 @@ function Invoke-BundleResolve {
         if ($Script:JsonOutput) {
             $bundle | ConvertTo-Json -Depth 8
         } else {
-            Write-Host "$($C.g)Resolved task bundle $bundleId as $targetState.$($C.n)"
+            Write-CliOutput "$($C.g)Resolved task bundle $bundleId as $targetState.$($C.n)"
         }
     } catch {
-        Write-Host "Error: $($_.Exception.Message)"
+        Write-CliOutput "Error: $($_.Exception.Message)"
         exit 1
     }
 }
@@ -2242,21 +2337,21 @@ function Invoke-BundleResolve {
 function Invoke-BundlePromote {
     $bundleId = Get-Flag @('--id', '-n')
     $targetType = Format-TaskBundleTargetType (Get-Flag @('--target') (Get-TaskBundlePromotionTargetFromMode (Get-Flag @('--promotion-mode'))))
-    if ([string]::IsNullOrWhiteSpace($bundleId)) { Write-Host 'Error: --id is required'; exit 1 }
+    if ([string]::IsNullOrWhiteSpace($bundleId)) { Write-CliOutput 'Error: --id is required'; exit 1 }
 
     $bundle = Get-TaskBundle $bundleId
-    if (-not $bundle) { Write-Host "Error: Task bundle '$bundleId' was not found."; exit 1 }
+    if (-not $bundle) { Write-CliOutput "Error: Task bundle '$bundleId' was not found."; exit 1 }
     if ([string]::IsNullOrWhiteSpace($targetType)) {
         $targetType = Get-TaskBundlePromotionTargetFromMode ([string]$bundle.promotion_mode)
     }
     if ($targetType -eq 'none') {
-        Write-Host "Error: Task bundle '$bundleId' has no durable promotion target. Set --target or use a candidate promotion mode."
+        Write-CliOutput "Error: Task bundle '$bundleId' has no durable promotion target. Set --target or use a candidate promotion mode."
         exit 1
     }
 
     if ($bundle.PSObject.Properties['promotion_history'] -and $bundle.promotion_history -and $bundle.promotion_history.target_reference) {
         $result = Get-TaskBundlePromotionResult $bundle ([string]$bundle.promotion_history.target_type) ([string]$bundle.promotion_history.target_reference) 'already-promoted'
-        if ($Script:JsonOutput) { $result | ConvertTo-Json -Depth 8 } else { Write-Host "$($C.y)Task bundle $bundleId already promoted to $($bundle.promotion_history.target_reference).$($C.n)" }
+        if ($Script:JsonOutput) { $result | ConvertTo-Json -Depth 8 } else { Write-CliOutput "$($C.y)Task bundle $bundleId already promoted to $($bundle.promotion_history.target_reference).$($C.n)" }
         return
     }
 
@@ -2312,10 +2407,10 @@ function Invoke-BundlePromote {
         if ($Script:JsonOutput) {
             $result | ConvertTo-Json -Depth 8
         } else {
-            Write-Host "$($C.g)Promoted task bundle $bundleId -> $targetReference.$($C.n)"
+            Write-CliOutput "$($C.g)Promoted task bundle $bundleId -> $targetReference.$($C.n)"
         }
     } catch {
-        Write-Host "Error: $($_.Exception.Message)"
+        Write-CliOutput "Error: $($_.Exception.Message)"
         exit 1
     }
 }
@@ -2331,6 +2426,9 @@ function Get-BoundedParallelDirectory {
 function Get-BoundedParallelFilePath([string]$parallelId) {
     return Join-Path (Get-BoundedParallelDirectory) ("$parallelId.json")
 }
+
+
+
 
 function New-BoundedParallelId {
     $stamp = (Get-Date).ToUniversalTime().ToString('yyyyMMdd-HHmmssfff')
@@ -2446,6 +2544,9 @@ function Get-BoundedParallelReviewLevel($assessment) {
     return 'sequential-only'
 }
 
+
+
+
 function Get-BoundedParallelRuns {
     $directory = Get-BoundedParallelDirectory
     if (-not (Test-Path $directory)) { return @() }
@@ -2492,6 +2593,9 @@ function Get-BoundedParallelSummary($run) {
     }
 }
 
+
+
+
 function ConvertTo-TaskUnits([string]$encodedUnits) {
     if ([string]::IsNullOrWhiteSpace($encodedUnits)) { throw 'Task units are required. Use --units-base64 with a JSON array.' }
     try {
@@ -2533,6 +2637,9 @@ function ConvertTo-TaskUnits([string]$encodedUnits) {
     }
     return $units
 }
+
+
+
 
 function New-ParallelReviewFinding($run, [string]$title, [string]$summary) {
     $directory = Get-TaskBundleFindingDirectory
@@ -2580,7 +2687,7 @@ function Invoke-ParallelCmd {
         'list' { Invoke-ParallelList }
         'get' { Invoke-ParallelGet }
         'reconcile' { Invoke-ParallelReconcile }
-        default { Write-Host "Unknown parallel action: $action"; exit 1 }
+        default { Write-CliOutput "Unknown parallel action: $action"; exit 1 }
     }
 }
 
@@ -2629,9 +2736,9 @@ function Invoke-ParallelAssess {
         }
         $run | Add-Member -NotePropertyName 'parent_summary' -NotePropertyValue (Get-BoundedParallelSummary $run) -Force
         Save-BoundedParallelRun $run
-        if ($Script:JsonOutput) { $run | ConvertTo-Json -Depth 10 } else { Write-Host "$($C.g)Recorded bounded parallel assessment $($run.parallel_id): $($assessment.decision).$($C.n)" }
+        if ($Script:JsonOutput) { $run | ConvertTo-Json -Depth 10 } else { Write-CliOutput "$($C.g)Recorded bounded parallel assessment $($run.parallel_id): $($assessment.decision).$($C.n)" }
     } catch {
-        Write-Host "Error: $($_.Exception.Message)"
+        Write-CliOutput "Error: $($_.Exception.Message)"
         exit 1
     }
 }
@@ -2639,19 +2746,19 @@ function Invoke-ParallelAssess {
 function Invoke-ParallelStart {
     $parallelId = Get-Flag @('--id', '-n')
     $unitsBase64 = Get-Flag @('--units-base64')
-    if ([string]::IsNullOrWhiteSpace($parallelId)) { Write-Host 'Error: --id is required'; exit 1 }
+    if ([string]::IsNullOrWhiteSpace($parallelId)) { Write-CliOutput 'Error: --id is required'; exit 1 }
     $run = Get-BoundedParallelRun $parallelId
-    if (-not $run) { Write-Host "Error: Bounded parallel record '$parallelId' was not found."; exit 1 }
-    if ($run.assessment.decision -ne 'eligible') { Write-Host "Error: Bounded parallel record '$parallelId' is ineligible and must remain sequential."; exit 1 }
+    if (-not $run) { Write-CliOutput "Error: Bounded parallel record '$parallelId' was not found."; exit 1 }
+    if ($run.assessment.decision -ne 'eligible') { Write-CliOutput "Error: Bounded parallel record '$parallelId' is ineligible and must remain sequential."; exit 1 }
 
     try {
         $run.units = @(ConvertTo-TaskUnits $unitsBase64)
         $run.updated_at = Get-Timestamp
         $run.parent_summary = Get-BoundedParallelSummary $run
         Save-BoundedParallelRun $run
-        if ($Script:JsonOutput) { $run | ConvertTo-Json -Depth 10 } else { Write-Host "$($C.g)Started bounded parallel run $parallelId with $(@($run.units).Count) task units.$($C.n)" }
+        if ($Script:JsonOutput) { $run | ConvertTo-Json -Depth 10 } else { Write-CliOutput "$($C.g)Started bounded parallel run $parallelId with $(@($run.units).Count) task units.$($C.n)" }
     } catch {
-        Write-Host "Error: $($_.Exception.Message)"
+        Write-CliOutput "Error: $($_.Exception.Message)"
         exit 1
     }
 }
@@ -2659,17 +2766,17 @@ function Invoke-ParallelStart {
 function Invoke-ParallelList {
     $runs = @(Get-BoundedParallelRuns)
     if ($Script:JsonOutput) { $runs | ConvertTo-Json -Depth 10; return }
-    if ($runs.Count -eq 0) { Write-Host "$($C.y)No bounded parallel records found.$($C.n)"; return }
+    if ($runs.Count -eq 0) { Write-CliOutput "$($C.y)No bounded parallel records found.$($C.n)"; return }
     foreach ($run in $runs) {
-        Write-Host "$($run.parallel_id) [$($run.assessment.decision)] $($run.title) -> $($run.parent_summary.summary_state)"
+        Write-CliOutput "$($run.parallel_id) [$($run.assessment.decision)] $($run.title) -> $($run.parent_summary.summary_state)"
     }
 }
 
 function Invoke-ParallelGet {
     $parallelId = Get-Flag @('--id', '-n')
-    if ([string]::IsNullOrWhiteSpace($parallelId)) { Write-Host 'Error: --id is required'; exit 1 }
+    if ([string]::IsNullOrWhiteSpace($parallelId)) { Write-CliOutput 'Error: --id is required'; exit 1 }
     $run = Get-BoundedParallelRun $parallelId
-    if (-not $run) { Write-Host "Error: Bounded parallel record '$parallelId' was not found."; exit 1 }
+    if (-not $run) { Write-CliOutput "Error: Bounded parallel record '$parallelId' was not found."; exit 1 }
     $run | ConvertTo-Json -Depth 10
 }
 
@@ -2678,10 +2785,10 @@ function Invoke-ParallelReconcile {
     $followUpTarget = Format-TaskBundleTargetType (Get-Flag @('--follow-up-target') 'none')
     $followUpTitle = Get-DecodedFlag @('--follow-up-title') @('--follow-up-title-base64')
     $followUpSummary = Get-DecodedFlag @('--follow-up-summary') @('--follow-up-summary-base64')
-    if ([string]::IsNullOrWhiteSpace($parallelId)) { Write-Host 'Error: --id is required'; exit 1 }
+    if ([string]::IsNullOrWhiteSpace($parallelId)) { Write-CliOutput 'Error: --id is required'; exit 1 }
 
     $run = Get-BoundedParallelRun $parallelId
-    if (-not $run) { Write-Host "Error: Bounded parallel record '$parallelId' was not found."; exit 1 }
+    if (-not $run) { Write-CliOutput "Error: Bounded parallel record '$parallelId' was not found."; exit 1 }
 
     try {
         $run.reconciliation.overlap_review = Format-ReconciliationVerdict (Get-Flag @('--overlap-review') 'pending') 'overlap review'
@@ -2726,9 +2833,9 @@ function Invoke-ParallelReconcile {
         $run.updated_at = Get-Timestamp
         $run.parent_summary = Get-BoundedParallelSummary $run
         Save-BoundedParallelRun $run
-        if ($Script:JsonOutput) { $run | ConvertTo-Json -Depth 10 } else { Write-Host "$($C.g)Reconciled bounded parallel run $parallelId -> $($run.reconciliation.final_decision).$($C.n)" }
+        if ($Script:JsonOutput) { $run | ConvertTo-Json -Depth 10 } else { Write-CliOutput "$($C.g)Reconciled bounded parallel run $parallelId -> $($run.reconciliation.final_decision).$($C.n)" }
     } catch {
-        Write-Host "Error: $($_.Exception.Message)"
+        Write-CliOutput "Error: $($_.Exception.Message)"
         exit 1
     }
 }
@@ -2736,6 +2843,9 @@ function Invoke-ParallelReconcile {
 # ---------------------------------------------------------------------------
 # ISSUE: Local issue manager
 # ---------------------------------------------------------------------------
+
+
+
 
 function New-AgentXIssue([string]$title, [string]$body, [string[]]$labels, [string]$issueType = '') {
     $provider = Get-AgentXProvider
@@ -2761,7 +2871,7 @@ function New-AgentXIssue([string]$title, [string]$body, [string[]]$labels, [stri
         }
         if (Test-GitHubProjectConfigured) {
             if (-not (Set-GitHubProjectIssueStatus $issue.number 'Backlog' $true) -and -not $Script:JsonOutput) {
-                Write-Host "$($C.y)GitHub project status was not updated for issue #$($issue.number). Ensure the configured project is accessible and has a matching Status option.$($C.n)"
+                Write-CliOutput "$($C.y)GitHub project status was not updated for issue #$($issue.number). Ensure the configured project is accessible and has a matching Status option.$($C.n)"
             }
         }
         return $issue
@@ -2801,7 +2911,7 @@ function Invoke-IssueCmd {
         'get'     { Invoke-IssueGet }
         'comment' { Invoke-IssueComment }
         'list'    { Invoke-IssueList }
-        default   { Write-Host "Unknown issue action: $action"; exit 1 }
+        default   { Write-CliOutput "Unknown issue action: $action"; exit 1 }
     }
 }
 
@@ -2933,7 +3043,7 @@ function Get-GitHubRepoSlug {
         if ($remoteUrl -match 'github\.com[:/]([^/]+/[^/.]+)') {
             return $Matches[1].Trim()
         }
-    } catch { }
+    } catch { Write-Verbose "Could not resolve GitHub repo from remote URL: $_" }
 
     return ''
 }
@@ -3081,6 +3191,9 @@ function Initialize-GitHubIssueInProject([int]$issueNumber) {
     return Get-GitHubProjectIssueItem $issueNumber
 }
 
+
+
+
 function Set-GitHubProjectIssueStatus([int]$issueNumber, [string]$status, [bool]$addIfMissing = $false) {
     $projectInfo = Get-GitHubProjectView
     if (-not $projectInfo) { return $false }
@@ -3122,10 +3235,16 @@ function Assert-GitHubCliAvailable {
     }
 }
 
+
+
+
 function ConvertTo-IssueLabels([string]$labelStr) {
     if (-not $labelStr) { return @() }
     return @(($labelStr -split ',') | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 }
+
+
+
 
 function Get-IssueTypeFromLabels([string[]]$labels) {
     foreach ($label in @($labels)) {
@@ -3176,22 +3295,22 @@ function Invoke-IssueCreate {
     $body = Get-DecodedFlag @('-b', '--body') @('--body-base64')
     $labelStr = Get-Flag @('-l', '--labels')
     $issueType = Get-Flag @('--type')
-    if (-not $title) { Write-Host 'Error: --title is required'; exit 1 }
+    if (-not $title) { Write-CliOutput 'Error: --title is required'; exit 1 }
 
     $labels = ConvertTo-IssueLabels $labelStr
     try {
         $issue = New-AgentXIssue $title $body $labels $issueType
-        Write-Host "$($C.g)Created issue #$($issue.number): $($issue.title)$($C.n)"
+        Write-CliOutput "$($C.g)Created issue #$($issue.number): $($issue.title)$($C.n)"
         if ($Script:JsonOutput) { $issue | ConvertTo-Json -Depth 5 }
     } catch {
-        Write-Host "Error: $($_.Exception.Message)"
+        Write-CliOutput "Error: $($_.Exception.Message)"
         exit 1
     }
 }
 
 function Invoke-IssueUpdate {
     $num = [int](Get-Flag @('-n', '--number') '0')
-    if (-not $num) { Write-Host 'Error: --number required'; exit 1 }
+    if (-not $num) { Write-CliOutput 'Error: --number required'; exit 1 }
 
     $title = Get-DecodedFlag @('-t', '--title') @('--title-base64')
     $body = Get-DecodedFlag @('-b', '--body') @('--body-base64')
@@ -3200,10 +3319,10 @@ function Invoke-IssueUpdate {
 
     try {
         $updatedIssue = Update-ProviderIssue $num $title $body $status $labelStr
-        Write-Host "$($C.g)Updated issue #${num}$($C.n)"
+        Write-CliOutput "$($C.g)Updated issue #${num}$($C.n)"
         if ($Script:JsonOutput) { $updatedIssue | ConvertTo-Json -Depth 5 }
     } catch {
-        Write-Host "Error: $($_.Exception.Message)"
+        Write-CliOutput "Error: $($_.Exception.Message)"
         exit 1
     }
 }
@@ -3211,14 +3330,14 @@ function Invoke-IssueUpdate {
 function Invoke-IssueClose {
     $num = [int](Get-Flag @('-n', '--number') '')
     if (-not $num -and $Script:SubArgs.Count -gt 0) { $num = [int]$Script:SubArgs[0] }
-    if (-not $num) { Write-Host 'Error: issue number required'; exit 1 }
+    if (-not $num) { Write-CliOutput 'Error: issue number required'; exit 1 }
 
     try {
         $issue = Close-ProviderIssue $num
-        Write-Host "$($C.g)Closed issue #${num}$($C.n)"
+        Write-CliOutput "$($C.g)Closed issue #${num}$($C.n)"
         if ($Script:JsonOutput -and $issue) { $issue | ConvertTo-Json -Depth 5 }
     } catch {
-        Write-Host "Error: $($_.Exception.Message)"
+        Write-CliOutput "Error: $($_.Exception.Message)"
         exit 1
     }
 }
@@ -3226,23 +3345,23 @@ function Invoke-IssueClose {
 function Invoke-IssueGet {
     $num = [int](Get-Flag @('-n', '--number') '')
     if (-not $num -and $Script:SubArgs.Count -gt 0) { $num = [int]$Script:SubArgs[0] }
-    if (-not $num) { Write-Host 'Error: issue number required'; exit 1 }
+    if (-not $num) { Write-CliOutput 'Error: issue number required'; exit 1 }
     $issue = Get-ProviderIssue $num
-    if (-not $issue) { Write-Host "Error: Issue #$num not found"; exit 1 }
+    if (-not $issue) { Write-CliOutput "Error: Issue #$num not found"; exit 1 }
     $issue | ConvertTo-Json -Depth 5
 }
 
 function Invoke-IssueComment {
     $num = [int](Get-Flag @('-n', '--number') '0')
     $body = Get-DecodedFlag @('-c', '--comment', '-b', '--body') @('--comment-base64', '--body-base64')
-    if (-not $num -or -not $body) { Write-Host 'Error: --number and --comment required'; exit 1 }
+    if (-not $num -or -not $body) { Write-CliOutput 'Error: --number and --comment required'; exit 1 }
 
     try {
         $issue = Add-ProviderIssueComment $num $body
-        Write-Host "$($C.g)Added comment to issue #${num}$($C.n)"
+        Write-CliOutput "$($C.g)Added comment to issue #${num}$($C.n)"
         if ($Script:JsonOutput -and $issue) { $issue | ConvertTo-Json -Depth 5 }
     } catch {
-        Write-Host "Error: $($_.Exception.Message)"
+        Write-CliOutput "Error: $($_.Exception.Message)"
         exit 1
     }
 }
@@ -3251,25 +3370,31 @@ function Invoke-IssueList {
     $issues = @(Get-AllIssues | Sort-Object -Property number -Descending)
 
     if ($Script:JsonOutput) { $issues | ConvertTo-Json -Depth 5; return }
-    if ($issues.Count -eq 0) { Write-Host "$($C.y)No issues found.$($C.n)"; return }
+    if ($issues.Count -eq 0) { Write-CliOutput "$($C.y)No issues found.$($C.n)"; return }
 
-    Write-Host "`n$($C.c)Issues [$((Get-AgentXProviderInfo).name)]:$($C.n)"
-    Write-Host "$($C.c)===========================================================$($C.n)"
+    Write-CliOutput "`n$($C.c)Issues [$((Get-AgentXProviderInfo).name)]:$($C.n)"
+    Write-CliOutput "$($C.c)===========================================================$($C.n)"
     foreach ($i in $issues) {
         $icon = if ($i.state -eq 'open') { '( )' } else { '(*)' }
         $labels = if ($i.labels -and $i.labels.Count -gt 0) { " [$($i.labels -join ', ')]" } else { '' }
-        Write-Host "$icon #$($i.number) $($i.status) - $($i.title)$labels"
+        Write-CliOutput "$icon #$($i.number) $($i.status) - $($i.title)$labels"
     }
-    Write-Host "$($C.c)===========================================================$($C.n)"
+    Write-CliOutput "$($C.c)===========================================================$($C.n)"
 }
 
 # ---------------------------------------------------------------------------
 # READY: Show unblocked work
 # ---------------------------------------------------------------------------
 
+
+
+
 function Get-AllIssues {
     return @(Get-ProviderIssues)
 }
+
+
+
 
 function Get-IssueDeps($issue) {
     $deps = @{ blocks = @(); blocked_by = @() }
@@ -3342,19 +3467,19 @@ function Invoke-ReadyCmd {
     } | Sort-Object { Get-IssuePriority $_ })
 
     if ($Script:JsonOutput) { $ready | ConvertTo-Json -Depth 5; return }
-    if ($ready.Count -eq 0) { Write-Host 'No ready work found.'; return }
+    if ($ready.Count -eq 0) { Write-CliOutput 'No ready work found.'; return }
 
-    Write-Host "`n$($C.c)  Ready Work (unblocked, sorted by priority):$($C.n)"
-    Write-Host "$($C.d)  ---------------------------------------------$($C.n)"
+    Write-CliOutput "`n$($C.c)  Ready Work (unblocked, sorted by priority):$($C.n)"
+    Write-CliOutput "$($C.d)  ---------------------------------------------$($C.n)"
     foreach ($i in $ready) {
         $p = Get-IssuePriority $i
         $pLabel = if ($p -lt 9) { "P$p" } else { '  ' }
         $pc = switch ($p) { 0 { $C.r } 1 { $C.y } default { $C.d } }
         $typ = Get-IssueType $i
 
-        Write-Host "  $pc[$pLabel]$($C.n) $($C.c)#$($i.number)$($C.n) $($C.d)($typ)$($C.n) $($i.title)"
+        Write-CliOutput "  $pc[$pLabel]$($C.n) $($C.c)#$($i.number)$($C.n) $($C.d)($typ)$($C.n) $($i.title)"
     }
-    Write-Host ''
+    Write-CliOutput ''
 }
 
 # ---------------------------------------------------------------------------
@@ -3373,15 +3498,15 @@ function Invoke-StateCmd {
         $entry = [PSCustomObject]@{ status = $set; issue = $(if ($issue) { $issue } else { $null }); lastActivity = Get-Timestamp }
         $data | Add-Member -NotePropertyName $agent -NotePropertyValue $entry -Force
         Write-JsonFile $Script:STATE_FILE $data
-        Write-Host "$($C.g)  Agent '$agent' -> $set$($C.n)"
-        if ($issue) { Write-Host "$($C.d)  Working on: #$issue$($C.n)" }
+        Write-CliOutput "$($C.g)  Agent '$agent' -> $set$($C.n)"
+        if ($issue) { Write-CliOutput "$($C.d)  Working on: #$issue$($C.n)" }
         return
     }
 
     if ($Script:JsonOutput) { $data | ConvertTo-Json -Depth 5; return }
 
-    Write-Host "`n$($C.c)  Agent Status:$($C.n)"
-    Write-Host "$($C.d)  ---------------------------------------------$($C.n)"
+    Write-CliOutput "`n$($C.c)  Agent Status:$($C.n)"
+    Write-CliOutput "$($C.d)  ---------------------------------------------$($C.n)"
     $agents = @('product-manager', 'ux-designer', 'architect', 'engineer', 'reviewer', 'auto-fix-reviewer', 'devops-engineer', 'data-scientist', 'tester', 'consulting-research')
     foreach ($a in $agents) {
         $prop = $data.PSObject.Properties[$a]
@@ -3390,9 +3515,9 @@ function Invoke-StateCmd {
         $sc = switch ($status) { 'working' { $C.y } 'reviewing' { $C.m } 'stuck' { $C.r } 'done' { $C.g } default { $C.d } }
         $ref = if ($info -and $info.issue) { " -> #$($info.issue)" } else { '' }
         $dt = if ($info -and $info.lastActivity) { " ($("$($info.lastActivity)".Substring(0, 10)))" } else { '' }
-        Write-Host "  $($C.w)$a$($C.n) $sc[$status]$($C.n)$($C.d)$ref$dt$($C.n)"
+        Write-CliOutput "  $($C.w)$a$($C.n) $sc[$status]$($C.n)$($C.d)$ref$dt$($C.n)"
     }
-    Write-Host ''
+    Write-CliOutput ''
 }
 
 # ---------------------------------------------------------------------------
@@ -3402,48 +3527,48 @@ function Invoke-StateCmd {
 function Invoke-DepsCmd {
     $rawNum = if ($Script:SubArgs.Count -gt 0) { $Script:SubArgs[0] } else { Get-Flag @('-n', '--number') '0' }
     $num = [int]$rawNum
-    if (-not $num) { Write-Host 'Usage: agentx deps <issue-number>'; exit 1 }
+    if (-not $num) { Write-CliOutput 'Usage: agentx deps <issue-number>'; exit 1 }
 
     $all = Get-AllIssues
     $issue = $all | Where-Object { $_.number -eq $num } | Select-Object -First 1
-    if (-not $issue) { Write-Host "Error: Issue #$num not found"; exit 1 }
+    if (-not $issue) { Write-CliOutput "Error: Issue #$num not found"; exit 1 }
 
     $deps = Get-IssueDeps $issue
     $hasBlockers = $false
 
-    Write-Host "`n$($C.c)  Dependency Check: #$num - $($issue.title)$($C.n)"
-    Write-Host "$($C.d)  ---------------------------------------------$($C.n)"
+    Write-CliOutput "`n$($C.c)  Dependency Check: #$num - $($issue.title)$($C.n)"
+    Write-CliOutput "$($C.d)  ---------------------------------------------$($C.n)"
 
     if ($deps.blocked_by.Count -gt 0) {
-        Write-Host "$($C.y)  Blocked by:$($C.n)"
+        Write-CliOutput "$($C.y)  Blocked by:$($C.n)"
         foreach ($bid in $deps.blocked_by) {
             $b = $all | Where-Object { $_.number -eq $bid } | Select-Object -First 1
             if ($b) {
                 $ok = $b.state -eq 'closed'
                 $mark = if ($ok) { "$($C.g)[PASS]" } else { "$($C.r)[FAIL]" }
-                Write-Host "    $mark #$bid - $($b.title) [$($b.state)]$($C.n)"
+                Write-CliOutput "    $mark #$bid - $($b.title) [$($b.state)]$($C.n)"
                 if (-not $ok) { $hasBlockers = $true }
             } else {
-                Write-Host "    $($C.y)? #$bid - (not found)$($C.n)"
+                Write-CliOutput "    $($C.y)? #$bid - (not found)$($C.n)"
             }
         }
     } else {
-        Write-Host "$($C.g)  No blockers - ready to start.$($C.n)"
+        Write-CliOutput "$($C.g)  No blockers - ready to start.$($C.n)"
     }
 
     if ($deps.blocks.Count -gt 0) {
-        Write-Host "$($C.d)  Blocks:$($C.n)"
+        Write-CliOutput "$($C.d)  Blocks:$($C.n)"
         foreach ($bid in $deps.blocks) {
             $b = $all | Where-Object { $_.number -eq $bid } | Select-Object -First 1
             $bTitle = if ($b -and $b.title) { $b.title } else { '(not found)' }
-            Write-Host "$($C.d)    -> #$bid - $bTitle$($C.n)"
+            Write-CliOutput "$($C.d)    -> #$bid - $bTitle$($C.n)"
         }
     }
 
     if ($hasBlockers) {
-        Write-Host "`n$($C.r)  [WARN] BLOCKED - resolve open blockers first.$($C.n)`n"
+        Write-CliOutput "`n$($C.r)  [WARN] BLOCKED - resolve open blockers first.$($C.n)`n"
     } else {
-        Write-Host "`n$($C.g)  [PASS] All clear - issue is unblocked.$($C.n)`n"
+        Write-CliOutput "`n$($C.g)  [PASS] All clear - issue is unblocked.$($C.n)`n"
     }
 }
 
@@ -3458,7 +3583,7 @@ function Invoke-DigestCmd {
         if ($null -ne $_.updated) { $_.updated } else { '' }
     } -Descending)
 
-    if ($closed.Count -eq 0) { Write-Host 'No closed issues to digest.'; return }
+    if ($closed.Count -eq 0) { Write-CliOutput 'No closed issues to digest.'; return }
 
     $d = Get-Date
     $weekOfYear = [math]::Ceiling(($d.DayOfYear + [int]([datetime]::new($d.Year, 1, 1)).DayOfWeek) / 7)
@@ -3481,8 +3606,8 @@ function Invoke-DigestCmd {
         '## Outcomes', '', "- **Issues closed**: $($closed.Count)", "- **Generated**: $($d.ToString('yyyy-MM-dd'))", '')
 
     $lines -join "`n" | Set-Content $digestFile -Encoding utf8
-    Write-Host "$($C.g)  Digest generated: $digestFile$($C.n)"
-    Write-Host "$($C.d)  Closed issues: $($closed.Count)$($C.n)"
+    Write-CliOutput "$($C.g)  Digest generated: $digestFile$($C.n)"
+    Write-CliOutput "$($C.d)  Closed issues: $($closed.Count)$($C.n)"
 }
 
 # ---------------------------------------------------------------------------
@@ -3497,18 +3622,18 @@ function Invoke-WorkflowCmd {
     }
 
     if (-not $agentName) {
-        Write-Host "`n$($C.c)  Agent Handoff Chains:$($C.n)"
-        Write-Host "$($C.d)  ---------------------------------------------$($C.n)"
+        Write-CliOutput "`n$($C.c)  Agent Handoff Chains:$($C.n)"
+        Write-CliOutput "$($C.d)  ---------------------------------------------$($C.n)"
         foreach ($agentFilePath in (Get-AgentDefinitionFiles)) {
             $f = Get-Item $agentFilePath
                 $name = $f.BaseName -replace '\.agent$', ''
                 $content = Get-Content $f.FullName -Raw -Encoding utf8
                 $desc = ''
                 if ($content -match '(?m)^description:\s*[''"]?(.+?)[''"]?\s*$') { $desc = $Matches[1] }
-                Write-Host "  $($C.w)$name$($C.n) $($C.d)- $desc$($C.n)"
+                Write-CliOutput "  $($C.w)$name$($C.n) $($C.d)- $desc$($C.n)"
         }
-        Write-Host "`n$($C.d)  Usage: agentx workflow <agent-name|issue-type>$($C.n)"
-        Write-Host "$($C.d)  Examples: agentx workflow engineer, agentx workflow feature, agentx workflow bug$($C.n)`n"
+        Write-CliOutput "`n$($C.d)  Usage: agentx workflow <agent-name|issue-type>$($C.n)"
+        Write-CliOutput "$($C.d)  Examples: agentx workflow engineer, agentx workflow feature, agentx workflow bug$($C.n)`n"
         return
     }
 
@@ -3529,7 +3654,7 @@ function Invoke-WorkflowCmd {
     }
 
     $agentFile = Resolve-AgentDefinitionFile $agentName
-    if (-not (Test-Path $agentFile)) { Write-Host "Error: Agent '$agentName' not found"; exit 1 }
+    if (-not (Test-Path $agentFile)) { Write-CliOutput "Error: Agent '$agentName' not found"; exit 1 }
 
     $content = Get-Content $agentFile -Raw -Encoding utf8
 
@@ -3556,19 +3681,19 @@ function Invoke-WorkflowCmd {
         }
     }
 
-    Write-Host "`n$($C.c)  Handoff Chain: $agentName$($C.n)"
-    Write-Host "$($C.d)  ---------------------------------------------$($C.n)"
+    Write-CliOutput "`n$($C.c)  Handoff Chain: $agentName$($C.n)"
+    Write-CliOutput "$($C.d)  ---------------------------------------------$($C.n)"
 
     if ($handoffs.Count -eq 0) {
-        Write-Host "  $($C.d)(no handoffs defined)$($C.n)"
+        Write-CliOutput "  $($C.d)(no handoffs defined)$($C.n)"
     } else {
         $n = 1
         foreach ($h in $handoffs) {
-            Write-Host "  $($C.c)$n.$($C.n) -> $($C.y)$($h.agent)$($C.n) $($C.d)$($h.label)$($C.n)"
+            Write-CliOutput "  $($C.c)$n.$($C.n) -> $($C.y)$($h.agent)$($C.n) $($C.d)$($h.label)$($C.n)"
             $n++
         }
     }
-    Write-Host ''
+    Write-CliOutput ''
 }
 
 # ---------------------------------------------------------------------------
@@ -3585,7 +3710,7 @@ function Invoke-LoopCmd {
         'iterate'  { Invoke-LoopIterate }
         'complete' { Invoke-LoopComplete }
         'cancel'   { Invoke-LoopCancel }
-        default    { Write-Host "Unknown loop action: $action" }
+        default    { Write-CliOutput "Unknown loop action: $action" }
     }
 }
 
@@ -3671,6 +3796,9 @@ function Get-LoopTaskClass {
     return 'standard'
 }
 
+
+
+
 function Get-LoopDefaultMinIterations {
     param($State)
 
@@ -3735,7 +3863,7 @@ function Get-LoopStateHealth {
 
 function Invoke-LoopStart {
     $prompt = Get-Flag @('-p', '--prompt')
-    if (-not $prompt) { Write-Host 'Error: --prompt required'; exit 1 }
+    if (-not $prompt) { Write-CliOutput 'Error: --prompt required'; exit 1 }
     $max = [int](Get-Flag @('-m', '--max') '20')
     $criteria = Get-Flag @('-c', '--criteria') 'TASK_COMPLETE'
     $issue = [int](Get-Flag @('-i', '--issue') '0')
@@ -3747,7 +3875,7 @@ function Invoke-LoopStart {
     if ($budgetRaw) {
         $parsed = 0
         if (-not [int]::TryParse($budgetRaw, [ref]$parsed) -or $parsed -le 0) {
-            Write-Host "$($C.r)Error: --budget must be a positive integer (got '$budgetRaw').$($C.n)"
+            Write-CliOutput "$($C.r)Error: --budget must be a positive integer (got '$budgetRaw').$($C.n)"
             return
         }
         $budget = $parsed
@@ -3757,7 +3885,7 @@ function Invoke-LoopStart {
     $loopHealth = Get-LoopStateHealth -State $existing -ExpectedIssue $issue
     if ($existing -and $existing.active) {
         if ($loopHealth.kind -eq 'healthy') {
-            Write-Host 'An active loop exists. Cancel it first.'
+            Write-CliOutput 'An active loop exists. Cancel it first.'
             return
         }
 
@@ -3772,7 +3900,7 @@ function Invoke-LoopStart {
                 outcome   = 'fail'
             })
         Write-JsonFile $Script:LOOP_STATE_FILE $existing
-        Write-Host "$($C.y)  Auto-reset $($loopHealth.kind) active loop ($($loopHealth.reason)).$($C.n)"
+        Write-CliOutput "$($C.y)  Auto-reset $($loopHealth.kind) active loop ($($loopHealth.reason)).$($C.n)"
     }
 
     $state = [PSCustomObject]@{
@@ -3792,17 +3920,17 @@ function Invoke-LoopStart {
     }
     Write-JsonFile $Script:LOOP_STATE_FILE $state
 
-    Write-Host "`n$($C.c)  Iterative Loop Started$($C.n)"
-    Write-Host "$($C.d)  Iteration: 1/$max  |  Minimum review iterations: $min  |  Criteria: $criteria$($C.n)"
-    if ($budget) { Write-Host "$($C.d)  Budget: $budget minutes$($C.n)" }
-    if ($issue) { Write-Host "$($C.d)  Issue: #$issue$($C.n)" }
-    Write-Host "`n$($C.w)  Prompt:$($C.n) $prompt`n"
+    Write-CliOutput "`n$($C.c)  Iterative Loop Started$($C.n)"
+    Write-CliOutput "$($C.d)  Iteration: 1/$max  |  Minimum review iterations: $min  |  Criteria: $criteria$($C.n)"
+    if ($budget) { Write-CliOutput "$($C.d)  Budget: $budget minutes$($C.n)" }
+    if ($issue) { Write-CliOutput "$($C.d)  Issue: #$issue$($C.n)" }
+    Write-CliOutput "`n$($C.w)  Prompt:$($C.n) $prompt`n"
 }
 
 function Invoke-LoopStatus {
     $state = Read-JsonFile $Script:LOOP_STATE_FILE
     if (-not $state) {
-        if ($Script:JsonOutput) { Write-Host '{"active":false}' } else { Write-Host '  No active loop.' }
+        if ($Script:JsonOutput) { Write-CliOutput '{"active":false}' } else { Write-CliOutput '  No active loop.' }
         return
     }
     if (-not ($state.PSObject.Properties.Name -contains 'minIterations') -or -not $state.minIterations) {
@@ -3810,9 +3938,9 @@ function Invoke-LoopStatus {
     }
     if ($Script:JsonOutput) { $state | ConvertTo-Json -Depth 5; return }
 
-    Write-Host "`n$($C.c)  Iterative Loop Status$($C.n)"
-    Write-Host "$($C.d)  Status: $($state.status)  |  Active: $($state.active)  |  Iteration: $($state.iteration)/$($state.maxIterations)  |  Minimum review iterations: $($state.minIterations)$($C.n)"
-    Write-Host "$($C.d)  Criteria: $($state.completionCriteria)$($C.n)"
+    Write-CliOutput "`n$($C.c)  Iterative Loop Status$($C.n)"
+    Write-CliOutput "$($C.d)  Status: $($state.status)  |  Active: $($state.active)  |  Iteration: $($state.iteration)/$($state.maxIterations)  |  Minimum review iterations: $($state.minIterations)$($C.n)"
+    Write-CliOutput "$($C.d)  Criteria: $($state.completionCriteria)$($C.n)"
 
     # Budget info
     $hasBudget = ($state.PSObject.Properties.Name -contains 'budgetMinutes') -and $state.budgetMinutes
@@ -3822,11 +3950,11 @@ function Invoke-LoopStatus {
             $elapsed = ([datetimeoffset]::UtcNow - $startTime).TotalMinutes
             $remaining = [Math]::Ceiling($state.budgetMinutes - $elapsed)
             if ($remaining -le 0) {
-                Write-Host "$($C.r)  Budget: EXCEEDED (budget was $($state.budgetMinutes)m, elapsed $([Math]::Round($elapsed))m)$($C.n)"
+                Write-CliOutput "$($C.r)  Budget: EXCEEDED (budget was $($state.budgetMinutes)m, elapsed $([Math]::Round($elapsed))m)$($C.n)"
             } else {
-                Write-Host "$($C.d)  Budget: ${remaining}m remaining of $($state.budgetMinutes)m$($C.n)"
+                Write-CliOutput "$($C.d)  Budget: ${remaining}m remaining of $($state.budgetMinutes)m$($C.n)"
             }
-        } catch { }
+        } catch { Write-Verbose "Loop budget display failed: $_" }
     }
 
     # Score trend from history
@@ -3837,53 +3965,53 @@ function Invoke-LoopStatus {
             $prev = $scored[-2].harnessScore
             $delta = $latest - $prev
             $arrow = if ($delta -gt 0) { "+$delta" } elseif ($delta -lt 0) { "$delta" } else { "=$delta" }
-            Write-Host "$($C.d)  Harness score: $latest ($arrow from prev)$($C.n)"
+            Write-CliOutput "$($C.d)  Harness score: $latest ($arrow from prev)$($C.n)"
         } else {
-            Write-Host "$($C.d)  Harness score: $latest$($C.n)"
+            Write-CliOutput "$($C.d)  Harness score: $latest$($C.n)"
         }
     }
 
     $loopHealth = Get-LoopStateHealth $state
     if ($loopHealth.kind -eq 'stale') {
-        Write-Host "$($C.y)  Staleness: $($loopHealth.reason). Start a new loop for the current task.$($C.n)"
+        Write-CliOutput "$($C.y)  Staleness: $($loopHealth.reason). Start a new loop for the current task.$($C.n)"
     }
     elseif ($loopHealth.kind -eq 'stuck') {
-        Write-Host "$($C.y)  Health: STUCK. $($loopHealth.reason). Reset the loop before trusting it for handoff.$($C.n)"
+        Write-CliOutput "$($C.y)  Health: STUCK. $($loopHealth.reason). Reset the loop before trusting it for handoff.$($C.n)"
     }
     if ($state.status -eq 'complete' -and $loopHealth.kind -eq 'stale') {
-        Write-Host "$($C.y)  Completion gate: STALE. A previous completed loop does not satisfy the current task.$($C.n)"
+        Write-CliOutput "$($C.y)  Completion gate: STALE. A previous completed loop does not satisfy the current task.$($C.n)"
     }
     elseif ($loopHealth.kind -eq 'stuck') {
-        Write-Host "$($C.y)  Completion gate: BLOCKED. Loop data is stuck and must be reset before handoff.$($C.n)"
+        Write-CliOutput "$($C.y)  Completion gate: BLOCKED. Loop data is stuck and must be reset before handoff.$($C.n)"
     }
     elseif ($state.status -eq 'complete') {
-        Write-Host "$($C.g)  Completion gate: SATISFIED (loop already completed).$($C.n)"
+        Write-CliOutput "$($C.g)  Completion gate: SATISFIED (loop already completed).$($C.n)"
     }
     elseif ($state.active -and ([int]$state.iteration -lt [int]$state.minIterations)) {
-        Write-Host "$($C.y)  Completion gate: BLOCKED until minimum iterations are met ($($state.iteration)/$($state.minIterations)).$($C.n)"
+        Write-CliOutput "$($C.y)  Completion gate: BLOCKED until minimum iterations are met ($($state.iteration)/$($state.minIterations)).$($C.n)"
     }
     elseif ($state.active) {
-        Write-Host "$($C.y)  Completion gate: Minimum iterations met. Run 'agentx loop complete -s <summary>' only after all quality gates pass.$($C.n)"
+        Write-CliOutput "$($C.y)  Completion gate: Minimum iterations met. Run 'agentx loop complete -s <summary>' only after all quality gates pass.$($C.n)"
     }
     else {
-        Write-Host "$($C.y)  Completion gate: NOT SATISFIED. Loop must reach status 'complete' before handoff.$($C.n)"
+        Write-CliOutput "$($C.y)  Completion gate: NOT SATISFIED. Loop must reach status 'complete' before handoff.$($C.n)"
     }
     if ($state.history -and $state.history.Count -gt 0) {
-        Write-Host "`n$($C.w)  History (last 5):$($C.n)"
+        Write-CliOutput "`n$($C.w)  History (last 5):$($C.n)"
         $recent = $state.history | Select-Object -Last 5
         foreach ($h in $recent) {
             $outcomeVal = if ($h.PSObject.Properties.Name -contains 'outcome') { $h.outcome } else { $null }
             $mark = switch ($outcomeVal) { 'pass' { '[PASS]' } 'fail' { '[FAIL]' } default { if ($h.status -eq 'complete') { '[PASS]' } else { '[...]' } } }
             $scorePart = if ($h.PSObject.Properties.Name -contains 'harnessScore' -and $null -ne $h.harnessScore) { " (score: $($h.harnessScore))" } else { '' }
-            Write-Host "$($C.d)    $mark Iteration $($h.iteration): $($h.summary)$scorePart$($C.n)"
+            Write-CliOutput "$($C.d)    $mark Iteration $($h.iteration): $($h.summary)$scorePart$($C.n)"
         }
     }
-    Write-Host ''
+    Write-CliOutput ''
 }
 
 function Invoke-LoopIterate {
     $state = Read-JsonFile $Script:LOOP_STATE_FILE
-    if (-not $state) { Write-Host 'No loop state found.'; return }
+    if (-not $state) { Write-CliOutput 'No loop state found.'; return }
     if (-not $state.active) { $state.active = $true; $state.status = 'active' }
 
     $next = $state.iteration + 1
@@ -3891,7 +4019,7 @@ function Invoke-LoopIterate {
         $state.active = $false
         $state.history = @($state.history) + @([PSCustomObject]@{ iteration = $next; timestamp = Get-Timestamp; summary = 'Max iterations reached'; status = 'stopped'; outcome = 'fail' })
         Write-JsonFile $Script:LOOP_STATE_FILE $state
-        Write-Host "$($C.r)  Max iterations ($($state.maxIterations)) reached. Loop stopped.$($C.n)"
+        Write-CliOutput "$($C.r)  Max iterations ($($state.maxIterations)) reached. Loop stopped.$($C.n)"
         return
     }
 
@@ -3906,7 +4034,7 @@ function Invoke-LoopIterate {
         if ($checks.Count -gt 0) {
             $harnessScore = ($checks | Measure-Object -Property score -Sum).Sum
         }
-    } catch { }
+    } catch { Write-Verbose "Harness score calculation failed: $_" }
 
     $state.iteration = $next
     $state.lastIterationAt = Get-Timestamp
@@ -3922,41 +4050,41 @@ function Invoke-LoopIterate {
             $startTime = [datetimeoffset]::Parse($state.startedAt)
             $elapsed = ([datetimeoffset]::UtcNow - $startTime).TotalMinutes
             if ($elapsed -ge $state.budgetMinutes) {
-                Write-Host "$($C.r)  [WARN] Time budget of $($state.budgetMinutes)m exceeded (elapsed: $([Math]::Round($elapsed))m).$($C.n)"
+                Write-CliOutput "$($C.r)  [WARN] Time budget of $($state.budgetMinutes)m exceeded (elapsed: $([Math]::Round($elapsed))m).$($C.n)"
             }
-        } catch { }
+        } catch { Write-Verbose "Time budget check failed: $_" }
     }
 
-    Write-Host "`n$($C.c)  Iteration $next/$($state.maxIterations)$($C.n)"
-    Write-Host "$($C.d)  Summary: $summary  |  Outcome: $outcome$($C.n)"
-    if ($null -ne $harnessScore) { Write-Host "$($C.d)  Harness score: $harnessScore$($C.n)" }
-    Write-Host ''
+    Write-CliOutput "`n$($C.c)  Iteration $next/$($state.maxIterations)$($C.n)"
+    Write-CliOutput "$($C.d)  Summary: $summary  |  Outcome: $outcome$($C.n)"
+    if ($null -ne $harnessScore) { Write-CliOutput "$($C.d)  Harness score: $harnessScore$($C.n)" }
+    Write-CliOutput ''
 }
 
 function Invoke-LoopComplete {
     $state = Read-JsonFile $Script:LOOP_STATE_FILE
-    if (-not $state -or -not $state.active) { Write-Host 'No active loop.'; return }
+    if (-not $state -or -not $state.active) { Write-CliOutput 'No active loop.'; return }
     if (-not ($state.PSObject.Properties.Name -contains 'minIterations') -or -not $state.minIterations) {
         $state | Add-Member -NotePropertyName minIterations -NotePropertyValue (Get-LoopDefaultMinIterations $state) -Force
     }
     if ([int]$state.iteration -lt [int]$state.minIterations) {
-        Write-Host "$($C.y)  Minimum review iterations not yet met: $($state.iteration)/$($state.minIterations). Use 'agentx loop iterate' before completing.$($C.n)"
+        Write-CliOutput "$($C.y)  Minimum review iterations not yet met: $($state.iteration)/$($state.minIterations). Use 'agentx loop iterate' before completing.$($C.n)"
         return
     }
     $summary = Get-Flag @('-s', '--summary') 'Criteria met'
     $state.active = $false; $state.status = 'complete'; $state.lastIterationAt = Get-Timestamp
     $state.history = @($state.history) + @([PSCustomObject]@{ iteration = $state.iteration; timestamp = Get-Timestamp; summary = $summary; status = 'complete'; outcome = 'pass' })
     Write-JsonFile $Script:LOOP_STATE_FILE $state
-    Write-Host "`n$($C.g)  [PASS] Loop Complete! Iterations: $($state.iteration)/$($state.maxIterations) (minimum $($state.minIterations))$($C.n)`n"
+    Write-CliOutput "`n$($C.g)  [PASS] Loop Complete! Iterations: $($state.iteration)/$($state.maxIterations) (minimum $($state.minIterations))$($C.n)`n"
 }
 
 function Invoke-LoopCancel {
     $state = Read-JsonFile $Script:LOOP_STATE_FILE
-    if (-not $state -or -not $state.active) { Write-Host 'No active loop.'; return }
+    if (-not $state -or -not $state.active) { Write-CliOutput 'No active loop.'; return }
     $state.active = $false; $state.status = 'cancelled'; $state.lastIterationAt = Get-Timestamp
     $state.history = @($state.history) + @([PSCustomObject]@{ iteration = $state.iteration; timestamp = Get-Timestamp; summary = 'Cancelled'; status = 'cancelled'; outcome = 'fail' })
     Write-JsonFile $Script:LOOP_STATE_FILE $state
-    Write-Host "$($C.y)  Loop cancelled at iteration $($state.iteration).$($C.n)"
+    Write-CliOutput "$($C.y)  Loop cancelled at iteration $($state.iteration).$($C.n)"
 }
 
 # ---------------------------------------------------------------------------
@@ -3967,15 +4095,15 @@ function Invoke-ValidateCmd {
     $rawNum = if ($Script:SubArgs.Count -gt 0) { $Script:SubArgs[0] } else { '0' }
     $num = [int]$rawNum
     $role = if ($Script:SubArgs.Count -gt 1) { $Script:SubArgs[1] } else { '' }
-    if (-not $num -or -not $role) { Write-Host 'Usage: agentx validate <issue-number> <role>'; exit 1 }
+    if (-not $num -or -not $role) { Write-CliOutput 'Usage: agentx validate <issue-number> <role>'; exit 1 }
 
-    Write-Host "`n$($C.c)  Handoff Validation: #$num [$role]$($C.n)"
-    Write-Host "$($C.d)  ---------------------------------------------$($C.n)"
+    Write-CliOutput "`n$($C.c)  Handoff Validation: #$num [$role]$($C.n)"
+    Write-CliOutput "$($C.d)  ---------------------------------------------$($C.n)"
 
     $script:validationPass = $true
     function Test-Check([bool]$ok, [string]$msg) {
         $mark = if ($ok) { "$($C.g)[PASS]" } else { "$($C.r)[FAIL]" }
-        Write-Host "  $mark $msg$($C.n)"
+        Write-CliOutput "  $mark $msg$($C.n)"
         if (-not $ok) { $script:validationPass = $false }
     }
 
@@ -4020,15 +4148,15 @@ function Invoke-ValidateCmd {
             Test-Check (Test-Path (Join-Path $Script:ROOT 'docs/coaching')) 'Coaching docs directory exists'
         }
         default {
-            Write-Host "  Unknown role: $role"
+            Write-CliOutput "  Unknown role: $role"
             $script:validationPass = $false
         }
     }
 
     if ($script:validationPass) {
-        Write-Host "`n$($C.g)  VALIDATION PASSED$($C.n)`n"
+        Write-CliOutput "`n$($C.g)  VALIDATION PASSED$($C.n)`n"
     } else {
-        Write-Host "`n$($C.r)  VALIDATION FAILED$($C.n)`n"
+        Write-CliOutput "`n$($C.r)  VALIDATION FAILED$($C.n)`n"
         exit 1
     }
 }
@@ -4040,7 +4168,7 @@ function Invoke-ValidateCmd {
 function Invoke-HooksCmd {
     $action = if ($Script:SubArgs.Count -gt 0) { $Script:SubArgs[0] } else { 'install' }
     $gitHooksDir = Join-Path $Script:ROOT '.git' 'hooks'
-    if (-not (Test-Path (Join-Path $Script:ROOT '.git'))) { Write-Host 'Not a git repo. Run git init first.'; return }
+    if (-not (Test-Path (Join-Path $Script:ROOT '.git'))) { Write-CliOutput 'Not a git repo. Run git init first.'; return }
     if (-not (Test-Path $gitHooksDir)) { New-Item -ItemType Directory -Path $gitHooksDir -Force | Out-Null }
 
     if ($action -eq 'install') {
@@ -4048,10 +4176,10 @@ function Invoke-HooksCmd {
             $src = Join-Path $Script:ROOT '.github' 'hooks' $hook
             if (Test-Path $src) {
                 Copy-Item $src (Join-Path $gitHooksDir $hook) -Force
-                Write-Host "$($C.g)  Installed: $hook$($C.n)"
+                Write-CliOutput "$($C.g)  Installed: $hook$($C.n)"
             }
         }
-        Write-Host "$($C.g)  Git hooks installed.$($C.n)"
+        Write-CliOutput "$($C.g)  Git hooks installed.$($C.n)"
     }
 }
 
@@ -4074,28 +4202,28 @@ function Invoke-ConfigCmd {
                     providerInferred = $providerInfo.inferred
                     providerWarning = $providerInfo.warning
                     configuredAdapters = @($providerInfo.adapters)
-                } | ConvertTo-Json -Depth 10 | Write-Host
+                } | ConvertTo-Json -Depth 10 | Write-CliOutput
             } else {
-                Write-Host "$($C.c)  AgentX Configuration$($C.n)"
-                Write-Host "$($C.d)  -----------------------------------$($C.n)"
+                Write-CliOutput "$($C.c)  AgentX Configuration$($C.n)"
+                Write-CliOutput "$($C.d)  -----------------------------------$($C.n)"
                 $cfgKeys = if ($cfg -is [hashtable]) { $cfg.Keys } else { $cfg.PSObject.Properties }
                 foreach ($key in $cfgKeys) {
                     $k = if ($key -is [string]) { $key } else { $key.Name }
                     $v = $cfg.$k
-                    Write-Host "  $($C.w)$k$($C.n) = $v"
+                    Write-CliOutput "  $($C.w)$k$($C.n) = $v"
                 }
-                Write-Host "  $($C.w)activeProvider$($C.n) = $($providerInfo.name)"
-                Write-Host "  $($C.w)providerSource$($C.n) = $($providerInfo.source)"
-                Write-Host "  $($C.w)configuredAdapters$($C.n) = $(@($providerInfo.adapters) -join ', ')"
+                Write-CliOutput "  $($C.w)activeProvider$($C.n) = $($providerInfo.name)"
+                Write-CliOutput "  $($C.w)providerSource$($C.n) = $($providerInfo.source)"
+                Write-CliOutput "  $($C.w)configuredAdapters$($C.n) = $(@($providerInfo.adapters) -join ', ')"
                 if ($providerInfo.inferred) {
-                    Write-Host "$($C.y)  [WARN] $($providerInfo.warning)$($C.n)"
+                    Write-CliOutput "$($C.y)  [WARN] $($providerInfo.warning)$($C.n)"
                 }
             }
         }
         'set' {
             if ($Script:SubArgs.Count -lt 3) {
-                Write-Host "Usage: agentx config set <key> <value>"
-                Write-Host "Example: agentx config set enforceIssues true"
+                Write-CliOutput "Usage: agentx config set <key> <value>"
+                Write-CliOutput "Example: agentx config set enforceIssues true"
                 return
             }
             $key = $Script:SubArgs[1]
@@ -4112,7 +4240,7 @@ function Invoke-ConfigCmd {
                 Set-ConfigValue $cfg $key $value
                 Write-JsonFile $Script:CONFIG_FILE $cfg
             }
-            Write-Host "$($C.g)  Set $key = $value$($C.n)"
+            Write-CliOutput "$($C.g)  Set $key = $value$($C.n)"
             if ($key -in @('provider', 'integration', 'mode', 'repo')) {
                 $repoSlug = Get-GitHubRepoSlug
                 if (-not [string]::IsNullOrWhiteSpace($repoSlug) -and (Get-AgentXProvider) -eq 'github' -and (Test-GitHubCliAuthenticated)) {
@@ -4122,20 +4250,20 @@ function Invoke-ConfigCmd {
         }
         'get' {
             if ($Script:SubArgs.Count -lt 2) {
-                Write-Host "Usage: agentx config get <key>"
+                Write-CliOutput "Usage: agentx config get <key>"
                 return
             }
             $key = $Script:SubArgs[1]
             $cfg = Get-AgentXConfig
             $val = $cfg.$key
             if ($null -ne $val) {
-                Write-Host $val
+                Write-CliOutput $val
             } else {
-                Write-Host "$($C.y)  Key '$key' not set$($C.n)"
+                Write-CliOutput "$($C.y)  Key '$key' not set$($C.n)"
             }
         }
         default {
-            Write-Host "Usage: agentx config [show|get|set]"
+            Write-CliOutput "Usage: agentx config [show|get|set]"
         }
     }
 }
@@ -4143,6 +4271,9 @@ function Invoke-ConfigCmd {
 # ---------------------------------------------------------------------------
 # AUDIT: Deterministic harness audit
 # ---------------------------------------------------------------------------
+
+
+
 
 function Get-HarnessMarkdownFiles([string]$dirPath, [string]$prefix) {
     if (-not (Test-Path $dirPath)) { return @() }
@@ -4285,6 +4416,9 @@ function Invoke-HarnessComplianceReport([string]$baseRef = '') {
     }
 }
 
+
+
+
 function Get-HarnessAuditChecks([string]$workspaceRoot, [string]$baseRef = '') {
     $planFiles = @(Get-HarnessMarkdownFiles (Join-Path $workspaceRoot 'docs' 'execution' 'plans') 'docs/execution/plans')
     $progressFiles = @(Get-HarnessMarkdownFiles (Join-Path $workspaceRoot 'docs' 'execution' 'progress') 'docs/execution/progress')
@@ -4373,7 +4507,7 @@ function Test-HarnessCheckRequired([string]$checkProfile, [string]$checkId) {
 function Invoke-AuditCmd {
     $auditTarget = if ($Script:SubArgs.Count -gt 0) { [string]$Script:SubArgs[0] } else { 'harness' }
     if ($auditTarget -notin @('harness')) {
-        Write-Host 'Usage: agentx audit harness [--profile strict|balanced|advisory|off] [--disable-check <id>] [--base-ref <branch>]'
+        Write-CliOutput 'Usage: agentx audit harness [--profile strict|balanced|advisory|off] [--disable-check <id>] [--base-ref <branch>]'
         return
     }
 
@@ -4418,18 +4552,18 @@ function Invoke-AuditCmd {
     }
 
     if ($Script:JsonOutput) {
-        $result | ConvertTo-Json -Depth 12 | Write-Host
+        $result | ConvertTo-Json -Depth 12 | Write-CliOutput
     } else {
-        Write-Host "$($C.c)  AgentX Harness Audit$($C.n)"
-        Write-Host "$($C.d)  Profile: $enforcementProfile$($C.n)"
-        Write-Host "$($C.d)  Disabled checks: $(if ($disabledChecks.Count -gt 0) { $disabledChecks -join ', ' } else { 'none' })$($C.n)"
-        Write-Host "$($C.d)  Score: $scorePercent% ($passedChecks/$totalChecks checks)$($C.n)"
-        Write-Host "$($C.d)  Gate: $(if ($allowed) { 'PASS' } else { 'FAIL' })$($C.n)"
+        Write-CliOutput "$($C.c)  AgentX Harness Audit$($C.n)"
+        Write-CliOutput "$($C.d)  Profile: $enforcementProfile$($C.n)"
+        Write-CliOutput "$($C.d)  Disabled checks: $(if ($disabledChecks.Count -gt 0) { $disabledChecks -join ', ' } else { 'none' })$($C.n)"
+        Write-CliOutput "$($C.d)  Score: $scorePercent% ($passedChecks/$totalChecks checks)$($C.n)"
+        Write-CliOutput "$($C.d)  Gate: $(if ($allowed) { 'PASS' } else { 'FAIL' })$($C.n)"
         foreach ($check in $enabledChecks) {
             $mark = if ($check.passed) { '[PASS]' } else { '[FAIL]' }
             $requiredMarker = if (Test-HarnessCheckRequired -checkProfile $enforcementProfile -checkId ([string]$check.id)) { 'required' } else { 'advisory' }
-            Write-Host "  $mark $($check.label) [$requiredMarker]"
-            Write-Host "      $($check.summary)"
+            Write-CliOutput "  $mark $($check.label) [$requiredMarker]"
+            Write-CliOutput "      $($check.summary)"
         }
     }
 
@@ -4444,12 +4578,12 @@ function Invoke-AuditCmd {
 
 function Invoke-VersionCmd {
     $ver = Read-JsonFile $Script:VERSION_FILE
-    if (-not $ver) { Write-Host 'AgentX version unknown.'; return }
+    if (-not $ver) { Write-CliOutput 'AgentX version unknown.'; return }
     if ($Script:JsonOutput) { $ver | ConvertTo-Json -Depth 5; return }
     $installed = if ($ver.installedAt) { "$($ver.installedAt)".Substring(0, 10) } else { '?' }
     $provider = Get-AgentXProvider
-    Write-Host "`n$($C.c)  AgentX $($ver.version)$($C.n)"
-    Write-Host "$($C.d)  Provider: $provider  |  Installed: $installed$($C.n)`n"
+    Write-CliOutput "`n$($C.c)  AgentX $($ver.version)$($C.n)"
+    Write-CliOutput "$($C.d)  Provider: $provider  |  Installed: $installed$($C.n)`n"
 }
 
 
@@ -4468,7 +4602,7 @@ function Invoke-AgentHookCmd {
     $issue = [int](Get-Flag @('-i', '--issue', '-Issue') '')
     if (-not $issue -and $Script:SubArgs.Count -gt 2) { $issue = [int]$Script:SubArgs[2] }
 
-    if (-not $phase -or -not $agent) { Write-Host 'Usage: agentx hook <start|finish> <agent> [issue]'; return }
+    if (-not $phase -or -not $agent) { Write-CliOutput 'Usage: agentx hook <start|finish> <agent> [issue]'; return }
 
     $data = Read-JsonFile $Script:STATE_FILE
     if (-not $data) { $data = [PSCustomObject]@{} }
@@ -4479,7 +4613,7 @@ function Invoke-AgentHookCmd {
         $data | Add-Member -NotePropertyName $agent -NotePropertyValue $entry -Force
         Write-JsonFile $Script:STATE_FILE $data
         $issueRef = if ($issue) { " (issue #$issue)" } else { '' }
-        Write-Host "$($C.g)  [PASS] $agent -> $status$issueRef$($C.n)"
+        Write-CliOutput "$($C.g)  [PASS] $agent -> $status$issueRef$($C.n)"
     } elseif ($phase -eq 'finish') {
         # -----------------------------------------------------------------
         # QUALITY GATE: block finish unless quality loop is status=complete.
@@ -4491,23 +4625,23 @@ function Invoke-AgentHookCmd {
         if ($agent -in $loopGatedRoles) {
             $loopState = Read-JsonFile $Script:LOOP_STATE_FILE
             if ($loopState -and $loopState.active -eq $true) {
-                Write-Host "$($C.r)  [FAIL] QUALITY LOOP STILL ACTIVE -- cannot finish yet.$($C.n)"
-                Write-Host "$($C.y)  Loop iteration $($loopState.iteration)/$($loopState.maxIterations) is in progress.$($C.n)"
-                Write-Host "$($C.d)  Run: agentx loop iterate -s <summary>  (to record progress)$($C.n)"
-                Write-Host "$($C.d)  Run: agentx loop complete -s <summary>  (when criteria met)$($C.n)`n"
+                Write-CliOutput "$($C.r)  [FAIL] QUALITY LOOP STILL ACTIVE -- cannot finish yet.$($C.n)"
+                Write-CliOutput "$($C.y)  Loop iteration $($loopState.iteration)/$($loopState.maxIterations) is in progress.$($C.n)"
+                Write-CliOutput "$($C.d)  Run: agentx loop iterate -s <summary>  (to record progress)$($C.n)"
+                Write-CliOutput "$($C.d)  Run: agentx loop complete -s <summary>  (when criteria met)$($C.n)`n"
                 exit 1
             }
             $staleReason = Get-LoopStateStaleReason $loopState $issue
             if ($staleReason) {
-                Write-Host "$($C.r)  [FAIL] Quality loop is stale ($staleReason).$($C.n)"
-                Write-Host "$($C.y)  Start a new loop for the current task before handoff.$($C.n)`n"
+                Write-CliOutput "$($C.r)  [FAIL] Quality loop is stale ($staleReason).$($C.n)"
+                Write-CliOutput "$($C.y)  Start a new loop for the current task before handoff.$($C.n)`n"
                 exit 1
             }
             if (-not $loopState -or $loopState.status -ne 'complete') {
                 $reason = if (-not $loopState) { 'no loop was started' } else { "loop status is '$($loopState.status)'" }
-                Write-Host "$($C.r)  [FAIL] Quality loop not completed ($reason).$($C.n)"
-                Write-Host "$($C.y)  A completed loop ('agentx loop complete') is required before handoff.$($C.n)"
-                Write-Host "$($C.d)  Cancelling a loop does not satisfy the quality gate.$($C.n)`n"
+                Write-CliOutput "$($C.r)  [FAIL] Quality loop not completed ($reason).$($C.n)"
+                Write-CliOutput "$($C.y)  A completed loop ('agentx loop complete') is required before handoff.$($C.n)"
+                Write-CliOutput "$($C.d)  Cancelling a loop does not satisfy the quality gate.$($C.n)`n"
                 exit 1
             }
         }
@@ -4515,7 +4649,7 @@ function Invoke-AgentHookCmd {
         $entry = [PSCustomObject]@{ status = 'done'; issue = $(if ($issue) { $issue } else { $null }); lastActivity = Get-Timestamp }
         $data | Add-Member -NotePropertyName $agent -NotePropertyValue $entry -Force
         Write-JsonFile $Script:STATE_FILE $data
-        Write-Host "$($C.g)  [PASS] $agent -> done$($C.n)"
+        Write-CliOutput "$($C.g)  [PASS] $agent -> done$($C.n)"
     }
 }
 
@@ -4549,30 +4683,30 @@ function Invoke-RunCmd {
     }
 
     if (-not $agent -and -not $resumeSession) {
-        Write-Host "`n$($C.c)  AgentX Run - Agentic Loop (LLM + Tools)$($C.n)"
-        Write-Host "$($C.d)  Auto-detects GitHub-hosted providers by default; explicit llmProvider config can also target Claude Code readiness.$($C.n)"
-        Write-Host "$($C.d)  For Claude/Gemini/o-series via GitHub, run: gh auth refresh -s copilot$($C.n)"
-        Write-Host "$($C.d)  For Claude Code readiness, install Claude Code and run: claude auth login$($C.n)`n"
-        Write-Host "$($C.w)  Usage:$($C.n)"
-        Write-Host '  agentx run <agent> <prompt>'
-        Write-Host '  agentx run -a engineer -p "Fix the failing tests"'
-        Write-Host '  agentx run architect "Design the auth system" -i 42'
-        Write-Host '  agentx run engineer "Implement login" --max 20 -m gpt-4.1'
-        Write-Host '  agentx run --resume-session <session-id> --clarification-response "Use the existing auth flow"'
-        Write-Host "`n$($C.w)  Available agents:$($C.n)"
+        Write-CliOutput "`n$($C.c)  AgentX Run - Agentic Loop (LLM + Tools)$($C.n)"
+        Write-CliOutput "$($C.d)  Auto-detects GitHub-hosted providers by default; explicit llmProvider config can also target Claude Code readiness.$($C.n)"
+        Write-CliOutput "$($C.d)  For Claude/Gemini/o-series via GitHub, run: gh auth refresh -s copilot$($C.n)"
+        Write-CliOutput "$($C.d)  For Claude Code readiness, install Claude Code and run: claude auth login$($C.n)`n"
+        Write-CliOutput "$($C.w)  Usage:$($C.n)"
+        Write-CliOutput '  agentx run <agent> <prompt>'
+        Write-CliOutput '  agentx run -a engineer -p "Fix the failing tests"'
+        Write-CliOutput '  agentx run architect "Design the auth system" -i 42'
+        Write-CliOutput '  agentx run engineer "Implement login" --max 20 -m gpt-4.1'
+        Write-CliOutput '  agentx run --resume-session <session-id> --clarification-response "Use the existing auth flow"'
+        Write-CliOutput "`n$($C.w)  Available agents:$($C.n)"
         foreach ($agentFilePath in (Get-AgentDefinitionFiles)) {
             $f = Get-Item $agentFilePath
                 $name = $f.BaseName -replace '\.agent$', ''
-                Write-Host "  $($C.c)$name$($C.n)"
+                Write-CliOutput "  $($C.c)$name$($C.n)"
         }
-        Write-Host ''
+        Write-CliOutput ''
         return
     }
 
     if ($resumeSession) {
         $session = Read-Session -sessionId $resumeSession -root $Script:ROOT
         if (-not $session) {
-            Write-Host "$($C.r)  [FAIL] Session '$resumeSession' not found.$($C.n)"
+            Write-CliOutput "$($C.r)  [FAIL] Session '$resumeSession' not found.$($C.n)"
             $global:LASTEXITCODE = 1
             return
         }
@@ -4582,20 +4716,20 @@ function Invoke-RunCmd {
         }
 
         if (-not $clarificationResponse) {
-            Write-Host "$($C.r)  [FAIL] Clarification response required. Use: agentx run --resume-session $resumeSession --clarification-response \"your guidance\"$($C.n)"
+            Write-CliOutput "$($C.r)  [FAIL] Clarification response required. Use: agentx run --resume-session $resumeSession --clarification-response \"your guidance\"$($C.n)"
             $global:LASTEXITCODE = 1
             return
         }
     } elseif (-not $prompt) {
-        Write-Host "$($C.r)  [FAIL] Prompt required. Use: agentx run $agent \"your prompt\"$($C.n)"
+        Write-CliOutput "$($C.r)  [FAIL] Prompt required. Use: agentx run $agent \"your prompt\"$($C.n)"
         $global:LASTEXITCODE = 1
         return
     }
 
     if ($resumeSession) {
-        Write-Host "`n$($C.c)  Resuming agentic loop...$($C.n)`n"
+        Write-CliOutput "`n$($C.c)  Resuming agentic loop...$($C.n)`n"
     } else {
-        Write-Host "`n$($C.c)  Starting agentic loop...$($C.n)`n"
+        Write-CliOutput "`n$($C.c)  Starting agentic loop...$($C.n)`n"
     }
 
     $params = @{
@@ -4646,7 +4780,7 @@ function Invoke-LessonsCmd {
         'archive' { Invoke-LessonsArchive }
         'stats'   { Invoke-LessonsStats }
         'clean'   { Invoke-LessonsClean }
-        default   { Write-Host "Unknown lessons action: $action"; Invoke-LessonsHelp }
+        default   { Write-CliOutput "Unknown lessons action: $action"; Invoke-LessonsHelp }
     }
 }
 
@@ -4668,10 +4802,10 @@ function Invoke-LessonsList {
                         $projectLessons += $lesson
                     }
                 }
-            } catch {}
+            } catch { Write-Verbose "Could not read project lesson file: $_" }
         }
     }
-    
+
     # Read global lessons (top 5 for overview)
     if (Test-Path $globalLessonsDir) {
         foreach ($file in (Get-ChildItem $globalLessonsDir -Filter '*.jsonl' -ErrorAction SilentlyContinue | Select-Object -First 3)) {
@@ -4684,7 +4818,7 @@ function Invoke-LessonsList {
                         $globalLessons += $lesson
                     }
                 }
-            } catch {}
+            } catch { Write-Verbose "Could not read global lesson file: $_" }
         }
     }
     
@@ -4696,15 +4830,15 @@ function Invoke-LessonsList {
     }
     
     if ($allLessons.Count -eq 0) {
-        Write-Host "$($C.y)No lessons found. Lessons are extracted automatically from agent sessions.$($C.n)"
+        Write-CliOutput "$($C.y)No lessons found. Lessons are extracted automatically from agent sessions.$($C.n)"
         return
     }
     
-    Write-Host "`n$($C.c)  Lessons Learned Overview$($C.n)"
-    Write-Host "$($C.d)  ---------------------------------------------$($C.n)"
-    Write-Host "  Project lessons: $(@($projectLessons).Count)"
-    Write-Host "  Global lessons:  $(@($globalLessons).Count) (showing sample)"
-    Write-Host ""
+    Write-CliOutput "`n$($C.c)  Lessons Learned Overview$($C.n)"
+    Write-CliOutput "$($C.d)  ---------------------------------------------$($C.n)"
+    Write-CliOutput "  Project lessons: $(@($projectLessons).Count)"
+    Write-CliOutput "  Global lessons:  $(@($globalLessons).Count) (showing sample)"
+    Write-CliOutput ""
     
     # Group by category and show recent
     $byCategory = @{}
@@ -4717,17 +4851,17 @@ function Invoke-LessonsList {
     
     foreach ($category in $byCategory.Keys) {
         $categoryLessons = @($byCategory[$category])
-        Write-Host "$($C.w)  $($category.ToUpper()) ($($categoryLessons.Count)):$($C.n)"
+        Write-CliOutput "$($C.w)  $($category.ToUpper()) ($($categoryLessons.Count)):$($C.n)"
         foreach ($lesson in ($categoryLessons | Select-Object -First 3)) {
             $source = if ($lesson.__source -eq 'project') { '' } else { ' (global)' }
             $confidence = $lesson.confidence
             $cc = switch ($confidence) { 'high' { $C.g } 'medium' { $C.y } 'low' { $C.d } }
-            Write-Host "    $cc[$confidence]$($C.n) $($lesson.pattern)$source"
+            Write-CliOutput "    $cc[$confidence]$($C.n) $($lesson.pattern)$source"
         }
-        Write-Host ""
+        Write-CliOutput ""
     }
     
-    Write-Host "$($C.d)Use 'agentx lessons query' for specific searches or 'agentx lessons show <id>' for details.$($C.n)"
+    Write-CliOutput "$($C.d)Use 'agentx lessons query' for specific searches or 'agentx lessons show <id>' for details.$($C.n)"
 }
 
 function Invoke-LessonsQuery {
@@ -4737,58 +4871,61 @@ function Invoke-LessonsQuery {
     $pattern = Get-Flag @('-p', '--pattern')
     
     if (-not $category -and -not $confidence -and -not $tag -and -not $pattern) {
-        Write-Host "`n$($C.c)  Query Lessons$($C.n)"
-        Write-Host "$($C.w)  Usage:$($C.n)"
-        Write-Host "    agentx lessons query -c error-pattern"
-        Write-Host "    agentx lessons query -t typescript --confidence high"
-        Write-Host "    agentx lessons query -p \"timeout\" -l 5"
-        Write-Host "`n$($C.w)  Categories:$($C.n)"
-        Write-Host "    error-pattern, success-pattern, tool-usage, security"
-        Write-Host "    performance, configuration, integration, workflow, testing"
-        Write-Host "`n$($C.w)  Confidence:$($C.n)"
-        Write-Host "    high, medium, low"
-        Write-Host ""
+        Write-CliOutput "`n$($C.c)  Query Lessons$($C.n)"
+        Write-CliOutput "$($C.w)  Usage:$($C.n)"
+        Write-CliOutput "    agentx lessons query -c error-pattern"
+        Write-CliOutput "    agentx lessons query -t typescript --confidence high"
+        Write-CliOutput "    agentx lessons query -p \"timeout\" -l 5"
+        Write-CliOutput "`n$($C.w)  Categories:$($C.n)"
+        Write-CliOutput "    error-pattern, success-pattern, tool-usage, security"
+        Write-CliOutput "    performance, configuration, integration, workflow, testing"
+        Write-CliOutput "`n$($C.w)  Confidence:$($C.n)"
+        Write-CliOutput "    high, medium, low"
+        Write-CliOutput ""
         return
     }
     
     # Query is handled by memory.instructions.md in the declarative architecture
-    Write-Host "$($C.y)Query functionality uses /memories/*.md files in v8.0.0.$($C.n)"
-    Write-Host "$($C.d)Use 'agentx lessons list' for the local JSONL overview, or check /memories/ for cross-session facts.$($C.n)"
+    Write-CliOutput "$($C.y)Query functionality uses /memories/*.md files in v8.0.0.$($C.n)"
+    Write-CliOutput "$($C.d)Use 'agentx lessons list' for the local JSONL overview, or check /memories/ for cross-session facts.$($C.n)"
 }
 
 function Invoke-LessonsShow {
     $id = if ($Script:SubArgs.Count -gt 0) { $Script:SubArgs[0] } else { '' }
     if (-not $id) {
-        Write-Host "Usage: agentx lessons show <lesson-id>"
+        Write-CliOutput "Usage: agentx lessons show <lesson-id>"
         return
     }
     
     # Search for lesson by ID
-    Write-Host "$($C.y)Show lesson by ID uses /memories/*.md files in v8.0.0.$($C.n)"
-    Write-Host "$($C.d)Check /memories/ for cross-session decisions and pitfalls.$($C.n)"
+    Write-CliOutput "$($C.y)Show lesson by ID uses /memories/*.md files in v8.0.0.$($C.n)"
+    Write-CliOutput "$($C.d)Check /memories/ for cross-session decisions and pitfalls.$($C.n)"
 }
 
 function Invoke-LessonsPromote {
     $id = if ($Script:SubArgs.Count -gt 0) { $Script:SubArgs[0] } else { '' }
     if (-not $id) {
-        Write-Host "Usage: agentx lessons promote <lesson-id>"
+        Write-CliOutput "Usage: agentx lessons promote <lesson-id>"
         return
     }
     
-    Write-Host "$($C.y)Promote functionality uses /memories/*.md files in v8.0.0.$($C.n)"
-    Write-Host "$($C.d)Promote lessons by editing /memories/conventions.md or project-conventions.instructions.md.$($C.n)"
+    Write-CliOutput "$($C.y)Promote functionality uses /memories/*.md files in v8.0.0.$($C.n)"
+    Write-CliOutput "$($C.d)Promote lessons by editing /memories/conventions.md or project-conventions.instructions.md.$($C.n)"
 }
 
 function Invoke-LessonsArchive {
     $id = if ($Script:SubArgs.Count -gt 0) { $Script:SubArgs[0] } else { '' }
     if (-not $id) {
-        Write-Host "Usage: agentx lessons archive <lesson-id>"
+        Write-CliOutput "Usage: agentx lessons archive <lesson-id>"
         return
     }
     
-    Write-Host "$($C.y)Archive functionality uses /memories/*.md files in v8.0.0.$($C.n)"
-    Write-Host "$($C.d)Archive lessons by moving entries from /memories/ to /memories/session/.$($C.n)"
+    Write-CliOutput "$($C.y)Archive functionality uses /memories/*.md files in v8.0.0.$($C.n)"
+    Write-CliOutput "$($C.d)Archive lessons by moving entries from /memories/ to /memories/session/.$($C.n)"
 }
+
+
+
 
 function Invoke-LessonsStats {
     $globalLessonsDir = Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::UserProfile)) '.agentx' 'lessons'
@@ -4802,76 +4939,76 @@ function Invoke-LessonsStats {
             try {
                 $lines = @(Get-Content $file.FullName -Encoding utf8 | Where-Object { $_.Trim() })
                 $projectCount += $lines.Count
-            } catch {}
+            } catch { Write-Verbose "Could not read project lesson for count: $_" }
         }
     }
-    
+
     # Count global lessons
     if (Test-Path $globalLessonsDir) {
         foreach ($file in (Get-ChildItem $globalLessonsDir -Filter '*.jsonl' -ErrorAction SilentlyContinue)) {
             try {
                 $lines = @(Get-Content $file.FullName -Encoding utf8 | Where-Object { $_.Trim() })
                 $globalCount += $lines.Count
-            } catch {}
+            } catch { Write-Verbose "Could not read global lesson for count: $_" }
         }
     }
-    
-    Write-Host "`n$($C.c)  Learning Pipeline Statistics$($C.n)"
-    Write-Host "$($C.d)  ---------------------------------------------$($C.n)"
-    Write-Host "  Project lessons:     $projectCount"
-    Write-Host "  Global lessons:      $globalCount"
-    Write-Host "  Total lessons:       $($projectCount + $globalCount)"
-    Write-Host ""
+
+    Write-CliOutput "`n$($C.c)  Learning Pipeline Statistics$($C.n)"
+    Write-CliOutput "$($C.d)  ---------------------------------------------$($C.n)"
+    Write-CliOutput "  Project lessons:     $projectCount"
+    Write-CliOutput "  Global lessons:      $globalCount"
+    Write-CliOutput "  Total lessons:       $($projectCount + $globalCount)"
+    Write-CliOutput ""
     
     $configFile = Join-Path $Script:AGENTX_DIR 'config.json'
     $config = Read-JsonFile $configFile
     $learningEnabled = if ($config -and $config.PSObject.Properties['learningEnabled']) { $config.learningEnabled } else { $true }
     
-    Write-Host "  Learning enabled:    $learningEnabled"
-    Write-Host "  Storage mode:        JSONL (two-tier)"
-    Write-Host ""
+    Write-CliOutput "  Learning enabled:    $learningEnabled"
+    Write-CliOutput "  Storage mode:        JSONL (two-tier)"
+    Write-CliOutput ""
     
     if ($projectCount -eq 0 -and $globalCount -eq 0) {
-        Write-Host "$($C.y)  No lessons found yet. Lessons are automatically extracted from agent sessions$($C.n)"
-        Write-Host "$($C.d)  when context compaction occurs. Start using agents to build your lesson base.$($C.n)"
+        Write-CliOutput "$($C.y)  No lessons found yet. Lessons are automatically extracted from agent sessions$($C.n)"
+        Write-CliOutput "$($C.d)  when context compaction occurs. Start using agents to build your lesson base.$($C.n)"
     }
-    Write-Host ""
+    Write-CliOutput ""
 }
 
 function Invoke-LessonsClean {
     $dryRun = Test-Flag @('--dry-run', '-d')
     
     if ($dryRun) {
-        Write-Host "$($C.c)  Dry Run: Lesson Cleanup$($C.n)"
-        Write-Host "$($C.d)  Would clean up archived and low-confidence lessons older than 90 days$($C.n)"
+        Write-CliOutput "$($C.c)  Dry Run: Lesson Cleanup$($C.n)"
+        Write-CliOutput "$($C.d)  Would clean up archived and low-confidence lessons older than 90 days$($C.n)"
     } else {
-        Write-Host "$($C.y)Clean functionality uses /memories/*.md files in v8.0.0.$($C.n)"
-        Write-Host "$($C.d)Manually review and prune /memories/ files as needed.$($C.n)"
+        Write-CliOutput "$($C.y)Clean functionality uses /memories/*.md files in v8.0.0.$($C.n)"
+        Write-CliOutput "$($C.d)Manually review and prune /memories/ files as needed.$($C.n)"
     }
 }
 
 function Invoke-LessonsHelp {
-    Write-Host "`n$($C.c)  Lessons Commands$($C.n)"
-    Write-Host "$($C.d)  ---------------------------------------------$($C.n)"
-    Write-Host "$($C.w)  Usage:$($C.n)"
-    Write-Host "    agentx lessons list                  Show lessons overview"
-    Write-Host "    agentx lessons query [options]       Search lessons"
-    Write-Host "    agentx lessons show <id>             Show lesson details"
-    Write-Host "    agentx lessons promote <id>          Promote lesson to higher confidence"
-    Write-Host "    agentx lessons archive <id>          Archive lesson"
-    Write-Host "    agentx lessons stats                 Show learning pipeline statistics"
-    Write-Host "    agentx lessons clean [--dry-run]     Clean up old archived lessons"
-    Write-Host ""
-    Write-Host "$($C.w)  Query Options:$($C.n)"
-    Write-Host "    -c, --category <name>     Filter by category (error-pattern, success-pattern, etc.)"
-    Write-Host "    -t, --tag <tag>           Filter by tag"
-    Write-Host "    -p, --pattern <text>      Search in lesson patterns and descriptions"
-    Write-Host "    --confidence <level>      Filter by confidence (high, medium, low)"
-    Write-Host "    -l, --limit <n>           Limit results (default: 10)"
-    Write-Host ""
-    Write-Host "$($C.d)  Note: Lessons are automatically extracted from agent sessions during context$($C.n)"
-    Write-Host "$($C.d)  compaction. Full query/modify uses /memories/*.md files in v8.0.0.$($C.n)"
-    Write-Host ""
+    Write-CliOutput "`n$($C.c)  Lessons Commands$($C.n)"
+    Write-CliOutput "$($C.d)  ---------------------------------------------$($C.n)"
+    Write-CliOutput "$($C.w)  Usage:$($C.n)"
+    Write-CliOutput "    agentx lessons list                  Show lessons overview"
+    Write-CliOutput "    agentx lessons query [options]       Search lessons"
+    Write-CliOutput "    agentx lessons show <id>             Show lesson details"
+    Write-CliOutput "    agentx lessons promote <id>          Promote lesson to higher confidence"
+    Write-CliOutput "    agentx lessons archive <id>          Archive lesson"
+    Write-CliOutput "    agentx lessons stats                 Show learning pipeline statistics"
+    Write-CliOutput "    agentx lessons clean [--dry-run]     Clean up old archived lessons"
+    Write-CliOutput ""
+    Write-CliOutput "$($C.w)  Query Options:$($C.n)"
+    Write-CliOutput "    -c, --category <name>     Filter by category (error-pattern, success-pattern, etc.)"
+    Write-CliOutput "    -t, --tag <tag>           Filter by tag"
+    Write-CliOutput "    -p, --pattern <text>      Search in lesson patterns and descriptions"
+    Write-CliOutput "    --confidence <level>      Filter by confidence (high, medium, low)"
+    Write-CliOutput "    -l, --limit <n>           Limit results (default: 10)"
+    Write-CliOutput ""
+    Write-CliOutput "$($C.d)  Note: Lessons are automatically extracted from agent sessions during context$($C.n)"
+    Write-CliOutput "$($C.d)  compaction. Full query/modify uses /memories/*.md files in v8.0.0.$($C.n)"
+    Write-CliOutput ""
 }
 
 # ---------------------------------------------------------------------------
@@ -4882,7 +5019,7 @@ function Invoke-TokensCmd {
     $action = if ($Script:SubArgs.Count -gt 0) { $Script:SubArgs[0] } else { 'check' }
     $scriptPath = Join-Path $Script:ROOT 'scripts/token-counter.ps1'
     if (-not (Test-Path $scriptPath)) {
-        Write-Host "$($C.r)  Error: scripts/token-counter.ps1 not found.$($C.n)"
+        Write-CliOutput "$($C.r)  Error: scripts/token-counter.ps1 not found.$($C.n)"
         exit 1
     }
     & $scriptPath -Action $action
@@ -4894,11 +5031,11 @@ function Invoke-TokensCmd {
 
 function Invoke-ScoreCmd {
     $role = if ($Script:SubArgs.Count -gt 0) { $Script:SubArgs[0] } else { '' }
-    if (-not $role) { Write-Host 'Usage: agentx score <engineer|architect|pm> [issue-number]'; exit 1 }
+    if (-not $role) { Write-CliOutput 'Usage: agentx score <engineer|architect|pm> [issue-number]'; exit 1 }
     $issue = if ($Script:SubArgs.Count -gt 1) { [int]$Script:SubArgs[1] } else { 0 }
     $scriptPath = Join-Path $Script:ROOT 'scripts/score-output.ps1'
     if (-not (Test-Path $scriptPath)) {
-        Write-Host "$($C.r)  Error: scripts/score-output.ps1 not found.$($C.n)"
+        Write-CliOutput "$($C.r)  Error: scripts/score-output.ps1 not found.$($C.n)"
         exit 1
     }
     $params = @{ Role = $role }
@@ -4911,7 +5048,7 @@ function Invoke-ScoreCmd {
 # ---------------------------------------------------------------------------
 
 function Invoke-HelpCmd {
-    Write-Host @"
+    Write-CliOutput @"
 
 $($C.c)  AgentX CLI$($C.n)
 $($C.d)  ---------------------------------------------$($C.n)
@@ -4994,27 +5131,27 @@ function Invoke-HireCmd {
     $role = Get-Flag @('-r', '--role') 'Engineer'
 
     if (-not $agentName) {
-        Write-Host "`n$($C.c)  AgentX Hire - Create a Custom Agent$($C.n)"
-        Write-Host "$($C.d)  Scaffold a new agent definition in .github/agents/$($C.n)`n"
+        Write-CliOutput "`n$($C.c)  AgentX Hire - Create a Custom Agent$($C.n)"
+        Write-CliOutput "$($C.d)  Scaffold a new agent definition in .github/agents/$($C.n)`n"
 
         # Interactive prompts
-        Write-Host "$($C.w)  Agent display name$($C.n) $($C.d)(e.g. Security Auditor)$($C.n): " -NoNewline
+        Write-CliOutput "$($C.w)  Agent display name$($C.n) $($C.d)(e.g. Security Auditor)$($C.n): " -NoNewline
         $agentName = (Read-Host).Trim()
-        if (-not $agentName) { Write-Host "$($C.r)  Name is required. Aborting.$($C.n)"; return }
+        if (-not $agentName) { Write-CliOutput "$($C.r)  Name is required. Aborting.$($C.n)"; return }
 
-        Write-Host "$($C.w)  Description$($C.n) $($C.d)(optional, press Enter to skip)$($C.n): " -NoNewline
+        Write-CliOutput "$($C.w)  Description$($C.n) $($C.d)(optional, press Enter to skip)$($C.n): " -NoNewline
         $inputDesc = (Read-Host).Trim()
         if ($inputDesc) { $description = $inputDesc }
 
-        Write-Host "$($C.w)  Role$($C.n) $($C.d)[Engineer / Architect / Researcher / Analyst / DevOps / Tester / Designer]$($C.n) $($C.d)(default: Engineer)$($C.n): " -NoNewline
+        Write-CliOutput "$($C.w)  Role$($C.n) $($C.d)[Engineer / Architect / Researcher / Analyst / DevOps / Tester / Designer]$($C.n) $($C.d)(default: Engineer)$($C.n): " -NoNewline
         $inputRole = (Read-Host).Trim()
         if ($inputRole) { $role = $inputRole }
 
-        Write-Host "$($C.w)  Model$($C.n) $($C.d)[gpt-4.1 / claude-sonnet-4 / o4-mini / gpt-4.1-mini]$($C.n) $($C.d)(default: gpt-4.1)$($C.n): " -NoNewline
+        Write-CliOutput "$($C.w)  Model$($C.n) $($C.d)[gpt-4.1 / claude-sonnet-4 / o4-mini / gpt-4.1-mini]$($C.n) $($C.d)(default: gpt-4.1)$($C.n): " -NoNewline
         $inputModel = (Read-Host).Trim()
         if ($inputModel) { $model = $inputModel }
 
-        Write-Host ''
+        Write-CliOutput ''
     }
 
     $agentId = $agentName.ToLower() -replace '[^a-z0-9]+', '-' -replace '^-|-$', ''
@@ -5027,8 +5164,8 @@ function Invoke-HireCmd {
     $filePath = Join-Path $agentsDir $fileName
 
     if (Test-Path $filePath) {
-        Write-Host "$($C.y)  Agent '$agentId' already exists at $fileName.$($C.n)"
-        Write-Host "$($C.d)  Use a different name or delete the existing file.$($C.n)"
+        Write-CliOutput "$($C.y)  Agent '$agentId' already exists at $fileName.$($C.n)"
+        Write-CliOutput "$($C.d)  Use a different name or delete the existing file.$($C.n)"
         $global:LASTEXITCODE = 1
         return
     }
@@ -5097,10 +5234,10 @@ Before completing work, verify:
 "@
 
     Set-Content $filePath -Value $content -Encoding utf8
-    Write-Host "`n$($C.g)  [PASS] Agent '$agentName' hired!$($C.n)"
-    Write-Host "$($C.d)  Definition: $fileName$($C.n)"
-    Write-Host "$($C.d)  Model: $model  |  Role: $role$($C.n)"
-    Write-Host "$($C.d)  Review the generated workflow sections and tailor them to your domain.$($C.n)`n"
+    Write-CliOutput "`n$($C.g)  [PASS] Agent '$agentName' hired!$($C.n)"
+    Write-CliOutput "$($C.d)  Definition: $fileName$($C.n)"
+    Write-CliOutput "$($C.d)  Model: $model  |  Role: $role$($C.n)"
+    Write-CliOutput "$($C.d)  Review the generated workflow sections and tailor them to your domain.$($C.n)`n"
 }
 
 # ---------------------------------------------------------------------------
@@ -5118,27 +5255,27 @@ function Invoke-WatchCmd {
     if ($statusOnly) {
         $watchState = Read-JsonFile (Join-Path $AGENTX_DIR 'state' 'watch-state.json')
         if (-not $watchState) {
-            Write-Host 'No watch session active.'
+            Write-CliOutput 'No watch session active.'
             return
         }
         if ($Script:JsonOutput) { $watchState | ConvertTo-Json -Depth 5; return }
-        Write-Host "`n$($C.c)  Watch Status$($C.n)"
-        Write-Host "$($C.d)  Started: $($watchState.started)$($C.n)"
-        Write-Host "$($C.d)  Cycles: $($watchState.cycles)$($C.n)"
-        Write-Host "$($C.d)  Items routed: $($watchState.itemsRouted)$($C.n)"
-        Write-Host "$($C.d)  Items executed: $($watchState.itemsExecuted)$($C.n)"
-        Write-Host "$($C.d)  Last poll: $($watchState.lastPoll)$($C.n)`n"
+        Write-CliOutput "`n$($C.c)  Watch Status$($C.n)"
+        Write-CliOutput "$($C.d)  Started: $($watchState.started)$($C.n)"
+        Write-CliOutput "$($C.d)  Cycles: $($watchState.cycles)$($C.n)"
+        Write-CliOutput "$($C.d)  Items routed: $($watchState.itemsRouted)$($C.n)"
+        Write-CliOutput "$($C.d)  Items executed: $($watchState.itemsExecuted)$($C.n)"
+        Write-CliOutput "$($C.d)  Last poll: $($watchState.lastPoll)$($C.n)`n"
         return
     }
 
-    Write-Host "`n$($C.c)  AgentX Watch - Continuous Backlog Monitor$($C.n)"
-    Write-Host "$($C.d)  Polls backlog every $intervalMinutes minutes for unblocked work.$($C.n)"
-    if ($dryRun) { Write-Host "$($C.y)  DRY RUN: Will report but not execute.$($C.n)" }
+    Write-CliOutput "`n$($C.c)  AgentX Watch - Continuous Backlog Monitor$($C.n)"
+    Write-CliOutput "$($C.d)  Polls backlog every $intervalMinutes minutes for unblocked work.$($C.n)"
+    if ($dryRun) { Write-CliOutput "$($C.y)  DRY RUN: Will report but not execute.$($C.n)" }
     if (-not $execute) {
-        Write-Host "$($C.y)  REPORT MODE: Add --execute to auto-run agents on ready items.$($C.n)"
+        Write-CliOutput "$($C.y)  REPORT MODE: Add --execute to auto-run agents on ready items.$($C.n)"
     }
-    Write-Host "$($C.d)  Max concurrent: $maxConcurrent  |  Timeout: $(if ($timeoutMinutes -gt 0) { "$timeoutMinutes min" } else { 'none' })$($C.n)"
-    Write-Host "$($C.d)  Press Ctrl+C to stop.$($C.n)`n"
+    Write-CliOutput "$($C.d)  Max concurrent: $maxConcurrent  |  Timeout: $(if ($timeoutMinutes -gt 0) { "$timeoutMinutes min" } else { 'none' })$($C.n)"
+    Write-CliOutput "$($C.d)  Press Ctrl+C to stop.$($C.n)`n"
 
     # Initialize watch state
     $watchStateFile = Join-Path $AGENTX_DIR 'state' 'watch-state.json'
@@ -5180,7 +5317,7 @@ function Invoke-WatchCmd {
             } | Sort-Object { Get-IssuePriority $_ })
 
             if ($ready.Count -gt 0) {
-                Write-Host "$($C.c)  [$((Get-Date).ToString('HH:mm:ss'))] Found $($ready.Count) ready item(s):$($C.n)"
+                Write-CliOutput "$($C.c)  [$((Get-Date).ToString('HH:mm:ss'))] Found $($ready.Count) ready item(s):$($C.n)"
                 foreach ($item in $ready) {
                     $p = Get-IssuePriority $item
                     $pLabel = if ($p -lt 9) { "P$p" } else { '  ' }
@@ -5195,11 +5332,11 @@ function Invoke-WatchCmd {
                         'powerbi'       { 'powerbi-analyst' }
                         default         { 'engineer' }
                     }
-                    Write-Host "    [$pLabel] #$($item.number) ($typ) $($item.title) -> $agent"
+                    Write-CliOutput "    [$pLabel] #$($item.number) ($typ) $($item.title) -> $agent"
                     $watchState.itemsRouted++
 
                     if ($execute -and -not $dryRun) {
-                        Write-Host "$($C.y)    Spawning $agent for #$($item.number)...$($C.n)"
+                        Write-CliOutput "$($C.y)    Spawning $agent for #$($item.number)...$($C.n)"
                         try {
                             . (Join-Path $PSScriptRoot 'agentic-runner.ps1')
                             $params = @{
@@ -5212,15 +5349,15 @@ function Invoke-WatchCmd {
                             $result = Invoke-AgenticLoop @params
                             if ($result) {
                                 $watchState.itemsExecuted++
-                                Write-Host "$($C.g)    [PASS] #$($item.number) completed ($($result.exitReason))$($C.n)"
+                                Write-CliOutput "$($C.g)    [PASS] #$($item.number) completed ($($result.exitReason))$($C.n)"
                             }
                         } catch {
-                            Write-Host "$($C.r)    [FAIL] #$($item.number) error: $($_.Exception.Message)$($C.n)"
+                            Write-CliOutput "$($C.r)    [FAIL] #$($item.number) error: $($_.Exception.Message)$($C.n)"
                         }
                     }
                 }
             } else {
-                Write-Host "$($C.d)  [$((Get-Date).ToString('HH:mm:ss'))] No ready items. Sleeping $intervalMinutes min...$($C.n)"
+                Write-CliOutput "$($C.d)  [$((Get-Date).ToString('HH:mm:ss'))] No ready items. Sleeping $intervalMinutes min...$($C.n)"
             }
 
             Write-JsonFile $watchStateFile $watchState
@@ -5229,7 +5366,7 @@ function Invoke-WatchCmd {
             if ($timeoutMinutes -gt 0) {
                 $elapsed = ([datetime]::UtcNow - $startTime).TotalMinutes
                 if ($elapsed -ge $timeoutMinutes) {
-                    Write-Host "`n$($C.y)  Watch timeout ($timeoutMinutes min) reached. Stopping.$($C.n)"
+                    Write-CliOutput "`n$($C.y)  Watch timeout ($timeoutMinutes min) reached. Stopping.$($C.n)"
                     break
                 }
             }
@@ -5239,7 +5376,7 @@ function Invoke-WatchCmd {
     } finally {
         $watchState.active = $false
         Write-JsonFile $watchStateFile $watchState
-        Write-Host "`n$($C.d)  Watch stopped. Cycles: $($watchState.cycles) | Routed: $($watchState.itemsRouted) | Executed: $($watchState.itemsExecuted)$($C.n)"
+        Write-CliOutput "`n$($C.d)  Watch stopped. Cycles: $($watchState.cycles) | Routed: $($watchState.itemsRouted) | Executed: $($watchState.itemsExecuted)$($C.n)"
     }
 }
 
@@ -5273,7 +5410,8 @@ switch ($Script:Command) {
     'version'  { Invoke-VersionCmd }
     'help'     { Invoke-HelpCmd }
     default {
-        Write-Host "Unknown command: $($Script:Command). Run 'agentx help' for usage."
+        Write-CliOutput "Unknown command: $($Script:Command). Run 'agentx help' for usage."
         exit 1
     }
 }
+

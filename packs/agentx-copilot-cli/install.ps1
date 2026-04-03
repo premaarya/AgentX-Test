@@ -42,6 +42,8 @@
  pwsh packs/agentx-copilot-cli/install.ps1 -WhatIf
 #>
 [CmdletBinding(SupportsShouldProcess)]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '')]
 param(
  [string]$Target = (Get-Location).Path,
  [string]$Source = "",
