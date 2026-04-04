@@ -4195,14 +4195,15 @@ function Invoke-ConfigCmd {
             $cfg = Get-AgentXConfig
             $providerInfo = Get-AgentXProviderInfo
             if ($Script:JsonOutput) {
-                [PSCustomObject]@{
+                $json = [PSCustomObject]@{
                     config = $cfg
                     activeProvider = $providerInfo.name
                     providerSource = $providerInfo.source
                     providerInferred = $providerInfo.inferred
                     providerWarning = $providerInfo.warning
                     configuredAdapters = @($providerInfo.adapters)
-                } | ConvertTo-Json -Depth 10 | Write-CliOutput
+                } | ConvertTo-Json -Depth 10
+                Write-CliOutput $json
             } else {
                 Write-CliOutput "$($C.c)  AgentX Configuration$($C.n)"
                 Write-CliOutput "$($C.d)  -----------------------------------$($C.n)"
@@ -4552,7 +4553,8 @@ function Invoke-AuditCmd {
     }
 
     if ($Script:JsonOutput) {
-        $result | ConvertTo-Json -Depth 12 | Write-CliOutput
+        $json = $result | ConvertTo-Json -Depth 12
+        Write-CliOutput $json
     } else {
         Write-CliOutput "$($C.c)  AgentX Harness Audit$($C.n)"
         Write-CliOutput "$($C.d)  Profile: $enforcementProfile$($C.n)"

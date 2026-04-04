@@ -31,7 +31,7 @@ function Remove-TestWorkspace([string]$root) {
     }
 }
 
-function Invoke-AgentX([string]$root, [string[]]$arguments) {
+function Invoke-AgentX([string]$root, [string[]]$arguments, [hashtable]$environment = @{}) {
     $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
     $startInfo.FileName = 'pwsh'
     $startInfo.RedirectStandardOutput = $true
@@ -42,6 +42,9 @@ function Invoke-AgentX([string]$root, [string[]]$arguments) {
     $startInfo.ArgumentList.Add((Join-Path $root '.agentx\agentx.ps1'))
     foreach ($argument in $arguments) {
         $startInfo.ArgumentList.Add($argument)
+    }
+    foreach ($entry in $environment.GetEnumerator()) {
+        $startInfo.Environment[$entry.Key] = [string]$entry.Value
     }
 
     $process = [System.Diagnostics.Process]::Start($startInfo)
@@ -300,6 +303,7 @@ $githubRoot = $null
 $inferredRoot = $null
 $remoteDetectedRoot = $null
 $workflowRoot = $null
+$workspaceOverrideRoot = $null
 
 try {
     $localRoot = New-TestWorkspace 'local'
@@ -408,6 +412,33 @@ task_prefix: 'task'
     $bugWorkflow = Invoke-AgentX $workflowRoot @('workflow', 'bug')
     Assert-True ($bugWorkflow.ExitCode -eq 0) 'workflow bug exits successfully'
     Assert-True ($bugWorkflow.Output -match 'Handoff Chain: engineer') 'workflow bug maps to engineer'
+
+    $workspaceOverrideRoot = New-TestWorkspace 'workspace-root-override'
+    New-Item -ItemType Directory -Path (Join-Path $workflowRoot '.agentx\state') -Force | Out-Null
+    New-Item -ItemType Directory -Path (Join-Path $workspaceOverrideRoot '.agentx\state') -Force | Out-Null
+    Write-Utf8File (Join-Path $workspaceOverrideRoot '.agentx\state\loop-state.json') (@{
+        active = $true
+        status = 'active'
+        prompt = 'Foreign active loop'
+        taskClass = 'standard'
+        iteration = 2
+        minIterations = 3
+        maxIterations = 20
+        completionCriteria = 'TASK_COMPLETE'
+        startedAt = '2026-04-04T10:00:00.000Z'
+        lastIterationAt = '2026-04-04T10:05:00.000Z'
+        history = @(
+            @{ iteration = 1; timestamp = '2026-04-04T10:00:00.000Z'; summary = 'Loop started'; status = 'in-progress'; outcome = 'partial' },
+            @{ iteration = 2; timestamp = '2026-04-04T10:05:00.000Z'; summary = 'Foreign active loop'; status = 'in-progress'; outcome = 'partial' }
+        )
+    } | ConvertTo-Json -Depth 10)
+
+    $loopStart = Invoke-AgentX $workflowRoot @('loop', 'start', '--prompt', 'Local launcher loop', '--max', '5') @{ AGENTX_WORKSPACE_ROOT = $workspaceOverrideRoot }
+    $workflowLoopState = Get-Content (Join-Path $workflowRoot '.agentx\state\loop-state.json') -Raw | ConvertFrom-Json -Depth 10
+    $overrideLoopState = Get-Content (Join-Path $workspaceOverrideRoot '.agentx\state\loop-state.json') -Raw | ConvertFrom-Json -Depth 10
+    Assert-True ($loopStart.ExitCode -eq 0) 'Workspace launcher loop start exits successfully even when AGENTX_WORKSPACE_ROOT points elsewhere'
+    Assert-True ($workflowLoopState.active -and $workflowLoopState.prompt -eq 'Local launcher loop') 'Workspace launcher writes loop state to its own workspace root'
+    Assert-True ($overrideLoopState.active -and $overrideLoopState.prompt -eq 'Foreign active loop') 'Workspace launcher does not mutate foreign loop state from leaked environment overrides'
 
     $githubRoot = New-TestWorkspace 'github'
     $toolsDir = Initialize-GitHubMock $githubRoot
@@ -599,6 +630,7 @@ finally {
     Remove-TestWorkspace $inferredRoot
     Remove-TestWorkspace $remoteDetectedRoot
     Remove-TestWorkspace $workflowRoot
+    Remove-TestWorkspace $workspaceOverrideRoot
 }
 
 Write-Host ''
