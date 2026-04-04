@@ -2,6 +2,11 @@
 name: "Test Generation"
 agent: "AgentX Engineer"
 description: Test generation prompt for creating comprehensive test suites
+inputs:
+ issue_number:
+ description: "Issue number for the test generation work"
+ required: true
+ default: ""
 ---
 
 # Test Generation Prompt

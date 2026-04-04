@@ -2,6 +2,11 @@
 name: "PRD Generation"
 agent: "AgentX Product Manager"
 description: Generate comprehensive Product Requirements Document from epic description
+inputs:
+ issue_number:
+ description: "Epic issue number for the PRD"
+ required: true
+ default: ""
 ---
 
 # PRD Generation Prompt

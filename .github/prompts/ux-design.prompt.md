@@ -2,6 +2,11 @@
 name: "UX Design"
 agent: "AgentX UX Designer"
 description: Generate UX designs, wireframes, and prototypes from PRD requirements
+inputs:
+ issue_number:
+ description: "Issue number for the feature or story being designed"
+ required: true
+ default: ""
 ---
 
 # UX Design Prompt

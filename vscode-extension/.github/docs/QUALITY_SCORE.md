@@ -17,7 +17,7 @@
 
 ---
 
-## Component Scores (v8.4.27)
+## Component Scores (v8.4.28)
 
 ### Agent Definitions (.github/agents/)
 
@@ -51,11 +51,11 @@
 |----------|-------|-------|-------|
 | Architecture | 5 | A | Core principles, security, performance, database, API design |
 | Development | 11 | A | Testing, error handling, iterative loop, code review, token optimizer, etc. |
-| Languages | 8 | A | C#, Python, Go, Rust, React, Blazor, PostgreSQL, SQL Server |
+| Languages | 10 | A | C, C++, C#, Python, Go, Rust, React, Blazor, PostgreSQL, SQL Server |
 | Operations | 5 | A | Git, GitHub Actions, YAML pipelines, release mgmt, version control |
 | Infrastructure | 4 | A | Azure, Bicep, Terraform, containerization |
 | Data | 6 | A | Data analysis, Fabric, Databricks, Power BI |
-| AI Systems | 13 | A | Agent dev, prompt eng, RAG, drift, evaluation, MCP, Azure Foundry |
+| AI Systems | 17 | A | Agent dev, LangGraph, Foundry SDK, GenAIOps, prompt versioning, RAG, drift, evaluation, MCP, Azure Foundry |
 | Design | 4 | A | design-system reasoning, UX/UI design, prototype craft, frontend/UI |
 | Testing | 6 | A | E2E, integration, performance, security, production readiness |
 | Domain | 7 | B | Oil & gas, financial services, audit, tax, legal, CLM, and corporate governance coverage is now present; more verticals could still be added |
@@ -108,7 +108,7 @@
 
 | Document | Grade | Notes |
 |----------|-------|-------|
-| AGENTS.md | A | Slim TOC/map (v8.4.27) |
+| AGENTS.md | A | Slim TOC/map (v8.4.28) |
 | WORKFLOW.md | A- | Complete workflow reference with harness-oriented policy additions; enforcement is still partial |
 | Skills.md | A | Compressed index, Quick Reference table |
 | GUIDE.md | B | Quickstart solid, troubleshooting section could expand |
@@ -164,4 +164,4 @@
 
 ---
 
-**Last updated**: v8.4.27
+**Last updated**: v8.4.28

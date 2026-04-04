@@ -61,7 +61,7 @@ docker scout quickview myapp:1.0
 
 ```dockerfile
 # Stage 1: Build
-FROM node:20-alpine AS build
+FROM node:24-alpine AS build
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --production=false
@@ -69,7 +69,7 @@ COPY . .
 RUN npm run build
 
 # Stage 2: Production
-FROM node:20-alpine AS production
+FROM node:24-alpine AS production
 WORKDIR /app
 RUN addgroup -g 1001 appgroup && adduser -u 1001 -G appgroup -s /bin/sh -D appuser
 COPY --from=build /app/dist ./dist
@@ -127,7 +127,7 @@ CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000
 - **Non-root user**: Always `USER appuser` - never run as root
 - **Minimal base**: Use `-alpine` or `-slim` variants
 - **No secrets in images**: Use build args for build-time, env vars for runtime
-- **Pin versions**: `FROM node:20.11-alpine`, not `FROM node:latest`
+- **Pin versions**: `FROM node:24.14.1-alpine`, not `FROM node:latest`
 - **Scan images**: `docker scout quickview` or `trivy image <name>`
 
 ### 2. Layer Optimization

@@ -2,6 +2,11 @@
 name: "Architecture Design"
 agent: "AgentX Architect"
 description: Generate Architecture Decision Record and Technical Specification
+inputs:
+ issue_number:
+ description: "Issue number for the epic or feature being designed"
+ required: true
+ default: ""
 ---
 
 # Architecture Design Prompt
@@ -20,6 +25,12 @@ Before designing, read these files first:
 - Read UX designs (if exists)
 - Identify technical constraints
 - Review existing architecture
+- Before choosing any framework, runtime, or managed platform version, use web research to verify the latest stable GA/LTS release from an official source; do not guess versions from memory
+
+### 1.1 Version Verification Research
+- Use official vendor documentation, release notes, or product pages for version checks
+- For each shortlisted stack component, capture: selected version or SKU, source URL or source name, and verification date
+- If a component cannot be verified from an official source, mark it as unverified and avoid presenting it as the recommended stable version
 
 ### 2. Create Architecture Decision Record (ADR)
 
@@ -63,6 +74,8 @@ What is the proposed solution?
 ### 3. Create Technical Specification
 
 **NO CODE EXAMPLES - Use diagrams only**
+
+**Selected stack rule:** Every named framework, runtime, SDK family, and managed platform must include a verified stable version or SKU plus the source and verification date.
 
 **Required Diagrams:**
 1. **System Architecture** (C4 Context/Container)
@@ -137,6 +150,7 @@ Use templates:
 - [ ] Data models specified
 - [ ] Security considered
 - [ ] Performance targets set
+- [ ] Recommended stack versions verified from official sources
 
 ## References
 - Skills.md architecture skills

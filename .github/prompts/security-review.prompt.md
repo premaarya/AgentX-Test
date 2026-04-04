@@ -2,6 +2,11 @@
 name: "Security Review"
 agent: "AgentX Reviewer"
 description: Perform comprehensive security review of code changes
+inputs:
+ issue_number:
+ description: "Issue or pull request number for the security review"
+ required: true
+ default: ""
 ---
 
 # Security Review Prompt

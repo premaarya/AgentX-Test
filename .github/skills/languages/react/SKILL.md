@@ -52,7 +52,7 @@ React Decision
 
 ## Prerequisites
 
-- Node.js 18+ and npm/yarn/pnpm
+- Node.js 24+ and npm/yarn/pnpm
 - TypeScript fundamentals
 - React 18+ with hooks API
 

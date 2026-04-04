@@ -2,6 +2,11 @@
 name: "Refactoring"
 agent: "AgentX Engineer"
 description: Code refactoring prompt for improving code quality
+inputs:
+ issue_number:
+ description: "Issue number for the refactoring work"
+ required: true
+ default: ""
 ---
 
 # Refactoring Prompt

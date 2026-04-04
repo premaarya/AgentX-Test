@@ -47,7 +47,7 @@ Rust Project Decision
 
 ## Prerequisites
 
-- Rust 1.75+ installed via rustup
+- Rust 1.94+ installed via rustup
 - Cargo package manager
 
 ## Table of Contents

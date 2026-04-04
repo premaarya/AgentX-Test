@@ -2,6 +2,11 @@
 name: "AI Agent Builder"
 agent: "AgentX Engineer"
 description: "Scaffold and build an AI agent application using Microsoft Agent Framework and AI Toolkit."
+inputs:
+ issue_number:
+ description: "Issue number for the agent work"
+ required: true
+ default: ""
 ---
 
 # AI Agent Builder Prompt

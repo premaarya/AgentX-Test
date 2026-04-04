@@ -66,7 +66,7 @@ PostgreSQL Decision
 
 ## PostgreSQL Version
 
-**Current**: PostgreSQL 16+ 
+**Current**: PostgreSQL 18+
 **Minimum**: PostgreSQL 14+
 
 ---

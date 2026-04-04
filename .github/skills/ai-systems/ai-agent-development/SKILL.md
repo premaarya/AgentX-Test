@@ -32,7 +32,7 @@ Need an AI agent?
 
 ## Prerequisites
 
-- Python 3.11+ or .NET 8+
+- Python 3.14+ or .NET 10+
 - agent-framework-azure-ai package
 - Microsoft Foundry workspace with deployed model
 

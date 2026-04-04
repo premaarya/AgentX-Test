@@ -47,7 +47,7 @@ Go Project Decision
 
 ## Prerequisites
 
-- Go 1.21+ installed
+- Go 1.26+ installed
 - Go modules enabled
 
 ## Table of Contents

@@ -133,7 +133,7 @@ stages:
 
 ```yaml
 # .gitlab-ci.yml
-image: node:20
+image: node:24
 stages: [build, test, deploy]
 
 cache:

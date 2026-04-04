@@ -2,6 +2,11 @@
 name: "DevOps Pipeline"
 agent: "AgentX DevOps Engineer"
 description: Generate CI/CD pipeline and deployment automation
+inputs:
+ issue_number:
+ description: "Issue number for the deployment or pipeline work"
+ required: true
+ default: ""
 ---
 
 # DevOps Pipeline Prompt

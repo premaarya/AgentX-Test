@@ -72,20 +72,21 @@ inputs:
 
 > Engineers SHOULD NOT start implementation until this table is completed and the chosen stack is explicit.
 
-| Layer / Concern | Selected Technology | Version / SKU | Why This Was Chosen | Rejected Alternatives |
-|-----------------|---------------------|---------------|---------------------|-----------------------|
-| Frontend / UI | {e.g. React, Blazor, none} | {version} | {brief rationale} | {alternatives considered} |
-| Backend / Runtime | {e.g. Node.js, .NET, Python} | {version} | {brief rationale} | {alternatives considered} |
-| API Style | {e.g. REST, GraphQL, gRPC, none} | {n/a or version} | {brief rationale} | {alternatives considered} |
-| Data Store | {e.g. PostgreSQL, Cosmos DB, none} | {version / tier} | {brief rationale} | {alternatives considered} |
-| Hosting / Compute | {e.g. App Service, AKS, Functions} | {plan / SKU} | {brief rationale} | {alternatives considered} |
-| Authentication / Security | {e.g. Entra ID, Auth0, existing platform auth} | {version / tier} | {brief rationale} | {alternatives considered} |
-| Observability | {e.g. Application Insights, OpenTelemetry} | {version / tier} | {brief rationale} | {alternatives considered} |
-| CI/CD | {e.g. GitHub Actions, Azure Pipelines} | {version / n/a} | {brief rationale} | {alternatives considered} |
+| Layer / Concern | Selected Technology | Version / SKU | Version Source / Verified On | Why This Was Chosen | Rejected Alternatives |
+|-----------------|---------------------|---------------|------------------------------|---------------------|-----------------------|
+| Frontend / UI | {e.g. React, Blazor, none} | {version} | {official source, YYYY-MM-DD} | {brief rationale} | {alternatives considered} |
+| Backend / Runtime | {e.g. Node.js, .NET, Python} | {version} | {official source, YYYY-MM-DD} | {brief rationale} | {alternatives considered} |
+| API Style | {e.g. REST, GraphQL, gRPC, none} | {n/a or version} | {official source, YYYY-MM-DD or n/a} | {brief rationale} | {alternatives considered} |
+| Data Store | {e.g. PostgreSQL, Cosmos DB, none} | {version / tier} | {official source, YYYY-MM-DD} | {brief rationale} | {alternatives considered} |
+| Hosting / Compute | {e.g. App Service, AKS, Functions} | {plan / SKU} | {official source, YYYY-MM-DD} | {brief rationale} | {alternatives considered} |
+| Authentication / Security | {e.g. Entra ID, Auth0, existing platform auth} | {version / tier} | {official source, YYYY-MM-DD} | {brief rationale} | {alternatives considered} |
+| Observability | {e.g. Application Insights, OpenTelemetry} | {version / tier} | {official source, YYYY-MM-DD} | {brief rationale} | {alternatives considered} |
+| CI/CD | {e.g. GitHub Actions, Azure Pipelines} | {version / n/a} | {official source, YYYY-MM-DD or n/a} | {brief rationale} | {alternatives considered} |
 
 **Implementation Preconditions:**
 - The selected stack above is consistent with the ADR decision.
 - Major versions, managed service tiers, and externally hosted platforms are named explicitly.
+- Each named version or SKU is verified against an official source and includes the verification date.
 - Any unresolved stack choice is captured under Open Questions and blocks implementation.
 
 ---

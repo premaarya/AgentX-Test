@@ -1,5 +1,5 @@
 ---
-description: 'Compressed skill index for AI agents. 69 skills across 10 categories. Load max 3-4 per task.'
+description: 'Compressed skill index for AI agents. 75 skills across 10 categories. Load max 3-4 per task.'
 ---
 
 # Production Code Skills Index
@@ -12,7 +12,7 @@ description: 'Compressed skill index for AI agents. 69 skills across 10 categori
 
 **Loading order**: Router -> instruction (auto) -> this index -> pick skills -> `read_file` them.
 
-**Anti-pattern**: Never load all 69 skills. Use Quick Reference below.
+**Anti-pattern**: Never load all 75 skills. Use Quick Reference below.
 
 ---
 
@@ -31,11 +31,15 @@ description: 'Compressed skill index for AI agents. 69 skills across 10 categori
 | **DevOps / CI/CD** | [GitHub Actions](agentx/skills/operations/github-actions-workflows/SKILL.md), [YAML Pipelines](agentx/skills/operations/yaml-pipelines/SKILL.md), [Release Mgmt](agentx/skills/operations/release-management/SKILL.md) |
 | **Code Review** | [Code Review](agentx/skills/development/code-review/SKILL.md), [Security](agentx/skills/architecture/security/SKILL.md), [Testing](agentx/skills/development/testing/SKILL.md), [Core Principles](agentx/skills/architecture/core-principles/SKILL.md) |
 | **AI Agent Development** | [AI Agent Dev](agentx/skills/ai-systems/ai-agent-development/SKILL.md), [Cognitive Arch](agentx/skills/ai-systems/cognitive-architecture/SKILL.md), [MCP Server](agentx/skills/ai-systems/mcp-server-development/SKILL.md), [Prompt Eng](agentx/skills/ai-systems/prompt-engineering/SKILL.md) |
+| **LangGraph Agent Workflow** | [LangGraph](agentx/skills/ai-systems/langgraph/SKILL.md), [Cognitive Arch](agentx/skills/ai-systems/cognitive-architecture/SKILL.md), [AI Evaluation](agentx/skills/ai-systems/ai-evaluation/SKILL.md), [Prompt Versioning](agentx/skills/ai-systems/prompt-versioning/SKILL.md) |
 | **MCP Apps / Interactive UI** | [MCP Apps](agentx/skills/ai-systems/mcp-apps-development/SKILL.md), [MCP Server](agentx/skills/ai-systems/mcp-server-development/SKILL.md), [React](agentx/skills/languages/react/SKILL.md), [Frontend/UI](agentx/skills/design/frontend-ui/SKILL.md) |
 | **Iterative / Quality Loop** | [Iterative Loop](agentx/skills/development/iterative-loop/SKILL.md), [Testing](agentx/skills/development/testing/SKILL.md), [Code Review](agentx/skills/development/code-review/SKILL.md) |
 | **Token Budget / Context** | [Token Optimizer](agentx/skills/development/token-optimizer/SKILL.md), [Context Mgmt](agentx/skills/ai-systems/context-management/SKILL.md) |
 | **Azure AI Foundry Agent** | [Azure Foundry](agentx/skills/ai-systems/azure-foundry/SKILL.md), [AI Agent Dev](agentx/skills/ai-systems/ai-agent-development/SKILL.md), [AI Evaluation](agentx/skills/ai-systems/ai-evaluation/SKILL.md). For operational workflows (create, deploy, trace), install companion: GitHub Copilot for Azure |
+| **Foundry SDK Implementation** | [Foundry SDK](agentx/skills/ai-systems/foundry-sdk/SKILL.md), [Azure Foundry](agentx/skills/ai-systems/azure-foundry/SKILL.md), [AI Agent Dev](agentx/skills/ai-systems/ai-agent-development/SKILL.md), [AI Evaluation](agentx/skills/ai-systems/ai-evaluation/SKILL.md) |
+| **GenAIOps / LLMOps** | [GenAIOps](agentx/skills/ai-systems/genaiops/SKILL.md), [AI Evaluation](agentx/skills/ai-systems/ai-evaluation/SKILL.md), [Model Drift](agentx/skills/ai-systems/model-drift-management/SKILL.md), [Feedback Loops](agentx/skills/ai-systems/feedback-loops/SKILL.md) |
 | **Model Fine-Tuning** | [Model Fine-Tuning](agentx/skills/ai-systems/model-fine-tuning/SKILL.md), [AI Evaluation](agentx/skills/ai-systems/ai-evaluation/SKILL.md), [Feedback Loops](agentx/skills/ai-systems/feedback-loops/SKILL.md) |
+| **Prompt Versioning / Lifecycle** | [Prompt Versioning](agentx/skills/ai-systems/prompt-versioning/SKILL.md), [Prompt Eng](agentx/skills/ai-systems/prompt-engineering/SKILL.md), [AI Evaluation](agentx/skills/ai-systems/ai-evaluation/SKILL.md), [GenAIOps](agentx/skills/ai-systems/genaiops/SKILL.md) |
 | **RAG / Retrieval** | [RAG Pipelines](agentx/skills/ai-systems/rag-pipelines/SKILL.md), [Context Mgmt](agentx/skills/ai-systems/context-management/SKILL.md), [Cognitive Arch](agentx/skills/ai-systems/cognitive-architecture/SKILL.md) |
 | **ML Monitoring / Drift** | [Model Drift](agentx/skills/ai-systems/model-drift-management/SKILL.md), [Data Drift](agentx/skills/ai-systems/data-drift-strategy/SKILL.md), [AI Evaluation](agentx/skills/ai-systems/ai-evaluation/SKILL.md) |
 | **Fabric / Data** | [Fabric Analytics](agentx/skills/data/fabric-analytics/SKILL.md), [Data Agent](agentx/skills/data/fabric-data-agent/SKILL.md) or [Forecasting](agentx/skills/data/fabric-forecasting/SKILL.md), [Database](agentx/skills/architecture/database/SKILL.md) |
@@ -43,6 +47,8 @@ description: 'Compressed skill index for AI agents. 69 skills across 10 categori
 | **Containerization** | [Containerization](agentx/skills/infrastructure/containerization/SKILL.md), [Security](agentx/skills/architecture/security/SKILL.md), [Release Mgmt](agentx/skills/operations/release-management/SKILL.md) |
 | **Data Analysis** | [Data Analysis](agentx/skills/data/data-analysis/SKILL.md), [Database](agentx/skills/architecture/database/SKILL.md), [Testing](agentx/skills/development/testing/SKILL.md) |
 | **Power BI Report / Dashboard** | [Power BI](agentx/skills/data/powerbi/SKILL.md), [Fabric Analytics](agentx/skills/data/fabric-analytics/SKILL.md), [Database](agentx/skills/architecture/database/SKILL.md), [Documentation](agentx/skills/development/documentation/SKILL.md) |
+| **C / Systems Programming** | [C](agentx/skills/languages/c/SKILL.md), [Security](agentx/skills/architecture/security/SKILL.md), [Testing](agentx/skills/development/testing/SKILL.md), [Code Review](agentx/skills/development/code-review/SKILL.md) |
+| **C++ / Native Applications** | [C++](agentx/skills/languages/cpp/SKILL.md), [Performance & Scalability](agentx/skills/architecture/performance/SKILL.md), [Testing](agentx/skills/development/testing/SKILL.md), [Code Review](agentx/skills/development/code-review/SKILL.md) |
 | **UX/UI Design** | [Design System Reasoning](agentx/skills/design/design-system-reasoning/SKILL.md), [UX/UI Design](agentx/skills/design/ux-ui-design/SKILL.md), [Prototype Craft](agentx/skills/design/prototype-craft/SKILL.md), [Frontend/UI](agentx/skills/design/frontend-ui/SKILL.md) |
 | **E2E Testing** | [E2E Testing](agentx/skills/testing/e2e-testing/SKILL.md), [Test Automation](agentx/skills/testing/test-automation/SKILL.md), [Testing](agentx/skills/development/testing/SKILL.md) |
 | **Integration Testing** | [Integration Testing](agentx/skills/testing/integration-testing/SKILL.md), [API Design](agentx/skills/architecture/api-design/SKILL.md), [Testing](agentx/skills/development/testing/SKILL.md) |
@@ -59,7 +65,7 @@ description: 'Compressed skill index for AI agents. 69 skills across 10 categori
 
 ---
 
-## Skills Directory (69 skills -- pipe-delimited)
+## Skills Directory (75 skills -- pipe-delimited)
 
 > Format: `category|skill|path|keywords`
 > Read the SKILL.md at the path when the task matches keywords.
@@ -82,6 +88,8 @@ dev|iterative-loop|agentx/skills/development/iterative-loop/SKILL.md|quality-loo
 dev|skill-creator|agentx/skills/development/skill-creator/SKILL.md|scaffold,validate,maintain-skills
 dev|token-optimizer|agentx/skills/development/token-optimizer/SKILL.md|token-budget,context-window,file-limits,progressive-disclosure
 lang|csharp|agentx/skills/languages/csharp/SKILL.md|C#,.NET,EF-Core,DI,async/await,xUnit
+lang|c|agentx/skills/languages/c/SKILL.md|C,C23,pointers,embedded,systems,FFI,ABI,memory
+lang|cpp|agentx/skills/languages/cpp/SKILL.md|C++,C++23,RAII,templates,span,string_view,native
 lang|python|agentx/skills/languages/python/SKILL.md|Python,type-hints,pytest,dataclasses
 lang|go|agentx/skills/languages/go/SKILL.md|Go-modules,goroutines,channels
 lang|rust|agentx/skills/languages/rust/SKILL.md|ownership,lifetimes,traits,cargo
@@ -105,6 +113,10 @@ data|fabric-forecast|agentx/skills/data/fabric-forecasting/SKILL.md|time-series,
 data|databricks|agentx/skills/data/databricks/SKILL.md|Unity-Catalog,Delta-Lake,DLT,MLflow,Photon,DAB,AutoLoader,Spark,medallion,Vector-Search
 data|powerbi|agentx/skills/data/powerbi/SKILL.md|Power-BI,DAX,semantic-model,star-schema,DirectLake,Power-Query,M,RLS,PBIP,report,dashboard
 ai|ai-agent-dev|agentx/skills/ai-systems/ai-agent-development/SKILL.md|Foundry,Agent-Framework,tracing
+ai|langgraph|agentx/skills/ai-systems/langgraph/SKILL.md|LangGraph,stateful-agents,durable-execution,interrupts,subgraphs,LangSmith
+ai|foundry-sdk|agentx/skills/ai-systems/foundry-sdk/SKILL.md|Foundry-SDK,azure-ai-projects,AIProjectClient,agents,evals,datasets,indexes
+ai|genaiops|agentx/skills/ai-systems/genaiops/SKILL.md|GenAIOps,LLMOps,release-gates,canary,rollback,observability,drift
+ai|prompt-versioning|agentx/skills/ai-systems/prompt-versioning/SKILL.md|prompt-versioning,prompt-lifecycle,baseline,prompt-variants,rollback,prompt-review
 ai|prompt-eng|agentx/skills/ai-systems/prompt-engineering/SKILL.md|system-prompts,CoT,few-shot,guardrails
 ai|cognitive-arch|agentx/skills/ai-systems/cognitive-architecture/SKILL.md|RAG,memory-systems,vector-search
 ai|mcp-server|agentx/skills/ai-systems/mcp-server-development/SKILL.md|MCP-protocol,tools,resources,stdio/SSE
@@ -206,6 +218,9 @@ Power BI Dashboard|powerbi->data-analysis->database->code-review
 Databricks ETL|databricks->database->python->testing->code-review
 Databricks ML|databricks->ai-agent-dev->python->testing->code-review
 AI Agent|ai-agent-dev->prompt-eng->python/csharp->error-handling->testing->code-review
+LangGraph Agent|langgraph->cognitive-arch->evaluation->prompt-versioning->code-review
+Foundry SDK App|foundry-sdk->azure-foundry->ai-agent-dev->evaluation->code-review
+GenAIOps Rollout|genaiops->evaluation->model-drift->feedback-loops->release-mgmt
 MCP Server|mcp-server->python/csharp->error-handling->testing->code-review
 RAG Pipeline|rag-pipelines->context-mgmt->cognitive-arch->evaluation->testing->code-review
 Model Fine-Tuning|fine-tuning->evaluation->feedback-loops->testing->code-review
@@ -228,5 +243,5 @@ Legal Research Brief|legal->documentation
 
 ---
 
-**See Also**: [AGENTS.md](AGENTS.md) | [agentskills.io](https://agentskills.io/specification) | 69 skills (arch:5, dev:11, lang:8, ops:5, infra:4, data:6, ai:13, design:4, test:6, domain:7)
+**See Also**: [AGENTS.md](AGENTS.md) | [agentskills.io](https://agentskills.io/specification) | 75 skills (arch:5, dev:11, lang:10, ops:5, infra:4, data:6, ai:17, design:4, test:6, domain:7)
 

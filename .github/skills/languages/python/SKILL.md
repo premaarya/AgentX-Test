@@ -53,7 +53,7 @@ Python Project Decision
 
 ## Prerequisites
 
-- Python 3.11+ installed
+- Python 3.14+ installed
 - pip or poetry package manager
 - pytest for testing
 
@@ -72,7 +72,7 @@ Python Project Decision
 
 ## Python Version
 
-**Current**: Python 3.11+ 
+**Current**: Python 3.14+
 **Minimum**: Python 3.9+
 
 ### Modern Python Features (Use These)

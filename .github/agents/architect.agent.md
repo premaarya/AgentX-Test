@@ -11,6 +11,7 @@ constraints:
   - "MUST evaluate at least 3 options in each ADR"
   - "MUST use diagrams (Mermaid, tables) to illustrate -- NO CODE EXAMPLES in specs"
   - "MUST produce a Tech Spec with all required template sections, including an explicit selected tech stack before implementation"
+  - "MUST verify every recommended framework, runtime, platform, and managed-service version against an official source or release page before naming it in the selected tech stack; if the version cannot be verified, state that it is unverified instead of guessing"
   - "MUST NOT write implementation code or include code snippets -- zero code in any deliverable, no exceptions"
   - "MUST NOT generate pseudocode, shell commands, SQL queries, config files, or code examples of any kind"
   - "MUST NOT modify source code, PRD, or UX documents"
@@ -87,10 +88,12 @@ Architecture decisions are expensive to reverse. Invest heavily in research to m
 **Phase 2: Technology Landscape Scan (AI + Traditional)**
 
 - Use `fetch` to research the current state of relevant technologies being considered
+- For every candidate framework, runtime, library family, or managed platform that may appear in the selected stack, verify the current stable GA/LTS version from an official vendor source, release notes page, or product documentation page
 - For each candidate technology, assess: maturity level, community size and activity, release cadence, documentation quality, and ecosystem richness
 - **AI landscape (MANDATORY)**: Research current GenAI capabilities relevant to the problem domain -- available models, agent frameworks (Foundry, AutoGen, Semantic Kernel, LangGraph), MCP tools, and AI-powered alternatives to traditional approaches
 - Check for recent major version changes, roadmap shifts, or deprecation announcements
 - Identify the market leaders and their relative strengths for the specific problem domain
+- Record the version source and verification date for each shortlisted technology in the ADR Context and in the Tech Spec selected stack section
 
 **Phase 3: Architecture Pattern Research**
 
@@ -122,7 +125,7 @@ Architecture decisions are expensive to reverse. Invest heavily in research to m
 - Research license compatibility and any licensing risks
 - Document security posture and viability assessment for each option in the ADR
 
-**Research Output**: Document findings in the **Context** section of the ADR. The Context section MUST include: technologies researched with sources, benchmark data cited, failure modes identified, and security assessment. Each ADR option MUST reference specific research evidence, not just abstract reasoning.
+**Research Output**: Document findings in the **Context** section of the ADR. The Context section MUST include: technologies researched with sources, version verification evidence for shortlisted stack components, benchmark data cited, failure modes identified, and security assessment. Each ADR option MUST reference specific research evidence, not just abstract reasoning.
 
 ### 2. Create ADR
 
@@ -231,6 +234,7 @@ Apply to: technology choices, pattern selections, trade-off conclusions, risk as
 - [ ] ADR evaluates 3+ options with clear criteria
 - [ ] Tech Spec covers all required template sections
 - [ ] Selected tech stack is explicit, versioned where relevant, and aligned with the ADR decision
+- [ ] Each named stack version or SKU is verified against an official source, with the source and verification date captured in the ADR or Tech Spec
 - [ ] All architecture communicated via diagrams, not code
 - [ ] Security considerations documented (auth, data protection, input validation)
 - [ ] Performance targets specified with measurable thresholds

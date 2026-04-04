@@ -2,6 +2,11 @@
 name: "Bug Triage"
 agent: "AgentX Engineer"
 description: Analyze and triage bug reports for proper classification and routing
+inputs:
+ issue_number:
+ description: "Issue number for the bug report"
+ required: true
+ default: ""
 ---
 
 # Bug Triage Prompt

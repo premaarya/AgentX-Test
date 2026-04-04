@@ -166,7 +166,7 @@ Control what gets installed with the `-Profile` flag:
 
 | Profile | Skills | Instructions | Prompts | Hooks | VS Code |
 |---------|--------|-------------|---------|-------|---------|
-| **full** (default) | All 67 | All 7 | Yes | Yes | Yes |
+| **full** (default) | All 75 | All 7 | Yes | Yes | Yes |
 | **minimal** | None | None | No | No | No |
 | **python** | Python, testing, data, architecture | python, api | Yes | Yes | Yes |
 | **dotnet** | C#, Blazor, Azure, SQL, architecture | csharp, blazor, api | Yes | Yes | Yes |

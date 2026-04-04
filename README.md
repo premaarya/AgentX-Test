@@ -3,7 +3,7 @@
   <h1>AgentX</h1>
   <p><strong>Digital Force for Software Delivery</strong></p>
   <p>
-    <a href="https://github.com/jnPiyush/AgentX/releases/tag/v8.4.27"><img src="https://img.shields.io/badge/Version-8.4.27-0EA5E9?style=for-the-badge" alt="Version 8.4.27"></a>
+    <a href="https://github.com/jnPiyush/AgentX/releases/tag/v8.4.28"><img src="https://img.shields.io/badge/Version-8.4.28-0EA5E9?style=for-the-badge" alt="Version 8.4.28"></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-22C55E?style=for-the-badge" alt="Apache 2.0 License"></a>
     <a href="https://securityscorecards.dev/viewer/?uri=github.com/jnPiyush/AgentX"><img src="https://img.shields.io/ossf-scorecard/github.com/jnPiyush/AgentX?style=for-the-badge&amp;label=OpenSSF" alt="OpenSSF Scorecard"></a>
   </p>
@@ -36,16 +36,16 @@ AgentX acts as an autonomous orchestrator, routing tasks to **20 specialized age
 
 ## Domain Skills Library
 
-AgentX is powered by a rich knowledge layer of **69 production skills** distributed across key categories. Agents read peer-reviewed patterns before writing code, ensuring repo-driven accuracy instead of model-memory guesses.
+AgentX is powered by a rich knowledge layer of **75 production skills** distributed across key categories. Agents read peer-reviewed patterns before writing code, ensuring repo-driven accuracy instead of model-memory guesses.
 
 | Category | Example Skills | Purpose |
 |:---------|:---------------|:--------|
 | **Architecture** | `api-design`, `security`, `database` | System design, performance, and scaling |
-| **AI Systems** | `rag-pipelines`, `agent-dev`, `azure-foundry` | Foundation models, agents, and evaluations |
+| **AI Systems** | `langgraph`, `foundry-sdk`, `genaiops` | Agent orchestration, Foundry implementation, release gates, and evaluations |
 | **Development** | `testing`, `error-handling`, `type-safety` | Code robustness, linting, and quality |
-| **Languages & UI** | `python`, `react`, `prototype-craft` | Specific technical stacks and frontend visuals |
+| **Languages & UI** | `c`, `cpp`, `react` | Native systems work, application stacks, and frontend visuals |
 | **Ops & Infra** | `github-actions`, `terraform`, `azure` | CI/CD pipelines, containerization, and IaC |
-| **Data & Testing** | `databricks`, `fabric-analytics`, `e2e-testing` | Analytics pipelines, MLops, and verification |
+| **Data & Testing** | `databricks`, `fabric-analytics`, `e2e-testing` | Analytics pipelines, AI data platforms, and verification |
 
 ---
 
@@ -108,7 +108,7 @@ flowchart LR
 
 - **User Surface:** VS Code extension, Copilot Chat, sidebar views, and CLI
 - **Execution Layer:** AgentX Auto orchestrator, specialist phases, iterative loops
-- **Knowledge Layer:** 69 skills, 21 agents, 7 instructions, 10 templates, 20 prompts -- all Markdown-defined
+- **Knowledge Layer:** 75 skills, 21 agents, 7 instructions, 10 templates, 20 prompts -- all Markdown-defined
 - **Control Layer:** Execution plans, repo-local state, automated validation gates
 
 ---
@@ -275,7 +275,7 @@ Build a task-tracker app for small teams. Start by creating the PRD, then produc
 
 ---
 
-## New In 8.4.27
+## New In 8.4.28
 
 - Summary-based context compaction in the runner while keeping the existing 70% threshold trigger
 - Per-agent `reasoning` frontmatter support in the runner, including Copilot-mode request options for GPT-5 and Claude 4.6 mappings

@@ -13,7 +13,7 @@ compatibility:
 prerequisites:
  - "Microsoft Fabric workspace with active capacity"
  - "Fabric MCP Server (ms-fabric-mcp-server) for tool-based workflows"
- - "PySpark / Python 3.11+ for notebook development"
+ - "PySpark / Python 3.14+ for notebook development"
 ---
 
 # Fabric Analytics

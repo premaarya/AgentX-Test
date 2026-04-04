@@ -183,7 +183,7 @@ jobs:
  build-dev:
  uses: ./.github/workflows/reusable-build.yml
  with:
- node-version: '20.x'
+ node-version: '24.x'
  environment: 'development'
  secrets:
  deploy-token: ${{ secrets.DEV_DEPLOY_TOKEN }}
@@ -191,7 +191,7 @@ jobs:
  build-prod:
  uses: ./.github/workflows/reusable-build.yml
  with:
- node-version: '20.x'
+ node-version: '24.x'
  environment: 'production'
  secrets:
  deploy-token: ${{ secrets.PROD_DEPLOY_TOKEN }}
@@ -279,5 +279,5 @@ steps:
  - name: Use composite action
  uses: ./.github/actions/setup-project
  with:
- node-version: '20.x'
+ node-version: '24.x'
 ```

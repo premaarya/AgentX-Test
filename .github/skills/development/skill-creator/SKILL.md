@@ -105,7 +105,7 @@ This creates:
 | `compatibility.languages` | Language scope | `["csharp", "python"]` |
 | `compatibility.frameworks` | Framework scope | `["dotnet", "flask"]` |
 | `compatibility.platforms` | OS scope | `["windows", "linux"]` |
-| `prerequisites` | Required tools, MCP servers, env | `["Node.js 18+", "Docker"]` |
+| `prerequisites` | Required tools, MCP servers, env | `["Node.js 24+", "Docker"]` |
 | `allowed-tools` | Space-delimited tool names | `"read_file run_in_terminal"` |
 
 ### Frontmatter Template

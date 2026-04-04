@@ -2,7 +2,7 @@
   "name": "agentx",
   "displayName": "AgentX - Multi-Agent Orchestration",
   "description": "AI-powered multi-agent orchestration framework for GitHub Copilot. Coordinate PM, UX, Architect, Data Scientist, Engineer, Reviewer, DevOps, Tester, Power BI Analyst, and Consulting Research agents in a structured software development workflow.",
-  "version": "8.4.27",
+  "version": "8.4.28",
   "publisher": "jnPiyush",
   "extensionKind": [
     "workspace",
@@ -685,6 +685,15 @@
         "path": "./.github/agentx/skills/ai-systems/feedback-loops/SKILL.md"
       },
       {
+        "path": "./.github/agentx/skills/ai-systems/foundry-sdk/SKILL.md"
+      },
+      {
+        "path": "./.github/agentx/skills/ai-systems/genaiops/SKILL.md"
+      },
+      {
+        "path": "./.github/agentx/skills/ai-systems/langgraph/SKILL.md"
+      },
+      {
         "path": "./.github/agentx/skills/ai-systems/mcp-apps-development/SKILL.md"
       },
       {
@@ -698,6 +707,9 @@
       },
       {
         "path": "./.github/agentx/skills/ai-systems/prompt-engineering/SKILL.md"
+      },
+      {
+        "path": "./.github/agentx/skills/ai-systems/prompt-versioning/SKILL.md"
       },
       {
         "path": "./.github/agentx/skills/ai-systems/rag-pipelines/SKILL.md"
@@ -815,6 +827,12 @@
       },
       {
         "path": "./.github/agentx/skills/languages/blazor/SKILL.md"
+      },
+      {
+        "path": "./.github/agentx/skills/languages/c/SKILL.md"
+      },
+      {
+        "path": "./.github/agentx/skills/languages/cpp/SKILL.md"
       },
       {
         "path": "./.github/agentx/skills/languages/csharp/SKILL.md"
