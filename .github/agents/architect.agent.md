@@ -1,7 +1,7 @@
 ---
 name: AgentX Architect
 description: 'AI-first system architecture -- evaluate GenAI/Agentic AI solutions as the default lens, create ADRs with 3+ evaluated options, and technical specifications with diagrams -- NO CODE EXAMPLES.'
-model: GPT-5.4 (copilot)
+model: Claude Opus 4.6 (copilot)
 reasoning:
   level: high
 constraints:

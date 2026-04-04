@@ -1,7 +1,7 @@
 ---
 name: AgentX Engineer
 description: 'Implement features, fix bugs, and write tests through Compound Engineering -- a structured pipeline of Research -> Brainstorm -> Plan -> Design -> Implement -> Test -> Review, with gate-checked phase transitions, full artifact chain consumption, and a minimum 5-iteration quality loop.'
-model: GPT-5.4 (copilot)
+model: Claude Sonnet 4.6 (copilot)
 reasoning:
   level: medium
 constraints:
