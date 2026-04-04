@@ -313,7 +313,7 @@ copied=0; skipped=0
 while IFS= read -r src; do
  rel="${src#$TMP/}"
  case "$rel" in
-  .agentx/config.json|.agentx/version.json|.agentx/issues/*|.agentx/digests/*|.agentx/sessions/*|.agentx/memory/*|.agentx/state/*)
+  .agentx/config.json|.agentx/version.json|.agentx/issues/*|.agentx/digests/*|.agentx/sessions/*|.agentx/memory/*|.agentx/state/*|.vscode/mcp.json)
    continue
    ;;
  esac
@@ -333,20 +333,18 @@ ado_remote_url=""
 if command -v git &>/dev/null; then
  ado_remote_url=$(git remote get-url origin 2>/dev/null || true)
 fi
+mkdir -p .vscode
 if echo "$ado_remote_url" | grep -qE 'visualstudio\.com|dev\.azure\.com'; then
- ado_org_url="https://dev.azure.com/myorg"
- if echo "$ado_remote_url" | grep -qE 'https://([^.]+)\.visualstudio\.com'; then
-  org=$(echo "$ado_remote_url" | sed -E 's|https://([^.]+)\.visualstudio\.com.*|\1|')
-  ado_org_url="https://${org}.visualstudio.com"
- elif echo "$ado_remote_url" | grep -qE 'https://dev\.azure\.com/([^/]+)'; then
-  org=$(echo "$ado_remote_url" | sed -E 's|https://dev\.azure\.com/([^/]+).*|\1|')
-  ado_org_url="https://dev.azure.com/${org}"
- fi
  # ADO workspaces: write empty mcp.json so Copilot does not auto-insert a github MCP server.
  # The workspace uses ADO REST APIs directly -- no MCP server is needed or wanted.
- mkdir -p .vscode
  printf '{\n  "$schema": "https://json.schemastore.org/mcp.json",\n  "servers": {}\n}\n' > .vscode/mcp.json
  ok "ADO workspace detected -- .vscode/mcp.json set to empty (no MCP servers; workspace uses ADO REST APIs)"
+else
+ # GitHub / no-remote workspaces: write standard github MCP server entry.
+ if [ "$FORCE" = "true" ] || [ ! -f ".vscode/mcp.json" ]; then
+  printf '{\n  "$schema": "https://json.schemastore.org/mcp.json",\n  "servers": {\n    "github": {\n      "type": "http",\n      "url": "https://api.githubcopilot.com/mcp/"\n    }\n  },\n  "inputs": [\n    {\n      "type": "promptString",\n      "id": "github_token",\n      "description": "GitHub Personal Access Token (only needed if using PAT auth)",\n      "password": true\n    }\n  ]\n}\n' > .vscode/mcp.json
+  ok "GitHub workspace -- .vscode/mcp.json configured with GitHub MCP server"
+ fi
 fi
 
 # -- Step 3: Generate runtime files ----------------------

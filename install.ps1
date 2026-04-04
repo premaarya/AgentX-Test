@@ -464,7 +464,8 @@ $runtimeStatePatterns = @(
  '^\.agentx/digests/',
  '^\.agentx/sessions/',
  '^\.agentx/memory/',
- '^\.agentx/state/'
+ '^\.agentx/state/',
+ '^\.vscode/mcp\.json$'
 )
 
 Get-ChildItem $TMP -Recurse -File -Force | ForEach-Object {
@@ -489,21 +490,20 @@ if (Get-Command git -ErrorAction SilentlyContinue) {
  try { $adoRemoteUrl = git remote get-url origin 2>$null } catch { Write-Verbose "Git remote detect failed: $($_.Exception.Message)" }
 }
 $isAdoWorkspace = $adoRemoteUrl -and ($adoRemoteUrl -match 'visualstudio\.com|dev\.azure\.com')
+New-Item -ItemType Directory -Path '.vscode' -Force | Out-Null
 if ($isAdoWorkspace) {
- # Parse org URL from remote
- $adoOrgUrl = 'https://dev.azure.com/myorg'
- if ($adoRemoteUrl -match 'https://([^.]+)\.visualstudio\.com') {
-  $adoOrgUrl = "https://$($Matches[1]).visualstudio.com"
- } elseif ($adoRemoteUrl -match 'https://dev\.azure\.com/([^/]+)') {
-  $adoOrgUrl = "https://dev.azure.com/$($Matches[1])"
- }
  # ADO workspaces: write empty mcp.json so Copilot does not auto-insert a github MCP server.
  # The workspace uses ADO REST APIs directly -- no MCP server is needed or wanted.
- $mcpJsonPath = '.vscode/mcp.json'
  $emptyMcpJson = "{`n  \"`$schema\": \"https://json.schemastore.org/mcp.json\",`n  \"servers\": {}`n}"
- New-Item -ItemType Directory -Path '.vscode' -Force | Out-Null
- Set-Content -Path $mcpJsonPath -Value $emptyMcpJson -Encoding utf8
+ Set-Content -Path '.vscode/mcp.json' -Value $emptyMcpJson -Encoding utf8
  Write-OK "ADO workspace detected -- .vscode/mcp.json set to empty (no MCP servers; workspace uses ADO REST APIs)"
+} else {
+ # GitHub / no-remote workspaces: write standard github MCP server entry.
+ $githubMcpJson = "{`n  \"`$schema\": \"https://json.schemastore.org/mcp.json\",`n  \"servers\": {`n    \"github\": {`n      \"type\": \"http\",`n      \"url\": \"https://api.githubcopilot.com/mcp/\"\n    }`n  },`n  \"inputs\": [`n    {`n      \"type\": \"promptString\",`n      \"id\": \"github_token\",`n      \"description\": \"GitHub Personal Access Token (only needed if using PAT auth)\",`n      \"password\": true`n    }`n  ]`n}"
+ if (-not (Test-Path '.vscode/mcp.json') -or $Force) {
+  Set-Content -Path '.vscode/mcp.json' -Value $githubMcpJson -Encoding utf8
+  Write-OK "GitHub workspace -- .vscode/mcp.json configured with GitHub MCP server"
+ }
 }
 
 # -- Step 3: Generate runtime files ----------------------
