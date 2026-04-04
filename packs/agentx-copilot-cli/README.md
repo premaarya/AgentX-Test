@@ -9,8 +9,8 @@
 | Agents | 21 | 13 external + 8 internal sub-agents |
 | Skills | 75 | Production code standards across 10 categories |
 | Instructions | 7 | Auto-applied coding guidelines by file pattern |
-| Prompts | 20 | Reusable prompt templates |
-| Templates | 10 | PRD, ADR, Spec, UX, Review, Security, Progress, Exec Plan, Contract, Evidence Summary |
+| Prompts | 21 | Reusable prompt templates |
+| Templates | 11 | PRD, ADR, Spec, UX, Review, Security, Progress, Roadmap, Exec Plan, Contract, Evidence Summary |
 | CLI Utilities | 4 | Optional `.agentx/` wrappers backed by a bundled hidden runtime |
 
 ## Installation
@@ -82,11 +82,11 @@ your-project/
       ai.instructions.md
       python.instructions.md
       ...
-    prompts/                   # 20 prompt templates
+    prompts/                   # 21 prompt templates
       prd-gen.prompt.md
       code-review.prompt.md
       ...
-    templates/                 # 10 document templates
+    templates/                 # 11 document templates
     schemas/                   # Validation schemas
     .agentx-cli-plugin.json   # Version stamp
     agentx/

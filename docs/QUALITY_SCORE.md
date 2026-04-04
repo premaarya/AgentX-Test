@@ -127,6 +127,7 @@
 | REVIEW-TEMPLATE.md | A | 8-category review structure |
 | SECURITY-PLAN-TEMPLATE.md | A | OWASP-aligned |
 | PROGRESS-TEMPLATE.md | A | Status tracking |
+| ROADMAP-TEMPLATE.md | A | Portfolio roadmap and release planning structure |
 | EXEC-PLAN-TEMPLATE.md | A | Execution plan with decision log |
 
 ### Scripts

@@ -171,8 +171,8 @@ Each role follows a prescribed phase pipeline. All phases are mandatory. No phas
 | `.github/skills/` | 75 skill files across 10 categories |
 | `.github/instructions/` | 7 instruction files (auto-loaded by file pattern) |
 | `.github/schemas/` | Handoff message JSON Schema + communication protocol |
-| `.github/templates/` | 10 templates (PRD, ADR, Spec, UX, Review, Security Plan, Progress, Exec Plan, Contract, Evidence Summary) |
-| `.github/prompts/` | 20 reusable prompt templates |
+| `.github/templates/` | 11 templates (PRD, ADR, Spec, UX, Review, Security Plan, Progress, Roadmap, Exec Plan, Contract, Evidence Summary) |
+| `.github/prompts/` | 21 reusable prompt templates |
 | `.agentx/` | CLI utilities (agentx.ps1, agentx.sh, agentic-runner.ps1) |
 | `scripts/modules/` | Shared PowerShell modules |
 | `packs/` | Agent pack bundles |

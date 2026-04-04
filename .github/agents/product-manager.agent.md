@@ -135,6 +135,21 @@ Create `docs/artifacts/prd/PRD-{epic-id}.md` **locally** using `editFiles` tool,
 
 **12 required sections**: Problem Statement, Target Users, Goals & Metrics, Requirements (P0/P1/P2), User Stories with acceptance criteria, User Flows, Dependencies, Risks, Timeline, Out of Scope, Open Questions, Appendix.
 
+### 3.5 Create Companion Roadmap (WHEN APPLICABLE)
+
+If the epic spans multiple workstreams, multiple PRDs, a shared release train, or the user explicitly asks for portfolio planning, create a companion roadmap locally using `.github/templates/ROADMAP-TEMPLATE.md`.
+
+**Roadmap trigger signals**:
+- more than one PRD or workstream must align to one delivery plan
+- the roadmap needs dated sprint, release, UAT, pilot, or wave planning
+- dependencies, release gates, or operational readiness need one shared planning artifact
+
+**Roadmap output**:
+- create `docs/artifacts/prd/ROADMAP-{epic-id}.md` by default
+- preserve semantic naming if the workspace already uses semantic roadmap filenames
+- link the related PRDs in the roadmap header
+- keep roadmap dates, milestones, and readiness gates synchronized with the PRD timeline assumptions
+
 ### 4. Create GitHub Issues
 
 **Issue Hierarchy**:
@@ -183,6 +198,7 @@ Before handoff, verify with fresh eyes:
 - [ ] **GenAI completeness**: GenAI Requirements cover LLM selection, evaluation strategy, model pinning, guardrails, and responsible AI
 - [ ] **AI handoff quality**: AI-bearing PRDs define the product-facing AI contract well enough that Architect and Data Scientist can specify model behavior, retrieval, tooling, fallback, and evaluation without inventing missing requirements
 - [ ] **No contradictions**: constraints do not conflict with user's technology intent
+- [ ] **Roadmap coverage**: if the epic needs shared portfolio planning, a companion roadmap exists and is linked to the related PRDs
 
 ### 6. Commit & Handoff
 
@@ -198,6 +214,7 @@ Update Epic Status to `Ready` in GitHub Projects.
 | Artifact | Location |
 |----------|----------|
 | PRD | `docs/artifacts/prd/PRD-{epic-id}.md` |
+| Roadmap (when applicable) | `docs/artifacts/prd/ROADMAP-{epic-id}.md` or semantic equivalent |
 | Epic issue | GitHub Issues with `type:epic` |
 | Feature issues | GitHub Issues with `type:feature` |
 | Story issues | GitHub Issues with `type:story` |
@@ -220,6 +237,7 @@ Update Epic Status to `Ready` in GitHub Projects.
 ### Exit
 
 - PASS PRD exists with all 12 sections filled
+- PASS Companion roadmap exists when the epic requires shared portfolio planning
 - PASS Epic + Feature + Story issues created with proper hierarchy
 - PASS All stories have acceptance criteria
 - PASS PRD committed to repository

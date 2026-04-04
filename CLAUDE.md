@@ -229,3 +229,4 @@ Each command file contains the agent's constraints, boundaries, execution steps,
 | Code Review | `.github/templates/REVIEW-TEMPLATE.md` |
 | Security Plan | `.github/templates/SECURITY-PLAN-TEMPLATE.md` |
 | Progress Log | `.github/templates/PROGRESS-TEMPLATE.md` |
+| Roadmap | `.github/templates/ROADMAP-TEMPLATE.md` |

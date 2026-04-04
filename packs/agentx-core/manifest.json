@@ -42,6 +42,7 @@
       ".github/templates/UX-TEMPLATE.md",
       ".github/templates/REVIEW-TEMPLATE.md",
       ".github/templates/SECURITY-PLAN-TEMPLATE.md",
+      ".github/templates/ROADMAP-TEMPLATE.md",
       ".github/templates/PROGRESS-TEMPLATE.md"
     ],
     "workflows": [],
