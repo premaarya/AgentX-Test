@@ -52,6 +52,7 @@ agents:
   - AgentX Prompt Engineer
   - AgentX RAG Specialist
   - AgentX Reviewer
+  - AgentX Diagram Specialist
 handoffs:
   - label: "Hand off to Reviewer"
     agent: AgentX Reviewer

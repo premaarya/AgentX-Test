@@ -44,6 +44,7 @@ tools:
 agents:
   - AgentX Engineer
   - AgentX Ops Monitor
+  - AgentX Diagram Specialist
 handoffs:
   - label: "Pipelines Ready -> Engineer or Reviewer"
     agent: AgentX Engineer

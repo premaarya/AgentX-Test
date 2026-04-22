@@ -1,5 +1,5 @@
 ---
-description: 'Compressed skill index for AI agents. 78 skills across 11 categories. Load max 3-4 per task.'
+description: 'Compressed skill index for AI agents. 79 skills across 12 categories. Load max 3-4 per task.'
 ---
 
 # Production Code Skills Index
@@ -12,7 +12,7 @@ description: 'Compressed skill index for AI agents. 78 skills across 11 categori
 
 **Loading order**: Router -> instruction (auto) -> this index -> pick skills -> `read_file` them.
 
-**Anti-pattern**: Never load all 78 skills. Use Quick Reference below.
+**Anti-pattern**: Never load all 79 skills. Use Quick Reference below.
 
 ---
 
@@ -65,7 +65,7 @@ description: 'Compressed skill index for AI agents. 78 skills across 11 categori
 
 ---
 
-## Skills Directory (78 skills -- pipe-delimited)
+## Skills Directory (79 skills -- pipe-delimited)
 
 > Format: `category|skill|path|keywords`
 > Read the SKILL.md at the path when the task matches keywords.
@@ -149,6 +149,7 @@ domain|clm|.github/skills/domain/clm/SKILL.md|contracts,CLM,contract-lifecycle,n
 domain|corporate-governance|.github/skills/domain/corporate-governance/SKILL.md|entity-management,board-governance,resolutions,delegated-authority,statutory-filings,corporate-secretary
 domain|legal|.github/skills/domain/legal/SKILL.md|litigation,corporate-law,IP,employment,CLM,e-discovery,GDPR,compliance,contracts
 product|prd|.github/skills/product/prd/SKILL.md|PRD,requirements,product-manager,user-stories,acceptance-criteria,non-goals,requirements-quality,vague-vs-concrete,AI-contract
+diagrams|diagram-as-code|.github/skills/diagrams/diagram-as-code/SKILL.md|diagrams,mermaid,plantuml,c4,structurizr,graphviz,drawio,swimlane,cross-functional,BPMN,visio,vsdx,sequence,state,ER,architecture
 ```
 
 ---
@@ -246,5 +247,5 @@ Legal Research Brief|legal->documentation
 
 ---
 
-**See Also**: [AGENTS.md](AGENTS.md) | [agentskills.io](https://agentskills.io/specification) | 78 skills (arch:5, dev:13, lang:10, ops:5, infra:4, data:6, ai:17, design:4, test:6, domain:7, product:1)
+**See Also**: [AGENTS.md](AGENTS.md) | [agentskills.io](https://agentskills.io/specification) | 79 skills (arch:5, dev:13, lang:10, ops:5, infra:4, data:6, ai:17, design:4, test:6, domain:7, product:1, diagrams:1)
 

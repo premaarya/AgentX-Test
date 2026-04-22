@@ -51,6 +51,7 @@ agents:
   - AgentX Product Manager
   - AgentX Data Scientist
   - AgentX UX Designer
+  - AgentX Diagram Specialist
 handoffs:
   - label: "Hand off to Engineer"
     agent: AgentX Engineer

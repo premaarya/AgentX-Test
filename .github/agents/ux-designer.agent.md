@@ -44,6 +44,7 @@ tools:
   - github/*
 agents:
   - AgentX Product Manager
+  - AgentX Diagram Specialist
 handoffs:
   - label: "Hand off to Architect"
     agent: AgentX Architect

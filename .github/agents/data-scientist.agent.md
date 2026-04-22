@@ -56,6 +56,7 @@ agents:
   - AgentX Eval Specialist
   - AgentX Ops Monitor
   - AgentX RAG Specialist
+  - AgentX Diagram Specialist
 handoffs:
   - label: "Hand off to Reviewer"
     agent: AgentX Reviewer

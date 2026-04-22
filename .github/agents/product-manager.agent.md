@@ -47,6 +47,7 @@ agents:
   - AgentX Architect
   - AgentX GitHub Ops
   - AgentX ADO Ops
+  - AgentX Diagram Specialist
 handoffs:
   - label: "Hand off to UX"
     agent: AgentX UX Designer
