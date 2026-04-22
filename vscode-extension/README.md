@@ -2,7 +2,7 @@
 
 **The IDE Orchestrator for Multi-Agent Software Delivery**
 
-[![Version](https://img.shields.io/badge/Version-8.4.35-0EA5E9?style=for-the-badge)](https://marketplace.visualstudio.com/items?itemName=jnPiyush.agentx)
+[![Version](https://img.shields.io/badge/Version-8.4.36-0EA5E9?style=for-the-badge)](https://marketplace.visualstudio.com/items?itemName=jnPiyush.agentx)
 [![License](https://img.shields.io/badge/License-Apache_2.0-22C55E?style=for-the-badge)](LICENSE)
 
 *Bring structured multi-agent workflows directly into your editor with chat execution, live workspace state, and seamless repo integration.*
@@ -325,6 +325,12 @@ The extension registers 13 declarative chat agents, each mapped to an AgentX rol
 ---
 
 ## Recent Changes
+
+### 8.4.36
+
+- New `product/prd` skill: PRD authoring available to non-PM agents (Engineer, Architect, Auto) with a requirements-quality catalogue, vague-vs-concrete examples, and an AI-contract worked example
+- New `diagrams/diagram-as-code` skill: Mermaid, PlantUML, C4/Structurizr, Graphviz, and draw.io patterns with first-class support for cross-functional swimlanes, BPMN, and Visio (`.vsdx`) interop
+- New internal `diagram-specialist` sub-agent wired into Architect, Engineer, PM, UX Designer, Data Scientist, Reviewer, and Power BI Analyst
 
 ### 8.4.35
 
